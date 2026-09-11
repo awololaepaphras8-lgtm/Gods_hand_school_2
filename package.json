@@ -1,0 +1,25 @@
+{
+  "name": "gods-hand-school-management-system",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^5.0.0",
+    "html5-qrcode": "^2.3.8",
+    "qrcode.react": "^4.2.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0",
+    "vite-plugin-pwa": "^1.3.0"
+  }
+}

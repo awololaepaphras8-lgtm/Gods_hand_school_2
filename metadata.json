@@ -1,0 +1,11 @@
+{
+  "name": "God's Hand International Model School",
+  "description": "Top and best private primary and secondary school with affordable fees in Ibadan. Renowned for quality nursery, primary, and secondary education, modern STEM labs, moral discipline, and budget-friendly tuition at Wire and Cable, Apata, Oyo State.",
+  "requestFramePermissions": [
+    "camera",
+    "notifications"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
