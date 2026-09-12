@@ -1,7 +1,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Course, StudentResult, GradeLevel, StudentAccount, AttendanceRecord, StaffPagePermission, ALL_STAFF_PAGES, Announcement } from '../types';
+import { Course, StudentResult, GradeLevel, StudentAccount, AttendanceRecord, StaffPagePermission, ALL_STAFF_PAGES, Announcement, ResultPublishRequest } from '../types';
+import { GRADE_GROUPS } from '../constants';
 import { Html5QrcodeScanner } from 'html5-qrcode';
+import { StandardReportCard } from './StandardReportCard';
+import { computeClassRankings, computeSubjectRankings, formatOrdinal } from '../utils/ranking';
 
 interface TeacherDashboardProps {
   username: string;
@@ -13,16 +16,19 @@ interface TeacherDashboardProps {
   calendar?: string;
   announcements?: Announcement[];
   allowedPages?: StaffPagePermission[];
+  resultPublishRequests?: ResultPublishRequest[];
   onAddCourse: (name: string, grade: GradeLevel, description: string) => void;
   onDuplicateCourse?: (courseId: string, targetGrades: GradeLevel[]) => void;
   onAddResult: (result: Omit<StudentResult, 'id' | 'date' | 'teacherName'>) => void;
   onMarkAttendance: (studentId: string, term?: string) => boolean;
   onShiftStudent: (studentId: string) => void;
+  onRequestPublishResults?: (grade: GradeLevel, term: string, subject?: string) => void;
+  onSendResultsToPupils?: (grade: GradeLevel, term: string) => void;
 }
 
 export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   username,
-  assignedGrades,
+  assignedGrades = [],
   allStudents,
   courses,
   results,
@@ -30,11 +36,14 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   calendar,
   announcements = [],
   allowedPages,
+  resultPublishRequests = [],
   onAddCourse,
   onDuplicateCourse,
   onAddResult,
   onMarkAttendance,
-  onShiftStudent
+  onShiftStudent,
+  onRequestPublishResults,
+  onSendResultsToPupils
 }) => {
   // Determine available tabs based on admin-configured page permissions
   const availableTabs = ALL_STAFF_PAGES.filter(p => !allowedPages || allowedPages.includes(p.id));
@@ -46,28 +55,48 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
       setActiveTab(availableTabs[0].id as any);
     }
   }, [allowedPages, availableTabs.length]);
+
+  // Staff class assignment restriction: Staff can ONLY grade and manage their assigned class(es)
+  const hasAssignedGrades = assignedGrades && assignedGrades.length > 0;
+  const authorizedGrades: GradeLevel[] = hasAssignedGrades 
+    ? assignedGrades 
+    : (GRADE_GROUPS.flatMap(g => g.levels) as GradeLevel[]);
+  
+  // Only students belonging to the staff's assigned classes
+  const staffStudents = hasAssignedGrades
+    ? allStudents.filter(s => assignedGrades.includes(s.grade))
+    : allStudents;
   
   // Course form state
   const [courseName, setCourseName] = useState('');
-  const [courseGrade, setCourseGrade] = useState<GradeLevel>(assignedGrades[0] || 'Primary 1');
+  const [courseGrade, setCourseGrade] = useState<GradeLevel>(authorizedGrades[0] || 'Primary 1');
   const [courseDesc, setCourseDesc] = useState('');
 
   // Course duplication state for teachers
   const [duplicateCourseId, setDuplicateCourseId] = useState<string | null>(null);
   const [targetDuplicateGrades, setTargetDuplicateGrades] = useState<GradeLevel[]>([]);
 
-  // Grading form state
+  // Grading form state with CA (40%), Exam (60%), and Total (100%)
+  const [gradeClassFilter, setGradeClassFilter] = useState<string>(authorizedGrades[0] || 'all');
   const [selectedStudent, setSelectedStudent] = useState<string>('');
   const [selectedSubject, setSelectedSubject] = useState<string>('');
-  const [score, setScore] = useState<number>(0);
+  const [customSubject, setCustomSubject] = useState<string>('');
+  const [caScore, setCaScore] = useState<number>(0);
+  const [examScore, setExamScore] = useState<number>(0);
+  const [totalScore, setTotalScore] = useState<number>(0);
   const [term, setTerm] = useState<string>('First Term');
+  const [publishFeedback, setPublishFeedback] = useState<string | null>(null);
 
   // Scanner status & Term state
   const [scannerTerm, setScannerTerm] = useState<string>('First Term');
   const [lastScanned, setLastScanned] = useState<string | null>(null);
+  const [previewStudentReport, setPreviewStudentReport] = useState<StudentAccount | null>(null);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
-  const filteredStudents = allStudents.filter(s => assignedGrades.includes(s.grade));
+  // Filter students strictly according to staff assigned classes
+  const filteredStudents = gradeClassFilter === 'all' 
+    ? staffStudents 
+    : staffStudents.filter(s => s.grade === gradeClassFilter);
   const myResults = results.filter(r => r.teacherName === username);
   const today = new Date().toLocaleDateString();
   const presentToday = attendance.filter(a => a.date === today && filteredStudents.some(s => s.id === a.studentId));
@@ -138,20 +167,98 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     }
   };
 
+  const handleCaChange = (val: number) => {
+    const num = isNaN(val) ? 0 : Math.max(0, Math.min(40, val));
+    setCaScore(num);
+    setTotalScore(Math.min(100, Math.round((num + examScore) * 10) / 10));
+  };
+
+  const handleExamChange = (val: number) => {
+    const num = isNaN(val) ? 0 : Math.max(0, Math.min(60, val));
+    setExamScore(num);
+    setTotalScore(Math.min(100, Math.round((caScore + num) * 10) / 10));
+  };
+
+  const handleTotalChange = (val: number) => {
+    const num = isNaN(val) ? 0 : Math.max(0, Math.min(100, val));
+    setTotalScore(num);
+  };
+
   const handleAddGrade = (e: React.FormEvent) => {
     e.preventDefault();
     const student = allStudents.find(s => s.id === selectedStudent);
-    if (student && selectedSubject) {
-      onAddResult({
-        studentName: student.name,
-        grade: student.grade,
-        subject: selectedSubject,
-        score: score,
-        term: term
-      });
-      setScore(0);
-      alert(`Result for ${student.name} recorded!`);
+    const finalSubject = selectedSubject === '__custom__' ? customSubject.trim() : selectedSubject;
+
+    if (!student) {
+      alert("Please select a student or pupil.");
+      return;
     }
+
+    // Strict class restriction check: Staff can ONLY grade the class assigned to them!
+    if (hasAssignedGrades && !assignedGrades.includes(student.grade)) {
+      alert(`Access Denied: As a staff member, you are only authorized to grade students in your assigned class(es): ${assignedGrades.join(', ')}.`);
+      return;
+    }
+
+    if (!finalSubject) {
+      alert("Please specify a subject name.");
+      return;
+    }
+
+    const calculatedTotal = parseFloat(totalScore.toString()) || (caScore + examScore);
+    if (calculatedTotal < 0 || calculatedTotal > 100) {
+      alert("Total score must be between 0 and 100.");
+      return;
+    }
+
+    onAddResult({
+      studentName: student.name,
+      grade: student.grade,
+      subject: finalSubject,
+      caScore: caScore,
+      examScore: examScore,
+      score: calculatedTotal,
+      term: term
+    });
+
+    setCaScore(0);
+    setExamScore(0);
+    setTotalScore(0);
+    setCustomSubject('');
+    alert(`Assessment successfully recorded for ${student.name} (${finalSubject})!\nCA: ${caScore}/40 • Exam: ${examScore}/60 • Total: ${calculatedTotal}%`);
+  };
+
+  // Active class for rankings and publication requests
+  const activeClassForPublish: GradeLevel = (gradeClassFilter !== 'all' ? gradeClassFilter : (authorizedGrades[0] || 'Primary 1')) as GradeLevel;
+
+  // Compute rankings for active class and term (positions 1st to last)
+  const classRankingsMap = computeClassRankings(results, allStudents, activeClassForPublish, term);
+  const classRankingsList = Array.from(classRankingsMap.values()).sort((a, b) => a.position - b.position);
+
+  // Find latest publish request for active class and term
+  const latestRequest = resultPublishRequests.find(
+    req => req.grade === activeClassForPublish && req.term.toLowerCase() === term.toLowerCase()
+  );
+
+  const studentsInCurrentGrade = allStudents.filter(s => s.grade === activeClassForPublish);
+  const resultsInCurrentGrade = results.filter(r => r.grade === activeClassForPublish && r.term.toLowerCase() === term.toLowerCase());
+
+  const handleRequestPublish = (grade: GradeLevel, publishTerm: string) => {
+    if (onRequestPublishResults) {
+      onRequestPublishResults(grade, publishTerm);
+      setPublishFeedback(`✓ Request dispatched to Administrator to allow publishing ${publishTerm} results to all pupils of ${grade}!`);
+      setTimeout(() => setPublishFeedback(null), 6000);
+    } else {
+      alert(`Request dispatched to administrator for ${grade} (${publishTerm})!`);
+    }
+  };
+
+  const handleSendToAllPupils = (grade: GradeLevel, publishTerm: string) => {
+    if (onSendResultsToPupils) {
+      onSendResultsToPupils(grade, publishTerm);
+    }
+    setPublishFeedback(`✓ Official ${publishTerm} results sent to all ${studentsInCurrentGrade.length} pupils of ${grade}!`);
+    setTimeout(() => setPublishFeedback(null), 8000);
   };
 
   return (
@@ -481,90 +588,432 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
         )}
 
         {activeTab === 'grading' && (
-           <div className="grid lg:grid-cols-2 gap-16">
-              <div>
-                <h3 className="text-2xl font-black text-blue-900 mb-8 font-serif">Record Assessment</h3>
-                <form onSubmit={handleAddGrade} className="space-y-6 bg-blue-50 p-8 rounded-[2rem] border-2 border-blue-100 shadow-sm">
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-blue-900 uppercase tracking-widest">Select Student / Pupil</label>
-                    <select 
-                      required
-                      value={selectedStudent}
-                      onChange={(e) => setSelectedStudent(e.target.value)}
-                      className="w-full px-4 py-4 bg-white border-2 border-blue-100 rounded-2xl font-bold outline-none"
-                    >
-                      <option value="">-- Choose Student / Pupil --</option>
-                      {filteredStudents.map(s => (
-                        <option key={s.id} value={s.id}>{s.name} ({s.grade})</option>
-                      ))}
-                    </select>
+           <div className="space-y-12">
+              {/* Staff Assigned Class Restriction Alert */}
+              {hasAssignedGrades && (
+                <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">🔒</span>
+                    <div>
+                      <h4 className="font-serif font-black text-blue-900 text-sm">
+                        Staff Grading Authority: Assigned Classes Only
+                      </h4>
+                      <p className="text-xs text-blue-700">
+                        You are assigned to grade: <strong className="font-black text-blue-950">{assignedGrades.join(', ')}</strong>. You can only record and publish marks for pupils in your assigned classes.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-black uppercase text-blue-950 bg-yellow-400 px-3 py-1 rounded-full shadow-xs">
+                    {assignedGrades.length} Assigned Class{assignedGrades.length > 1 ? 'es' : ''}
+                  </span>
+                </div>
+              )}
+
+              {/* Publish Results to All Pupils Workflow Banner */}
+              <div className="bg-gradient-to-br from-indigo-900 via-blue-900 to-slate-900 text-white rounded-3xl p-6 sm:p-8 border-2 border-yellow-400 shadow-xl space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-indigo-700/60 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-yellow-400 text-blue-950 flex items-center justify-center font-black text-2xl shadow-md">
+                      📤
+                    </div>
+                    <div>
+                      <h4 className="font-serif font-black text-lg sm:text-xl text-yellow-300">
+                        Send Results to All Pupils
+                      </h4>
+                      <p className="text-xs text-blue-200">
+                        Request administrative sign-off to distribute termly results to all pupils simultaneously
+                      </p>
+                    </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-blue-900 uppercase tracking-widest">Subject</label>
-                    <select 
-                      required
-                      value={selectedSubject}
-                      onChange={(e) => setSelectedSubject(e.target.value)}
-                      className="w-full px-4 py-4 bg-white border-2 border-blue-100 rounded-2xl font-bold outline-none"
-                    >
-                      <option value="">-- Choose Subject --</option>
-                      {courses.map(c => (
-                        <option key={c.id} value={c.name}>{c.name} ({c.grade})</option>
-                      ))}
-                    </select>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-black uppercase text-yellow-300 bg-blue-950 px-3.5 py-1 rounded-full border border-yellow-400/40">
+                      Class: {activeClassForPublish}
+                    </span>
+                    <span className="text-[11px] font-black uppercase text-blue-200 bg-indigo-800 px-3 py-1 rounded-full">
+                      {term}
+                    </span>
                   </div>
+                </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-xs font-black text-blue-900 uppercase tracking-widest">Score (0-100)</label>
-                      <input 
-                        type="number" min="0" max="100" step="any" required
-                        value={score}
-                        onChange={(e) => setScore(parseFloat(e.target.value) || 0)}
-                        className="w-full px-4 py-4 bg-white border-2 border-blue-100 rounded-2xl font-bold outline-none"
-                      />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+                  <div className="p-3 bg-white/10 rounded-2xl border border-white/10">
+                    <span className="block text-[10px] font-black uppercase tracking-wider text-blue-300">Enrolled Pupils</span>
+                    <span className="font-serif font-black text-2xl text-white">{studentsInCurrentGrade.length}</span>
+                  </div>
+                  <div className="p-3 bg-white/10 rounded-2xl border border-white/10">
+                    <span className="block text-[10px] font-black uppercase tracking-wider text-blue-300">Recorded Scores</span>
+                    <span className="font-serif font-black text-2xl text-yellow-400">{resultsInCurrentGrade.length}</span>
+                  </div>
+                  <div className="p-3 bg-white/10 rounded-2xl border border-white/10">
+                    <span className="block text-[10px] font-black uppercase tracking-wider text-blue-300">Admin Clearance</span>
+                    <span className={`font-black text-xs px-2.5 py-1 rounded-full inline-block mt-1 ${
+                      latestRequest?.status === 'approved' 
+                        ? 'bg-emerald-500 text-white' 
+                        : latestRequest?.status === 'pending' 
+                          ? 'bg-amber-400 text-blue-950 animate-pulse' 
+                          : latestRequest?.status === 'rejected'
+                            ? 'bg-rose-500 text-white'
+                            : 'bg-white/20 text-slate-200'
+                    }`}>
+                      {latestRequest?.status === 'approved' ? '✓ Authorized' : latestRequest?.status === 'pending' ? '⏳ Pending Approval' : latestRequest?.status === 'rejected' ? '✕ Revision Needed' : 'Not Requested'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Request Actions */}
+                <div className="pt-2">
+                  {latestRequest?.status === 'approved' ? (
+                    <div className="space-y-3 bg-emerald-900/40 border border-emerald-400/60 p-5 rounded-2xl">
+                      <div className="flex items-center gap-2 text-emerald-300 text-xs font-black">
+                        <span>✅</span>
+                        <span>Administrator clearance confirmed! You can now send results to all {studentsInCurrentGrade.length} pupils of {activeClassForPublish}.</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleSendToAllPupils(activeClassForPublish, term)}
+                        className="w-full py-4 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+                      >
+                        <span>📢</span>
+                        <span>Send / Broadcast Results to All Pupils at Once</span>
+                      </button>
                     </div>
+                  ) : latestRequest?.status === 'pending' ? (
+                    <div className="p-5 bg-amber-500/20 border border-amber-400/40 rounded-2xl text-xs text-amber-200 space-y-2">
+                      <div className="flex items-center gap-2 font-black">
+                        <span className="text-base">⏳</span>
+                        <span>Request Awaiting Administrator Approval</span>
+                      </div>
+                      <p className="text-[11px] text-amber-100/90 leading-relaxed">
+                        Your request to release {resultsInCurrentGrade.length} recorded assessment grades for {activeClassForPublish} ({term}) is currently awaiting sign-off from the School Administrator. Once approved, you can send out results to all pupils with a single click.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {latestRequest?.status === 'rejected' && (
+                        <p className="text-xs text-rose-200 font-bold bg-rose-900/50 p-3 rounded-xl border border-rose-500/40">
+                          Admin Feedback: {latestRequest.adminFeedback || 'Please review scores before resubmitting.'}
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        disabled={resultsInCurrentGrade.length === 0}
+                        onClick={() => handleRequestPublish(activeClassForPublish, term)}
+                        className={`w-full py-4 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider transition-all shadow-lg flex items-center justify-center gap-2 ${
+                          resultsInCurrentGrade.length > 0 
+                            ? 'bg-yellow-400 hover:bg-yellow-300 text-blue-950 active:scale-95 cursor-pointer' 
+                            : 'bg-white/20 text-white/50 cursor-not-allowed'
+                        }`}
+                      >
+                        <span>📨</span>
+                        <span>
+                          {latestRequest?.status === 'rejected' 
+                            ? 'Re-Submit Request to Admin to Allow Sending Results' 
+                            : 'Request Admin Permission to Send Results to All Pupils at Once'}
+                        </span>
+                      </button>
+                      {resultsInCurrentGrade.length === 0 && (
+                        <p className="text-[10px] text-center text-blue-300">
+                          Please record at least one grade for this class below before submitting publication request.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  
+                  {publishFeedback && (
+                    <p className="mt-3 text-xs font-black text-emerald-300 text-center animate-fade-in bg-emerald-950/60 p-2 rounded-xl border border-emerald-500/30">
+                      {publishFeedback}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Assessment Form & Position Standings */}
+              <div className="grid lg:grid-cols-2 gap-12">
+                <div>
+                  <h3 className="text-2xl font-black text-blue-900 mb-6 font-serif">Record Assessment Marks</h3>
+                  <form onSubmit={handleAddGrade} className="space-y-6 bg-blue-50/70 p-8 rounded-[2rem] border-2 border-blue-100 shadow-sm">
+                    {/* Class Filter - Restricted strictly to staff's assigned classes */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <label className="text-xs font-black text-blue-900 uppercase tracking-widest">
+                          Assigned Class
+                        </label>
+                        <span className="text-[10px] font-bold text-slate-500">
+                          {filteredStudents.length} pupil(s) eligible
+                        </span>
+                      </div>
+                      <select
+                        value={gradeClassFilter}
+                        onChange={(e) => {
+                          setGradeClassFilter(e.target.value);
+                          setSelectedStudent('');
+                        }}
+                        className="w-full px-4 py-3 bg-white border-2 border-blue-100 rounded-2xl font-bold outline-none text-xs text-blue-950"
+                      >
+                        {hasAssignedGrades && authorizedGrades.length > 1 && (
+                          <option value="all">-- All My Assigned Classes ({authorizedGrades.join(', ')}) --</option>
+                        )}
+                        {authorizedGrades.map(lvl => (
+                          <option key={lvl} value={lvl}>{lvl} (My Assigned Class)</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Pupil Selection */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-blue-900 uppercase tracking-widest">Select Student / Pupil</label>
+                      <select 
+                        required
+                        value={selectedStudent}
+                        onChange={(e) => setSelectedStudent(e.target.value)}
+                        className="w-full px-4 py-3.5 bg-white border-2 border-blue-100 rounded-2xl font-bold outline-none text-xs text-blue-950"
+                      >
+                        <option value="">-- Choose Pupil from {gradeClassFilter === 'all' ? 'Assigned Classes' : gradeClassFilter} --</option>
+                        {filteredStudents.map(s => (
+                          <option key={s.id} value={s.id}>{s.name} ({s.grade}) • Started: {s.admissionYear || 2024} • ID: {s.id}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    {/* Subject Selection */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-blue-900 uppercase tracking-widest">Subject</label>
+                      <select 
+                        required
+                        value={selectedSubject}
+                        onChange={(e) => setSelectedSubject(e.target.value)}
+                        className="w-full px-4 py-3.5 bg-white border-2 border-blue-100 rounded-2xl font-bold outline-none text-xs text-blue-950"
+                      >
+                        <option value="">-- Choose Subject --</option>
+                        {courses.map(c => (
+                          <option key={c.id} value={c.name}>{c.name} ({c.grade})</option>
+                        ))}
+                        <option value="__custom__">➕ Type Custom Subject...</option>
+                      </select>
+                      {selectedSubject === '__custom__' && (
+                        <input 
+                          type="text"
+                          required
+                          placeholder="Enter subject name (e.g. Mathematics, English Studies, Yoruba)"
+                          value={customSubject}
+                          onChange={(e) => setCustomSubject(e.target.value)}
+                          className="w-full mt-2 px-4 py-3 bg-white border-2 border-yellow-400 rounded-2xl font-bold outline-none text-blue-900 text-xs"
+                        />
+                      )}
+                    </div>
+
+                    {/* Academic Term */}
                     <div className="space-y-2">
                       <label className="text-xs font-black text-blue-900 uppercase tracking-widest">Academic Term</label>
                       <select 
                         value={term}
                         onChange={(e) => setTerm(e.target.value)}
-                        className="w-full px-4 py-4 bg-white border-2 border-blue-100 rounded-2xl font-bold outline-none"
+                        className="w-full px-4 py-3.5 bg-white border-2 border-blue-100 rounded-2xl font-bold outline-none text-xs text-blue-950"
                       >
                         <option value="First Term">First Term</option>
                         <option value="Second Term">Second Term</option>
                         <option value="Third Term">Third Term</option>
                       </select>
                     </div>
-                  </div>
 
-                  <button type="submit" className="w-full py-5 bg-blue-900 text-yellow-400 font-black text-lg rounded-2xl shadow-xl hover:bg-blue-800 transition-all transform hover:-translate-y-1">
-                    Upload Result
-                  </button>
-                </form>
-              </div>
+                    {/* CA Test, Examination, and Total Mark Inputs */}
+                    <div className="p-5 bg-white rounded-2xl border-2 border-blue-100 space-y-4">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <span className="text-xs font-black text-blue-900 uppercase tracking-wider">Mark Allocation</span>
+                        <span className="text-[10px] font-bold text-slate-400">CA: 40% | Exam: 60%</span>
+                      </div>
 
-              <div className="space-y-6">
-                <h3 className="text-2xl font-black text-blue-900 font-serif">Recently Uploaded</h3>
-                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                  {myResults.length === 0 ? (
-                    <div className="p-12 text-center bg-white rounded-3xl border-2 border-dashed border-slate-200 text-slate-400 font-bold uppercase text-xs tracking-widest">No results uploaded by you yet.</div>
-                  ) : (
-                    myResults.map(res => (
-                      <div key={res.id} className="p-6 bg-white border-2 border-slate-100 rounded-2xl shadow-sm">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <p className="font-black text-blue-900">{res.studentName}</p>
-                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{res.subject} • {res.term}</p>
-                          </div>
-                          <div className={`text-xl font-black ${res.score >= 50 ? 'text-green-600' : 'text-red-500'}`}>
-                            {res.score}%
-                          </div>
+                      <div className="grid grid-cols-3 gap-3">
+                        {/* Continuous Assessment (CA) */}
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                            CA Test (0-40)
+                          </label>
+                          <input 
+                            type="number" 
+                            min="0" 
+                            max="40" 
+                            step="any" 
+                            required
+                            value={caScore}
+                            onChange={(e) => handleCaChange(parseFloat(e.target.value) || 0)}
+                            className="w-full px-3 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-mono font-black text-center text-blue-950 outline-none focus:bg-white focus:border-blue-900 transition-all text-sm"
+                          />
+                          <span className="text-[9px] text-slate-400 block text-center font-medium">Max 40</span>
+                        </div>
+
+                        {/* Examination */}
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                            Exam (0-60)
+                          </label>
+                          <input 
+                            type="number" 
+                            min="0" 
+                            max="60" 
+                            step="any" 
+                            required
+                            value={examScore}
+                            onChange={(e) => handleExamChange(parseFloat(e.target.value) || 0)}
+                            className="w-full px-3 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-mono font-black text-center text-blue-950 outline-none focus:bg-white focus:border-blue-900 transition-all text-sm"
+                          />
+                          <span className="text-[9px] text-slate-400 block text-center font-medium">Max 60</span>
+                        </div>
+
+                        {/* Total Score */}
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-blue-900 uppercase tracking-wider block">
+                            Total (0-100)
+                          </label>
+                          <input 
+                            type="number" 
+                            min="0" 
+                            max="100" 
+                            step="any" 
+                            required
+                            value={totalScore}
+                            onChange={(e) => handleTotalChange(parseFloat(e.target.value) || 0)}
+                            className="w-full px-3 py-3 bg-yellow-50 border-2 border-yellow-400 rounded-xl font-mono font-black text-center text-blue-950 outline-none text-base"
+                          />
+                          <span className="text-[9px] font-black text-blue-900 block text-center">
+                            {totalScore >= 75 ? 'A (Distinction)' : totalScore >= 65 ? 'B (Very Good)' : totalScore >= 50 ? 'C (Credit)' : totalScore >= 40 ? 'D (Pass)' : 'F (Fail)'}
+                          </span>
                         </div>
                       </div>
-                    ))
-                  )}
+                    </div>
+
+                    <button type="submit" className="w-full py-4.5 bg-blue-900 text-yellow-400 font-black text-base rounded-2xl shadow-xl hover:bg-blue-800 transition-all transform hover:-translate-y-0.5 active:scale-95">
+                      Upload & Save Assessment
+                    </button>
+                  </form>
+                </div>
+
+                {/* Class Standings & Automatic Positions from First to Last */}
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-2xl font-black text-blue-900 font-serif">
+                        Class Standings & Positions
+                      </h3>
+                      <p className="text-xs text-slate-500 font-medium">
+                        System ranking from First to Last based on aggregate assessment scores
+                      </p>
+                    </div>
+                    <span className="text-[11px] font-black bg-blue-100 text-blue-900 px-3 py-1 rounded-full uppercase">
+                      {activeClassForPublish}
+                    </span>
+                  </div>
+
+                  <div className="bg-white border-2 border-blue-100 rounded-3xl p-5 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between text-xs font-black text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2 px-2">
+                      <span>Pos • Student / Pupil</span>
+                      <span>Avg • Total • Subjects</span>
+                    </div>
+
+                    {classRankingsList.length === 0 ? (
+                      <div className="p-8 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 font-bold uppercase text-xs tracking-wider">
+                        No pupils or assessment grades recorded for {activeClassForPublish} ({term}) yet.
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1 custom-scrollbar">
+                        {classRankingsList.map((rank) => {
+                          const isTop3 = rank.position <= 3;
+                          const medal = rank.position === 1 ? '🥇' : rank.position === 2 ? '🥈' : rank.position === 3 ? '🥉' : `${rank.position}th`;
+
+                          return (
+                            <div 
+                              key={rank.studentId}
+                              className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between ${
+                                rank.position === 1 
+                                  ? 'bg-amber-50/80 border-amber-300 shadow-xs' 
+                                  : isTop3 
+                                    ? 'bg-blue-50/60 border-blue-200' 
+                                    : 'bg-white border-slate-200 hover:border-blue-200'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs sm:text-sm ${
+                                  rank.position === 1 
+                                    ? 'bg-yellow-400 text-blue-950 shadow-xs font-serif text-lg' 
+                                    : rank.position === 2 
+                                      ? 'bg-slate-200 text-slate-800' 
+                                      : rank.position === 3 
+                                        ? 'bg-amber-200 text-amber-900' 
+                                        : 'bg-slate-100 text-slate-600'
+                                }`}>
+                                  {isTop3 ? medal : rank.positionOrdinal}
+                                </div>
+                                <div>
+                                  <p className="font-black text-blue-950 text-xs sm:text-sm">
+                                    {rank.studentName}
+                                  </p>
+                                  <p className="text-[10px] text-slate-400 font-bold">
+                                    ID: {rank.studentId} • Position: <strong className="text-blue-900">{rank.positionOrdinal}</strong> of {rank.totalStudentsInClass}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="text-right">
+                                <span className="font-mono font-black text-sm text-blue-950 block">
+                                  {rank.averageScore}%
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-medium">
+                                  {rank.totalScore} pts • {rank.subjectCount} subj
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Recently Uploaded by This Staff */}
+                  <div className="pt-4 border-t border-slate-100">
+                    <h4 className="font-serif font-black text-blue-900 text-base mb-3">Recently Uploaded Marks</h4>
+                    <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                      {myResults.length === 0 ? (
+                        <div className="p-6 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 font-bold uppercase text-[11px]">
+                          No assessment marks uploaded by you yet.
+                        </div>
+                      ) : (
+                        myResults.slice(0, 10).map(res => {
+                          const st = allStudents.find(s => s.name.toLowerCase() === res.studentName.toLowerCase());
+                          const ca = res.caScore !== undefined ? res.caScore : Math.round(res.score * 0.4);
+                          const ex = res.examScore !== undefined ? res.examScore : (res.score - ca);
+
+                          return (
+                            <div key={res.id} className="p-4 bg-white border border-slate-200 rounded-2xl shadow-2xs flex justify-between items-center">
+                              <div>
+                                <p className="font-black text-blue-950 text-xs">{res.studentName} ({res.grade})</p>
+                                <p className="text-[10px] text-slate-400 font-bold">
+                                  {res.subject} • {res.term}
+                                </p>
+                                <p className="text-[10px] text-slate-600 font-mono mt-0.5">
+                                  CA: {ca}/40 • Exam: {ex}/60
+                                </p>
+                              </div>
+                              <div className="text-right flex flex-col items-end gap-1">
+                                <span className={`text-base font-black font-mono ${res.score >= 50 ? 'text-emerald-700' : 'text-rose-600'}`}>
+                                  {res.score}%
+                                </span>
+                                {st && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setPreviewStudentReport(st)}
+                                    className="text-[9px] font-black text-blue-900 bg-yellow-400 hover:bg-yellow-300 px-2 py-0.5 rounded uppercase tracking-wider transition-all"
+                                  >
+                                    Report PDF
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
            </div>
@@ -699,6 +1148,22 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
           </div>
         )}
       </div>
+
+      {/* Official Standard Report Card Modal for Teachers to Preview / Print */}
+      {previewStudentReport && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto print:p-0 print:bg-white print:static">
+          <div className="bg-white rounded-3xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl relative my-auto print:shadow-none print:border-none print:p-0">
+            <StandardReportCard 
+              student={previewStudentReport}
+              results={results.filter(r => r.studentName.toLowerCase().trim() === previewStudentReport.name.toLowerCase().trim())}
+              term="First Term"
+              session="2025/2026 Academic Session"
+              onClose={() => setPreviewStudentReport(null)}
+              showControls={true}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

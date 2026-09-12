@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { FeeStructure, StudentApplication, Announcement, TeacherAccount, StudentResult, Course, GradeLevel, AttendanceRecord, StudentAccount, FeePayment, StaffPagePermission, ALL_STAFF_PAGES, AppState, ParentAccount } from '../types';
+import { FeeStructure, StudentApplication, Announcement, TeacherAccount, StudentResult, Course, GradeLevel, AttendanceRecord, StudentAccount, FeePayment, StaffPagePermission, ALL_STAFF_PAGES, AppState, ParentAccount, ResultPublishRequest } from '../types';
 import { GRADE_GROUPS, GRADE_ORDER } from '../constants';
 import { PaymentReviewDashboard } from './PaymentReviewDashboard';
 import {
@@ -25,6 +25,7 @@ interface AdminPanelProps {
   parents?: ParentAccount[];
   calendar: string;
   payments: FeePayment[];
+  resultPublishRequests?: ResultPublishRequest[];
   onUpdateFee: (grade: string, amount: number) => void;
   onAddAnnouncement: (title: string, content: string) => void;
   onUpdateAnnouncement?: (announcement: Announcement) => void;
@@ -41,6 +42,9 @@ interface AdminPanelProps {
   onDeclinePayment?: (paymentId: string, reason: string) => void;
   onConfirmAllPending?: () => void;
   onAddChatMessage?: (paymentId: string, message: string, sender: 'admin' | 'student') => void;
+  onApprovePublishRequest?: (requestId: string) => void;
+  onRejectPublishRequest?: (requestId: string, feedback: string) => void;
+  onBroadcastResultsToClass?: (grade: GradeLevel, term: string) => void;
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ 
@@ -55,6 +59,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   parents = [],
   calendar,
   payments,
+  resultPublishRequests = [],
   onUpdateFee,
   onAddAnnouncement,
   onUpdateAnnouncement,
@@ -70,9 +75,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onConfirmPayment,
   onDeclinePayment,
   onConfirmAllPending,
-  onAddChatMessage
+  onAddChatMessage,
+  onApprovePublishRequest,
+  onRejectPublishRequest,
+  onBroadcastResultsToClass
 }) => {
-  const [activeTab, setActiveTab] = useState<'attendance' | 'payments' | 'fees' | 'applications' | 'teachers' | 'courses' | 'calendar' | 'announcements' | 'access' | 'parents' | 'export'>('attendance');
+  const [activeTab, setActiveTab] = useState<'attendance' | 'payments' | 'resultPublish' | 'fees' | 'applications' | 'teachers' | 'courses' | 'calendar' | 'announcements' | 'access' | 'parents' | 'export'>('attendance');
+  const [rejectModalRequestId, setRejectModalRequestId] = useState<string | null>(null);
+  const [rejectFeedbackText, setRejectFeedbackText] = useState<string>('');
   
   // States for forms
   const [annTitle, setAnnTitle] = useState('');
@@ -213,6 +223,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         {[
           { id: 'attendance', label: 'Attendance Hub' },
           { id: 'payments', label: `💳 Fee Verification (${payments.filter(p => p.status === 'pending').length} Pending)` },
+          { id: 'resultPublish', label: `📢 Result Releases (${resultPublishRequests.filter(r => r.status === 'pending').length} Pending)` },
           { id: 'fees', label: 'Fees Config' },
           { id: 'applications', label: 'Admissions' },
           { id: 'teachers', label: 'Staff' },
@@ -321,6 +332,242 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               onConfirmAllPending={onConfirmAllPending || (() => {})}
               onAddChatMessage={onAddChatMessage || ((id, msg, sender) => {})}
             />
+          </div>
+        )}
+
+        {activeTab === 'resultPublish' && (
+          <div className="space-y-8">
+            <div className="bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-950 text-white rounded-[2.5rem] p-8 sm:p-10 border-4 border-yellow-400 shadow-xl relative overflow-hidden">
+              <div className="relative z-10">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-blue-800 pb-5 mb-6">
+                  <div>
+                    <h3 className="font-serif font-black text-2xl sm:text-3xl text-yellow-300">
+                      Staff Result Publication Authorizations
+                    </h3>
+                    <p className="text-xs sm:text-sm text-blue-200 mt-1">
+                      Staff request administrative clearance to deliver terminal assessment reports to all pupils at once
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-4 py-2 bg-yellow-400 text-blue-950 font-black text-xs uppercase rounded-xl shadow-md">
+                      {resultPublishRequests.filter(r => r.status === 'pending').length} Action Required
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+                  <div className="bg-white/10 p-4 rounded-2xl border border-white/10">
+                    <span className="block text-[10px] font-black uppercase text-blue-300">Pending Clearances</span>
+                    <span className="font-serif font-black text-3xl text-yellow-400">
+                      {resultPublishRequests.filter(r => r.status === 'pending').length}
+                    </span>
+                  </div>
+                  <div className="bg-white/10 p-4 rounded-2xl border border-white/10">
+                    <span className="block text-[10px] font-black uppercase text-blue-300">Approved Releases</span>
+                    <span className="font-serif font-black text-3xl text-emerald-400">
+                      {resultPublishRequests.filter(r => r.status === 'approved').length}
+                    </span>
+                  </div>
+                  <div className="bg-white/10 p-4 rounded-2xl border border-white/10">
+                    <span className="block text-[10px] font-black uppercase text-blue-300">Total Recorded Results</span>
+                    <span className="font-serif font-black text-3xl text-white">
+                      {results.length}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Pending & Historic Publication Clearance Requests */}
+            <div className="bg-white rounded-[2rem] border-2 border-slate-100 overflow-hidden shadow-sm">
+              <div className="p-6 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                  <h4 className="font-serif font-black text-blue-950 text-lg">Clearance Requests Roster</h4>
+                  <p className="text-xs text-slate-500 font-medium">Review and grant permissions for staff to send terminal results to all enrolled pupils</p>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left min-w-[750px]">
+                  <thead>
+                    <tr className="bg-slate-50/80 text-slate-400 text-[11px] font-black uppercase tracking-wider border-b border-slate-100">
+                      <th className="px-6 py-4">Submitted</th>
+                      <th className="px-6 py-4">Staff Member</th>
+                      <th className="px-6 py-4">Target Class</th>
+                      <th className="px-6 py-4">Academic Term</th>
+                      <th className="px-6 py-4 text-center">Pupils</th>
+                      <th className="px-6 py-4 text-center">Scores</th>
+                      <th className="px-6 py-4 text-center">Status</th>
+                      <th className="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs">
+                    {resultPublishRequests.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="py-20 text-center text-slate-400 font-bold uppercase text-xs tracking-widest">
+                          No result publication requests submitted yet. Staff can request permission in the Grading Portal.
+                        </td>
+                      </tr>
+                    ) : (
+                      resultPublishRequests.map(req => {
+                        const classStudents = students.filter(s => s.grade === req.grade);
+                        const classScores = results.filter(r => r.grade === req.grade && r.term.toLowerCase() === req.term.toLowerCase());
+
+                        return (
+                          <tr key={req.id} className="hover:bg-blue-50/30 transition-colors">
+                            <td className="px-6 py-4 text-slate-500 font-mono text-[11px]">
+                              {new Date(req.timestamp).toLocaleDateString()}<br/>
+                              <span className="text-[10px] text-slate-400">{new Date(req.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <p className="font-black text-blue-950">{req.teacherName}</p>
+                              <span className="text-[10px] text-slate-400 font-mono">REQ: {req.id.slice(-6)}</span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="px-3 py-1 bg-yellow-100 text-blue-900 rounded-lg font-black text-xs">
+                                {req.grade}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 font-bold text-slate-700">
+                              {req.term}
+                            </td>
+                            <td className="px-6 py-4 text-center font-mono font-bold text-blue-950">
+                              {classStudents.length}
+                            </td>
+                            <td className="px-6 py-4 text-center font-mono font-bold text-indigo-900">
+                              {classScores.length}
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                                req.status === 'approved' 
+                                  ? 'bg-emerald-100 text-emerald-800' 
+                                  : req.status === 'pending'
+                                    ? 'bg-amber-100 text-amber-900 animate-pulse'
+                                    : 'bg-rose-100 text-rose-800'
+                              }`}>
+                                {req.status === 'approved' ? '✓ Authorized' : req.status === 'pending' ? '⏳ Awaiting Review' : '✕ Rejected'}
+                              </span>
+                              {req.status === 'rejected' && req.adminFeedback && (
+                                <p className="text-[10px] text-rose-600 mt-1 italic">"{req.adminFeedback}"</p>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                {req.status === 'pending' && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => onApprovePublishRequest && onApprovePublishRequest(req.id)}
+                                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-[11px] uppercase tracking-wider transition-all shadow-xs active:scale-95 flex items-center gap-1"
+                                      title="Authorize staff to send results to all pupils"
+                                    >
+                                      <span>✓</span>
+                                      <span>Authorize</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setRejectModalRequestId(req.id);
+                                        setRejectFeedbackText('');
+                                      }}
+                                      className="px-2.5 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all"
+                                      title="Decline and request revision"
+                                    >
+                                      Decline
+                                    </button>
+                                  </>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() => onBroadcastResultsToClass && onBroadcastResultsToClass(req.grade, req.term)}
+                                  className="px-3 py-1.5 bg-blue-900 hover:bg-blue-800 text-yellow-300 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all shadow-xs active:scale-95 flex items-center gap-1"
+                                  title="Deliver results to all pupils and parents right now"
+                                >
+                                  <span>📢</span>
+                                  <span>Broadcast Now</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Direct Admin Fast-Publish Widget */}
+            <div className="bg-slate-50 border-2 border-slate-200 rounded-3xl p-6 sm:p-8 space-y-4">
+              <h4 className="font-serif font-black text-blue-950 text-base flex items-center gap-2">
+                <span>⚡</span>
+                <span>Immediate Administrator Broadcast (All Classes)</span>
+              </h4>
+              <p className="text-xs text-slate-500">
+                As the School Administrator, you can bypass requests and immediately publish results for any class with a single click.
+              </p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {GRADE_GROUPS.flatMap(g => g.levels).map(lvl => (
+                  <button
+                    key={lvl}
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm(`Broadcast official results for ${lvl} to all pupils now?`)) {
+                        if (onBroadcastResultsToClass) {
+                          onBroadcastResultsToClass(lvl as GradeLevel, 'First Term');
+                        }
+                      }
+                    }}
+                    className="px-3.5 py-2 bg-white hover:bg-yellow-400 hover:text-blue-950 text-blue-900 border border-slate-200 rounded-xl text-xs font-black transition-all shadow-2xs"
+                  >
+                    Send {lvl} Results
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Rejection / Revision Note Modal */}
+            {rejectModalRequestId && (
+              <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-blue-950/80 backdrop-blur-xs">
+                <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border-4 border-yellow-400 space-y-4">
+                  <h4 className="font-serif font-black text-blue-950 text-lg">
+                    Return Request with Feedback
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Specify what the staff member should review or adjust before the results can be sent to pupils.
+                  </p>
+                  <textarea
+                    rows={3}
+                    value={rejectFeedbackText}
+                    onChange={(e) => setRejectFeedbackText(e.target.value)}
+                    placeholder="e.g. Please verify Mathematics test scores for the 3 pupils with zero scores before release."
+                    className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-xs font-bold outline-none focus:border-blue-900"
+                  />
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setRejectModalRequestId(null)}
+                      className="px-4 py-2 rounded-xl text-xs font-black text-slate-500 hover:bg-slate-100"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (onRejectPublishRequest && rejectModalRequestId) {
+                          onRejectPublishRequest(rejectModalRequestId, rejectFeedbackText || 'Please review scores and resubmit.');
+                        }
+                        setRejectModalRequestId(null);
+                      }}
+                      className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md"
+                    >
+                      Confirm & Send Feedback
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

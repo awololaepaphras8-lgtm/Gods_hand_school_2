@@ -222,10 +222,6 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
                 onError={(e) => { e.currentTarget.src = 'hands.jpg'; }}
               />
             </div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-900 rounded-full text-[10px] font-black uppercase tracking-wider mb-2 border border-emerald-300">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Anti-Injection Guard & POST-Secured</span>
-            </div>
             <h2 className="text-2xl sm:text-3xl font-serif font-black text-blue-900 leading-tight">
               {mode === 'login' && 'Parent & Guardian Login'}
               {mode === 'signup' && 'Create Parent Account'}

@@ -74,60 +74,7 @@ export const Hero: React.FC<HeroProps> = ({
         <div className="absolute inset-0 bg-radial-gradient from-transparent via-blue-950/30 to-slate-950/80" />
       </div>
 
-      {/* Floating Background Aerial View HUD Control Strip */}
-      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 flex flex-wrap items-center justify-between gap-3 text-[11px] font-bold text-blue-200">
-        <div className="flex items-center gap-2 bg-blue-950/90 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-yellow-400/70 shadow-lg">
-          <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
-          <span className="w-2.5 h-2.5 rounded-full bg-red-500 -ml-3.5"></span>
-          <span className="text-yellow-400 font-black uppercase tracking-wider">Aerial Campus View:</span>
-          <span className="text-white">Campus & Surrounding Grounds Flyover</span>
-        </div>
 
-        <div className="flex items-center gap-2">
-          {/* Toggle Pause/Play */}
-          <button
-            onClick={toggleVideoPlayback}
-            className="px-3 py-1.5 bg-blue-900/90 hover:bg-blue-800 text-yellow-300 rounded-xl border border-yellow-400/40 backdrop-blur-md transition-colors flex items-center gap-1.5 shadow-md font-bold"
-            title={isVideoPlaying ? "Pause Background Aerial Video" : "Play Background Aerial Video"}
-          >
-            <span>{isVideoPlaying ? '⏸️' : '▶️'}</span>
-            <span className="hidden sm:inline">{isVideoPlaying ? 'Pause' : 'Play Video'}</span>
-          </button>
-
-          {/* Toggle Mute */}
-          <button
-            onClick={toggleMute}
-            className="px-3 py-1.5 bg-blue-900/90 hover:bg-blue-800 text-blue-100 rounded-xl border border-blue-700/80 backdrop-blur-md transition-colors flex items-center gap-1 shadow-md font-bold"
-            title={isMuted ? "Unmute Sound" : "Mute Sound"}
-          >
-            <span>{isMuted ? '🔇' : '🔊'}</span>
-          </button>
-
-          {/* High Clarity Mode */}
-          <button
-            onClick={() => setIsHighClearMode(!isHighClearMode)}
-            className={`px-3.5 py-1.5 rounded-xl border backdrop-blur-md transition-all flex items-center gap-1.5 text-[10px] sm:text-[11px] ${
-              isHighClearMode 
-                ? 'bg-yellow-400 text-blue-950 border-yellow-500 font-black shadow-lg' 
-                : 'bg-blue-900/80 hover:bg-blue-800 text-yellow-300 border-yellow-400/50 font-bold shadow-md'
-            }`}
-            title="Increase background aerial video clarity"
-          >
-            <span>👁️</span>
-            <span>{isHighClearMode ? 'Text Reading Mode' : 'Clear Aerial View'}</span>
-          </button>
-
-          {/* Fullscreen Tour Button */}
-          <button
-            onClick={() => setIsAerialModalOpen(true)}
-            className="px-3 py-1.5 bg-blue-950/90 hover:bg-blue-800 text-white rounded-xl border border-blue-600 backdrop-blur-md transition-colors flex items-center gap-1 shadow-md font-bold text-[10px] sm:text-[11px]"
-            title="Watch Fullscreen Aerial Tour"
-          >
-            <span>🚁</span>
-            <span className="hidden sm:inline">Fullscreen Tour</span>
-          </button>
-        </div>
-      </div>
       
       {/* MAIN HERO CONTENT */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16 grid lg:grid-cols-12 gap-10 lg:gap-12 items-center">

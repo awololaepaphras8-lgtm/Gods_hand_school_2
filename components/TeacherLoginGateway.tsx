@@ -159,10 +159,6 @@ export const TeacherLoginGateway: React.FC<TeacherLoginGatewayProps> = ({
             </div>
 
             <div className="text-center mb-8">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-900 rounded-full text-[10px] font-black uppercase tracking-wider mb-2 border border-emerald-300">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>Anti-Injection Guard & POST-Secured</span>
-              </div>
               <h2 className="text-2xl sm:text-3xl font-black text-blue-900 uppercase tracking-tighter font-serif">Staff Portal</h2>
               <div className="h-1.5 w-16 bg-blue-900 rounded-full mx-auto mt-2 mb-2"></div>
               <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Teacher & Academic Staff Login</p>

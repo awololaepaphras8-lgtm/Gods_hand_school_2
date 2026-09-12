@@ -336,7 +336,7 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                       <div>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Payment Purpose</p>
                         <p className="text-xs font-bold text-slate-700 capitalize">
-                          {payment.type === 'full' ? 'Full Session' : payment.type === 'installment_1' ? '1st Installment' : '2nd Installment'}
+                          {payment.type === 'full' ? 'Full Session' : payment.type === 'installment_1' ? '1st Installment' : payment.type === 'result_fee' ? 'Result Checker Fee (₦1,000)' : '2nd Installment'}
                         </p>
                       </div>
                       <div>

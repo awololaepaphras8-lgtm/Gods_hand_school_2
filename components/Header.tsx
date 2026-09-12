@@ -31,6 +31,7 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
 
   const menuItems = [
     { label: 'School Home', view: 'home', icon: '🏠' },
+    { label: 'Check Student Results (₦1,000)', view: 'resultChecker', icon: '📜' },
     { label: 'Parent Portal & Attendance', view: role === UserRole.PARENT ? 'parentPortal' : 'parentAuth', icon: '👨‍👩‍👧‍👦' },
     { label: 'About School & Results', view: 'about', icon: '🏛️' },
     { label: 'Check School Fees', view: 'feeChecker', icon: '💳' },

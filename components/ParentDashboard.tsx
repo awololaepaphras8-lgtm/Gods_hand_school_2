@@ -12,6 +12,7 @@ import {
 } from '../types';
 import { GRADE_GROUPS } from '../constants';
 import { QRCodeSVG } from 'qrcode.react';
+import { StandardReportCard } from './StandardReportCard';
 
 interface ParentDashboardProps {
   parent: ParentAccount;
@@ -57,6 +58,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentTargetChild, setPaymentTargetChild] = useState<StudentAccount | null>(null);
   const [showChildQrModal, setShowChildQrModal] = useState(false);
+  const [selectedChildForReport, setSelectedChildForReport] = useState<StudentAccount | null>(null);
 
   // Link Child Form
   const [linkStudentId, setLinkStudentId] = useState('');
@@ -681,16 +683,27 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
               {/* SECTION 3: ACADEMIC RESULTS FOR THIS CHILD */}
               <div className="space-y-4 pt-6 border-t border-slate-100">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <span className="text-xl">📊</span>
                     <h3 className="text-lg font-serif font-black text-blue-900">
                       Academic Results & Subject Scores for {activeChild.name}
                     </h3>
                   </div>
-                  <span className="text-xs text-slate-400 font-bold">
-                    Oyo State Unified Assessment Standards
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedChildForReport(activeChild)}
+                      className="px-3.5 py-1.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-xs flex items-center gap-1.5 active:scale-95"
+                      title="View and download standard terminal report card with school logo and seal"
+                    >
+                      <span>📄</span>
+                      <span>Official Report Card (PDF)</span>
+                    </button>
+                    <span className="text-xs text-slate-400 font-bold hidden md:inline">
+                      Oyo State Standards
+                    </span>
+                  </div>
                 </div>
 
                 {(() => {
@@ -1272,6 +1285,22 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Official Standard Student/Pupil Report Card Modal */}
+      {selectedChildForReport && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto print:p-0 print:bg-white print:static">
+          <div className="bg-white rounded-3xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl relative my-auto print:shadow-none print:border-none print:p-0">
+            <StandardReportCard 
+              student={selectedChildForReport}
+              results={results.filter(r => r.studentName.toLowerCase().trim() === selectedChildForReport.name.toLowerCase().trim())}
+              term="First Term"
+              session="2025/2026 Academic Session"
+              onClose={() => setSelectedChildForReport(null)}
+              showControls={true}
+            />
           </div>
         </div>
       )}

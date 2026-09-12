@@ -92,6 +92,7 @@ export interface StudentAccount {
   email: string;
   password: string;
   grade: GradeLevel;
+  admissionYear?: number;
   createdAt: string;
   entryAllowed?: boolean;
   qrCodeVersion?: number;
@@ -107,12 +108,31 @@ export interface StudentResult {
   grade: GradeLevel;
   subject: string;
   score: number;
+  caScore?: number;
+  examScore?: number;
+  position?: string | number;
   term: string;
   teacherName: string;
   date: string;
+  published?: boolean;
 }
 
-export type PaymentType = 'full' | 'installment_1' | 'installment_2';
+export interface ResultPublishRequest {
+  id: string;
+  teacherName: string;
+  grade: GradeLevel;
+  term: string;
+  subject?: string;
+  studentCount: number;
+  scoreCount: number;
+  status: 'pending' | 'approved' | 'rejected';
+  timestamp: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  adminFeedback?: string;
+}
+
+export type PaymentType = 'full' | 'installment_1' | 'installment_2' | 'result_fee';
 export type PaymentStatus = 'pending' | 'confirmed' | 'declined';
 
 export interface PaymentChatMessage {
@@ -163,4 +183,5 @@ export interface AppState {
   payments: FeePayment[];
   attendance: AttendanceRecord[];
   academicCalendar: string;
+  resultPublishRequests?: ResultPublishRequest[];
 }

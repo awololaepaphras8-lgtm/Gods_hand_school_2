@@ -85,6 +85,8 @@ const DEFAULT_STATE: AppState = {
       grade: 'Primary 4',
       subject: 'Mathematics',
       score: 92,
+      caScore: 36,
+      examScore: 56,
       term: 'First Term',
       teacherName: 'Mr. Benson',
       date: new Date().toLocaleDateString()
@@ -95,6 +97,8 @@ const DEFAULT_STATE: AppState = {
       grade: 'Primary 4',
       subject: 'English Language',
       score: 88,
+      caScore: 34,
+      examScore: 54,
       term: 'First Term',
       teacherName: 'Mrs. Taiwo',
       date: new Date().toLocaleDateString()
@@ -105,12 +109,15 @@ const DEFAULT_STATE: AppState = {
       grade: 'JSS 2',
       subject: 'Basic Science',
       score: 95,
+      caScore: 38,
+      examScore: 57,
       term: 'First Term',
       teacherName: 'Engr. David',
       date: new Date().toLocaleDateString()
     }
   ],
-  academicCalendar: `1. Resumption: Jan 10th\n2. Mid-Term Break: Feb 15th - 17th\n3. Examination Period: March 20th - 30th\n4. Vacation: April 5th`
+  academicCalendar: `1. Resumption: Jan 10th\n2. Mid-Term Break: Feb 15th - 17th\n3. Examination Period: March 20th - 30th\n4. Vacation: April 5th`,
+  resultPublishRequests: []
 };
 
 export const stateService = {
@@ -129,7 +136,8 @@ export const stateService = {
           attendance: parsed.attendance || [],
           courses: parsed.courses || DEFAULT_STATE.courses,
           results: parsed.results || DEFAULT_STATE.results,
-          academicCalendar: parsed.academicCalendar || DEFAULT_STATE.academicCalendar
+          academicCalendar: parsed.academicCalendar || DEFAULT_STATE.academicCalendar,
+          resultPublishRequests: parsed.resultPublishRequests || []
         };
       } catch (e) {
         console.error("Failed to parse state", e);

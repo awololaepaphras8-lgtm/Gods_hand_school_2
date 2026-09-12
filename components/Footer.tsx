@@ -92,8 +92,18 @@ export const Footer: React.FC<FooterProps> = ({ onCheckFees, onNavigate }) => {
             <ul className="space-y-4 text-blue-100/70 font-bold text-sm">
               <li>
                 <button 
-                  onClick={() => onNavigate?.('parentAuth')} 
+                  onClick={() => onNavigate?.('resultChecker')} 
                   className="hover:text-yellow-400 transition-colors flex items-center group text-left text-yellow-300"
+                >
+                  <span className="mr-2 text-yellow-400">»</span> 
+                  <span className="group-hover:translate-x-1 transition-transform font-black">📜 Check Student Results</span>
+                  <span className="ml-2 px-1.5 py-0.5 bg-yellow-400 text-blue-900 text-[9px] font-black rounded uppercase">₦1,000 Fee</span>
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => onNavigate?.('parentAuth')} 
+                  className="hover:text-yellow-400 transition-colors flex items-center group text-left"
                 >
                   <span className="mr-2 text-yellow-400">»</span> 
                   <span className="group-hover:translate-x-1 transition-transform font-black">👨‍👩‍👧‍👦 Parent & Guardian Portal</span>

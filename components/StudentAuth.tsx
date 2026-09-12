@@ -39,6 +39,8 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
   const [regEmail, setRegEmail] = useState('');
   const [regPass, setRegPass] = useState('');
   const [regGrade, setRegGrade] = useState<GradeLevel>('Primary 1');
+  const currentYear = new Date().getFullYear();
+  const [regAdmissionYear, setRegAdmissionYear] = useState<number>(currentYear);
 
   // Forgot Pass State
   const [forgotEmailOrId, setForgotEmailOrId] = useState('');
@@ -110,7 +112,8 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
       name: regName.trim(), 
       email: regEmail.trim().toLowerCase(), 
       password: regPass.trim(), 
-      grade: regGrade 
+      grade: regGrade,
+      admissionYear: regAdmissionYear
     });
   };
 
@@ -168,10 +171,6 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
           </div>
 
           <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-900 rounded-full text-[10px] font-black uppercase tracking-wider mb-2 border border-emerald-300">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>POST-Secured & Anti-Hacking Guard Active</span>
-            </div>
             <h2 className="text-2xl sm:text-3xl font-black text-blue-900 uppercase tracking-tighter font-serif">
               {mode === 'login' && 'Students & Pupils Login'}
               {mode === 'register' && 'New Student & Pupil Account'}
@@ -322,6 +321,60 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
                    {GRADE_GROUPS.flatMap(g => g.levels).map(l => <option key={l} value={l}>{l}</option>)}
                 </select>
               </div>
+
+              {/* Year Student Started Attending The School */}
+              <div className="space-y-2 p-3 bg-blue-50/70 border-2 border-blue-100 rounded-2xl">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] font-black text-blue-950 uppercase tracking-wider flex items-center gap-1">
+                    <span>📅</span>
+                    <span>Year Started Attending School</span>
+                  </label>
+                  <span className="text-[11px] font-black bg-yellow-400 text-blue-950 px-2 py-0.5 rounded-lg shadow-xs">
+                    {regAdmissionYear}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-4 gap-1.5">
+                  {[currentYear, currentYear - 1, currentYear - 2, currentYear - 3, currentYear - 4, currentYear - 5, currentYear - 6].map((yr) => (
+                    <button
+                      type="button"
+                      key={yr}
+                      onClick={() => setRegAdmissionYear(yr)}
+                      className={`py-2 px-1 text-xs font-black rounded-xl border transition-all ${
+                        regAdmissionYear === yr
+                          ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md scale-[1.02]'
+                          : 'bg-white text-slate-700 border-blue-100 hover:bg-blue-100/50'
+                      }`}
+                    >
+                      {yr === currentYear ? `${yr} ★` : yr}
+                    </button>
+                  ))}
+                  
+                  {/* Stepper buttons to easily adjust to any past year */}
+                  <div className="flex items-center bg-white border border-blue-200 rounded-xl overflow-hidden shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => setRegAdmissionYear(prev => Math.max(2010, prev - 1))}
+                      className="w-1/2 py-2 text-xs font-black text-blue-900 hover:bg-yellow-200 active:bg-yellow-300 transition-colors"
+                      title="Earlier Year"
+                    >
+                      ▼
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRegAdmissionYear(prev => Math.min(currentYear + 1, prev + 1))}
+                      className="w-1/2 py-2 text-xs font-black text-blue-900 hover:bg-yellow-200 active:bg-yellow-300 transition-colors"
+                      title="Later Year"
+                    >
+                      ▲
+                    </button>
+                  </div>
+                </div>
+                <p className="text-[9px] text-blue-900/70 font-medium">
+                  Click the button representing the year the student/pupil first enrolled at God's Hand International Model School.
+                </p>
+              </div>
+
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Password</label>
                 <input 

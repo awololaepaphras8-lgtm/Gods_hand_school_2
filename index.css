@@ -85,17 +85,53 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Print optimizations for receipts, student IDs and attendance slips */
+/* Print optimizations for official report cards, receipts, student IDs and attendance slips */
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm;
+  }
+
   body {
     background: white !important;
-    color: black !important;
+    color: #0f172a !important;
     padding: 0 !important;
+    margin: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
+
   header, 
   footer, 
+  nav,
   button, 
-  .no-print {
+  .no-print,
+  #whatsapp-chat-widget,
+  [data-no-print="true"] {
     display: none !important;
+  }
+
+  /* Make sure container expands nicely and shadows/rounded corners adjust for paper */
+  .standard-report-card {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 16px 20px !important;
+    border: 2px solid #1e3a8a !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .standard-report-card table {
+    width: 100% !important;
+    page-break-inside: auto;
+  }
+
+  .standard-report-card tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
   }
 }

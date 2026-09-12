@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { UserRole, AppState, StudentApplication, Announcement, TeacherAccount, StudentResult, Course, GradeLevel, StudentAccount, FeePayment, AttendanceRecord, StaffPagePermission, ParentAccount, PaymentStatus } from './types';
+import { UserRole, AppState, StudentApplication, Announcement, TeacherAccount, StudentResult, Course, GradeLevel, StudentAccount, FeePayment, AttendanceRecord, StaffPagePermission, ParentAccount, PaymentStatus, ResultPublishRequest } from './types';
 import { stateService } from './services/stateService';
 import { setupRealtimeSync, fetchSupabaseState, realtimeService, isSupabaseConfigured } from './services/supabaseService';
 import { GRADE_ORDER } from './constants';
@@ -10,6 +10,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { StudentPortal } from './components/StudentPortal';
 import { StudentAuth } from './components/StudentAuth';
 import { StudentFeeChecker } from './components/StudentFeeChecker';
+import { StudentResultChecker } from './components/StudentResultChecker';
 import { AdminLoginGateway } from './components/AdminLoginGateway';
 import { TeacherLoginGateway } from './components/TeacherLoginGateway';
 import { ParentAuth } from './components/ParentAuth';
@@ -26,7 +27,7 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [currentParentId, setCurrentParentId] = useState<string | null>(null);
   const [state, setState] = useState<AppState>(stateService.getState());
-  const [view, setView] = useState<'home' | 'portal' | 'apply' | 'admin' | 'teacherLogin' | 'teacher' | 'studentAuth' | 'feeChecker' | 'about' | 'parentAuth' | 'parentPortal'>('home');
+  const [view, setView] = useState<'home' | 'portal' | 'apply' | 'admin' | 'teacherLogin' | 'teacher' | 'studentAuth' | 'feeChecker' | 'resultChecker' | 'about' | 'parentAuth' | 'parentPortal'>('home');
   const [loginError, setLoginError] = useState('');
   const [showQRModal, setShowQRModal] = useState(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
@@ -162,6 +163,114 @@ const App: React.FC = () => {
       results: [newResult, ...prev.results]
     }));
     realtimeService.addResult(newResult);
+  };
+
+  const handleRequestPublishResults = (grade: GradeLevel, term: string, subject?: string) => {
+    const studentCount = state.studentAccounts.filter(s => s.grade === grade).length;
+    const scoreCount = state.results.filter(r => r.grade === grade && r.term.toLowerCase() === term.toLowerCase()).length;
+    
+    const newReq: ResultPublishRequest = {
+      id: `PUB-REQ-${Date.now()}`,
+      teacherName: currentUser || 'Staff',
+      grade,
+      term,
+      subject,
+      studentCount,
+      scoreCount,
+      status: 'pending',
+      timestamp: new Date().toISOString()
+    };
+
+    setState(prev => {
+      const existing = (prev.resultPublishRequests || []).filter(r => !(r.grade === grade && r.term.toLowerCase() === term.toLowerCase()));
+      return {
+        ...prev,
+        resultPublishRequests: [newReq, ...existing]
+      };
+    });
+  };
+
+  const handleApprovePublishRequest = (requestId: string) => {
+    const now = new Date().toISOString();
+    const reviewer = currentUser || 'School Administrator';
+
+    setState(prev => {
+      const req = (prev.resultPublishRequests || []).find(r => r.id === requestId);
+      if (!req) return prev;
+
+      const updatedRequests = (prev.resultPublishRequests || []).map(r => 
+        r.id === requestId 
+          ? { ...r, status: 'approved' as const, reviewedAt: now, reviewedBy: reviewer }
+          : r
+      );
+
+      const updatedResults = prev.results.map(res => {
+        if (res.grade === req.grade && res.term.toLowerCase() === req.term.toLowerCase()) {
+          return { ...res, published: true };
+        }
+        return res;
+      });
+
+      const publishAnnouncement: Announcement = {
+        id: `ANN-${Date.now()}`,
+        title: `Official Report Cards Released: ${req.grade} (${req.term})`,
+        content: `Academic assessment and terminal report cards for ${req.grade} (${req.term}) have been officially approved and published. Students and parents can now check positions and download standard PDF result sheets.`,
+        date: new Date().toLocaleDateString()
+      };
+
+      return {
+        ...prev,
+        resultPublishRequests: updatedRequests,
+        results: updatedResults,
+        announcements: [publishAnnouncement, ...prev.announcements]
+      };
+    });
+  };
+
+  const handleRejectPublishRequest = (requestId: string, feedback: string) => {
+    const now = new Date().toISOString();
+    const reviewer = currentUser || 'School Administrator';
+
+    setState(prev => ({
+      ...prev,
+      resultPublishRequests: (prev.resultPublishRequests || []).map(r => 
+        r.id === requestId 
+          ? { ...r, status: 'rejected' as const, reviewedAt: now, reviewedBy: reviewer, adminFeedback: feedback }
+          : r
+      )
+    }));
+  };
+
+  const handleSendResultsToPupils = (grade: GradeLevel, term: string) => {
+    setState(prev => {
+      const updatedResults = prev.results.map(r => {
+        if (r.grade === grade && r.term.toLowerCase() === term.toLowerCase()) {
+          return { ...r, published: true };
+        }
+        return r;
+      });
+
+      const updatedRequests = (prev.resultPublishRequests || []).map(r => {
+        if (r.grade === grade && r.term.toLowerCase() === term.toLowerCase()) {
+          return { ...r, status: 'approved' as const };
+        }
+        return r;
+      });
+
+      const publishAnnouncement: Announcement = {
+        id: `ANN-${Date.now()}`,
+        title: `Official Terminal Results: ${grade} (${term})`,
+        content: `All terminal scores and report cards for ${grade} (${term}) have been delivered to all pupils. Log in to your student or parent dashboard to view standings and download your official report card.`,
+        date: new Date().toLocaleDateString()
+      };
+
+      return {
+        ...prev,
+        results: updatedResults,
+        resultPublishRequests: updatedRequests,
+        announcements: [publishAnnouncement, ...prev.announcements]
+      };
+    });
   };
 
   const addPayment = (paymentData: Omit<FeePayment, 'id' | 'date'>) => {
@@ -335,6 +444,7 @@ const App: React.FC = () => {
       setRole(UserRole.STUDENT);
       setCurrentUser(student.name);
       setLoginError('');
+      setView('portal');
       return true;
     } else {
       setLoginError("Invalid student credentials.");
@@ -982,24 +1092,86 @@ const App: React.FC = () => {
 
                 <div className="mt-16 grid md:grid-cols-2 gap-10 text-left">
                    <div>
-                    <h3 className="text-xl font-black text-blue-900 mb-6 font-serif border-b-2 border-slate-50 pb-2">Academic Record</h3>
-                    <div className="space-y-3">
-                      {state.results.filter(r => r.studentName === currentUser).length === 0 ? (
-                        <p className="p-8 text-center text-slate-300 font-black uppercase text-[10px] bg-slate-50 rounded-2xl border-2 border-dashed">No scores uploaded yet</p>
-                      ) : (
-                        state.results.filter(r => r.studentName === currentUser).map(result => (
-                          <div key={result.id} className="p-5 border border-slate-100 rounded-2xl flex justify-between items-center bg-slate-50 hover:bg-white hover:shadow-md transition-all">
-                            <div>
-                              <p className="font-black text-blue-900">{result.subject}</p>
-                              <p className="text-[10px] text-slate-400 font-black uppercase">{result.term}</p>
-                            </div>
-                            <div className={`text-xl font-black ${result.score >= 50 ? 'text-green-600' : 'text-red-500'}`}>
-                              {result.score}%
-                            </div>
-                          </div>
-                        ))
-                      )}
+                    <div className="flex justify-between items-center mb-6 border-b-2 border-slate-50 pb-2">
+                      <h3 className="text-xl font-black text-blue-900 font-serif">Academic Record</h3>
+                      <button
+                        onClick={() => {
+                          setView('resultChecker');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="px-3 py-1 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all shadow-xs"
+                      >
+                        📄 Download Result PDF →
+                      </button>
                     </div>
+
+                    {(() => {
+                      const studentPayments = currentStudentObj 
+                        ? state.payments.filter(p => p.studentId === currentStudentObj.id || p.studentName.toLowerCase() === currentStudentObj.name.toLowerCase())
+                        : [];
+                      const confirmedResultPayment = studentPayments.find(p => p.type === 'result_fee' && p.status === 'confirmed');
+                      const pendingResultPayment = studentPayments.find(p => p.type === 'result_fee' && p.status === 'pending');
+
+                      if (!confirmedResultPayment) {
+                        return (
+                          <div className="p-6 bg-amber-50 rounded-2xl border-2 border-amber-200 text-center space-y-3">
+                            <div className="text-3xl">🔒</div>
+                            <h4 className="font-serif font-black text-blue-900 text-sm">
+                              Result Slip Locked
+                            </h4>
+                            <p className="text-xs text-amber-900 leading-relaxed font-medium">
+                              {pendingResultPayment 
+                                ? "Your proof of payment (₦1,000) has been uploaded and is currently awaiting confirmation from the administrator."
+                                : "To view your termly scores and official report card, a result fee of ₦1,000 is required with transaction receipt confirmation."
+                              }
+                            </p>
+                            <button
+                              onClick={() => {
+                                setView('resultChecker');
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              className="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md inline-block"
+                            >
+                              {pendingResultPayment ? "Check Payment Status" : "Pay ₦1,000 & Upload Receipt →"}
+                            </button>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="space-y-3">
+                          <button
+                            onClick={() => {
+                              setView('resultChecker');
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="w-full py-2.5 px-4 bg-blue-900 hover:bg-blue-800 text-yellow-300 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-between shadow-sm"
+                          >
+                            <span className="flex items-center gap-2">
+                              <span>📥</span>
+                              <span>Download Standard Result Sheet (PDF)</span>
+                            </span>
+                            <span className="text-[10px] bg-yellow-400 text-blue-950 px-2 py-0.5 rounded font-black">Official Crest</span>
+                          </button>
+
+                          {state.results.filter(r => r.studentName === currentUser).length === 0 ? (
+                            <p className="p-8 text-center text-slate-300 font-black uppercase text-[10px] bg-slate-50 rounded-2xl border-2 border-dashed">No scores uploaded yet</p>
+                          ) : (
+                            state.results.filter(r => r.studentName === currentUser).map(result => (
+                              <div key={result.id} className="p-5 border border-slate-100 rounded-2xl flex justify-between items-center bg-slate-50 hover:bg-white hover:shadow-md transition-all">
+                                <div>
+                                  <p className="font-black text-blue-900">{result.subject}</p>
+                                  <p className="text-[10px] text-slate-400 font-black uppercase">{result.term}</p>
+                                </div>
+                                <div className={`text-xl font-black ${result.score >= 50 ? 'text-green-600' : 'text-red-500'}`}>
+                                  {result.score}%
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div>
                     <h3 className="text-xl font-black text-blue-900 mb-6 font-serif border-b-2 border-slate-50 pb-2">Attendance History</h3>
@@ -1094,11 +1266,14 @@ const App: React.FC = () => {
                calendar={state.academicCalendar}
                announcements={state.announcements}
                allowedPages={currentTeacherObj?.allowedPages}
+               resultPublishRequests={state.resultPublishRequests || []}
                onAddCourse={addCourse}
                onDuplicateCourse={duplicateCourse}
                onAddResult={addResult}
                onMarkAttendance={markAttendance}
                onShiftStudent={shiftStudentToNextClass}
+               onRequestPublishResults={handleRequestPublishResults}
+               onSendResultsToPupils={handleSendResultsToPupils}
              />
            </div>
         )}
@@ -1123,6 +1298,32 @@ const App: React.FC = () => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               onGoToRegister={() => {
+                setView('studentAuth');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+          </div>
+        )}
+
+        {view === 'resultChecker' && (
+          <div className="max-w-5xl mx-auto py-12 px-4">
+            <StudentResultChecker 
+              students={state.studentAccounts}
+              results={state.results}
+              payments={state.payments}
+              currentStudent={currentStudentObj || null}
+              isLoggedIn={role === UserRole.STUDENT && !!currentStudentObj}
+              onLogin={(emailOrId, pass) => {
+                return handleStudentLogin(emailOrId, pass);
+              }}
+              onSubmitResultPayment={(paymentData) => {
+                return handleSubmitParentPayment(paymentData);
+              }}
+              onBack={() => {
+                setView(role === UserRole.STUDENT ? 'portal' : 'home');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onGoToStudentAuth={() => {
                 setView('studentAuth');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
@@ -1157,10 +1358,14 @@ const App: React.FC = () => {
                 onToggleStudentEntry={toggleStudentEntry}
                 onAdminUnlinkChild={handleAdminUnlinkChild}
                 payments={state.payments}
+                resultPublishRequests={state.resultPublishRequests || []}
                 onConfirmPayment={handleConfirmPayment}
                 onDeclinePayment={handleDeclinePayment}
                 onConfirmAllPending={handleConfirmAllPending}
                 onAddChatMessage={handleAddPaymentChatMessage}
+                onApprovePublishRequest={handleApprovePublishRequest}
+                onRejectPublishRequest={handleRejectPublishRequest}
+                onBroadcastResultsToClass={handleSendResultsToPupils}
               />
             </div>
           ) : (

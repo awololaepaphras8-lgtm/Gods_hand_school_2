@@ -175,10 +175,6 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
             </div>
 
             <div className="text-center mb-8">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-900 rounded-full text-[10px] font-black uppercase tracking-wider mb-2 border border-emerald-300">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>POST-Secured & Anti-Injection Active</span>
-              </div>
               <h2 className="text-2xl sm:text-3xl font-black text-blue-900 uppercase tracking-tighter font-serif">Proprietor Gateway</h2>
               <div className="h-1.5 w-16 bg-yellow-400 rounded-full mx-auto mt-2 mb-2"></div>
               <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Authorized School Management Only</p>
