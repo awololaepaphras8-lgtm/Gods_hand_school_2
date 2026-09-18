@@ -182,7 +182,7 @@ export const StandardReportCard: React.FC<StandardReportCardProps> = ({
                 Government Approved • Crèche, Nursery, Primary & College
               </div>
               <p className="text-[11px] font-bold italic text-blue-900 font-serif">
-                Motto: "Have Faith in God — Building Lives Upon The Rock"
+                Motto: "Have Faith in God — Building Lives Upon The Solid Rock"
               </p>
               <p className="text-[10px] sm:text-[11px] text-slate-600 font-medium mt-0.5">
                 Oluwatedo Ire-Akari, Orisunmibare Area, Wire & Cable Axis, Apata, Ibadan, Oyo State

@@ -198,7 +198,7 @@ export const Footer: React.FC<FooterProps> = ({ onCheckFees, onNavigate }) => {
                 <div className="flex flex-col">
                   <p className="text-white font-black text-xs uppercase tracking-wider">Admissions Hotline:</p>
                   <a href="tel:08056507252" className="text-white hover:text-yellow-400 transition-colors">08056507252</a>
-                  <a href="tel:08130300837" className="text-white hover:text-yellow-400 transition-colors">08130300837</a>
+                  <a href="tel:07085596586" className="text-white hover:text-yellow-400 transition-colors">07085596586</a>
                 </div>
               </li>
               <li className="flex items-start group">
@@ -206,12 +206,12 @@ export const Footer: React.FC<FooterProps> = ({ onCheckFees, onNavigate }) => {
                 <div className="flex flex-col">
                   <p className="text-emerald-400 font-black text-xs uppercase tracking-wider">Official WhatsApp:</p>
                   <a 
-                    href="https://wa.me/2348130300837?text=Hello%20God's%20Hand%20International%20Model%20School,%20I%20would%20like%20to%20inquire%20about%20admissions%20and%20fees" 
+                    href="https://wa.me/2347085596586?text=Hello%20God's%20Hand%20International%20Model%20School,%20I%20would%20like%20to%20inquire%20about%20admissions%20and%20fees" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="inline-flex items-center space-x-1.5 mt-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black transition-all shadow-md w-fit"
                   >
-                    <span>Chat 08130300837</span>
+                    <span>Chat 07085596586</span>
                     <span className="text-[10px]">↗</span>
                   </a>
                 </div>

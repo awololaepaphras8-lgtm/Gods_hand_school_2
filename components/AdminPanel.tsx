@@ -1,17 +1,33 @@
 
 import React, { useState, useEffect } from 'react';
-import { FeeStructure, StudentApplication, Announcement, TeacherAccount, StudentResult, Course, GradeLevel, AttendanceRecord, StudentAccount, FeePayment, StaffPagePermission, ALL_STAFF_PAGES, AppState, ParentAccount, ResultPublishRequest } from '../types';
+import { FeeStructure, StudentApplication, Announcement, TeacherAccount, StudentResult, Course, GradeLevel, AttendanceRecord, StudentAccount, FeePayment, StaffPagePermission, ALL_STAFF_PAGES, AppState, ParentAccount, ResultPublishRequest, TimedStaffDelegation, AdminSectionKey, UserPagesAccessState } from '../types';
 import { GRADE_GROUPS, GRADE_ORDER } from '../constants';
 import { PaymentReviewDashboard } from './PaymentReviewDashboard';
+import { AdminStaffDelegationManager } from './AdminStaffDelegationManager';
+import { UserPageAccessManager } from './UserPageAccessManager';
 import {
+  exportCompleteSchoolDataExcel,
+  exportCompleteSchoolDataPDF,
+  exportCompleteSchoolDataBoth,
   exportCompleteSchoolDatabaseJSON,
   exportStudentsAndPupilsCSV,
+  exportStudentsAndPupilsExcel,
   exportFeePaymentsCSV,
+  exportFeePaymentsExcel,
   exportAcademicResultsCSV,
+  exportAcademicResultsExcel,
   exportAttendanceCSV,
+  exportAttendanceExcel,
   exportAdmissionsCSV,
+  exportAdmissionsExcel,
   exportStaffRosterCSV,
+  exportStaffRosterExcel,
 } from '../utils/exportService';
+import {
+  downloadSupabaseSchemaSql,
+  copySupabaseSchemaSql,
+  SUPABASE_MASTER_SQL_SCHEMA
+} from '../utils/supabaseSqlExport';
 
 interface AdminPanelProps {
   fees: FeeStructure;
@@ -26,7 +42,23 @@ interface AdminPanelProps {
   calendar: string;
   payments: FeePayment[];
   resultPublishRequests?: ResultPublishRequest[];
+  timedStaffDelegations?: TimedStaffDelegation[];
+  userPagesAccess?: UserPagesAccessState;
+  onUpdateUserPagesAccess?: (newState: UserPagesAccessState) => void;
+  onGrantStaffDelegation?: (delegation: {
+    teacherUsername: string;
+    teacherName: string;
+    grantedSections: AdminSectionKey[];
+    durationMinutes: number;
+    purpose?: string;
+  }) => void;
+  onRevokeStaffDelegation?: (delegationId: string) => void;
+  allowedAdminSections?: AdminSectionKey[];
+  delegationExpiresAt?: string;
+  onExitDelegation?: () => void;
+  activeStaffName?: string;
   onUpdateFee: (grade: string, amount: number) => void;
+  onUpdateAllFees?: (newFees: { [key: string]: number }) => void;
   onAddAnnouncement: (title: string, content: string) => void;
   onUpdateAnnouncement?: (announcement: Announcement) => void;
   onDeleteAnnouncement?: (id: string) => void;
@@ -61,6 +93,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   payments,
   resultPublishRequests = [],
   onUpdateFee,
+  onUpdateAllFees,
   onAddAnnouncement,
   onUpdateAnnouncement,
   onDeleteAnnouncement,
@@ -78,11 +111,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onAddChatMessage,
   onApprovePublishRequest,
   onRejectPublishRequest,
-  onBroadcastResultsToClass
+  onBroadcastResultsToClass,
+  timedStaffDelegations = [],
+  userPagesAccess,
+  onUpdateUserPagesAccess,
+  onGrantStaffDelegation,
+  onRevokeStaffDelegation,
+  allowedAdminSections,
+  delegationExpiresAt,
+  onExitDelegation,
+  activeStaffName
 }) => {
-  const [activeTab, setActiveTab] = useState<'attendance' | 'payments' | 'resultPublish' | 'fees' | 'applications' | 'teachers' | 'courses' | 'calendar' | 'announcements' | 'access' | 'parents' | 'export'>('attendance');
+  const [activeTab, setActiveTab] = useState<'attendance' | 'payments' | 'resultPublish' | 'fees' | 'applications' | 'teachers' | 'courses' | 'calendar' | 'announcements' | 'access' | 'parents' | 'export' | 'delegations' | 'pageAccess'>('attendance');
   const [rejectModalRequestId, setRejectModalRequestId] = useState<string | null>(null);
   const [rejectFeedbackText, setRejectFeedbackText] = useState<string>('');
+  const [delegationNow, setDelegationNow] = useState<Date>(new Date());
+
+  // Clock for delegated session banner
+  useEffect(() => {
+    if (delegationExpiresAt) {
+      const interval = setInterval(() => {
+        const n = new Date();
+        setDelegationNow(n);
+        if (new Date(delegationExpiresAt).getTime() <= n.getTime()) {
+          alert("⏱️ Your temporary administrative access delegation has expired.");
+          if (onExitDelegation) onExitDelegation();
+        }
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [delegationExpiresAt, onExitDelegation]);
   
   // States for forms
   const [annTitle, setAnnTitle] = useState('');
@@ -100,10 +158,87 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [courseDesc, setCourseDesc] = useState('');
   const [tempCalendar, setTempCalendar] = useState(calendar);
   const [calendarSaveMsg, setCalendarSaveMsg] = useState('');
+  const [sqlCopied, setSqlCopied] = useState(false);
+  const [showSqlPreview, setShowSqlPreview] = useState(false);
+
+  const handleCopySupabaseSql = async () => {
+    const ok = await copySupabaseSchemaSql();
+    if (ok) {
+      setSqlCopied(true);
+      setTimeout(() => setSqlCopied(false), 3000);
+    }
+  };
 
   useEffect(() => {
     setTempCalendar(calendar);
   }, [calendar]);
+
+  // Fee Configuration state & handlers
+  const [localFees, setLocalFees] = useState<{ [key: string]: number }>(fees);
+  const [feesSaveMsg, setFeesSaveMsg] = useState('');
+  const [isSavingFees, setIsSavingFees] = useState(false);
+
+  useEffect(() => {
+    setLocalFees(fees);
+  }, [fees]);
+
+  const handleUpdateFeeChange = (level: string, value: number) => {
+    setLocalFees(prev => ({
+      ...prev,
+      [level]: value
+    }));
+    setFeesSaveMsg('');
+  };
+
+  const handleSaveAllFees = () => {
+    setIsSavingFees(true);
+    if (onUpdateAllFees) {
+      onUpdateAllFees(localFees);
+    } else {
+      Object.entries(localFees).forEach(([lvl, amt]) => {
+        onUpdateFee(lvl, amt);
+      });
+    }
+    setTimeout(() => {
+      setIsSavingFees(false);
+      setFeesSaveMsg(`✓ Fee configuration saved & synchronized across all student, parent, and payment portals at ${new Date().toLocaleTimeString()}!`);
+      setTimeout(() => setFeesSaveMsg(''), 7000);
+    }, 300);
+  };
+
+  const handleApplyMandatedPreset = () => {
+    const mandatedPreset: { [key: string]: number } = {
+      'Crèche': 22000,
+      'Pre-Nursery 1': 23000,
+      'Pre-Nursery 2': 25000,
+      'Nursery 1': 26000,
+      'Nursery 2': 28000,
+      'Basic 1': 30000,
+      'Basic 2': 32000,
+      'Basic 3': 34000,
+      'Basic 4': 34000,
+      'Basic 5': 53000,
+      'JSS 1': 50000,
+      'JSS 2': 52000,
+      'JSS 3': 52000,
+      'SS 1 (Science)': 60000,
+      'SS 1 (Commerce & Arts)': 57000,
+      'SS 2 (Science)': 65000,
+      'SS 2 (Commerce & Arts)': 60000,
+      'SS 3 (Science)': 67000,
+      'SS 3 (Commerce & Arts)': 62000,
+    };
+    setLocalFees(prev => ({
+      ...prev,
+      ...mandatedPreset
+    }));
+    setFeesSaveMsg('⚡ Mandated Nigerian Fee Structure loaded into editor! Click "Update Fee Configuration" to publish.');
+  };
+
+  const handleResetFees = () => {
+    setLocalFees(fees);
+    setFeesSaveMsg('');
+  };
 
   // Duplication & Filtering states
   const [duplicateCourseId, setDuplicateCourseId] = useState<string | null>(null);
@@ -195,45 +330,133 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setAnnSaveMsg('');
   };
 
+  // Filter tabs if accessing through delegated staff credentials
+  const allTabsConfig: { id: any; label: string; adminKey?: AdminSectionKey }[] = [
+    { id: 'attendance', label: 'Attendance Hub', adminKey: 'attendance' },
+    { id: 'payments', label: `💳 Fee Verification (${payments.filter(p => p.status === 'pending').length} Pending)`, adminKey: 'payments' },
+    { id: 'resultPublish', label: `📢 Result Releases (${resultPublishRequests.filter(r => r.status === 'pending').length} Pending)`, adminKey: 'resultPublish' },
+    { id: 'fees', label: 'Fees Config', adminKey: 'fees' },
+    { id: 'applications', label: 'Admissions', adminKey: 'applications' },
+    { id: 'teachers', label: 'Staff', adminKey: 'teachers' },
+    { id: 'courses', label: 'Courses', adminKey: 'courses' },
+    { id: 'calendar', label: 'Calendar', adminKey: 'calendar' },
+    { id: 'announcements', label: 'Bulletins', adminKey: 'announcements' },
+    { id: 'access', label: 'Students & Pupils Access', adminKey: 'applications' },
+    { id: 'pageAccess', label: '🔒 User Pages Access Control', adminKey: 'applications' },
+    { id: 'parents', label: '👨‍👩‍👧 Family & Parent Links', adminKey: 'parents' },
+    { id: 'export', label: '📥 Data Export / Backup', adminKey: 'export' },
+    { id: 'delegations', label: `⏱️ Staff Admin Access (${timedStaffDelegations.filter(d => d.status === 'active' && new Date(d.expiresAt) > delegationNow).length} Active)` }
+  ];
+
+  const visibleTabs = allowedAdminSections
+    ? allTabsConfig.filter(t => t.adminKey && allowedAdminSections.includes(t.adminKey))
+    : allTabsConfig;
+
+  // Auto-switch to first allowed tab if current active tab is restricted
+  useEffect(() => {
+    if (allowedAdminSections && visibleTabs.length > 0) {
+      const isAllowed = visibleTabs.some(t => t.id === activeTab);
+      if (!isAllowed) {
+        setActiveTab(visibleTabs[0].id);
+      }
+    }
+  }, [allowedAdminSections, visibleTabs]);
+
+  // Compute countdown text for delegation banner
+  const getRemainingBannerTime = () => {
+    if (!delegationExpiresAt) return '';
+    const diff = new Date(delegationExpiresAt).getTime() - delegationNow.getTime();
+    if (diff <= 0) return 'Expired';
+    const totalSec = Math.floor(diff / 1000);
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    const h = Math.floor(m / 60);
+    if (h > 0) return `${h}h ${m % 60}m ${s}s`;
+    return `${m}m ${s}s`;
+  };
+
   return (
     <div className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-4 border-blue-900">
+      {/* Delegated Session Top Warning Bar */}
+      {delegationExpiresAt && (
+        <div className="bg-amber-400 text-blue-950 px-6 py-3 border-b-2 border-yellow-500 flex flex-wrap items-center justify-between gap-3 shadow-md">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">⏱️</span>
+            <span className="text-xs sm:text-sm font-black uppercase tracking-wider">
+              Temporary Delegated Admin Session: {activeStaffName || 'Staff Member'}
+            </span>
+            <span className="text-xs font-bold text-blue-900 hidden md:inline">
+              (Access restricted strictly to granted sections)
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="bg-blue-950 text-white px-3 py-1 rounded-full text-xs font-mono font-black flex items-center gap-1.5 shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>Expires in: {getRemainingBannerTime()}</span>
+            </div>
+            {onExitDelegation && (
+              <button
+                type="button"
+                onClick={onExitDelegation}
+                className="px-3 py-1 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-lg text-xs font-black uppercase tracking-wider transition-all"
+              >
+                Exit Admin Mode
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="bg-blue-900 px-10 py-12 text-white relative">
         <div className="absolute top-0 right-0 p-10 opacity-10">
           <svg className="w-48 h-48" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
         </div>
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h2 className="text-4xl font-black mb-3 font-serif">Proprietor's Dashboard</h2>
+            <h2 className="text-4xl font-black mb-3 font-serif">
+              {allowedAdminSections ? `Admin Portal (Delegated Staff Session)` : `Proprietor's Dashboard`}
+            </h2>
             <div className="flex items-center space-x-4">
-              <span className="px-3 py-1 bg-yellow-400 text-blue-900 rounded-lg text-xs font-black uppercase tracking-tighter shadow-md">School Database Manager</span>
-              <p className="text-blue-100 font-medium">Monitoring attendance and academic records.</p>
+              <span className="px-3 py-1 bg-yellow-400 text-blue-900 rounded-lg text-xs font-black uppercase tracking-tighter shadow-md">
+                {allowedAdminSections ? 'Temporary Delegated Privileges' : 'School Database Manager'}
+              </span>
+              <p className="text-blue-100 font-medium">
+                {allowedAdminSections ? `Authorized administrative operations for ${activeStaffName || 'Staff'}` : 'Monitoring attendance and academic records.'}
+              </p>
             </div>
           </div>
-          <button
-            onClick={() => setActiveTab('export')}
-            className="flex items-center space-x-2 px-5 py-3 bg-yellow-400 text-blue-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-yellow-300 transition-all shadow-lg hover:scale-105 active:scale-95"
-          >
-            <span>📥</span>
-            <span>Download All School Data</span>
-          </button>
+          {!allowedAdminSections && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const statePayload: AppState = {
+                    fees,
+                    applications,
+                    announcements,
+                    teachers,
+                    results,
+                    courses,
+                    attendance,
+                    studentAccounts: students,
+                    academicCalendar: calendar,
+                    payments
+                  };
+                  exportCompleteSchoolDataBoth(statePayload);
+                  setActiveTab('export');
+                }}
+                className="flex items-center space-x-2 px-5 py-3 bg-yellow-400 text-blue-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-yellow-300 transition-all shadow-lg hover:scale-105 active:scale-95"
+                title="Download complete school database in both PDF and Excel formats simultaneously"
+              >
+                <span>⚡</span>
+                <span>Download All Data (PDF & Excel)</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       <div className="flex flex-wrap border-b-2 border-slate-100 bg-slate-50">
-        {[
-          { id: 'attendance', label: 'Attendance Hub' },
-          { id: 'payments', label: `💳 Fee Verification (${payments.filter(p => p.status === 'pending').length} Pending)` },
-          { id: 'resultPublish', label: `📢 Result Releases (${resultPublishRequests.filter(r => r.status === 'pending').length} Pending)` },
-          { id: 'fees', label: 'Fees Config' },
-          { id: 'applications', label: 'Admissions' },
-          { id: 'teachers', label: 'Staff' },
-          { id: 'courses', label: 'Courses' },
-          { id: 'calendar', label: 'Calendar' },
-          { id: 'announcements', label: 'Bulletins' },
-          { id: 'access', label: 'Students & Pupils Access' },
-          { id: 'parents', label: '👨‍👩‍👧 Family & Parent Links' },
-          { id: 'export', label: '📥 Data Export / Backup' }
-        ].map(tab => (
+        {visibleTabs.map(tab => (
           <button 
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
@@ -572,30 +795,131 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         )}
 
         {activeTab === 'fees' && (
-          <div className="space-y-10">
-            <h3 className="text-2xl font-black text-blue-900 font-serif">Academic Fee Structure</h3>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
+          <div className="space-y-8">
+            {/* Header & Primary Action Bar */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b-2 border-slate-100 pb-6">
+              <div>
+                <h3 className="text-2xl font-black text-blue-900 font-serif">Academic Fee Structure & Tuition Setup</h3>
+                <p className="text-xs text-slate-500 font-bold mt-1">
+                  Configure and update official term tuition fees payable by students from Crèche to Senior Secondary (SS3).
+                </p>
+              </div>
+
+              {/* Primary Action Button Bar */}
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleApplyMandatedPreset}
+                  className="px-4 py-3 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-xs hover:scale-[1.02] active:scale-[0.98]"
+                  title="Load official school fee schedule into editor"
+                >
+                  <span>⚡</span>
+                  <span>Load School Schedule</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResetFees}
+                  className="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-black uppercase tracking-wider transition-all"
+                  title="Discard changes and reload saved values"
+                >
+                  Reset
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSaveAllFees}
+                  disabled={isSavingFees}
+                  className="px-6 py-3.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-2xl text-xs sm:text-sm font-black uppercase tracking-widest shadow-xl transition-all hover:scale-[1.03] active:scale-[0.97] flex items-center gap-2 border-2 border-yellow-400"
+                >
+                  <span>{isSavingFees ? '⏳' : '💾'}</span>
+                  <span>{isSavingFees ? 'Saving Changes...' : 'Update Fee Configuration'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Confirmation & Status Banner */}
+            {feesSaveMsg && (
+              <div className="p-4 bg-emerald-50 border-2 border-emerald-300 text-emerald-900 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-between gap-3 shadow-md animate-in fade-in">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">✅</span>
+                  <span>{feesSaveMsg}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFeesSaveMsg('')}
+                  className="text-emerald-700 hover:text-emerald-950 text-xs font-black px-2 py-1"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {/* Fee Input Grid Grouped by Academic Section */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {GRADE_GROUPS.map(group => (
-                <div key={group.name} className="bg-slate-50/30 rounded-3xl p-8 border-2 border-blue-100/50">
-                  <h4 className="font-black text-blue-900 text-lg mb-6">{group.name}</h4>
-                  <div className="space-y-6">
-                    {group.levels.map(level => (
-                      <div key={level} className="flex flex-col space-y-2">
-                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{level}</label>
-                        <div className="relative">
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-900 font-black">₦</span>
-                          <input 
-                            type="number" 
-                            value={fees[level]}
-                            onChange={(e) => onUpdateFee(level, parseInt(e.target.value) || 0)}
-                            className="pl-10 pr-4 py-4 w-full bg-white border-2 border-blue-100 rounded-2xl text-lg font-black text-blue-900 outline-none"
-                          />
-                        </div>
-                      </div>
-                    ))}
+                <div key={group.name} className="bg-slate-50/50 rounded-3xl p-6 sm:p-7 border-2 border-blue-100 shadow-sm flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-5 pb-3 border-b border-blue-100">
+                      <h4 className="font-black text-blue-900 text-base font-serif">{group.name}</h4>
+                      <span className="text-[10px] font-black uppercase bg-blue-100 text-blue-900 px-2.5 py-0.5 rounded-full">
+                        {group.levels.length} Classes
+                      </span>
+                    </div>
+
+                    <div className="space-y-4">
+                      {group.levels.map(level => {
+                        const currentAmount = localFees[level] !== undefined ? localFees[level] : (fees[level] || 0);
+                        return (
+                          <div key={level} className="flex flex-col space-y-1.5 p-3 rounded-2xl bg-white border border-slate-200 focus-within:border-blue-900 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                            <div className="flex items-center justify-between">
+                              <label className="text-xs font-black text-blue-950 uppercase tracking-wider">{level}</label>
+                              <span className="text-[11px] font-bold text-slate-500 font-mono">
+                                ₦{Number(currentAmount || 0).toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="relative">
+                              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-900 font-black text-sm">₦</span>
+                              <input 
+                                type="number" 
+                                value={currentAmount === 0 ? '' : currentAmount}
+                                onChange={(e) => handleUpdateFeeChange(level, parseInt(e.target.value) || 0)}
+                                placeholder="0"
+                                className="pl-9 pr-3 py-2.5 w-full bg-slate-50/50 border border-slate-200 rounded-xl text-base font-black text-blue-950 outline-none focus:bg-white transition-all font-mono"
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* Bottom Floating Save Button Bar */}
+            <div className="p-6 bg-blue-950 rounded-3xl border-4 border-yellow-400 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xl">
+              <div>
+                <p className="text-white font-black text-sm uppercase tracking-wider flex items-center gap-2">
+                  <span>⚡</span>
+                  <span>Ready to publish new fee changes?</span>
+                </p>
+                <p className="text-xs text-yellow-300 font-medium mt-0.5">
+                  Clicking update synchronizes these tuition rates across student fee checkers, admission portals, and parent dashboards.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={handleSaveAllFees}
+                  disabled={isSavingFees}
+                  className="w-full sm:w-auto px-8 py-4 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl transition-all hover:scale-[1.03] active:scale-[0.97] flex items-center justify-center gap-2"
+                >
+                  <span>{isSavingFees ? '⏳' : '💾'}</span>
+                  <span>{isSavingFees ? 'Saving Changes...' : 'Update Fee Configuration'}</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -1511,34 +1835,85 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
         {activeTab === 'export' && (
           <div className="space-y-10">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-2 border-slate-100 pb-6">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b-2 border-slate-100 pb-6">
               <div>
                 <h3 className="text-3xl font-black text-blue-900 font-serif">Data Export & Backup Hub</h3>
                 <p className="text-slate-500 text-sm font-medium mt-1">
-                  Proprietor's central data extraction system. Download all school records, student rosters, payments, and results with a single click.
+                  Proprietor's central data extraction system. Download all school records, pupil rosters, fee ledgers, results, and staff registries in PDF and Excel formats.
                 </p>
               </div>
-              <button
-                onClick={() => {
-                  const statePayload: AppState = {
-                    fees,
-                    applications,
-                    announcements,
-                    teachers,
-                    results,
-                    courses,
-                    attendance,
-                    studentAccounts: students,
-                    academicCalendar: calendar,
-                    payments
-                  };
-                  exportCompleteSchoolDatabaseJSON(statePayload);
-                }}
-                className="px-6 py-4 bg-yellow-400 text-blue-900 font-black text-sm uppercase tracking-wider rounded-2xl shadow-xl hover:bg-yellow-300 transition-all flex items-center space-x-3 hover:scale-105 active:scale-95"
-              >
-                <span className="text-xl">💾</span>
-                <span>Download Master Backup (.JSON)</span>
-              </button>
+
+              {/* Master Download Action Buttons */}
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  onClick={() => {
+                    const statePayload: AppState = {
+                      fees,
+                      applications,
+                      announcements,
+                      teachers,
+                      results,
+                      courses,
+                      attendance,
+                      studentAccounts: students,
+                      academicCalendar: calendar,
+                      payments
+                    };
+                    exportCompleteSchoolDataBoth(statePayload);
+                  }}
+                  className="px-5 py-3.5 bg-yellow-400 text-blue-900 font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl hover:bg-yellow-300 transition-all flex items-center space-x-2 hover:scale-105 active:scale-95 border-2 border-yellow-300"
+                  title="Download all school records in both Excel and PDF formats simultaneously"
+                >
+                  <span className="text-base">⚡</span>
+                  <span>Download All (PDF & Excel)</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    const statePayload: AppState = {
+                      fees,
+                      applications,
+                      announcements,
+                      teachers,
+                      results,
+                      courses,
+                      attendance,
+                      studentAccounts: students,
+                      academicCalendar: calendar,
+                      payments
+                    };
+                    exportCompleteSchoolDataExcel(statePayload);
+                  }}
+                  className="px-5 py-3.5 bg-emerald-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg hover:bg-emerald-600 transition-all flex items-center space-x-2 hover:scale-105 active:scale-95"
+                  title="Download all school records as a multi-sheet Microsoft Excel (.XLSX) workbook"
+                >
+                  <span className="text-base">📊</span>
+                  <span>Download Excel (.XLSX)</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    const statePayload: AppState = {
+                      fees,
+                      applications,
+                      announcements,
+                      teachers,
+                      results,
+                      courses,
+                      attendance,
+                      studentAccounts: students,
+                      academicCalendar: calendar,
+                      payments
+                    };
+                    exportCompleteSchoolDataPDF(statePayload);
+                  }}
+                  className="px-5 py-3.5 bg-rose-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg hover:bg-rose-600 transition-all flex items-center space-x-2 hover:scale-105 active:scale-95"
+                  title="Download official multi-page comprehensive institutional ledger as PDF"
+                >
+                  <span className="text-base">📑</span>
+                  <span>Download PDF Report</span>
+                </button>
+              </div>
             </div>
 
             {/* Live Database Metrics */}
@@ -1569,16 +1944,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
 
-            {/* Master Backup Card */}
-            <div className="p-8 bg-gradient-to-br from-blue-900 to-indigo-950 text-white rounded-3xl shadow-xl relative overflow-hidden">
-              <div className="relative z-10 max-w-2xl">
-                <span className="px-3 py-1 bg-yellow-400 text-blue-900 rounded-full text-[10px] font-black uppercase tracking-widest">
-                  Primary Backup Option
-                </span>
-                <h4 className="text-2xl font-black mt-3 mb-2 font-serif text-yellow-400">Complete School Database Snapshot (JSON)</h4>
-                <p className="text-blue-100 text-sm leading-relaxed mb-6">
-                  Downloads an authoritative JSON file containing the entire school system state: all student and pupil records, fee ledgers, academic results, attendance logs, staff credentials, courses, bulletins, and calendar. This file can be imported into any SQL or NoSQL database.
-                </p>
+            {/* Master Export Formats Grid */}
+            <div className="grid md:grid-cols-3 gap-6">
+              {/* 1. Master Excel Card */}
+              <div className="p-7 bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900 text-white rounded-3xl shadow-xl relative overflow-hidden flex flex-col justify-between border-2 border-emerald-700/50">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="px-3 py-1 bg-emerald-400 text-emerald-950 rounded-full text-[10px] font-black uppercase tracking-widest">
+                      Spreadsheet (.XLSX)
+                    </span>
+                    <span className="text-2xl">📊</span>
+                  </div>
+                  <h4 className="text-xl font-black font-serif text-emerald-300 mb-2">Complete School Database (Excel)</h4>
+                  <p className="text-emerald-100 text-xs leading-relaxed mb-4">
+                    Authoritative multi-sheet workbook containing 7 formatted worksheets: Executive Summary, Students & Pupils Roster, Fee Payments Ledger, Academic Results, Attendance Log, Staff Faculty, and Admissions.
+                  </p>
+                  <ul className="text-[11px] text-emerald-200/90 space-y-1 mb-6 list-disc list-inside">
+                    <li>Multi-tab Microsoft Excel (.xlsx) file</li>
+                    <li>Compatible with Excel, Google Sheets & Numbers</li>
+                    <li>Formatted numeric figures & fee balances</li>
+                  </ul>
+                </div>
                 <button
                   onClick={() => {
                     const statePayload: AppState = {
@@ -1593,23 +1979,130 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       academicCalendar: calendar,
                       payments
                     };
-                    exportCompleteSchoolDatabaseJSON(statePayload);
+                    exportCompleteSchoolDataExcel(statePayload);
                   }}
-                  className="px-8 py-4 bg-yellow-400 text-blue-900 font-black text-sm uppercase tracking-wider rounded-2xl shadow-lg hover:bg-yellow-300 transition-all flex items-center space-x-2"
+                  className="w-full py-3.5 bg-emerald-400 text-emerald-950 hover:bg-emerald-300 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2 active:scale-95"
                 >
-                  <span>📦</span>
-                  <span>Export Master Database (.JSON)</span>
+                  <span>📊</span>
+                  <span>Download Excel (.XLSX)</span>
                 </button>
+              </div>
+
+              {/* 2. Master PDF Card */}
+              <div className="p-7 bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-950 text-white rounded-3xl shadow-xl relative overflow-hidden flex flex-col justify-between border-2 border-blue-700/50">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="px-3 py-1 bg-yellow-400 text-blue-950 rounded-full text-[10px] font-black uppercase tracking-widest">
+                      Official Document (.PDF)
+                    </span>
+                    <span className="text-2xl">📑</span>
+                  </div>
+                  <h4 className="text-xl font-black font-serif text-yellow-400 mb-2">Master Institutional Ledger (PDF)</h4>
+                  <p className="text-blue-100 text-xs leading-relaxed mb-4">
+                    Official multi-page institutional report featuring God's Hand International Model School crest, tuition tables, pupil rosters, payment settlement ledger, examination results, staff roster, and tri-signature endorsement blocks.
+                  </p>
+                  <ul className="text-[11px] text-blue-200/90 space-y-1 mb-6 list-disc list-inside">
+                    <li>Official school letterhead & header banner</li>
+                    <li>Tri-signatory block (Proprietor, Principal, Registrar)</li>
+                    <li>Formatted tables, statistics & page numbers</li>
+                  </ul>
+                </div>
+                <button
+                  onClick={() => {
+                    const statePayload: AppState = {
+                      fees,
+                      applications,
+                      announcements,
+                      teachers,
+                      results,
+                      courses,
+                      attendance,
+                      studentAccounts: students,
+                      academicCalendar: calendar,
+                      payments
+                    };
+                    exportCompleteSchoolDataPDF(statePayload);
+                  }}
+                  className="w-full py-3.5 bg-yellow-400 text-blue-950 hover:bg-yellow-300 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2 active:scale-95"
+                >
+                  <span>📑</span>
+                  <span>Download PDF Report</span>
+                </button>
+              </div>
+
+              {/* 3. Combined & JSON Card */}
+              <div className="p-7 bg-gradient-to-br from-slate-900 via-slate-800 to-zinc-900 text-white rounded-3xl shadow-xl relative overflow-hidden flex flex-col justify-between border-2 border-slate-700/60">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="px-3 py-1 bg-purple-400 text-purple-950 rounded-full text-[10px] font-black uppercase tracking-widest">
+                      Complete Archive
+                    </span>
+                    <span className="text-2xl">⚡</span>
+                  </div>
+                  <h4 className="text-xl font-black font-serif text-purple-300 mb-2">Combined Backup & Raw Snapshot</h4>
+                  <p className="text-slate-200 text-xs leading-relaxed mb-4">
+                    Download both the Excel spreadsheet and the signed PDF document simultaneously in one click, or export the raw technical JSON database snapshot.
+                  </p>
+                  <ul className="text-[11px] text-slate-300 space-y-1 mb-6 list-disc list-inside">
+                    <li>One-click simultaneous PDF + Excel download</li>
+                    <li>Includes raw JSON schema backup for developer import</li>
+                    <li>Complete institutional preservation</li>
+                  </ul>
+                </div>
+                <div className="space-y-2.5">
+                  <button
+                    onClick={() => {
+                      const statePayload: AppState = {
+                        fees,
+                        applications,
+                        announcements,
+                        teachers,
+                        results,
+                        courses,
+                        attendance,
+                        studentAccounts: students,
+                        academicCalendar: calendar,
+                        payments
+                      };
+                      exportCompleteSchoolDataBoth(statePayload);
+                    }}
+                    className="w-full py-3.5 bg-purple-500 hover:bg-purple-400 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2 active:scale-95"
+                  >
+                    <span>⚡</span>
+                    <span>Download Both (PDF & Excel)</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      const statePayload: AppState = {
+                        fees,
+                        applications,
+                        announcements,
+                        teachers,
+                        results,
+                        courses,
+                        attendance,
+                        studentAccounts: students,
+                        academicCalendar: calendar,
+                        payments
+                      };
+                      exportCompleteSchoolDatabaseJSON(statePayload);
+                    }}
+                    className="w-full py-2.5 bg-slate-700/80 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-[11px] uppercase tracking-wider rounded-xl transition-all flex items-center justify-center space-x-2"
+                  >
+                    <span>💾</span>
+                    <span>Download Raw JSON Backup</span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Individual CSV Tables */}
+            {/* Individual Specific Tables */}
             <div className="space-y-4">
-              <h4 className="text-xl font-black text-blue-900 font-serif">Export Specific Tables (Spreadsheet / CSV Format)</h4>
-              <p className="text-slate-500 text-xs font-medium">Download individual tables formatted directly for Microsoft Excel, Google Sheets, or database imports.</p>
+              <h4 className="text-xl font-black text-blue-900 font-serif">Export Specific Tables (Excel & CSV Formats)</h4>
+              <p className="text-slate-500 text-xs font-medium">Download individual school data tables formatted directly for Microsoft Excel, Google Sheets, or database imports.</p>
 
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
-                {/* 1. Students & Pupils CSV */}
+                {/* 1. Students & Pupils */}
                 <div className="p-6 bg-white border-2 border-slate-100 rounded-3xl shadow-sm hover:border-blue-200 transition-all flex flex-col justify-between">
                   <div>
                     <div className="w-12 h-12 bg-blue-100 text-blue-900 rounded-2xl flex items-center justify-center text-xl mb-4 font-black">
@@ -1620,15 +2113,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       Names, grades, entry permissions, fee requirements, total paid, balances, and registration timestamps ({students.length} records).
                     </p>
                   </div>
-                  <button
-                    onClick={() => exportStudentsAndPupilsCSV(students, payments, fees)}
-                    className="w-full py-3 bg-blue-50 text-blue-900 hover:bg-blue-900 hover:text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all"
-                  >
-                    Download CSV
-                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => exportStudentsAndPupilsExcel(students, payments, fees)}
+                      className="py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                    >
+                      <span>📊</span>
+                      <span>Excel (.xlsx)</span>
+                    </button>
+                    <button
+                      onClick={() => exportStudentsAndPupilsCSV(students, payments, fees)}
+                      className="py-2.5 bg-blue-50 text-blue-900 hover:bg-blue-900 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                    >
+                      <span>📄</span>
+                      <span>CSV</span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* 2. Fee Payments CSV */}
+                {/* 2. Fee Payments */}
                 <div className="p-6 bg-white border-2 border-slate-100 rounded-3xl shadow-sm hover:border-green-200 transition-all flex flex-col justify-between">
                   <div>
                     <div className="w-12 h-12 bg-green-100 text-green-800 rounded-2xl flex items-center justify-center text-xl mb-4 font-black">
@@ -1639,15 +2142,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       Receipt numbers, payer names, student IDs, payment types, amounts, and settlement dates ({payments.length} transactions).
                     </p>
                   </div>
-                  <button
-                    onClick={() => exportFeePaymentsCSV(payments)}
-                    className="w-full py-3 bg-green-50 text-green-800 hover:bg-green-700 hover:text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all"
-                  >
-                    Download CSV
-                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => exportFeePaymentsExcel(payments)}
+                      className="py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                    >
+                      <span>📊</span>
+                      <span>Excel (.xlsx)</span>
+                    </button>
+                    <button
+                      onClick={() => exportFeePaymentsCSV(payments)}
+                      className="py-2.5 bg-green-50 text-green-800 hover:bg-green-700 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                    >
+                      <span>📄</span>
+                      <span>CSV</span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* 3. Academic Results CSV */}
+                {/* 3. Academic Results */}
                 <div className="p-6 bg-white border-2 border-slate-100 rounded-3xl shadow-sm hover:border-purple-200 transition-all flex flex-col justify-between">
                   <div>
                     <div className="w-12 h-12 bg-purple-100 text-purple-900 rounded-2xl flex items-center justify-center text-xl mb-4 font-black">
@@ -1658,15 +2171,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       Student names, classes, subject scores, WAEC/standard grading remarks, assessment terms, and teachers ({results.length} scores).
                     </p>
                   </div>
-                  <button
-                    onClick={() => exportAcademicResultsCSV(results)}
-                    className="w-full py-3 bg-purple-50 text-purple-900 hover:bg-purple-900 hover:text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all"
-                  >
-                    Download CSV
-                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => exportAcademicResultsExcel(results)}
+                      className="py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                    >
+                      <span>📊</span>
+                      <span>Excel (.xlsx)</span>
+                    </button>
+                    <button
+                      onClick={() => exportAcademicResultsCSV(results)}
+                      className="py-2.5 bg-purple-50 text-purple-900 hover:bg-purple-900 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                    >
+                      <span>📄</span>
+                      <span>CSV</span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* 4. Attendance Registry CSV */}
+                {/* 4. Attendance Registry */}
                 <div className="p-6 bg-white border-2 border-slate-100 rounded-3xl shadow-sm hover:border-rose-200 transition-all flex flex-col justify-between">
                   <div>
                     <div className="w-12 h-12 bg-rose-100 text-rose-900 rounded-2xl flex items-center justify-center text-xl mb-4 font-black">
@@ -1677,15 +2200,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       Daily and term attendance logs, scanned student IDs, names, dates, active terms, and verifying staff ({attendance.length} logs).
                     </p>
                   </div>
-                  <button
-                    onClick={() => exportAttendanceCSV(attendance, students)}
-                    className="w-full py-3 bg-rose-50 text-rose-900 hover:bg-rose-900 hover:text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all"
-                  >
-                    Download CSV
-                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => exportAttendanceExcel(attendance, students)}
+                      className="py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                    >
+                      <span>📊</span>
+                      <span>Excel (.xlsx)</span>
+                    </button>
+                    <button
+                      onClick={() => exportAttendanceCSV(attendance, students)}
+                      className="py-2.5 bg-rose-50 text-rose-900 hover:bg-rose-900 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                    >
+                      <span>📄</span>
+                      <span>CSV</span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* 5. Admissions Applications CSV */}
+                {/* 5. Admissions Applications */}
                 <div className="p-6 bg-white border-2 border-slate-100 rounded-3xl shadow-sm hover:border-indigo-200 transition-all flex flex-col justify-between">
                   <div>
                     <div className="w-12 h-12 bg-indigo-100 text-indigo-900 rounded-2xl flex items-center justify-center text-xl mb-4 font-black">
@@ -1696,15 +2229,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       Incoming student and pupil applications, parent emails, target grades, deposit status, and dates ({applications.length} applications).
                     </p>
                   </div>
-                  <button
-                    onClick={() => exportAdmissionsCSV(applications)}
-                    className="w-full py-3 bg-indigo-50 text-indigo-900 hover:bg-indigo-900 hover:text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all"
-                  >
-                    Download CSV
-                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => exportAdmissionsExcel(applications)}
+                      className="py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                    >
+                      <span>📊</span>
+                      <span>Excel (.xlsx)</span>
+                    </button>
+                    <button
+                      onClick={() => exportAdmissionsCSV(applications)}
+                      className="py-2.5 bg-indigo-50 text-indigo-900 hover:bg-indigo-900 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                    >
+                      <span>📄</span>
+                      <span>CSV</span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* 6. Staff Roster CSV */}
+                {/* 6. Staff Roster */}
                 <div className="p-6 bg-white border-2 border-slate-100 rounded-3xl shadow-sm hover:border-amber-200 transition-all flex flex-col justify-between">
                   <div>
                     <div className="w-12 h-12 bg-amber-100 text-amber-900 rounded-2xl flex items-center justify-center text-xl mb-4 font-black">
@@ -1715,13 +2258,129 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       Staff accounts, assigned classes, curriculum assignments, configured module permissions, and join dates ({teachers.length} staff).
                     </p>
                   </div>
-                  <button
-                    onClick={() => exportStaffRosterCSV(teachers)}
-                    className="w-full py-3 bg-amber-50 text-amber-900 hover:bg-amber-900 hover:text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all"
-                  >
-                    Download CSV
-                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => exportStaffRosterExcel(teachers)}
+                      className="py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                    >
+                      <span>📊</span>
+                      <span>Excel (.xlsx)</span>
+                    </button>
+                    <button
+                      onClick={() => exportStaffRosterCSV(teachers)}
+                      className="py-2.5 bg-amber-50 text-amber-900 hover:bg-amber-900 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                    >
+                      <span>📄</span>
+                      <span>CSV</span>
+                    </button>
+                  </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Supabase Database SQL Synchronization Card */}
+            <div className="p-8 bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 text-white rounded-3xl shadow-2xl border border-blue-800/40 relative overflow-hidden">
+              <div className="relative z-10 space-y-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-blue-800/40 pb-5">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[10px] font-black uppercase tracking-widest">
+                        ⚡ Supabase PostgreSQL Schema
+                      </span>
+                      <span className="px-3 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-[10px] font-black uppercase tracking-widest">
+                        16 Tables & Realtime
+                      </span>
+                    </div>
+                    <h4 className="text-2xl font-black font-serif text-white tracking-wide">
+                      Sync Database with Supabase SQL Editor
+                    </h4>
+                    <p className="text-blue-200/80 text-xs sm:text-sm mt-1 max-w-2xl">
+                      Instantly copy or download the master idempotent PostgreSQL script. Paste it into your Supabase SQL Editor to create or update all tables, realtime listeners, Row Level Security policies, and fee structures.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      onClick={handleCopySupabaseSql}
+                      className={`px-5 py-3 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center space-x-2 shadow-lg ${
+                        sqlCopied
+                          ? 'bg-emerald-500 text-white shadow-emerald-500/30 scale-105'
+                          : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/40 active:scale-95'
+                      }`}
+                    >
+                      <span>{sqlCopied ? '✓' : '📋'}</span>
+                      <span>{sqlCopied ? 'SQL Copied to Clipboard!' : 'Copy Supabase SQL'}</span>
+                    </button>
+
+                    <button
+                      onClick={downloadSupabaseSchemaSql}
+                      className="px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center space-x-2 shadow-lg shadow-blue-900/40 active:scale-95"
+                    >
+                      <span>💾</span>
+                      <span>Download .SQL File</span>
+                    </button>
+
+                    <button
+                      onClick={() => setShowSqlPreview(!showSqlPreview)}
+                      className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center space-x-2"
+                    >
+                      <span>{showSqlPreview ? '▲' : '👁️'}</span>
+                      <span>{showSqlPreview ? 'Hide SQL' : 'View SQL'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3-Step Setup Quick Guide */}
+                <div className="grid sm:grid-cols-3 gap-4 text-xs">
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                    <div className="flex items-center gap-2 font-bold text-yellow-400 mb-1">
+                      <span className="w-5 h-5 rounded-full bg-yellow-400 text-slate-900 flex items-center justify-center text-[10px] font-black">1</span>
+                      <span>Open SQL Editor</span>
+                    </div>
+                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                      Log in to your <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-yellow-400 underline hover:text-yellow-300 font-semibold">Supabase Dashboard</a>, pick your project, and click <strong>SQL Editor</strong> on the left.
+                    </p>
+                  </div>
+
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                    <div className="flex items-center gap-2 font-bold text-yellow-400 mb-1">
+                      <span className="w-5 h-5 rounded-full bg-yellow-400 text-slate-900 flex items-center justify-center text-[10px] font-black">2</span>
+                      <span>Paste Master SQL</span>
+                    </div>
+                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                      Click <strong>+ New query</strong>, paste the script using the Copy button above (or from <code className="text-yellow-300 font-mono text-[10px]">supabase_schema.sql</code>).
+                    </p>
+                  </div>
+
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                    <div className="flex items-center gap-2 font-bold text-yellow-400 mb-1">
+                      <span className="w-5 h-5 rounded-full bg-yellow-400 text-slate-900 flex items-center justify-center text-[10px] font-black">3</span>
+                      <span>Click Run</span>
+                    </div>
+                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                      Click the green <strong>Run</strong> button. All 16 tables, performance indexes, RLS security policies, and live channels will be activated.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Optional SQL Viewer */}
+                {showSqlPreview && (
+                  <div className="mt-4 pt-4 border-t border-white/10">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-mono text-slate-400">supabase_schema.sql preview (ready to copy)</span>
+                      <button
+                        onClick={handleCopySupabaseSql}
+                        className="text-xs text-yellow-400 hover:text-yellow-300 font-bold flex items-center gap-1"
+                      >
+                        <span>📋</span>
+                        <span>{sqlCopied ? 'Copied!' : 'Copy Code'}</span>
+                      </button>
+                    </div>
+                    <pre className="max-h-80 overflow-y-auto bg-slate-950/80 border border-white/10 rounded-2xl p-4 text-[11px] font-mono text-emerald-300 select-all leading-relaxed whitespace-pre-wrap">
+                      {SUPABASE_MASTER_SQL_SCHEMA}
+                    </pre>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1736,6 +2395,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </p>
             </div>
           </div>
+        )}
+
+        {activeTab === 'delegations' && (
+          <AdminStaffDelegationManager
+            teachers={teachers}
+            delegations={timedStaffDelegations}
+            onGrantDelegation={onGrantStaffDelegation || (() => {})}
+            onRevokeDelegation={onRevokeStaffDelegation || (() => {})}
+            currentUser={activeStaffName || 'School Admin'}
+          />
+        )}
+
+        {activeTab === 'pageAccess' && (
+          <UserPageAccessManager
+            accessState={userPagesAccess || {
+              allPagesClosed: false,
+              globalClosedMessage: 'The user portal is temporarily undergoing scheduled administrative maintenance by the School Proprietor. Please check back shortly.',
+              pages: {
+                apply: { isOpen: true, closedReason: '' },
+                feeChecker: { isOpen: true, closedReason: '' },
+                resultChecker: { isOpen: true, closedReason: '' },
+                studentReceipts: { isOpen: true, closedReason: '' },
+                parentPortal: { isOpen: true, closedReason: '' },
+                studentPortal: { isOpen: true, closedReason: '' },
+                about: { isOpen: true, closedReason: '' },
+              }
+            }}
+            onUpdateAccessState={onUpdateUserPagesAccess || (() => {})}
+          />
         )}
       </div>
     </div>

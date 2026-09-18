@@ -29,6 +29,7 @@ interface ParentDashboardProps {
   onSubmitFeePayment: (payment: Omit<FeePayment, 'id' | 'date'>) => FeePayment;
   onSimulateGateScan: (studentId: string) => void;
   onLogout: () => void;
+  onGoToReceipts?: () => void;
 }
 
 export const ParentDashboard: React.FC<ParentDashboardProps> = ({
@@ -45,7 +46,8 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   onUnlinkChild,
   onSubmitFeePayment,
   onSimulateGateScan,
-  onLogout
+  onLogout,
+  onGoToReceipts
 }) => {
   const today = new Date().toLocaleDateString();
 
@@ -77,7 +79,11 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   const [transactionRef, setTransactionRef] = useState('');
   const [paymentNote, setPaymentNote] = useState('');
   const [receiptFileName, setReceiptFileName] = useState('');
+  const [receiptImage, setReceiptImage] = useState('');
+  const [receiptFileType, setReceiptFileType] = useState('');
+  const [paymentModalStep, setPaymentModalStep] = useState<'details' | 'upload' | 'reviewed'>('details');
   const [paymentSuccessRef, setPaymentSuccessRef] = useState<string | null>(null);
+  const [paymentUploadError, setPaymentUploadError] = useState('');
 
   // Get list of children linked to this parent
   const linkedChildren: StudentAccount[] = (allStudents || []).filter(s => 
@@ -175,6 +181,11 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
       setPaymentType('full');
     }
     setPaymentSuccessRef(null);
+    setReceiptImage('');
+    setReceiptFileName('');
+    setReceiptFileType('');
+    setPaymentUploadError('');
+    setPaymentModalStep('details');
     setShowPaymentModal(true);
   };
 
@@ -182,6 +193,12 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   const handleExecutePayment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!paymentTargetChild) return;
+    setPaymentUploadError('');
+
+    if (!receiptImage && !transactionRef) {
+      setPaymentUploadError('Please select a picture/document of your bank receipt or enter your transfer reference.');
+      return;
+    }
 
     const stats = getChildPaymentStats(paymentTargetChild);
     let amount = 0;
@@ -202,10 +219,14 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
       bankName: bankName,
       transactionRef: transactionRef || `TRX-${Date.now().toString().slice(-6)}`,
       studentNote: paymentNote || `School fees payment submitted by ${parent.fullName} (${parent.relationship || 'Parent'})`,
-      receiptFileName: receiptFileName || 'bank_transfer_receipt.jpg'
+      receiptFileName: receiptFileName || 'bank_transfer_receipt.jpg',
+      receiptImage: receiptImage || undefined,
+      receiptFileType: receiptFileType || 'image/jpeg',
+      receiptUploadedAt: new Date().toISOString()
     });
 
     setPaymentSuccessRef(newPayment.id);
+    setPaymentModalStep('reviewed');
   };
 
   return (
@@ -1018,27 +1039,71 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
             </div>
 
             <div className="p-6 sm:p-8 space-y-6 max-h-[80vh] overflow-y-auto">
-              {paymentSuccessRef ? (
-                <div className="p-8 text-center space-y-4">
-                  <div className="w-16 h-16 mx-auto bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-3xl font-black">
-                    ✓
+              {paymentModalStep === 'reviewed' && paymentSuccessRef ? (
+                <div className="p-8 text-center space-y-5 bg-gradient-to-b from-blue-50/60 to-amber-50/40 rounded-3xl border-2 border-amber-200">
+                  <div className="w-20 h-20 mx-auto bg-amber-100 text-amber-800 border-4 border-amber-300 rounded-full flex items-center justify-center text-4xl font-black shadow-lg">
+                    ⏳
                   </div>
-                  <h4 className="text-2xl font-serif font-black text-blue-900">
-                    Payment Submitted Successfully!
+
+                  <div className="inline-block px-4 py-1.5 bg-amber-200 text-amber-900 rounded-full text-xs font-black uppercase tracking-widest">
+                    Status: Pending Proprietor Verification
+                  </div>
+
+                  <h4 className="text-2xl sm:text-3xl font-serif font-black text-blue-900 leading-tight">
+                    Payment is being reviewed by the proprietor
                   </h4>
-                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                    Your fee payment for <strong>{paymentTargetChild.name}</strong> has been logged with reference <strong className="text-blue-900">{paymentSuccessRef}</strong>. The school bursar and administrator have been notified to review and verify your receipt.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setShowPaymentModal(false)}
-                    className="px-8 py-3 bg-blue-900 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md"
-                  >
-                    Done & Return to Dashboard
-                  </button>
+
+                  <div className="p-5 bg-white rounded-2xl border border-slate-200 text-left text-xs space-y-2.5 max-w-lg mx-auto shadow-sm">
+                    <div className="flex justify-between border-b border-slate-100 pb-2">
+                      <span className="font-bold text-slate-500">Student / Pupil:</span>
+                      <strong className="text-blue-900 font-black">{paymentTargetChild.name} ({paymentTargetChild.grade})</strong>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-100 pb-2">
+                      <span className="font-bold text-slate-500">Payment Ref ID:</span>
+                      <code className="text-blue-900 font-black">{paymentSuccessRef}</code>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-100 pb-2">
+                      <span className="font-bold text-slate-500">Receipt Attached:</span>
+                      <span className="text-emerald-700 font-bold truncate max-w-[200px]">
+                        {receiptFileName || 'Bank Receipt File Provided'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 pt-1 leading-relaxed">
+                      Thank you. Your receipt proof has been transmitted to the School Proprietor and Bursar for review. Once verified and approved, you can download your official stamped school receipt.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row justify-center gap-3 pt-2">
+                    {onGoToReceipts && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowPaymentModal(false);
+                          onGoToReceipts();
+                        }}
+                        className="px-6 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+                      >
+                        <span>📑</span>
+                        <span>Go to Download Receipts Page</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowPaymentModal(false)}
+                      className="px-6 py-3.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all"
+                    >
+                      Done & Return to Dashboard
+                    </button>
+                  </div>
                 </div>
-              ) : (
-                <form onSubmit={handleExecutePayment} className="space-y-6">
+              ) : paymentModalStep === 'details' ? (
+                <div className="space-y-6">
+                  {/* Step progress header */}
+                  <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-3">
+                    <span className="text-blue-900 font-black">Step 1: Fee Details & Amount</span>
+                    <span>Step 2: Bank Receipt Upload →</span>
+                  </div>
+
                   {/* Class fee summary */}
                   {(() => {
                     const stats = getChildPaymentStats(paymentTargetChild);
@@ -1108,80 +1173,8 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                     <p><strong>Account Name:</strong> God's Hand International Model School</p>
                     <p><strong>Account Number:</strong> <span className="text-sm font-black text-blue-900">2041982731</span></p>
                     <p className="text-[10px] text-slate-500 italic">
-                      Please make the direct transfer or cash deposit using your child's name as the description.
+                      Please make the direct transfer or cash deposit using your child's name as the description, then proceed to upload receipt proof.
                     </p>
-                  </div>
-
-                  {/* Payer Details & Receipt input */}
-                  <div className="space-y-3">
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">
-                          Payer / Depositor Name *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={payerName}
-                          onChange={(e) => setPayerName(e.target.value)}
-                          className="w-full px-3.5 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:bg-white focus:border-blue-900 outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">
-                          Sender Bank Name
-                        </label>
-                        <input
-                          type="text"
-                          value={bankName}
-                          onChange={(e) => setBankName(e.target.value)}
-                          className="w-full px-3.5 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:bg-white focus:border-blue-900 outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">
-                          Transfer Ref / Teller No.
-                        </label>
-                        <input
-                          type="text"
-                          value={transactionRef}
-                          onChange={(e) => setTransactionRef(e.target.value)}
-                          placeholder="e.g. FBN-839201 or session ID"
-                          className="w-full px-3.5 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:bg-white focus:border-blue-900 outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">
-                          Attach Transfer Receipt / Teller
-                        </label>
-                        <input
-                          type="file"
-                          accept="image/*,.pdf"
-                          onChange={(e) => {
-                            if (e.target.files && e.target.files[0]) {
-                              setReceiptFileName(e.target.files[0].name);
-                            }
-                          }}
-                          className="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-black file:bg-blue-100 file:text-blue-900 hover:file:bg-blue-200"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">
-                        Note to School Bursar (Optional)
-                      </label>
-                      <input
-                        type="text"
-                        value={paymentNote}
-                        onChange={(e) => setPaymentNote(e.target.value)}
-                        placeholder="e.g. Paid via mobile app, for 1st Term session"
-                        className="w-full px-3.5 py-2 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:bg-white focus:border-blue-900 outline-none"
-                      />
-                    </div>
                   </div>
 
                   <div className="flex justify-end gap-3 pt-2">
@@ -1193,11 +1186,158 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                       Cancel
                     </button>
                     <button
-                      type="submit"
-                      className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-2"
+                      type="button"
+                      onClick={() => setPaymentModalStep('upload')}
+                      className="px-8 py-3.5 bg-blue-900 hover:bg-blue-950 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center gap-2"
                     >
-                      <span>Submit Fee Payment</span>
+                      <span>Proceed to Input Bank Receipt Proof</span>
                       <span>→</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Step 2: Bank Receipt Upload & Details */
+                <form onSubmit={handleExecutePayment} className="space-y-6">
+                  <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-3">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentModalStep('details')}
+                      className="text-blue-900 hover:underline flex items-center gap-1"
+                    >
+                      ← Back to Amount
+                    </button>
+                    <span className="text-emerald-700 font-black">Step 2: Input Picture / Document of Bank Receipt</span>
+                  </div>
+
+                  {paymentUploadError && (
+                    <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-xl text-xs font-bold">
+                      {paymentUploadError}
+                    </div>
+                  )}
+
+                  {/* Receipt Upload Box */}
+                  <div className="p-5 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-300 text-center space-y-3">
+                    <div className="text-3xl">🧾</div>
+                    <div>
+                      <label className="block text-xs font-black text-blue-900 uppercase tracking-wider mb-1 cursor-pointer">
+                        Upload Bank Receipt (Picture or PDF Document) *
+                      </label>
+                      <p className="text-[11px] text-slate-500">
+                        Take a clear photo or screenshot of your transfer receipt, or upload your bank PDF teller.
+                      </p>
+                    </div>
+
+                    <input
+                      type="file"
+                      accept="image/*,application/pdf"
+                      id="parentReceiptFileInput"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setReceiptFileName(file.name);
+                          setReceiptFileType(file.type);
+                          const reader = new FileReader();
+                          reader.onload = (loadEvt) => {
+                            setReceiptImage(loadEvt.target?.result as string || '');
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="hidden"
+                    />
+
+                    <label
+                      htmlFor="parentReceiptFileInput"
+                      className="inline-block px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl cursor-pointer shadow-sm transition-all"
+                    >
+                      📁 Browse & Select Receipt File
+                    </label>
+
+                    {receiptFileName && (
+                      <div className="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="text-emerald-600 font-black">✓ Attached:</span>
+                          <span className="font-bold text-slate-700 truncate">{receiptFileName}</span>
+                        </div>
+                        {receiptImage && receiptFileType.startsWith('image/') && (
+                          <div className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-slate-300">
+                            <img src={receiptImage} alt="Receipt Preview" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Depositor & Reference inputs */}
+                  <div className="space-y-3">
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">
+                          Payer / Depositor Name *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={payerName}
+                          onChange={(e) => setPayerName(e.target.value)}
+                          className="w-full px-3.5 py-2.5 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:border-blue-900 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">
+                          Sender Bank Name
+                        </label>
+                        <input
+                          type="text"
+                          value={bankName}
+                          onChange={(e) => setBankName(e.target.value)}
+                          className="w-full px-3.5 py-2.5 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:border-blue-900 outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">
+                          Transfer Ref / Session ID
+                        </label>
+                        <input
+                          type="text"
+                          value={transactionRef}
+                          onChange={(e) => setTransactionRef(e.target.value)}
+                          placeholder="e.g. FBN-839201 or 123456789"
+                          className="w-full px-3.5 py-2.5 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:border-blue-900 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">
+                          Note to Bursar (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={paymentNote}
+                          onChange={(e) => setPaymentNote(e.target.value)}
+                          placeholder="e.g. 1st term fees paid via mobile transfer"
+                          className="w-full px-3.5 py-2.5 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:border-blue-900 outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentModalStep('details')}
+                      className="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800"
+                    >
+                      ← Back
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-8 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-2"
+                    >
+                      <span>Submit Receipt to Proprietor for Review</span>
+                      <span>✓</span>
                     </button>
                   </div>
                 </form>

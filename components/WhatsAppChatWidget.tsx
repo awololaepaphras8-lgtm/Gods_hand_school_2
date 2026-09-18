@@ -5,8 +5,8 @@ export const WhatsAppChatWidget: React.FC = () => {
   const [inquiryType, setInquiryType] = useState('General Inquiry');
   const [customMessage, setCustomMessage] = useState("Hello God's Hand International Model School, I would like to make an inquiry.");
 
-  const WHATSAPP_NUMBER = '2348130300837'; // 08130300837
-  const DISPLAY_NUMBER = '08130300837';
+  const WHATSAPP_NUMBER = '2347085596586'; // 07085596586
+  const DISPLAY_NUMBER = '07085596586';
 
   const quickOptions = [
     { label: '🎓 Admissions & Enrollment', text: "Hello God's Hand Model School, I would like to inquire about admissions, requirements, and registration for my child." },
@@ -111,7 +111,7 @@ export const WhatsAppChatWidget: React.FC = () => {
             </button>
 
             <p className="text-[10px] text-center text-slate-400 font-bold">
-              Direct line: 08130300837 • Apata, Ibadan
+              Direct line: {DISPLAY_NUMBER} • Apata, Ibadan
             </p>
           </form>
         </div>

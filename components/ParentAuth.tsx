@@ -587,13 +587,13 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
                       Can't remember your registered email? Contact the School Parent Helpdesk:
                     </p>
                     <a
-                      href={`https://wa.me/2348130300837?text=Hello%20God's%20Hand%20Model%20School%20Helpdesk,%20I%20am%20a%20parent%20(${encodeURIComponent(resetEmail || 'Parent')})%20requesting%20assistance%20with%20my%20portal%20account%20password.`}
+                      href={`https://wa.me/2347085596586?text=Hello%20God's%20Hand%20Model%20School%20Helpdesk,%20I%20am%20a%20parent%20(${encodeURIComponent(resetEmail || 'Parent')})%20requesting%20assistance%20with%20my%20portal%20account%20password.`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center gap-1.5 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all"
                     >
                       <span>💬</span>
-                      <span>Request Reset on WhatsApp: 08130300837</span>
+                      <span>Request Reset on WhatsApp: 07085596586</span>
                     </a>
                   </div>
 

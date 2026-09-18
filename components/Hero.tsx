@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Announcement } from '../types';
+import { getNowEnrollingSession } from '../utils/academicSession';
 
 interface HeroProps {
   announcements: Announcement[];
@@ -8,7 +9,9 @@ interface HeroProps {
   onAbout?: () => void;
   onCheckFees?: () => void;
   onParentPortal?: () => void;
+  onGoToReceipts?: () => void;
   onOpenDownloadModal?: () => void;
+  isAppInstalled?: boolean;
 }
 
 export const Hero: React.FC<HeroProps> = ({
@@ -17,7 +20,9 @@ export const Hero: React.FC<HeroProps> = ({
   onApply,
   onAbout,
   onParentPortal,
-  onOpenDownloadModal
+  onGoToReceipts,
+  onOpenDownloadModal,
+  isAppInstalled = false
 }) => {
   const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(true);
   const [isMuted, setIsMuted] = useState<boolean>(true);
@@ -83,13 +88,13 @@ export const Hero: React.FC<HeroProps> = ({
         <div className="lg:col-span-7">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-yellow-400 text-blue-950 rounded-full text-xs font-black uppercase tracking-widest mb-6 shadow-xl border border-yellow-300">
             <span>✨</span>
-            <span>Now Enrolling for 2025/2026 Academic Session</span>
+            <span>Now Enrolling for {getNowEnrollingSession()}</span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-7xl font-serif font-black text-white mb-6 leading-[1.1] tracking-tight drop-shadow-lg">
             Building Lives <br />
             <span className="text-yellow-400 underline decoration-yellow-500/50 underline-offset-8">
-              Upon The Rock
+              Upon The Solid Rock
             </span>
           </h1>
 
@@ -118,7 +123,7 @@ export const Hero: React.FC<HeroProps> = ({
               </button>
             )}
 
-            {onOpenDownloadModal && (
+            {!isAppInstalled && onOpenDownloadModal && (
               <button 
                 onClick={onOpenDownloadModal}
                 className="px-5 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm uppercase tracking-wider rounded-2xl shadow-xl transition-all transform hover:-translate-y-0.5 active:scale-95 text-center flex items-center justify-center gap-2 border border-emerald-400"
@@ -132,6 +137,16 @@ export const Hero: React.FC<HeroProps> = ({
 
           {/* About School Shortcut & Physical Campus View */}
           <div className="mb-8 flex flex-wrap items-center gap-3">
+            {onGoToReceipts && (
+              <button 
+                onClick={onGoToReceipts}
+                className="text-xs sm:text-sm font-black uppercase text-emerald-300 hover:text-white tracking-wider flex items-center gap-1.5 transition-colors bg-emerald-950/80 hover:bg-emerald-900/90 px-3.5 py-2 rounded-xl border border-emerald-400/50 backdrop-blur-md shadow-md"
+              >
+                <span>📑 Download Fee Receipts</span>
+                <span>→</span>
+              </button>
+            )}
+
             {onAbout && (
               <button 
                 onClick={onAbout}
@@ -197,22 +212,6 @@ export const Hero: React.FC<HeroProps> = ({
                 referrerPolicy="no-referrer"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               />
-
-              {/* School Crest Badge (Floating) - with logo taking 80% of its containing box */}
-              <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-2.5 py-1.5 rounded-2xl shadow-xl border-2 border-yellow-400 flex items-center gap-2">
-                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center border border-blue-900/20 shadow-xs shrink-0 overflow-hidden">
-                  <img 
-                    src="/logo.png" 
-                    alt="God's Hand School Official Crest" 
-                    referrerPolicy="no-referrer"
-                    className="w-[80%] h-[80%] object-contain" 
-                  />
-                </div>
-                <div className="text-left">
-                  <p className="text-[10px] font-black uppercase text-blue-950 tracking-wider font-serif leading-tight">God's Hand</p>
-                  <p className="text-[8px] font-black uppercase text-yellow-600 tracking-widest leading-tight">Faith In God</p>
-                </div>
-              </div>
 
               {/* Zoom pill badge */}
               <div className="absolute top-3 right-3 bg-blue-950/80 hover:bg-yellow-400 hover:text-blue-950 text-white px-2.5 py-1 rounded-xl text-[10px] font-bold tracking-wider backdrop-blur-md border border-white/30 transition-all flex items-center gap-1 shadow-md">
@@ -311,7 +310,7 @@ export const Hero: React.FC<HeroProps> = ({
                 <span>Location: Wire and Cable, Apata, Ibadan, Oyo State</span>
               </div>
               <div className="flex items-center gap-2">
-                {onOpenDownloadModal && (
+                {!isAppInstalled && onOpenDownloadModal && (
                   <button
                     onClick={() => {
                       setIsAerialModalOpen(false);

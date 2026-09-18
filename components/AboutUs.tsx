@@ -279,7 +279,7 @@ export const AboutUs: React.FC<AboutUsProps> = ({ onApply, onCheckFees, onBack }
               </p>
               <p className="flex items-center gap-2">
                 <span className="text-blue-900">📞</span>
-                <span><strong>Hotline:</strong> 08056507252 | 08130300837</span>
+                <span><strong>Hotline:</strong> 08056507252 | 07085596586</span>
               </p>
               <p className="flex items-center gap-2">
                 <span className="text-blue-900">✉️</span>

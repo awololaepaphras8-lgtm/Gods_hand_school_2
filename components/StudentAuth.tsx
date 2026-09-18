@@ -465,13 +465,13 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
                       Forget your credentials entirely? Ask the School Admin on WhatsApp:
                     </p>
                     <a
-                      href={`https://wa.me/2348130300837?text=Hello%20God's%20Hand%20Model%20School%20Office,%20I%20am%20a%20student%20(${encodeURIComponent(forgotEmailOrId || 'Student')})%20requesting%20assistance%20with%20my%20Student%20Hub%20password.`}
+                      href={`https://wa.me/2347085596586?text=Hello%20God's%20Hand%20Model%20School%20Office,%20I%20am%20a%20student%20(${encodeURIComponent(forgotEmailOrId || 'Student')})%20requesting%20assistance%20with%20my%20Student%20Hub%20password.`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center gap-1.5 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all"
                     >
                       <span>💬</span>
-                      <span>Request Help on WhatsApp: 08130300837</span>
+                      <span>Request Help on WhatsApp: 07085596586</span>
                     </a>
                   </div>
 

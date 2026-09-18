@@ -307,7 +307,7 @@ export const TeacherLoginGateway: React.FC<TeacherLoginGatewayProps> = ({
                       Need immediate assistance? Ping the School Administration via WhatsApp:
                     </p>
                     <a
-                      href={`https://wa.me/2348130300837?text=Hello%20School%20Admin,%20I%20am%20staff%20member%20${encodeURIComponent(forgotUsername || 'Faculty')}%20requesting%20a%20password%20reset%20for%20my%20Teacher%20Portal%20account.`}
+                      href={`https://wa.me/2347085596586?text=Hello%20School%20Admin,%20I%20am%20staff%20member%20${encodeURIComponent(forgotUsername || 'Faculty')}%20requesting%20a%20password%20reset%20for%20my%20Teacher%20Portal%20account.`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center gap-2 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md transition-all"

@@ -354,13 +354,13 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
                       Send an encrypted key reset request directly to the School Proprietor verification hotline:
                     </p>
                     <a
-                      href="https://wa.me/2348130300837?text=Hello%20God's%20Hand%20Model%20School%20Proprietor%20Desk,%20I%20need%20to%20reset%20the%20administrative%20Security%20Key%20for%20the%20School%20Management%20Portal."
+                      href="https://wa.me/2347085596586?text=Hello%20God's%20Hand%20Model%20School%20Proprietor%20Desk,%20I%20need%20to%20reset%20the%20administrative%20Security%20Key%20for%20the%20School%20Management%20Portal."
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center gap-2 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md transition-all"
                     >
                       <span>💬</span>
-                      <span>Request Reset on WhatsApp: 08130300837</span>
+                      <span>Request Reset on WhatsApp: 07085596586</span>
                     </a>
                   </div>
 

@@ -1,6 +1,7 @@
 
-import { AppState } from '../types';
+import { AppState, UserPagesAccessState } from '../types';
 import { INITIAL_FEES, APP_STORAGE_KEY } from '../constants';
+import { INITIAL_DEFAULT_TIMETABLES } from '../constants/timetableDefaults';
 
 const DEFAULT_STATE: AppState = {
   fees: INITIAL_FEES,
@@ -117,7 +118,22 @@ const DEFAULT_STATE: AppState = {
     }
   ],
   academicCalendar: `1. Resumption: Jan 10th\n2. Mid-Term Break: Feb 15th - 17th\n3. Examination Period: March 20th - 30th\n4. Vacation: April 5th`,
-  resultPublishRequests: []
+  resultPublishRequests: [],
+  timedStaffDelegations: [],
+  userPagesAccess: {
+    allPagesClosed: false,
+    globalClosedMessage: 'The user portal is temporarily undergoing scheduled administrative maintenance by the School Proprietor. Please check back shortly.',
+    pages: {
+      apply: { isOpen: true, closedReason: '' },
+      feeChecker: { isOpen: true, closedReason: '' },
+      resultChecker: { isOpen: true, closedReason: '' },
+      studentReceipts: { isOpen: true, closedReason: '' },
+      parentPortal: { isOpen: true, closedReason: '' },
+      studentPortal: { isOpen: true, closedReason: '' },
+      about: { isOpen: true, closedReason: '' },
+    }
+  },
+  timetables: INITIAL_DEFAULT_TIMETABLES
 };
 
 export const stateService = {
@@ -129,6 +145,10 @@ export const stateService = {
         return {
           ...DEFAULT_STATE,
           ...parsed,
+          fees: {
+            ...INITIAL_FEES,
+            ...(parsed.fees || {})
+          },
           teachers: parsed.teachers || [],
           studentAccounts: (parsed.studentAccounts && parsed.studentAccounts.length > 0) ? parsed.studentAccounts : DEFAULT_STATE.studentAccounts,
           parents: (parsed.parents && parsed.parents.length > 0) ? parsed.parents : (DEFAULT_STATE.parents || []),
@@ -137,7 +157,17 @@ export const stateService = {
           courses: parsed.courses || DEFAULT_STATE.courses,
           results: parsed.results || DEFAULT_STATE.results,
           academicCalendar: parsed.academicCalendar || DEFAULT_STATE.academicCalendar,
-          resultPublishRequests: parsed.resultPublishRequests || []
+          resultPublishRequests: parsed.resultPublishRequests || [],
+          timedStaffDelegations: parsed.timedStaffDelegations || [],
+          timetables: (parsed.timetables && parsed.timetables.length > 0) ? parsed.timetables : DEFAULT_STATE.timetables,
+          userPagesAccess: {
+            ...DEFAULT_STATE.userPagesAccess,
+            ...(parsed.userPagesAccess || {}),
+            pages: {
+              ...(DEFAULT_STATE.userPagesAccess?.pages || {}),
+              ...(parsed.userPagesAccess?.pages || {})
+            }
+          }
         };
       } catch (e) {
         console.error("Failed to parse state", e);
@@ -148,5 +178,15 @@ export const stateService = {
 
   saveState: (state: AppState): void => {
     localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(state));
+  },
+
+  updateUserPagesAccess: (access: UserPagesAccessState): void => {
+    try {
+      const current = stateService.getState();
+      const updated = { ...current, userPagesAccess: access };
+      stateService.saveState(updated);
+    } catch (e) {
+      console.error("Failed to update user pages access", e);
+    }
   }
 };

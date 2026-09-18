@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { UserRole, AppState, StudentApplication, Announcement, TeacherAccount, StudentResult, Course, GradeLevel, StudentAccount, FeePayment, AttendanceRecord, StaffPagePermission, ParentAccount, PaymentStatus, ResultPublishRequest } from './types';
+import { UserRole, AppState, StudentApplication, Announcement, TeacherAccount, StudentResult, Course, GradeLevel, StudentAccount, FeePayment, AttendanceRecord, StaffPagePermission, ParentAccount, PaymentStatus, ResultPublishRequest, TimedStaffDelegation, AdminSectionKey, UserPagesAccessState, UserPageKey, ALL_USER_PAGES, ClassTimetable } from './types';
 import { stateService } from './services/stateService';
 import { setupRealtimeSync, fetchSupabaseState, realtimeService, isSupabaseConfigured } from './services/supabaseService';
-import { GRADE_ORDER } from './constants';
+import { GRADE_ORDER, getNextGradeLevel } from './constants';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { AdminPanel } from './components/AdminPanel';
@@ -11,6 +11,7 @@ import { StudentPortal } from './components/StudentPortal';
 import { StudentAuth } from './components/StudentAuth';
 import { StudentFeeChecker } from './components/StudentFeeChecker';
 import { StudentResultChecker } from './components/StudentResultChecker';
+import { StudentReceiptsDownload } from './components/StudentReceiptsDownload';
 import { AdminLoginGateway } from './components/AdminLoginGateway';
 import { TeacherLoginGateway } from './components/TeacherLoginGateway';
 import { ParentAuth } from './components/ParentAuth';
@@ -20,6 +21,7 @@ import { TeacherDashboard } from './components/TeacherDashboard';
 import { AboutUs } from './components/AboutUs';
 import { WhatsAppChatWidget } from './components/WhatsAppChatWidget';
 import { PWADownloadPrompt } from './components/PWADownloadPrompt';
+import { StudentTimetableCard } from './components/StudentTimetableCard';
 import { QRCodeSVG } from 'qrcode.react';
 
 const App: React.FC = () => {
@@ -27,10 +29,37 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [currentParentId, setCurrentParentId] = useState<string | null>(null);
   const [state, setState] = useState<AppState>(stateService.getState());
-  const [view, setView] = useState<'home' | 'portal' | 'apply' | 'admin' | 'teacherLogin' | 'teacher' | 'studentAuth' | 'feeChecker' | 'resultChecker' | 'about' | 'parentAuth' | 'parentPortal'>('home');
+  const [view, setView] = useState<'home' | 'portal' | 'apply' | 'admin' | 'teacherLogin' | 'teacher' | 'studentAuth' | 'feeChecker' | 'resultChecker' | 'about' | 'parentAuth' | 'parentPortal' | 'studentReceipts'>('home');
   const [loginError, setLoginError] = useState('');
   const [showQRModal, setShowQRModal] = useState(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const [isAppInstalled, setIsAppInstalled] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true ||
+      document.referrer.includes('android-app://') ||
+      localStorage.getItem('ghs_app_installed') === 'true'
+    );
+  });
+
+  useEffect(() => {
+    const checkInstalled = () => {
+      const installed = 
+        window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as any).standalone === true ||
+        document.referrer.includes('android-app://') ||
+        localStorage.getItem('ghs_app_installed') === 'true';
+      setIsAppInstalled(installed);
+    };
+
+    window.addEventListener('appinstalled', checkInstalled);
+    window.addEventListener('ghs_app_installed_event', checkInstalled);
+    return () => {
+      window.removeEventListener('appinstalled', checkInstalled);
+      window.removeEventListener('ghs_app_installed_event', checkInstalled);
+    };
+  }, []);
 
   const [selectedTermForQR, setSelectedTermForQR] = useState<string>('First Term');
 
@@ -74,11 +103,65 @@ const App: React.FC = () => {
   }, []);
 
   const updateFees = (grade: string, amount: number) => {
-    setState(prev => ({
-      ...prev,
-      fees: { ...prev.fees, [grade]: amount }
-    }));
+    setState(prev => {
+      const updatedFees = { ...prev.fees, [grade]: amount };
+      const updated = { ...prev, fees: updatedFees };
+      stateService.saveState(updated);
+      return updated;
+    });
     realtimeService.updateFee(grade, amount);
+  };
+
+  const updateAllFees = (newFees: { [key: string]: number }) => {
+    setState(prev => {
+      const merged = { ...prev.fees, ...newFees };
+      const updated = { ...prev, fees: merged };
+      stateService.saveState(updated);
+      return updated;
+    });
+    Object.entries(newFees).forEach(([grade, amount]) => {
+      realtimeService.updateFee(grade, amount);
+    });
+  };
+
+  const handleUpdateUserPagesAccess = (newAccessState: UserPagesAccessState) => {
+    setState(prev => {
+      const updated = { ...prev, userPagesAccess: newAccessState };
+      stateService.saveState(updated);
+      return updated;
+    });
+    stateService.updateUserPagesAccess(newAccessState);
+    realtimeService.updateUserPagesAccess(newAccessState);
+  };
+
+  const handleBatchMarkAttendance = (records: { studentId: string; date: string; term: string; markedBy: string }[]) => {
+    const existingKeys = new Set(
+      state.attendance.map(a => `${a.studentId}_${a.date}_${a.term || 'First Term'}`)
+    );
+    const newRecordsToAdd: AttendanceRecord[] = [];
+
+    records.forEach(rec => {
+      const key = `${rec.studentId}_${rec.date}_${rec.term}`;
+      if (!existingKeys.has(key)) {
+        newRecordsToAdd.push({
+          studentId: rec.studentId,
+          date: rec.date,
+          markedBy: rec.markedBy,
+          term: rec.term
+        });
+        existingKeys.add(key);
+      }
+    });
+
+    if (newRecordsToAdd.length > 0) {
+      setState(prev => {
+        const updatedAttendance = [...prev.attendance, ...newRecordsToAdd];
+        const updated = { ...prev, attendance: updatedAttendance };
+        stateService.saveState(updated);
+        return updated;
+      });
+      newRecordsToAdd.forEach(r => realtimeService.recordAttendance(r));
+    }
   };
 
   const updateCalendar = (content: string) => {
@@ -188,35 +271,41 @@ const App: React.FC = () => {
         resultPublishRequests: [newReq, ...existing]
       };
     });
+    realtimeService.submitResultPublishRequest(newReq);
   };
 
   const handleApprovePublishRequest = (requestId: string) => {
     const now = new Date().toISOString();
     const reviewer = currentUser || 'School Administrator';
 
+    const req = (state.resultPublishRequests || []).find(r => r.id === requestId);
+    if (!req) return;
+
+    const updatedReq: ResultPublishRequest = {
+      ...req,
+      status: 'approved',
+      reviewedAt: now,
+      reviewedBy: reviewer
+    };
+
+    const updatedResults = state.results.map(res => {
+      if (res.grade === req.grade && res.term.toLowerCase() === req.term.toLowerCase()) {
+        return { ...res, published: true };
+      }
+      return res;
+    });
+
+    const publishAnnouncement: Announcement = {
+      id: `ANN-${Date.now()}`,
+      title: `Official Report Cards Released: ${req.grade} (${req.term})`,
+      content: `Academic assessment and terminal report cards for ${req.grade} (${req.term}) have been officially approved and published. Students and parents can now check positions and download standard PDF result sheets.`,
+      date: new Date().toLocaleDateString()
+    };
+
     setState(prev => {
-      const req = (prev.resultPublishRequests || []).find(r => r.id === requestId);
-      if (!req) return prev;
-
       const updatedRequests = (prev.resultPublishRequests || []).map(r => 
-        r.id === requestId 
-          ? { ...r, status: 'approved' as const, reviewedAt: now, reviewedBy: reviewer }
-          : r
+        r.id === requestId ? updatedReq : r
       );
-
-      const updatedResults = prev.results.map(res => {
-        if (res.grade === req.grade && res.term.toLowerCase() === req.term.toLowerCase()) {
-          return { ...res, published: true };
-        }
-        return res;
-      });
-
-      const publishAnnouncement: Announcement = {
-        id: `ANN-${Date.now()}`,
-        title: `Official Report Cards Released: ${req.grade} (${req.term})`,
-        content: `Academic assessment and terminal report cards for ${req.grade} (${req.term}) have been officially approved and published. Students and parents can now check positions and download standard PDF result sheets.`,
-        date: new Date().toLocaleDateString()
-      };
 
       return {
         ...prev,
@@ -225,31 +314,55 @@ const App: React.FC = () => {
         announcements: [publishAnnouncement, ...prev.announcements]
       };
     });
+
+    realtimeService.submitResultPublishRequest(updatedReq);
+    updatedResults
+      .filter(res => res.grade === req.grade && res.term.toLowerCase() === req.term.toLowerCase())
+      .forEach(res => realtimeService.updateResult(res));
+    realtimeService.addAnnouncement(publishAnnouncement);
   };
 
   const handleRejectPublishRequest = (requestId: string, feedback: string) => {
     const now = new Date().toISOString();
     const reviewer = currentUser || 'School Administrator';
 
+    const req = (state.resultPublishRequests || []).find(r => r.id === requestId);
+    if (!req) return;
+
+    const updatedReq: ResultPublishRequest = {
+      ...req,
+      status: 'rejected',
+      reviewedAt: now,
+      reviewedBy: reviewer,
+      adminFeedback: feedback
+    };
+
     setState(prev => ({
       ...prev,
       resultPublishRequests: (prev.resultPublishRequests || []).map(r => 
-        r.id === requestId 
-          ? { ...r, status: 'rejected' as const, reviewedAt: now, reviewedBy: reviewer, adminFeedback: feedback }
-          : r
+        r.id === requestId ? updatedReq : r
       )
     }));
+
+    realtimeService.submitResultPublishRequest(updatedReq);
   };
 
   const handleSendResultsToPupils = (grade: GradeLevel, term: string) => {
-    setState(prev => {
-      const updatedResults = prev.results.map(r => {
-        if (r.grade === grade && r.term.toLowerCase() === term.toLowerCase()) {
-          return { ...r, published: true };
-        }
-        return r;
-      });
+    const updatedResults = state.results.map(r => {
+      if (r.grade === grade && r.term.toLowerCase() === term.toLowerCase()) {
+        return { ...r, published: true };
+      }
+      return r;
+    });
 
+    const publishAnnouncement: Announcement = {
+      id: `ANN-${Date.now()}`,
+      title: `Official Terminal Results: ${grade} (${term})`,
+      content: `All terminal scores and report cards for ${grade} (${term}) have been delivered to all pupils. Log in to your student or parent dashboard to view standings and download your official report card.`,
+      date: new Date().toLocaleDateString()
+    };
+
+    setState(prev => {
       const updatedRequests = (prev.resultPublishRequests || []).map(r => {
         if (r.grade === grade && r.term.toLowerCase() === term.toLowerCase()) {
           return { ...r, status: 'approved' as const };
@@ -257,13 +370,6 @@ const App: React.FC = () => {
         return r;
       });
 
-      const publishAnnouncement: Announcement = {
-        id: `ANN-${Date.now()}`,
-        title: `Official Terminal Results: ${grade} (${term})`,
-        content: `All terminal scores and report cards for ${grade} (${term}) have been delivered to all pupils. Log in to your student or parent dashboard to view standings and download your official report card.`,
-        date: new Date().toLocaleDateString()
-      };
-
       return {
         ...prev,
         results: updatedResults,
@@ -271,6 +377,68 @@ const App: React.FC = () => {
         announcements: [publishAnnouncement, ...prev.announcements]
       };
     });
+
+    updatedResults
+      .filter(r => r.grade === grade && r.term.toLowerCase() === term.toLowerCase())
+      .forEach(r => realtimeService.updateResult(r));
+    realtimeService.addAnnouncement(publishAnnouncement);
+  };
+
+  const handleGrantStaffDelegation = (delegationData: {
+    teacherUsername: string;
+    teacherName: string;
+    grantedSections: AdminSectionKey[];
+    durationMinutes: number;
+    purpose?: string;
+  }) => {
+    const grantedAt = new Date();
+    const expiresAt = new Date(grantedAt.getTime() + delegationData.durationMinutes * 60000);
+
+    const newDelegation: TimedStaffDelegation = {
+      id: `DEL-${Date.now()}`,
+      teacherUsername: delegationData.teacherUsername,
+      teacherName: delegationData.teacherName,
+      grantedSections: delegationData.grantedSections,
+      grantedAt: grantedAt.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      durationMinutes: delegationData.durationMinutes,
+      grantedBy: currentUser || 'Proprietor / Admin',
+      purpose: delegationData.purpose,
+      status: 'active'
+    };
+
+    setState(prev => {
+      const existing = (prev.timedStaffDelegations || []).map(d =>
+        d.teacherUsername === delegationData.teacherUsername && d.status === 'active'
+          ? { ...d, status: 'revoked' as const }
+          : d
+      );
+      return {
+        ...prev,
+        timedStaffDelegations: [newDelegation, ...existing]
+      };
+    });
+
+    realtimeService.addTimedStaffDelegation(newDelegation);
+  };
+
+  const handleRevokeStaffDelegation = (delegationId: string) => {
+    const target = (state.timedStaffDelegations || []).find(d => d.id === delegationId);
+    if (!target) return;
+
+    const revoked: TimedStaffDelegation = {
+      ...target,
+      status: 'revoked'
+    };
+
+    setState(prev => ({
+      ...prev,
+      timedStaffDelegations: (prev.timedStaffDelegations || []).map(d =>
+        d.id === delegationId ? revoked : d
+      )
+    }));
+
+    realtimeService.updateTimedStaffDelegation(revoked);
   };
 
   const addPayment = (paymentData: Omit<FeePayment, 'id' | 'date'>) => {
@@ -399,6 +567,7 @@ const App: React.FC = () => {
       ...prev,
       teachers: prev.teachers.filter(t => t.id !== teacherId)
     }));
+    realtimeService.deleteTeacher(teacherId);
   };
 
   const shiftStudentToNextClass = (studentId: string) => {
@@ -406,23 +575,59 @@ const App: React.FC = () => {
       const student = prev.studentAccounts.find(s => s.id === studentId);
       if (!student) return prev;
 
-      const currentIndex = GRADE_ORDER.indexOf(student.grade);
-      if (currentIndex === -1 || currentIndex === GRADE_ORDER.length - 1) {
+      const nextGrade = getNextGradeLevel(student.grade);
+      if (!nextGrade) {
         return prev;
       }
 
-      const nextGrade = GRADE_ORDER[currentIndex + 1];
+      const updatedStudent: StudentAccount = {
+        ...student,
+        grade: nextGrade as GradeLevel,
+        qrCodeVersion: (student.qrCodeVersion || 0) + 1
+      };
+
       const updatedAccounts = prev.studentAccounts.map(s => 
-        s.id === studentId 
-          ? { ...s, grade: nextGrade, qrCodeVersion: (s.qrCodeVersion || 0) + 1 } 
-          : s
+        s.id === studentId ? updatedStudent : s
       );
 
-      const updatedStudent = { ...student, grade: nextGrade, qrCodeVersion: (student.qrCodeVersion || 0) + 1 };
       realtimeService.addStudent(updatedStudent);
 
       return { ...prev, studentAccounts: updatedAccounts };
     });
+  };
+
+  const shiftMultipleStudentsToNextClass = (studentIds: string[]) => {
+    setState(prev => {
+      let accounts = [...prev.studentAccounts];
+      studentIds.forEach(id => {
+        const student = accounts.find(s => s.id === id);
+        if (student) {
+          const nextGrade = getNextGradeLevel(student.grade);
+          if (nextGrade) {
+            const updatedStudent: StudentAccount = {
+              ...student,
+              grade: nextGrade as GradeLevel,
+              qrCodeVersion: (student.qrCodeVersion || 0) + 1
+            };
+            accounts = accounts.map(s => s.id === id ? updatedStudent : s);
+            realtimeService.addStudent(updatedStudent);
+          }
+        }
+      });
+      return { ...prev, studentAccounts: accounts };
+    });
+  };
+
+  const handleSaveClassTimetable = (timetable: ClassTimetable) => {
+    setState(prev => {
+      const list = prev.timetables || [];
+      const exists = list.some(t => t.id === timetable.id || (t.grade === timetable.grade && (t.term || 'First Term') === (timetable.term || 'First Term')));
+      const updated = exists
+        ? list.map(t => (t.id === timetable.id || (t.grade === timetable.grade && (t.term || 'First Term') === (timetable.term || 'First Term'))) ? timetable : t)
+        : [...list, timetable];
+      return { ...prev, timetables: updated };
+    });
+    realtimeService.saveClassTimetable(timetable);
   };
 
   const toggleStudentEntry = (studentId: string, allowed: boolean) => {
@@ -481,6 +686,7 @@ const App: React.FC = () => {
       ...prev,
       teachers: prev.teachers.map(t => t.username.toLowerCase() === cleanUser ? updated : t)
     }));
+    realtimeService.addTeacher(updated);
     return true;
   };
 
@@ -508,6 +714,7 @@ const App: React.FC = () => {
       ...prev,
       parents: (prev.parents || []).map(p => p.id === parent.id ? updated : p)
     }));
+    realtimeService.registerParent(updated);
     return true;
   };
 
@@ -558,6 +765,8 @@ const App: React.FC = () => {
       ...prev,
       parents: [...(prev.parents || []), newParent]
     }));
+
+    realtimeService.registerParent(newParent);
 
     setRole(UserRole.PARENT);
     setCurrentUser(newParent.fullName);
@@ -837,10 +1046,64 @@ const App: React.FC = () => {
     ? (state.parents || []).find(p => p.id === currentParentId || p.fullName === currentUser || p.email.toLowerCase() === currentUser?.toLowerCase())
     : null;
 
+  const activeTeacherDelegation = (role === UserRole.TEACHER && currentUser)
+    ? (state.timedStaffDelegations || []).find(
+        d => d.teacherUsername === currentUser && d.status === 'active' && new Date(d.expiresAt) > new Date()
+      )
+    : null;
+
   const studentPayments = state.payments.filter(p => p.studentName === currentUser);
   const totalPaid = studentPayments.reduce((acc, p) => acc + p.amount, 0);
   const targetFee = currentStudentObj ? state.fees[currentStudentObj.grade] : 0;
   const paymentProgress = targetFee > 0 ? Math.min(100, Math.round((totalPaid / targetFee) * 100)) : 0;
+
+  const getPageClosedStatus = (pageView: string): { isClosed: boolean; pageName: string; notice: string } => {
+    if (role === UserRole.ADMIN) {
+      return { isClosed: false, pageName: '', notice: '' };
+    }
+
+    const access = state.userPagesAccess;
+    if (!access) {
+      return { isClosed: false, pageName: '', notice: '' };
+    }
+
+    let pageKey: UserPageKey | null = null;
+    if (pageView === 'apply') pageKey = 'apply';
+    else if (pageView === 'feeChecker') pageKey = 'feeChecker';
+    else if (pageView === 'resultChecker') pageKey = 'resultChecker';
+    else if (pageView === 'studentReceipts') pageKey = 'studentReceipts';
+    else if (pageView === 'parentPortal' || pageView === 'parentAuth') pageKey = 'parentPortal';
+    else if (pageView === 'portal' || pageView === 'studentAuth') pageKey = 'studentPortal';
+    else if (pageView === 'about') pageKey = 'about';
+
+    if (!pageKey) {
+      return { isClosed: false, pageName: '', notice: '' };
+    }
+
+    const pageMeta = ALL_USER_PAGES.find(p => p.id === pageKey);
+    const pageTitle = pageMeta?.label || 'This Portal Section';
+
+    if (access.allPagesClosed) {
+      return {
+        isClosed: true,
+        pageName: pageTitle,
+        notice: access.globalClosedMessage || 'All user pages are temporarily undergoing scheduled administrative maintenance by the School Proprietor. Please check back shortly.'
+      };
+    }
+
+    const pageItem = access.pages?.[pageKey];
+    if (pageItem && pageItem.isOpen === false) {
+      return {
+        isClosed: true,
+        pageName: pageTitle,
+        notice: pageItem.closedReason || `${pageTitle} is temporarily closed by administrative directive.`
+      };
+    }
+
+    return { isClosed: false, pageName: '', notice: '' };
+  };
+
+  const closedStatus = getPageClosedStatus(view);
 
   return (
     <div className="min-h-screen flex flex-col font-sans bg-slate-50">
@@ -850,10 +1113,66 @@ const App: React.FC = () => {
         setView={handleNav} 
         activeView={view} 
         onOpenDownloadModal={() => setIsDownloadModalOpen(true)}
+        isAppInstalled={isAppInstalled}
+        hasActiveDelegation={!!activeTeacherDelegation}
       />
 
       <main className="flex-grow">
-        {view === 'home' && (
+        {closedStatus.isClosed ? (
+          <div className="max-w-3xl mx-auto py-16 px-4">
+            <div className="bg-white rounded-[2.5rem] border-4 border-amber-300 p-8 sm:p-12 shadow-2xl text-center space-y-6">
+              <div className="w-20 h-20 bg-amber-100 text-amber-900 rounded-3xl flex items-center justify-center text-4xl mx-auto border-2 border-amber-200 shadow-inner">
+                🔒
+              </div>
+
+              <div>
+                <span className="inline-block px-4 py-1.5 bg-amber-100 text-amber-900 text-xs font-black uppercase tracking-widest rounded-full mb-3">
+                  Administrative Access Restriction
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-black text-blue-950 font-serif">
+                  {closedStatus.pageName} is Temporarily Closed
+                </h2>
+                <p className="text-sm text-slate-500 font-medium mt-2">
+                  Access to this portal section is presently closed by the School Administration.
+                </p>
+              </div>
+
+              <div className="p-6 bg-slate-50 border-2 border-slate-200 rounded-3xl text-left">
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                  Official Proprietor / Administrative Note:
+                </p>
+                <p className="text-sm font-bold text-blue-900 leading-relaxed">
+                  "{closedStatus.notice}"
+                </p>
+              </div>
+
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setView('home');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="w-full sm:w-auto px-8 py-4 bg-blue-950 hover:bg-blue-900 text-yellow-400 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl transition-all hover:scale-105 active:scale-95"
+                >
+                  Return to Homepage
+                </button>
+
+                <a
+                  href="https://wa.me/2348000000000?text=Hello%20God's%20Heritage%20Schools,%20I%20need%20inquiry%20regarding%20closed%20portal%20page"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <span>💬</span>
+                  <span>Contact School Admin</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {view === 'home' && (
           <Hero 
             announcements={state.announcements} 
             calendar={state.academicCalendar}
@@ -862,6 +1181,7 @@ const App: React.FC = () => {
             onCheckFees={() => handleNav('feeChecker')}
             onParentPortal={() => handleNav(role === UserRole.PARENT ? 'parentPortal' : 'parentAuth')}
             onOpenDownloadModal={() => setIsDownloadModalOpen(true)}
+            isAppInstalled={isAppInstalled}
           />
         )}
 
@@ -971,26 +1291,42 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
                     <button 
                       onClick={() => setShowQRModal(true)}
-                      className="p-10 bg-yellow-400 text-blue-900 rounded-[2rem] hover:bg-yellow-500 transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1"
+                      className="p-6 sm:p-8 bg-yellow-400 text-blue-900 rounded-[2rem] hover:bg-yellow-500 transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1"
                     >
-                        <span className="block text-5xl mb-3 group-hover:scale-110 transition-transform">🆔</span>
-                        <span className="font-black uppercase text-xs tracking-widest">Attendance QR</span>
+                        <span className="block text-4xl sm:text-5xl mb-2 group-hover:scale-110 transition-transform">🆔</span>
+                        <span className="font-black uppercase text-xs tracking-wider">Attendance QR</span>
                     </button>
-                    <button className="p-10 bg-blue-900 text-white rounded-[2rem] hover:bg-blue-800 transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1">
-                        <span className="block text-5xl mb-3 text-yellow-400 group-hover:scale-110 transition-transform">📚</span>
-                        <span className="font-black uppercase text-xs tracking-widest">Materials</span>
+                    <button 
+                      onClick={() => {
+                        const el = document.getElementById('student-timetable-section');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="p-6 sm:p-8 bg-blue-900 text-white rounded-[2rem] hover:bg-blue-800 transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1 border-2 border-yellow-400/40"
+                    >
+                        <span className="block text-4xl sm:text-5xl mb-2 text-yellow-400 group-hover:scale-110 transition-transform">🗓️</span>
+                        <span className="font-black uppercase text-xs tracking-wider">Class Timetable</span>
+                    </button>
+                    <button 
+                      onClick={() => {
+                        const el = document.getElementById('student-timetable-section');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="p-6 sm:p-8 bg-slate-800 text-white rounded-[2rem] hover:bg-slate-700 transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1"
+                    >
+                        <span className="block text-4xl sm:text-5xl mb-2 text-yellow-400 group-hover:scale-110 transition-transform">📚</span>
+                        <span className="font-black uppercase text-xs tracking-wider">Subjects</span>
                     </button>
                     <button 
                         onClick={() => setView('apply')}
-                        className={`p-10 rounded-[2rem] transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1 ${paymentProgress < 100 ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-green-50 text-green-700 border-2 border-green-200 cursor-default'}`}
+                        className={`p-6 sm:p-8 rounded-[2rem] transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1 ${paymentProgress < 100 ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-green-50 text-green-700 border-2 border-green-200 cursor-default'}`}
                     >
-                        <span className="block text-5xl mb-3 group-hover:scale-110 transition-transform">
+                        <span className="block text-4xl sm:text-5xl mb-2 group-hover:scale-110 transition-transform">
                           {paymentProgress < 100 ? '₦' : '✅'}
                         </span>
-                        <span className="font-black uppercase text-xs tracking-widest">
+                        <span className="font-black uppercase text-xs tracking-wider">
                           {paymentProgress < 100 ? 'Pay Fees' : 'Fees Settled'}
                         </span>
                     </button>
@@ -1089,6 +1425,15 @@ const App: React.FC = () => {
                   </div>
                   );
                 })()}
+
+                {/* Class Timetable for Student & Pupils */}
+                <div id="student-timetable-section" className="mt-12 text-left">
+                  <StudentTimetableCard
+                    grade={currentStudentObj.grade}
+                    activeTerm={currentStudentObj.activeTerm || 'First Term'}
+                    timetables={state.timetables || []}
+                  />
+                </div>
 
                 <div className="mt-16 grid md:grid-cols-2 gap-10 text-left">
                    <div>
@@ -1267,11 +1612,20 @@ const App: React.FC = () => {
                announcements={state.announcements}
                allowedPages={currentTeacherObj?.allowedPages}
                resultPublishRequests={state.resultPublishRequests || []}
+               timedStaffDelegations={state.timedStaffDelegations || []}
+               onOpenAdminDelegation={() => {
+                 setView('admin');
+                 window.scrollTo({ top: 0, behavior: 'smooth' });
+               }}
                onAddCourse={addCourse}
                onDuplicateCourse={duplicateCourse}
                onAddResult={addResult}
                onMarkAttendance={markAttendance}
+               onBatchMarkAttendance={handleBatchMarkAttendance}
                onShiftStudent={shiftStudentToNextClass}
+               onBatchShiftStudents={shiftMultipleStudentsToNextClass}
+               timetables={state.timetables || []}
+               onSaveTimetable={handleSaveClassTimetable}
                onRequestPublishResults={handleRequestPublishResults}
                onSendResultsToPupils={handleSendResultsToPupils}
              />
@@ -1331,6 +1685,26 @@ const App: React.FC = () => {
           </div>
         )}
 
+        {view === 'studentReceipts' && (
+          <div className="max-w-6xl mx-auto py-12 px-4">
+            <StudentReceiptsDownload 
+              payments={state.payments}
+              students={state.studentAccounts}
+              currentStudent={currentStudentObj || null}
+              isLoggedIn={role === UserRole.STUDENT && !!currentStudentObj}
+              onLogin={(emailOrId, pass) => handleStudentLogin(emailOrId, pass)}
+              onBack={() => {
+                setView(role === UserRole.STUDENT ? 'portal' : role === UserRole.PARENT ? 'parentPortal' : 'home');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onPayFees={() => {
+                setView('apply');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+          </div>
+        )}
+
         {view === 'admin' && (
           role === UserRole.ADMIN ? (
             <div className="max-w-6xl mx-auto py-12 px-4">
@@ -1346,6 +1720,9 @@ const App: React.FC = () => {
                 parents={state.parents || []}
                 calendar={state.academicCalendar}
                 onUpdateFee={updateFees}
+                onUpdateAllFees={updateAllFees}
+                userPagesAccess={state.userPagesAccess}
+                onUpdateUserPagesAccess={handleUpdateUserPagesAccess}
                 onAddAnnouncement={addAnnouncement}
                 onUpdateAnnouncement={updateAnnouncement}
                 onDeleteAnnouncement={deleteAnnouncement}
@@ -1366,6 +1743,55 @@ const App: React.FC = () => {
                 onApprovePublishRequest={handleApprovePublishRequest}
                 onRejectPublishRequest={handleRejectPublishRequest}
                 onBroadcastResultsToClass={handleSendResultsToPupils}
+                timedStaffDelegations={state.timedStaffDelegations || []}
+                onGrantStaffDelegation={handleGrantStaffDelegation}
+                onRevokeStaffDelegation={handleRevokeStaffDelegation}
+              />
+            </div>
+          ) : (role === UserRole.TEACHER && activeTeacherDelegation) ? (
+            <div className="max-w-6xl mx-auto py-12 px-4">
+              <AdminPanel 
+                fees={state.fees} 
+                applications={state.applications}
+                announcements={state.announcements}
+                teachers={state.teachers}
+                results={state.results}
+                courses={state.courses}
+                attendance={state.attendance}
+                students={state.studentAccounts}
+                parents={state.parents || []}
+                calendar={state.academicCalendar}
+                onUpdateFee={updateFees}
+                onUpdateAllFees={updateAllFees}
+                userPagesAccess={state.userPagesAccess}
+                onUpdateUserPagesAccess={handleUpdateUserPagesAccess}
+                onAddAnnouncement={addAnnouncement}
+                onUpdateAnnouncement={updateAnnouncement}
+                onDeleteAnnouncement={deleteAnnouncement}
+                onCreateTeacher={createTeacherAccount}
+                onUpdateTeacherPermissions={updateTeacherPermissions}
+                onDeleteTeacher={deleteTeacherAccount}
+                onAddCourse={addCourse}
+                onDuplicateCourse={duplicateCourse}
+                onUpdateCalendar={updateCalendar}
+                onToggleStudentEntry={toggleStudentEntry}
+                onAdminUnlinkChild={handleAdminUnlinkChild}
+                payments={state.payments}
+                resultPublishRequests={state.resultPublishRequests || []}
+                onConfirmPayment={handleConfirmPayment}
+                onDeclinePayment={handleDeclinePayment}
+                onConfirmAllPending={handleConfirmAllPending}
+                onAddChatMessage={handleAddPaymentChatMessage}
+                onApprovePublishRequest={handleApprovePublishRequest}
+                onRejectPublishRequest={handleRejectPublishRequest}
+                onBroadcastResultsToClass={handleSendResultsToPupils}
+                allowedAdminSections={activeTeacherDelegation.grantedSections}
+                delegationExpiresAt={activeTeacherDelegation.expiresAt}
+                activeStaffName={activeTeacherDelegation.teacherName}
+                onExitDelegation={() => {
+                  setView('teacher');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
               />
             </div>
           ) : (
@@ -1377,6 +1803,8 @@ const App: React.FC = () => {
             />
           )
         )}
+          </>
+        )}
       </main>
 
       <Footer 
@@ -1385,7 +1813,7 @@ const App: React.FC = () => {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
         onNavigate={(targetView: string) => {
-          if (['home', 'portal', 'apply', 'admin', 'teacherLogin', 'teacher', 'studentAuth', 'feeChecker', 'parentAuth', 'parentPortal', 'about'].includes(targetView)) {
+          if (['home', 'portal', 'apply', 'admin', 'teacherLogin', 'teacher', 'studentAuth', 'feeChecker', 'parentAuth', 'parentPortal', 'about', 'studentReceipts', 'resultChecker'].includes(targetView)) {
             handleNav(targetView as any);
           } else {
             setView('home');

@@ -8,11 +8,19 @@ export enum UserRole {
 }
 
 export type GradeLevel = 
-  | 'KG 1' | 'KG 2'
+  | 'Crèche'
+  | 'Prenursery 1' | 'Prenursery 2'
+  | 'Pre-Nursery 1' | 'Pre-Nursery 2'
   | 'Nursery 1' | 'Nursery 2'
-  | 'Primary 1' | 'Primary 2' | 'Primary 3' | 'Primary 4' | 'Primary 5'
+  | 'Basic 1' | 'Basic 2' | 'Basic 3' | 'Basic 4' | 'Basic 5'
   | 'JSS 1' | 'JSS 2' | 'JSS 3'
-  | 'SSS 1' | 'SSS 2' | 'SSS 3';
+  | 'SS 1 (Science)' | 'SS 1 (Commerce & Arts)' | 'SS 1 (Commerce and Arts)'
+  | 'SS 2 (Science)' | 'SS 2 (Commerce & Arts)' | 'SS 2 (Commerce and Arts)'
+  | 'SS 3 (Science)' | 'SS 3 (Commerce & Arts)' | 'SS 3 (Commerce and Arts)'
+  | 'KG 1' | 'KG 2'
+  | 'Primary 1' | 'Primary 2' | 'Primary 3' | 'Primary 4' | 'Primary 5'
+  | 'SSS 1' | 'SSS 2' | 'SSS 3'
+  | (string & {});
 
 export interface FeeStructure {
   [key: string]: number;
@@ -47,16 +55,39 @@ export type StaffPagePermission =
   | 'termStats' 
   | 'grading' 
   | 'attendance' 
-  | 'courses';
+  | 'courses'
+  | 'timetable';
 
 export const ALL_STAFF_PAGES: { id: StaffPagePermission; label: string; description: string; icon: string }[] = [
   { id: 'overview', label: 'Summary', description: 'Overview metrics & attendance stats', icon: '📊' },
-  { id: 'students', label: 'Students & Pupils', description: 'Class list, profiles & student and pupil promotion', icon: '👨‍🎓' },
+  { id: 'students', label: 'Students & Pupils', description: 'Class list, profiles & student promotion to next class', icon: '👨‍🎓' },
+  { id: 'timetable', label: 'Class Timetable', description: 'Weekly class schedule & lesson timetable builder', icon: '🗓️' },
   { id: 'termStats', label: 'Term Attendance', description: 'Term attendance logs and summaries', icon: '📅' },
   { id: 'grading', label: 'Grading', description: 'Score entry and academic result upload', icon: '📝' },
   { id: 'attendance', label: 'Mark Attendance', description: 'Live QR scanner and attendance verification', icon: '📷' },
   { id: 'courses', label: 'Curriculum', description: 'Course management and syllabus duplication', icon: '📚' },
 ];
+
+export interface TimetablePeriod {
+  id: string;
+  day: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday';
+  startTime: string; // e.g. "08:00 AM" or "08:00"
+  endTime: string;   // e.g. "08:45 AM" or "08:45"
+  subject: string;
+  teacherName?: string;
+  room?: string;
+}
+
+export interface ClassTimetable {
+  id: string;
+  grade: GradeLevel;
+  term?: string;
+  academicYear?: string;
+  periods: TimetablePeriod[];
+  notes?: string;
+  updatedAt?: string;
+  updatedBy?: string;
+}
 
 export interface TeacherAccount {
   id: string;
@@ -161,6 +192,8 @@ export interface FeePayment {
   adminNote?: string;
   reviewedAt?: string;
   reviewedBy?: string;
+  receiptFileType?: string;
+  receiptUploadedAt?: string;
   messages?: PaymentChatMessage[];
 }
 
@@ -169,6 +202,88 @@ export interface AttendanceRecord {
   date: string;
   markedBy: string;
   term?: string;
+}
+
+export type AdminSectionKey = 
+  | 'attendance'
+  | 'payments'
+  | 'resultPublish'
+  | 'pageAccess'
+  | 'fees'
+  | 'applications'
+  | 'teachers'
+  | 'courses'
+  | 'calendar'
+  | 'announcements'
+  | 'parents'
+  | 'export';
+
+export interface AdminSectionConfig {
+  id: AdminSectionKey;
+  label: string;
+  description: string;
+  icon: string;
+}
+
+export const ALL_ADMIN_SECTIONS: AdminSectionConfig[] = [
+  { id: 'attendance', label: 'Gate Attendance & Scanner', description: 'Monitor live gate scans, logs & attendance rolls', icon: '📷' },
+  { id: 'payments', label: 'Fee Verification & Receipts', description: 'Verify bank payments, invoices & approve receipts', icon: '💳' },
+  { id: 'resultPublish', label: 'Terminal Result Releases', description: 'Approve assessment scores and broadcast to pupils', icon: '📜' },
+  { id: 'pageAccess', label: 'User Pages Access Control', description: 'Close/open user pages or lock the entire public portal', icon: '🔒' },
+  { id: 'fees', label: 'School Fees Schedule', description: 'Configure school fee amounts per grade level', icon: '💰' },
+  { id: 'applications', label: 'Admissions & Gate Clearance', description: 'Review new admissions and toggle gate entry passes', icon: '📋' },
+  { id: 'teachers', label: 'Staff & Classroom Directory', description: 'Staff records, classroom & syllabus assignments', icon: '👔' },
+  { id: 'courses', label: 'Curriculum & Subjects', description: 'Manage courses, syllabi and grade duplications', icon: '📚' },
+  { id: 'calendar', label: 'Academic Calendar', description: 'Manage term resumption, examinations & vacation dates', icon: '📅' },
+  { id: 'announcements', label: 'School Bulletins', description: 'Publish announcements to parents and students', icon: '📢' },
+  { id: 'parents', label: 'Parent Accounts & Links', description: 'Link registered parents to pupils and view family hubs', icon: '👨‍👩‍👧‍👦' },
+  { id: 'export', label: 'Data Export & Reports', description: 'Generate comprehensive backups, CSVs and student registers', icon: '📊' },
+];
+
+export type UserPageKey = 
+  | 'apply'
+  | 'feeChecker'
+  | 'resultChecker'
+  | 'studentReceipts'
+  | 'parentPortal'
+  | 'studentPortal'
+  | 'about';
+
+export interface PageAccessItem {
+  isOpen: boolean;
+  closedReason?: string;
+  lastUpdated?: string;
+}
+
+export interface UserPagesAccessState {
+  allPagesClosed: boolean;
+  globalClosedMessage?: string;
+  pages: {
+    [key in UserPageKey]?: PageAccessItem;
+  };
+}
+
+export const ALL_USER_PAGES: { id: UserPageKey; label: string; description: string; icon: string }[] = [
+  { id: 'apply', label: 'School Fees Payment Portal', description: 'Direct tuition and fees payment gateway with receipt upload', icon: '💳' },
+  { id: 'feeChecker', label: 'Check School Fees', description: 'Term fee schedule, balance inquiry, and installment breakdown', icon: '💰' },
+  { id: 'resultChecker', label: 'Terminal Result Checker', description: 'Student assessment score reports and terminal report cards', icon: '📜' },
+  { id: 'studentReceipts', label: 'Student Receipts Download Portal', description: 'Download official stamped school fee receipts and audit logs', icon: '📑' },
+  { id: 'parentPortal', label: 'Parent Portal & Family Hub', description: 'Guardian overview, child attendance and family payment clearance', icon: '👨‍👩‍👧‍👦' },
+  { id: 'studentPortal', label: 'Students & Pupils Hub', description: 'Student dashboard, gate QR codes and digital ID cards', icon: '💻' },
+  { id: 'about', label: 'About School & Campus Tour', description: 'School history, campus facilities and photo galleries', icon: '🏛️' },
+];
+
+export interface TimedStaffDelegation {
+  id: string;
+  teacherUsername: string;
+  teacherName: string;
+  grantedSections: AdminSectionKey[];
+  grantedAt: string; // ISO string
+  expiresAt: string; // ISO string
+  durationMinutes: number;
+  grantedBy: string;
+  purpose?: string;
+  status: 'active' | 'revoked' | 'expired';
 }
 
 export interface AppState {
@@ -184,4 +299,7 @@ export interface AppState {
   attendance: AttendanceRecord[];
   academicCalendar: string;
   resultPublishRequests?: ResultPublishRequest[];
+  timedStaffDelegations?: TimedStaffDelegation[];
+  userPagesAccess?: UserPagesAccessState;
+  timetables?: ClassTimetable[];
 }

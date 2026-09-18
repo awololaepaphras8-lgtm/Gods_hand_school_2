@@ -71,6 +71,8 @@ export const PWADownloadPrompt: React.FC<PWADownloadPromptProps> = ({
       setIsBannerVisible(false);
       setIsModalOpen(false);
       setDeferredPrompt(null);
+      localStorage.setItem('ghs_app_installed', 'true');
+      window.dispatchEvent(new Event('ghs_app_installed_event'));
       showToast("🎉 God's Hand School App successfully installed to your device!");
     };
 
@@ -109,6 +111,8 @@ export const PWADownloadPrompt: React.FC<PWADownloadPromptProps> = ({
         await deferredPrompt.prompt();
         const choice = await deferredPrompt.userChoice;
         if (choice.outcome === 'accepted') {
+          localStorage.setItem('ghs_app_installed', 'true');
+          window.dispatchEvent(new Event('ghs_app_installed_event'));
           showToast("App installation initiated! Check your device home screen.");
           setIsBannerVisible(false);
           setIsModalOpen(false);

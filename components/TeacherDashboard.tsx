@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Course, StudentResult, GradeLevel, StudentAccount, AttendanceRecord, StaffPagePermission, ALL_STAFF_PAGES, Announcement, ResultPublishRequest } from '../types';
-import { GRADE_GROUPS } from '../constants';
+import { Course, StudentResult, GradeLevel, StudentAccount, AttendanceRecord, StaffPagePermission, ALL_STAFF_PAGES, Announcement, ResultPublishRequest, TimedStaffDelegation, AdminSectionKey, ALL_ADMIN_SECTIONS, ClassTimetable } from '../types';
+import { GRADE_GROUPS, getNextGradeLevel } from '../constants';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { StandardReportCard } from './StandardReportCard';
 import { computeClassRankings, computeSubjectRankings, formatOrdinal } from '../utils/ranking';
+import { ClassTimetableManager } from './ClassTimetableManager';
 
 interface TeacherDashboardProps {
   username: string;
@@ -17,11 +18,17 @@ interface TeacherDashboardProps {
   announcements?: Announcement[];
   allowedPages?: StaffPagePermission[];
   resultPublishRequests?: ResultPublishRequest[];
+  timedStaffDelegations?: TimedStaffDelegation[];
+  timetables?: ClassTimetable[];
+  onOpenAdminDelegation?: (sectionKey?: AdminSectionKey) => void;
   onAddCourse: (name: string, grade: GradeLevel, description: string) => void;
   onDuplicateCourse?: (courseId: string, targetGrades: GradeLevel[]) => void;
   onAddResult: (result: Omit<StudentResult, 'id' | 'date' | 'teacherName'>) => void;
   onMarkAttendance: (studentId: string, term?: string) => boolean;
+  onBatchMarkAttendance?: (records: { studentId: string; date: string; term: string; markedBy: string }[]) => void;
   onShiftStudent: (studentId: string) => void;
+  onBatchShiftStudents?: (studentIds: string[]) => void;
+  onSaveTimetable?: (timetable: ClassTimetable) => void;
   onRequestPublishResults?: (grade: GradeLevel, term: string, subject?: string) => void;
   onSendResultsToPupils?: (grade: GradeLevel, term: string) => void;
 }
@@ -37,18 +44,37 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   announcements = [],
   allowedPages,
   resultPublishRequests = [],
+  timedStaffDelegations = [],
+  timetables = [],
+  onOpenAdminDelegation,
   onAddCourse,
   onDuplicateCourse,
   onAddResult,
   onMarkAttendance,
+  onBatchMarkAttendance,
   onShiftStudent,
+  onBatchShiftStudents,
+  onSaveTimetable,
   onRequestPublishResults,
   onSendResultsToPupils
 }) => {
+  const [delegationNow, setDelegationNow] = useState<Date>(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setDelegationNow(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const activeDelegation = (timedStaffDelegations || []).find(
+    d => d.teacherUsername === username && d.status === 'active' && new Date(d.expiresAt).getTime() > delegationNow.getTime()
+  );
+
   // Determine available tabs based on admin-configured page permissions
   const availableTabs = ALL_STAFF_PAGES.filter(p => !allowedPages || allowedPages.includes(p.id));
   const initialTab = availableTabs[0]?.id || 'overview';
-  const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'students' | 'grading' | 'attendance' | 'termStats'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'students' | 'grading' | 'attendance' | 'termStats' | 'timetable'>(initialTab);
 
   useEffect(() => {
     if (availableTabs.length > 0 && !availableTabs.some(t => t.id === activeTab)) {
@@ -93,6 +119,90 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const [previewStudentReport, setPreviewStudentReport] = useState<StudentAccount | null>(null);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
+  // Attendance Sub-Mode: 'checklist' (Roll Call by Names) vs 'scanner' (QR Camera)
+  const [attendanceMode, setAttendanceMode] = useState<'checklist' | 'scanner'>('checklist');
+  const [checklistClass, setChecklistClass] = useState<GradeLevel>(authorizedGrades[0] || 'Basic 1');
+  const [checklistDate, setChecklistDate] = useState<string>(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
+  const [checklistTerm, setChecklistTerm] = useState<string>('First Term');
+  const [checkedStudentIds, setCheckedStudentIds] = useState<string[]>([]);
+  const [attendanceSubmitSuccess, setAttendanceSubmitSuccess] = useState<string | null>(null);
+  const [isSubmittingAttendance, setIsSubmittingAttendance] = useState(false);
+
+  // Students in selected checklist class
+  const checklistClassStudents = allStudents.filter(s => s.grade === checklistClass);
+
+  // Synchronize checkedStudentIds with attendance state when class, date, or term changes
+  useEffect(() => {
+    if (!checklistDate) return;
+    const [y, m, d] = checklistDate.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    const localeDate = dateObj.toLocaleDateString();
+
+    const alreadyPresentSet = new Set(
+      attendance
+        .filter(a => (a.date === localeDate || a.date === checklistDate) && (a.term === checklistTerm || (!a.term && checklistTerm === 'First Term')))
+        .map(a => a.studentId)
+    );
+
+    const classStudentIds = checklistClassStudents.map(s => s.id);
+    const presentInClass = classStudentIds.filter(id => alreadyPresentSet.has(id));
+    setCheckedStudentIds(presentInClass);
+  }, [checklistClass, checklistDate, checklistTerm, attendance, checklistClassStudents.length]);
+
+  const toggleStudentCheck = (studentId: string) => {
+    setCheckedStudentIds(prev => 
+      prev.includes(studentId) ? prev.filter(id => id !== studentId) : [...prev, studentId]
+    );
+    setAttendanceSubmitSuccess(null);
+  };
+
+  const handleSelectAllPresent = () => {
+    setCheckedStudentIds(checklistClassStudents.map(s => s.id));
+    setAttendanceSubmitSuccess(null);
+  };
+
+  const handleDeselectAll = () => {
+    setCheckedStudentIds([]);
+    setAttendanceSubmitSuccess(null);
+  };
+
+  const handleSubmitChecklistAttendance = () => {
+    if (checklistClassStudents.length === 0) return;
+    setIsSubmittingAttendance(true);
+
+    const [y, m, d] = checklistDate.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    const localeDate = dateObj.toLocaleDateString();
+
+    const recordsToSubmit = checkedStudentIds.map(studentId => ({
+      studentId,
+      date: localeDate,
+      term: checklistTerm,
+      markedBy: `${username} (Roll Call Checklist)`
+    }));
+
+    if (onBatchMarkAttendance) {
+      onBatchMarkAttendance(recordsToSubmit);
+    } else {
+      recordsToSubmit.forEach(rec => {
+        onMarkAttendance(rec.studentId, rec.term);
+      });
+    }
+
+    setTimeout(() => {
+      setIsSubmittingAttendance(false);
+      setAttendanceSubmitSuccess(
+        `✓ Daily attendance successfully submitted! ${checkedStudentIds.length} of ${checklistClassStudents.length} pupils in ${checklistClass} marked Present for ${localeDate} (${checklistTerm}).`
+      );
+    }, 250);
+  };
+
   // Filter students strictly according to staff assigned classes
   const filteredStudents = gradeClassFilter === 'all' 
     ? staffStudents 
@@ -102,7 +212,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const presentToday = attendance.filter(a => a.date === today && filteredStudents.some(s => s.id === a.studentId));
 
   useEffect(() => {
-    if (activeTab === 'attendance' && !scannerRef.current) {
+    if (activeTab === 'attendance' && attendanceMode === 'scanner' && !scannerRef.current) {
       const scanner = new Html5QrcodeScanner(
         "reader", 
         { fps: 10, qrbox: { width: 250, height: 250 } },
@@ -150,12 +260,12 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     }
 
     return () => {
-      if (scannerRef.current && activeTab !== 'attendance') {
+      if (scannerRef.current && (activeTab !== 'attendance' || attendanceMode !== 'scanner')) {
         scannerRef.current.clear().catch(err => console.error("Failed to clear scanner", err));
         scannerRef.current = null;
       }
     };
-  }, [activeTab, scannerTerm]);
+  }, [activeTab, attendanceMode, scannerTerm]);
 
   const handleAddCourse = (e: React.FormEvent) => {
     e.preventDefault();
@@ -277,6 +387,74 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
         </div>
       </div>
 
+      {/* Active Admin Delegation Banner */}
+      {activeDelegation && (
+        <div className="bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 p-6 sm:p-7 text-blue-950 border-b-4 border-yellow-600 shadow-inner">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="space-y-1.5 max-w-2xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-950 text-yellow-400 text-xs font-black uppercase tracking-wider shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Temporary Admin Access Granted</span>
+                <span>•</span>
+                <span>By: {activeDelegation.grantedBy}</span>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-serif font-black tracking-tight">
+                Admin-Delegated Authority Active
+              </h3>
+              <p className="text-xs sm:text-sm font-bold text-blue-900/90 leading-snug">
+                You have been granted temporary administrative privileges to {activeDelegation.grantedSections.length} admin panel module{activeDelegation.grantedSections.length === 1 ? '' : 's'}. 
+                {activeDelegation.purpose && ` Purpose: "${activeDelegation.purpose}".`}
+              </p>
+
+              {/* Granted Modules Chips */}
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {activeDelegation.grantedSections.map(secKey => {
+                  const config = ALL_ADMIN_SECTIONS.find(s => s.id === secKey);
+                  return (
+                    <span
+                      key={secKey}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/90 text-blue-950 text-xs font-black shadow-xs"
+                    >
+                      <span>{config?.icon || '⚙️'}</span>
+                      <span>{config?.label || secKey}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-white/95 p-4 rounded-2xl border-2 border-yellow-500/40 shadow-sm shrink-0">
+              <div className="text-center sm:text-right pr-2">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Time Remaining</span>
+                <span className="font-mono text-xl sm:text-2xl font-black text-blue-950">
+                  {(() => {
+                    const diff = new Date(activeDelegation.expiresAt).getTime() - delegationNow.getTime();
+                    if (diff <= 0) return '00m 00s';
+                    const totalSec = Math.floor(diff / 1000);
+                    const m = Math.floor(totalSec / 60);
+                    const s = totalSec % 60;
+                    const h = Math.floor(m / 60);
+                    if (h > 0) return `${h}h ${m % 60}m ${s}s`;
+                    return `${m}m ${s}s`;
+                  })()}
+                </span>
+              </div>
+
+              {onOpenAdminDelegation && (
+                <button
+                  type="button"
+                  onClick={() => onOpenAdminDelegation()}
+                  className="px-5 py-3 bg-blue-950 hover:bg-blue-900 text-yellow-400 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg transition-all transform active:scale-95 flex items-center gap-2 border border-yellow-400"
+                >
+                  <span>🚀</span>
+                  <span>Open Admin Panel</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {availableTabs.length > 0 ? (
         <div className="flex flex-wrap border-b-2 border-slate-100 bg-slate-50">
           {availableTabs.map(tab => (
@@ -328,6 +506,68 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
             <div className="p-8 bg-indigo-50 rounded-3xl border-2 border-indigo-100">
                <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mb-2">Results Uploaded</p>
                <p className="text-5xl font-black text-blue-900">{myResults.length}</p>
+            </div>
+
+            {/* Quick Pupil Promotion & Class Advancement Widget */}
+            <div className="md:col-span-4 bg-gradient-to-r from-emerald-900 to-teal-950 text-white p-6 sm:p-8 rounded-3xl border-2 border-emerald-500/20 shadow-md">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-emerald-800/80 pb-4 mb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">🎓</span>
+                    <h4 className="font-serif font-black text-yellow-400 text-lg sm:text-xl">
+                      Pupil Advancement & Next Class Promotion
+                    </h4>
+                  </div>
+                  <p className="text-xs text-emerald-200 mt-0.5">
+                    Move individual pupils or entire classes to the next academic grade level with 1-click.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('students')}
+                  className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-xs"
+                >
+                  View Full Registers & Promotion
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {authorizedGrades.map(g => {
+                  const pupils = filteredStudents.filter(s => s.grade === g);
+                  const nextG = getNextGradeLevel(g);
+                  return (
+                    <div key={g} className="bg-emerald-950/70 p-4 rounded-2xl border border-emerald-700/50 flex items-center justify-between gap-3">
+                      <div>
+                        <span className="text-xs font-black text-white block uppercase tracking-wider">{g}</span>
+                        <span className="text-[11px] text-emerald-300 font-bold">{pupils.length} Pupils enrolled</span>
+                      </div>
+                      {pupils.length > 0 && nextG ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm(`Advance all ${pupils.length} pupils in ${g} to ${nextG}?`)) {
+                              if (onBatchShiftStudents) {
+                                onBatchShiftStudents(pupils.map(p => p.id));
+                              } else {
+                                pupils.forEach(p => onShiftStudent(p.id));
+                              }
+                              alert(`Successfully promoted ${pupils.length} pupils from ${g} to ${nextG}!`);
+                            }
+                          }}
+                          className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-black uppercase rounded-lg shadow-xs transition-all active:scale-95"
+                          title={`Promote all ${g} pupils to ${nextG}`}
+                        >
+                          ➔ Next ({nextG})
+                        </button>
+                      ) : pupils.length > 0 ? (
+                        <span className="text-[10px] text-emerald-300 font-bold">Graduating Class</span>
+                      ) : (
+                        <span className="text-[10px] text-emerald-400/60 italic">No pupils</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Live Academic Calendar & Notices */}
@@ -385,64 +625,358 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
         )}
 
         {activeTab === 'attendance' && (
-          <div className="grid lg:grid-cols-2 gap-16">
-            <div className="space-y-8">
-              <div className="flex justify-between items-center">
-                <h3 className="text-2xl font-black text-blue-900 font-serif">Daily Attendance Scanner</h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-black text-slate-400 uppercase">Active Term:</span>
-                  <select 
-                    value={scannerTerm} 
-                    onChange={(e) => setScannerTerm(e.target.value)}
-                    className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl font-black text-xs text-blue-900 outline-none"
-                  >
-                    <option value="First Term">First Term</option>
-                    <option value="Second Term">Second Term</option>
-                    <option value="Third Term">Third Term</option>
-                  </select>
-                </div>
+          <div className="space-y-8">
+            {/* Top Mode Switcher Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-slate-100 pb-4">
+              <div>
+                <h3 className="text-2xl font-black text-blue-900 font-serif">Staff Daily Attendance Portal</h3>
+                <p className="text-xs text-slate-500 font-bold mt-1">
+                  Mark daily student attendance either by roll call checklist or via student QR pass camera scanning.
+                </p>
               </div>
-              <p className="text-slate-500 text-sm font-medium">Use your camera to scan a student or pupil's Daily Pass QR code for <strong className="text-blue-900">{scannerTerm}</strong>.</p>
-              
-              <div id="reader" className="overflow-hidden rounded-3xl border-4 border-slate-100 shadow-xl bg-slate-50 min-h-[300px]"></div>
-              
-              {lastScanned && (
-                <div className={`p-6 rounded-2xl text-center font-black uppercase tracking-widest animate-pulse ${lastScanned.includes('Success') ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                  {lastScanned}
-                </div>
-              )}
+
+              {/* Mode Toggle Tabs */}
+              <div className="inline-flex p-1.5 bg-slate-100 rounded-2xl border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setAttendanceMode('checklist')}
+                  className={`px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                    attendanceMode === 'checklist'
+                      ? 'bg-blue-900 text-yellow-400 shadow-md'
+                      : 'text-slate-600 hover:text-blue-950'
+                  }`}
+                >
+                  <span>📋</span>
+                  <span>Checklist Roll Call</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAttendanceMode('scanner')}
+                  className={`px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                    attendanceMode === 'scanner'
+                      ? 'bg-blue-900 text-yellow-400 shadow-md'
+                      : 'text-slate-600 hover:text-blue-950'
+                  }`}
+                >
+                  <span>📷</span>
+                  <span>QR Camera Scanner</span>
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-8">
-              <div className="flex justify-between items-center border-b-2 border-slate-100 pb-4">
-                <h3 className="text-2xl font-black text-blue-900 font-serif text-nowrap">Present Today</h3>
-                <span className="bg-blue-900 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase">{today}</span>
-              </div>
-              
-              <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                {presentToday.length === 0 ? (
-                  <div className="p-12 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 text-slate-400 font-bold uppercase text-xs tracking-widest">No attendance recorded for your students and pupils yet today.</div>
-                ) : (
-                  presentToday.map((record, i) => {
-                    const student = allStudents.find(s => s.id === record.studentId);
-                    return (
-                      <div key={i} className="p-5 bg-white border-2 border-slate-50 rounded-2xl flex items-center justify-between shadow-sm">
-                        <div className="flex items-center">
-                          <div className="w-10 h-10 bg-green-100 text-green-700 rounded-xl flex items-center justify-center font-black mr-4 border border-green-200">
-                            {student?.name.charAt(0)}
-                          </div>
-                          <div>
-                            <p className="font-black text-blue-900">{student?.name}</p>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase">{student?.grade}</p>
-                          </div>
-                        </div>
-                        <span className="text-[10px] font-black text-green-600 bg-green-50 px-3 py-1 rounded-full uppercase">Verified</span>
+            {/* CHECKLIST ROLL CALL MODE */}
+            {attendanceMode === 'checklist' && (
+              <div className="space-y-6">
+                {/* Roll Call Controls Bar */}
+                <div className="bg-slate-50 border-2 border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                    {/* Select Class */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-black text-blue-950 uppercase tracking-wider block">
+                        Select Class / Grade
+                      </label>
+                      <select
+                        value={checklistClass}
+                        onChange={(e) => {
+                          setChecklistClass(e.target.value as GradeLevel);
+                          setAttendanceSubmitSuccess(null);
+                        }}
+                        className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-2xl font-black text-xs text-blue-950 outline-none focus:border-blue-900 transition-all"
+                      >
+                        {authorizedGrades.map(lvl => (
+                          <option key={lvl} value={lvl}>{lvl}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Select Date */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <label className="text-xs font-black text-blue-950 uppercase tracking-wider block">
+                          Attendance Date
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const d = new Date();
+                            const year = d.getFullYear();
+                            const month = String(d.getMonth() + 1).padStart(2, '0');
+                            const day = String(d.getDate()).padStart(2, '0');
+                            setChecklistDate(`${year}-${month}-${day}`);
+                          }}
+                          className="text-[10px] font-black text-blue-700 hover:text-blue-900 uppercase underline"
+                        >
+                          Today
+                        </button>
                       </div>
-                    );
-                  })
+                      <input
+                        type="date"
+                        value={checklistDate}
+                        onChange={(e) => {
+                          setChecklistDate(e.target.value);
+                          setAttendanceSubmitSuccess(null);
+                        }}
+                        className="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-2xl font-black text-xs text-blue-950 outline-none focus:border-blue-900 transition-all"
+                      />
+                    </div>
+
+                    {/* Academic Term */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-black text-blue-950 uppercase tracking-wider block">
+                        Academic Term
+                      </label>
+                      <select
+                        value={checklistTerm}
+                        onChange={(e) => {
+                          setChecklistTerm(e.target.value);
+                          setAttendanceSubmitSuccess(null);
+                        }}
+                        className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-2xl font-black text-xs text-blue-950 outline-none focus:border-blue-900 transition-all"
+                      >
+                        <option value="First Term">First Term</option>
+                        <option value="Second Term">Second Term</option>
+                        <option value="Third Term">Third Term</option>
+                      </select>
+                    </div>
+
+                    {/* Quick Selection Helpers */}
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={handleSelectAllPresent}
+                        disabled={checklistClassStudents.length === 0}
+                        className="flex-1 py-3 px-3 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-xs active:scale-95 disabled:opacity-40"
+                      >
+                        ✓ Mark All Present
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDeselectAll}
+                        disabled={checklistClassStudents.length === 0}
+                        className="py-3 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-xs active:scale-95 disabled:opacity-40"
+                        title="Clear checklist / Mark all absent"
+                      >
+                        ✕ Clear
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Summary Metric Counters */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-200">
+                    <div className="p-3 bg-white rounded-2xl border border-slate-200">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Class Roster</p>
+                      <p className="text-xl font-black text-blue-950 mt-0.5">{checklistClassStudents.length} <span className="text-xs text-slate-400 font-bold">Enrolled</span></p>
+                    </div>
+
+                    <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200">
+                      <p className="text-[10px] font-black text-emerald-700 uppercase tracking-wider">Checked Present</p>
+                      <p className="text-xl font-black text-emerald-700 mt-0.5">{checkedStudentIds.length} <span className="text-xs text-emerald-600 font-bold">Pupils</span></p>
+                    </div>
+
+                    <div className="p-3 bg-slate-100 rounded-2xl border border-slate-200">
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Marked Absent</p>
+                      <p className="text-xl font-black text-slate-700 mt-0.5">{Math.max(0, checklistClassStudents.length - checkedStudentIds.length)} <span className="text-xs text-slate-400 font-bold">Pupils</span></p>
+                    </div>
+
+                    <div className="p-3 bg-blue-900 text-white rounded-2xl">
+                      <p className="text-[10px] font-black text-yellow-400 uppercase tracking-wider">Attendance Rate</p>
+                      <p className="text-xl font-black text-yellow-300 mt-0.5">
+                        {checklistClassStudents.length > 0 
+                          ? Math.round((checkedStudentIds.length / checklistClassStudents.length) * 100) 
+                          : 0}%
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Success Banner */}
+                {attendanceSubmitSuccess && (
+                  <div className="p-5 bg-emerald-50 border-2 border-emerald-300 text-emerald-950 rounded-3xl text-xs sm:text-sm font-black flex items-center justify-between gap-3 shadow-md animate-in fade-in">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-2xl">🎉</span>
+                      <span>{attendanceSubmitSuccess}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAttendanceSubmitSuccess(null)}
+                      className="text-emerald-700 hover:text-emerald-950 font-black text-xs px-2 py-1"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 )}
+
+                {/* Interactive Checklist of Students */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-black text-slate-500 uppercase tracking-wider">
+                      Student Roll Register: Click any row or checkbox to mark Present / Absent
+                    </p>
+                    <span className="text-xs font-bold text-blue-900">
+                      {checkedStudentIds.length} of {checklistClassStudents.length} Selected
+                    </span>
+                  </div>
+
+                  {checklistClassStudents.length === 0 ? (
+                    <div className="p-16 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                      <span className="text-4xl block mb-2">🧑‍🎓</span>
+                      <p className="font-black text-blue-950 text-base">No students enrolled in {checklistClass} yet</p>
+                      <p className="text-xs text-slate-400 mt-1 font-medium">
+                        Students added to this class will appear here automatically for morning attendance check-listing.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {checklistClassStudents.map((student) => {
+                        const isChecked = checkedStudentIds.includes(student.id);
+                        return (
+                          <div
+                            key={student.id}
+                            onClick={() => toggleStudentCheck(student.id)}
+                            className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between select-none ${
+                              isChecked
+                                ? 'bg-emerald-50/70 border-emerald-400 shadow-xs'
+                                : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
+                            }`}
+                          >
+                            <div className="flex items-center space-x-3">
+                              {/* Checkbox input */}
+                              <div className="shrink-0">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => {}} // Handled by container onClick
+                                  className="w-5 h-5 rounded-md text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600"
+                                />
+                              </div>
+
+                              {/* Student Avatar */}
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm uppercase shrink-0 ${
+                                isChecked ? 'bg-emerald-600 text-white' : 'bg-blue-900 text-yellow-300'
+                              }`}>
+                                {student.name.charAt(0)}
+                              </div>
+
+                              {/* Student Information */}
+                              <div className="overflow-hidden">
+                                <p className="font-black text-blue-950 text-sm leading-snug truncate">
+                                  {student.name}
+                                </p>
+                                <p className="text-[10px] text-slate-400 font-mono font-bold">
+                                  ID: {student.id}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Status Pill */}
+                            <div className="shrink-0 pl-2">
+                              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 ${
+                                isChecked
+                                  ? 'bg-emerald-200 text-emerald-950'
+                                  : 'bg-slate-100 text-slate-400'
+                              }`}>
+                                <span>{isChecked ? '✓' : '✗'}</span>
+                                <span>{isChecked ? 'Present' : 'Absent'}</span>
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Prominent Submit Attendance Button */}
+                <div className="p-6 bg-blue-950 rounded-3xl border-4 border-yellow-400 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+                  <div>
+                    <h4 className="text-white font-black text-base font-serif flex items-center gap-2">
+                      <span>📝</span>
+                      <span>Ready to Submit Daily Attendance?</span>
+                    </h4>
+                    <p className="text-xs text-yellow-300 font-medium mt-0.5">
+                      Submitting records daily presence for <strong className="text-white">{checkedStudentIds.length} pupils</strong> in <strong className="text-white">{checklistClass}</strong> on {checklistDate} ({checklistTerm}).
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSubmitChecklistAttendance}
+                    disabled={isSubmittingAttendance || checklistClassStudents.length === 0}
+                    className="w-full sm:w-auto px-8 py-4 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl transition-all hover:scale-[1.03] active:scale-[0.97] flex items-center justify-center gap-2 shrink-0 disabled:opacity-40"
+                  >
+                    <span>{isSubmittingAttendance ? '⏳' : '✓'}</span>
+                    <span>{isSubmittingAttendance ? 'Submitting...' : `Submit Attendance (${checkedStudentIds.length} Present)`}</span>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* QR CAMERA SCANNER MODE */}
+            {attendanceMode === 'scanner' && (
+              <div className="grid lg:grid-cols-2 gap-16">
+                <div className="space-y-8">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-2xl font-black text-blue-900 font-serif">Daily Attendance Scanner</h3>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-slate-400 uppercase">Active Term:</span>
+                      <select 
+                        value={scannerTerm} 
+                        onChange={(e) => setScannerTerm(e.target.value)}
+                        className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl font-black text-xs text-blue-900 outline-none"
+                      >
+                        <option value="First Term">First Term</option>
+                        <option value="Second Term">Second Term</option>
+                        <option value="Third Term">Third Term</option>
+                      </select>
+                    </div>
+                  </div>
+                  <p className="text-slate-500 text-sm font-medium">
+                    Use your camera to scan a student or pupil's Daily Pass QR code for <strong className="text-blue-900">{scannerTerm}</strong>.
+                  </p>
+                  
+                  <div id="reader" className="overflow-hidden rounded-3xl border-4 border-slate-100 shadow-xl bg-slate-50 min-h-[300px]"></div>
+                  
+                  {lastScanned && (
+                    <div className={`p-6 rounded-2xl text-center font-black uppercase tracking-widest animate-pulse ${lastScanned.includes('Success') ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                      {lastScanned}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-8">
+                  <div className="flex justify-between items-center border-b-2 border-slate-100 pb-4">
+                    <h3 className="text-2xl font-black text-blue-900 font-serif text-nowrap">Present Today</h3>
+                    <span className="bg-blue-900 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase">{today}</span>
+                  </div>
+                  
+                  <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                    {presentToday.length === 0 ? (
+                      <div className="p-12 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 text-slate-400 font-bold uppercase text-xs tracking-widest">
+                        No attendance recorded for your students and pupils yet today.
+                      </div>
+                    ) : (
+                      presentToday.map((record, i) => {
+                        const student = allStudents.find(s => s.id === record.studentId);
+                        return (
+                          <div key={i} className="p-5 bg-white border-2 border-slate-50 rounded-2xl flex items-center justify-between shadow-sm">
+                            <div className="flex items-center">
+                              <div className="w-10 h-10 bg-green-100 text-green-700 rounded-xl flex items-center justify-center font-black mr-4 border border-green-200">
+                                {student?.name.charAt(0)}
+                              </div>
+                              <div>
+                                <p className="font-black text-blue-900">{student?.name}</p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase">{student?.grade}</p>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-black text-green-600 bg-green-50 px-3 py-1 rounded-full uppercase">Verified</span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -457,44 +991,87 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                   const studentsInGrade = filteredStudents.filter(s => s.grade === grade);
                   return (
                     <div key={grade} className="bg-white rounded-3xl border-2 border-slate-100 overflow-hidden shadow-sm">
-                      <div className="bg-slate-50 px-8 py-4 border-b-2 border-slate-100 flex justify-between items-center">
-                        <h4 className="font-black text-blue-900 uppercase tracking-widest">{grade}</h4>
-                        <span className="px-3 py-1 bg-blue-900 text-yellow-400 text-[10px] font-black rounded-full">{studentsInGrade.length} Students & Pupils</span>
+                      <div className="bg-slate-50 px-6 sm:px-8 py-4 border-b-2 border-slate-100 flex flex-wrap justify-between items-center gap-3">
+                        <div className="flex items-center gap-3">
+                          <h4 className="font-black text-blue-900 uppercase tracking-widest">{grade}</h4>
+                          <span className="px-3 py-1 bg-blue-900 text-yellow-400 text-[10px] font-black rounded-full">{studentsInGrade.length} Students & Pupils</span>
+                        </div>
+                        {studentsInGrade.length > 0 && (() => {
+                          const nextTarget = getNextGradeLevel(grade);
+                          return nextTarget ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm(`⚡ ADVANCE ENTIRE CLASS: Are you sure you want to promote ALL ${studentsInGrade.length} pupils in ${grade} to ${nextTarget}? Each pupil's class grade and entry QR code will be upgraded automatically.`)) {
+                                  if (onBatchShiftStudents) {
+                                    onBatchShiftStudents(studentsInGrade.map(s => s.id));
+                                  } else {
+                                    studentsInGrade.forEach(s => onShiftStudent(s.id));
+                                  }
+                                  alert(`Success! All ${studentsInGrade.length} pupils in ${grade} have been promoted to ${nextTarget}!`);
+                                }
+                              }}
+                              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black uppercase tracking-wider rounded-xl transition-all shadow-sm flex items-center gap-1.5 active:scale-95"
+                              title={`Promote all pupils to ${nextTarget}`}
+                            >
+                              <span>⚡ Promote All to {nextTarget}</span>
+                            </button>
+                          ) : (
+                            <span className="px-3 py-1 bg-purple-100 text-purple-900 text-[10px] font-black uppercase rounded-lg border border-purple-200">
+                              🎓 Final Class
+                            </span>
+                          );
+                        })()}
                       </div>
                       <div className="divide-y divide-slate-50">
                         {studentsInGrade.length === 0 ? (
                           <p className="p-8 text-center text-slate-400 text-xs font-bold uppercase tracking-widest italic">No students or pupils registered in this grade yet.</p>
                         ) : (
-                          studentsInGrade.map(student => (
-                            <div key={student.id} className="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                              <div className="flex items-center">
-                                <div className="w-12 h-12 bg-yellow-100 text-blue-900 rounded-2xl flex items-center justify-center font-black mr-4 border-2 border-yellow-200">
-                                  {student.name.charAt(0)}
+                          studentsInGrade.map(student => {
+                            const nextGrade = getNextGradeLevel(student.grade);
+                            return (
+                              <div key={student.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
+                                <div className="flex items-center">
+                                  <div className="w-12 h-12 bg-yellow-100 text-blue-900 rounded-2xl flex items-center justify-center font-black mr-4 border-2 border-yellow-200 shrink-0">
+                                    {student.name.charAt(0)}
+                                  </div>
+                                  <div>
+                                    <p className="font-black text-blue-900 text-base sm:text-lg">{student.name}</p>
+                                    <p className="text-xs text-slate-500 font-medium">{student.email}</p>
+                                    <span className="inline-block mt-0.5 px-2 py-0.5 bg-slate-200 text-slate-700 text-[10px] font-bold rounded-md uppercase">
+                                      Current Class: {student.grade}
+                                    </span>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="font-black text-blue-900 text-lg">{student.name}</p>
-                                  <p className="text-xs text-slate-500 font-medium">{student.email}</p>
+                                <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                                  <div className="text-left sm:text-right">
+                                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">Enrolled</p>
+                                    <p className="text-xs font-bold text-blue-900">{new Date(student.createdAt).toLocaleDateString()}</p>
+                                  </div>
+                                  {nextGrade ? (
+                                    <button 
+                                      type="button"
+                                      onClick={() => {
+                                        if (window.confirm(`Are you sure you want to promote/move ${student.name} from ${student.grade} to ${nextGrade}? Their entry QR pass will be renewed immediately.`)) {
+                                          onShiftStudent(student.id);
+                                          alert(`Success! Pupil ${student.name} has been moved to ${nextGrade}.`);
+                                        }
+                                      }}
+                                      className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5"
+                                      title={`Move pupil to ${nextGrade}`}
+                                    >
+                                      <span>Move to {nextGrade}</span>
+                                      <span className="text-yellow-300 font-black">➔</span>
+                                    </button>
+                                  ) : (
+                                    <span className="px-3.5 py-2 bg-purple-100 text-purple-900 text-[10px] font-black uppercase rounded-xl border border-purple-200">
+                                      🎓 Graduating Class
+                                    </span>
+                                  )}
                                 </div>
                               </div>
-                              <div className="flex items-center gap-4">
-                                <div className="text-right">
-                                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">Enrolled Since</p>
-                                  <p className="text-xs font-bold text-blue-900">{new Date(student.createdAt).toLocaleDateString()}</p>
-                                </div>
-                                <button 
-                                  onClick={() => {
-                                    if (window.confirm(`Are you sure you want to shift ${student.name} to the next class? This will also regenerate their QR code.`)) {
-                                      onShiftStudent(student.id);
-                                      alert(`${student.name} has been shifted!`);
-                                    }
-                                  }}
-                                  className="px-4 py-2 bg-green-600 text-white text-[10px] font-black uppercase rounded-xl shadow-md hover:bg-green-700 transition-all"
-                                >
-                                  Shift Class
-                                </button>
-                              </div>
-                            </div>
-                          ))
+                            );
+                          })
                         )}
                       </div>
                     </div>
@@ -503,6 +1080,20 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
               </div>
             )}
           </div>
+        )}
+
+        {activeTab === 'timetable' && (
+          <ClassTimetableManager
+            assignedGrades={authorizedGrades}
+            courses={courses}
+            timetables={timetables}
+            currentUsername={username}
+            onSaveTimetable={(tt) => {
+              if (onSaveTimetable) {
+                onSaveTimetable(tt);
+              }
+            }}
+          />
         )}
 
         {activeTab === 'termStats' && (
