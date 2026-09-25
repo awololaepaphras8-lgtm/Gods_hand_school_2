@@ -239,6 +239,85 @@ CREATE TABLE IF NOT EXISTS public.timetables (
   CONSTRAINT uq_timetable_grade_term UNIQUE (grade, term)
 );
 
+CREATE TABLE IF NOT EXISTS public.parent_staff_messages (
+  id TEXT PRIMARY KEY,
+  parent_id TEXT NOT NULL,
+  parent_name TEXT NOT NULL,
+  parent_email TEXT,
+  staff_id TEXT NOT NULL,
+  staff_name TEXT NOT NULL,
+  student_id TEXT,
+  student_name TEXT,
+  student_grade TEXT,
+  subject TEXT DEFAULT 'Parent Inquiry',
+  message TEXT NOT NULL,
+  sender_role TEXT NOT NULL CHECK (sender_role IN ('parent', 'teacher', 'admin')),
+  priority TEXT DEFAULT 'normal' CHECK (priority IN ('normal', 'urgent', 'inquiry')),
+  read BOOLEAN DEFAULT FALSE NOT NULL,
+  reply_to_id TEXT,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.chat_channels (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  icon TEXT,
+  topic TEXT,
+  allowed_roles TEXT[] DEFAULT '{"ADMIN", "TEACHER", "PARENT", "STUDENT"}' NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.chat_messages (
+  id TEXT PRIMARY KEY,
+  channel_id TEXT NOT NULL REFERENCES public.chat_channels(id) ON DELETE CASCADE,
+  sender_id TEXT NOT NULL,
+  sender_name TEXT NOT NULL,
+  sender_role TEXT NOT NULL CHECK (sender_role IN ('ADMIN', 'TEACHER', 'PARENT', 'STUDENT', 'GUEST')),
+  message TEXT NOT NULL,
+  attachment_url TEXT,
+  reactions JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.meetings (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  room_code TEXT UNIQUE NOT NULL,
+  host_name TEXT NOT NULL,
+  host_role TEXT NOT NULL DEFAULT 'ADMIN',
+  description TEXT,
+  scheduled_time TEXT,
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'upcoming', 'ended')),
+  participants_count INT DEFAULT 1 NOT NULL,
+  meeting_link TEXT,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.call_sessions (
+  id TEXT PRIMARY KEY,
+  caller_id TEXT NOT NULL,
+  caller_name TEXT NOT NULL,
+  caller_role TEXT NOT NULL,
+  receiver_id TEXT NOT NULL,
+  receiver_name TEXT NOT NULL,
+  receiver_role TEXT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('voice', 'video')),
+  status TEXT NOT NULL DEFAULT 'ringing' CHECK (status IN ('ringing', 'connected', 'ended', 'declined', 'missed')),
+  started_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  ended_at TIMESTAMPTZ,
+  duration_seconds INT DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS public.admin_realtime_events (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  action TEXT NOT NULL,
+  details TEXT NOT NULL,
+  performed_by TEXT NOT NULL DEFAULT 'Proprietor / Admin',
+  payload JSONB DEFAULT '{}'::jsonb,
+  timestamp TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- PHASE 3: SAFE COLUMN UPGRADES & CONSTRAINT MIGRATIONS
 DO $$
 BEGIN
@@ -397,7 +476,37 @@ CREATE POLICY "Anyone can read class timetables" ON public.timetables FOR SELECT
 DROP POLICY IF EXISTS "Staff and admins can manage timetables" ON public.timetables;
 CREATE POLICY "Staff and admins can manage timetables" ON public.timetables FOR ALL USING (true) WITH CHECK (true);
 
--- PHASE 7: SUPABASE REALTIME CONFIGURATION (ALL 17 TABLES)
+DROP POLICY IF EXISTS "Anyone can read parent-staff messages" ON public.parent_staff_messages;
+CREATE POLICY "Anyone can read parent-staff messages" ON public.parent_staff_messages FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Anyone can send parent-staff messages" ON public.parent_staff_messages;
+CREATE POLICY "Anyone can send parent-staff messages" ON public.parent_staff_messages FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anyone can read chat channels" ON public.chat_channels;
+CREATE POLICY "Anyone can read chat channels" ON public.chat_channels FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Admins can manage chat channels" ON public.chat_channels;
+CREATE POLICY "Admins can manage chat channels" ON public.chat_channels FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anyone can read community chat messages" ON public.chat_messages;
+CREATE POLICY "Anyone can read community chat messages" ON public.chat_messages FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Anyone can post community chat messages" ON public.chat_messages;
+CREATE POLICY "Anyone can post community chat messages" ON public.chat_messages FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anyone can view virtual meetings" ON public.meetings;
+CREATE POLICY "Anyone can view virtual meetings" ON public.meetings FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Anyone can create or manage virtual meetings" ON public.meetings;
+CREATE POLICY "Anyone can create or manage virtual meetings" ON public.meetings FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anyone can view call sessions" ON public.call_sessions;
+CREATE POLICY "Anyone can view call sessions" ON public.call_sessions FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Anyone can initiate or update call sessions" ON public.call_sessions;
+CREATE POLICY "Anyone can initiate or update call sessions" ON public.call_sessions FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Anyone can read admin realtime events" ON public.admin_realtime_events;
+CREATE POLICY "Anyone can read admin realtime events" ON public.admin_realtime_events FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Admins can insert realtime events" ON public.admin_realtime_events;
+CREATE POLICY "Admins can insert realtime events" ON public.admin_realtime_events FOR INSERT WITH CHECK (true);
+
+-- PHASE 7: SUPABASE REALTIME CONFIGURATION (ALL 23 TABLES)
 ALTER TABLE public.profiles REPLICA IDENTITY FULL;
 ALTER TABLE public.students REPLICA IDENTITY FULL;
 ALTER TABLE public.parents REPLICA IDENTITY FULL;
@@ -415,6 +524,12 @@ ALTER TABLE public.result_publish_requests REPLICA IDENTITY FULL;
 ALTER TABLE public.timed_staff_delegations REPLICA IDENTITY FULL;
 ALTER TABLE public.user_pages_access REPLICA IDENTITY FULL;
 ALTER TABLE public.timetables REPLICA IDENTITY FULL;
+ALTER TABLE public.parent_staff_messages REPLICA IDENTITY FULL;
+ALTER TABLE public.chat_channels REPLICA IDENTITY FULL;
+ALTER TABLE public.chat_messages REPLICA IDENTITY FULL;
+ALTER TABLE public.meetings REPLICA IDENTITY FULL;
+ALTER TABLE public.call_sessions REPLICA IDENTITY FULL;
+ALTER TABLE public.admin_realtime_events REPLICA IDENTITY FULL;
 
 DO $$
 DECLARE
@@ -423,7 +538,8 @@ DECLARE
     'profiles', 'students', 'parents', 'parent_student_links', 'fee_structures', 
     'fee_payments', 'attendance_records', 'student_results', 'teacher_accounts', 
     'courses', 'announcements', 'admissions', 'school_calendar',
-    'result_publish_requests', 'timed_staff_delegations', 'user_pages_access', 'timetables'
+    'result_publish_requests', 'timed_staff_delegations', 'user_pages_access', 'timetables',
+    'parent_staff_messages', 'chat_channels', 'chat_messages', 'meetings', 'call_sessions', 'admin_realtime_events'
   ];
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
@@ -551,6 +667,31 @@ VALUES (
 )
 ON CONFLICT (id) DO UPDATE
 SET updated_at = timezone('utc'::text, now());
+
+INSERT INTO public.chat_channels (id, name, description, icon, topic)
+VALUES
+  ('general', 'general-school-hub', 'Official school-wide announcements, prayers and morning devotions', '📢', 'Have Faith In God'),
+  ('pta', 'pta-parents-forum', 'Parent-Teacher Association dialogue, feedback & partnership', '👨‍👩‍👧‍👦', 'PTA Collaboration'),
+  ('study', 'students-study-circle', 'Pupil study group, homework questions and academic quizzes', '📚', 'Continuous Learning'),
+  ('staff', 'staff-briefing-room', 'Teachers and admin lesson preparations and academic sync', '👔', 'Staff Faculty Only'),
+  ('sports', 'clubs-sports-faith', 'Inter-house sports, debating society, choir and fellowships', '🏆', 'Co-Curricular Activities')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.parent_staff_messages (
+  id, parent_id, parent_name, parent_email, staff_id, staff_name,
+  student_id, student_name, student_grade, subject, message, sender_role, priority, read
+)
+VALUES
+  ('PSM-1', 'PAR-1', 'Mrs. Folashade Adebayo', 'parent@godshand.sch.ng', 'staff', 'Mr. David Adeleke', 'STU-1', 'Samuel Adebayo', 'Primary 4', 'Academic Progress & Homework Inquiry', 'Good morning Mr. Adeleke, please I would like to confirm Samuel''s homework submission for Mathematics yesterday.', 'parent', 'inquiry', TRUE),
+  ('PSM-2', 'PAR-1', 'Mrs. Folashade Adebayo', 'parent@godshand.sch.ng', 'staff', 'Mr. David Adeleke', 'STU-1', 'Samuel Adebayo', 'Primary 4', 'Academic Progress & Homework Inquiry', 'Good afternoon Mrs. Adebayo! Yes, Samuel submitted his arithmetic exercises on time and scored 95%. He is doing exceptionally well in class.', 'teacher', 'normal', TRUE)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.meetings (
+  id, title, room_code, host_name, host_role, description, scheduled_time, status, participants_count, meeting_link
+)
+VALUES
+  ('MTG-1', 'Termly General PTA Virtual Assembly & Orientation', 'GHS-PTA-2026', 'Proprietor & Head of School', 'ADMIN', 'Review of academic calendar, terminal results release, and student gate security protocol.', 'Saturday 10:00 AM', 'active', 14, 'https://godshand.sch.ng/meet/GHS-PTA-2026')
+ON CONFLICT (id) DO NOTHING;
 `;
 
 /**

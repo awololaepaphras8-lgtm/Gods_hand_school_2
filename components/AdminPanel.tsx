@@ -28,6 +28,7 @@ import {
   copySupabaseSchemaSql,
   SUPABASE_MASTER_SQL_SCHEMA
 } from '../utils/supabaseSqlExport';
+import { RealtimeSqlViewerModal } from './RealtimeSqlViewerModal';
 
 interface AdminPanelProps {
   fees: FeeStructure;
@@ -57,6 +58,7 @@ interface AdminPanelProps {
   delegationExpiresAt?: string;
   onExitDelegation?: () => void;
   activeStaffName?: string;
+  onNavigateToView?: (view: any) => void;
   onUpdateFee: (grade: string, amount: number) => void;
   onUpdateAllFees?: (newFees: { [key: string]: number }) => void;
   onAddAnnouncement: (title: string, content: string) => void;
@@ -120,12 +122,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   allowedAdminSections,
   delegationExpiresAt,
   onExitDelegation,
-  activeStaffName
+  activeStaffName,
+  onNavigateToView
 }) => {
   const [activeTab, setActiveTab] = useState<'attendance' | 'payments' | 'resultPublish' | 'fees' | 'applications' | 'teachers' | 'courses' | 'calendar' | 'announcements' | 'access' | 'parents' | 'export' | 'delegations' | 'pageAccess'>('attendance');
   const [rejectModalRequestId, setRejectModalRequestId] = useState<string | null>(null);
   const [rejectFeedbackText, setRejectFeedbackText] = useState<string>('');
   const [delegationNow, setDelegationNow] = useState<Date>(new Date());
+  const [showSqlModal, setShowSqlModal] = useState<boolean>(false);
 
   // Clock for delegated session banner
   useEffect(() => {
@@ -426,7 +430,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
           </div>
           {!allowedAdminSections && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowSqlModal(true)}
+                className="flex items-center space-x-1.5 px-4 py-3 bg-emerald-500 hover:bg-emerald-400 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg hover:scale-105 active:scale-95"
+                title="View & copy complete Supabase PostgreSQL schema with real-time replication"
+              >
+                <span>📋</span>
+                <span>Supabase SQL & Realtime</span>
+              </button>
+
+              {onNavigateToView && (
+                <button
+                  type="button"
+                  onClick={() => onNavigateToView('communityHub')}
+                  className="flex items-center space-x-1.5 px-4 py-3 bg-blue-950 hover:bg-blue-900 text-yellow-400 border border-yellow-400/40 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg hover:scale-105 active:scale-95"
+                  title="Open live chat rooms, virtual meetings and voice/video calling"
+                >
+                  <span>💬</span>
+                  <span>Live Hub & Calls</span>
+                </button>
+              )}
+
               <button
                 onClick={() => {
                   const statePayload: AppState = {
@@ -444,11 +470,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   exportCompleteSchoolDataBoth(statePayload);
                   setActiveTab('export');
                 }}
-                className="flex items-center space-x-2 px-5 py-3 bg-yellow-400 text-blue-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-yellow-300 transition-all shadow-lg hover:scale-105 active:scale-95"
+                className="flex items-center space-x-2 px-4 py-3 bg-yellow-400 text-blue-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-yellow-300 transition-all shadow-lg hover:scale-105 active:scale-95"
                 title="Download complete school database in both PDF and Excel formats simultaneously"
               >
                 <span>⚡</span>
-                <span>Download All Data (PDF & Excel)</span>
+                <span>Export Data</span>
               </button>
             </div>
           )}
@@ -2426,6 +2452,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           />
         )}
       </div>
+
+      {/* Supabase Master SQL & Realtime Configuration Viewer Modal */}
+      <RealtimeSqlViewerModal
+        isOpen={showSqlModal}
+        onClose={() => setShowSqlModal(false)}
+      />
     </div>
   );
 };

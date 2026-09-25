@@ -30,6 +30,8 @@ interface ParentDashboardProps {
   onSimulateGateScan: (studentId: string) => void;
   onLogout: () => void;
   onGoToReceipts?: () => void;
+  onMessageTeacher?: (studentId?: string, grade?: GradeLevel) => void;
+  onGoToCommunity?: () => void;
 }
 
 export const ParentDashboard: React.FC<ParentDashboardProps> = ({
@@ -47,7 +49,9 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   onSubmitFeePayment,
   onSimulateGateScan,
   onLogout,
-  onGoToReceipts
+  onGoToReceipts,
+  onMessageTeacher,
+  onGoToCommunity
 }) => {
   const today = new Date().toLocaleDateString();
 
@@ -424,6 +428,17 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
+                  {onMessageTeacher && (
+                    <button
+                      type="button"
+                      onClick={() => onMessageTeacher(activeChild.id, activeChild.grade)}
+                      className="px-4 py-3 bg-yellow-400 hover:bg-yellow-300 text-blue-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5"
+                      title="Message this child's teachers or school administration directly"
+                    >
+                      <span>💬</span>
+                      <span>Message Teacher</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setShowChildQrModal(true)}

@@ -56,10 +56,12 @@ export type StaffPagePermission =
   | 'grading' 
   | 'attendance' 
   | 'courses'
-  | 'timetable';
+  | 'timetable'
+  | 'parentMessages';
 
 export const ALL_STAFF_PAGES: { id: StaffPagePermission; label: string; description: string; icon: string }[] = [
   { id: 'overview', label: 'Summary', description: 'Overview metrics & attendance stats', icon: '📊' },
+  { id: 'parentMessages', label: 'Parent Messages', description: 'Direct messaging & communications with parents of your pupils', icon: '💬' },
   { id: 'students', label: 'Students & Pupils', description: 'Class list, profiles & student promotion to next class', icon: '👨‍🎓' },
   { id: 'timetable', label: 'Class Timetable', description: 'Weekly class schedule & lesson timetable builder', icon: '🗓️' },
   { id: 'termStats', label: 'Term Attendance', description: 'Term attendance logs and summaries', icon: '📅' },
@@ -247,7 +249,9 @@ export type UserPageKey =
   | 'studentReceipts'
   | 'parentPortal'
   | 'studentPortal'
-  | 'about';
+  | 'about'
+  | 'parentStaffChat'
+  | 'communityHub';
 
 export interface PageAccessItem {
   isOpen: boolean;
@@ -270,8 +274,87 @@ export const ALL_USER_PAGES: { id: UserPageKey; label: string; description: stri
   { id: 'studentReceipts', label: 'Student Receipts Download Portal', description: 'Download official stamped school fee receipts and audit logs', icon: '📑' },
   { id: 'parentPortal', label: 'Parent Portal & Family Hub', description: 'Guardian overview, child attendance and family payment clearance', icon: '👨‍👩‍👧‍👦' },
   { id: 'studentPortal', label: 'Students & Pupils Hub', description: 'Student dashboard, gate QR codes and digital ID cards', icon: '💻' },
+  { id: 'parentStaffChat', label: 'Parent-Staff Direct Messaging', description: 'Direct communications channel between parents, class teachers & school admin', icon: '💬' },
+  { id: 'communityHub', label: 'Live Chat, Meetings & Calls', description: 'School-wide community rooms, virtual PTA meetings & direct calls', icon: '📞' },
   { id: 'about', label: 'About School & Campus Tour', description: 'School history, campus facilities and photo galleries', icon: '🏛️' },
 ];
+
+export interface ParentStaffMessage {
+  id: string;
+  parentId: string;
+  parentName: string;
+  parentEmail?: string;
+  staffId: string; // teacher username, 'ADMIN', 'BURSAR', 'HEAD_TEACHER', etc.
+  staffName: string;
+  studentId?: string;
+  studentName?: string;
+  studentGrade?: GradeLevel;
+  subject?: string;
+  message: string;
+  senderRole: 'parent' | 'teacher' | 'admin';
+  timestamp: string;
+  read?: boolean;
+  priority?: 'normal' | 'urgent' | 'inquiry';
+  replyToId?: string;
+}
+
+export interface ChatChannelMessage {
+  id: string;
+  channelId: string; // 'general', 'pta', 'study', 'staff', 'sports'
+  senderId: string;
+  senderName: string;
+  senderRole: UserRole;
+  message: string;
+  timestamp: string;
+  attachmentUrl?: string;
+  reactions?: { [emoji: string]: string[] };
+}
+
+export interface ChatChannel {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  topic?: string;
+  allowedRoles?: UserRole[];
+}
+
+export interface MeetingSession {
+  id: string;
+  title: string;
+  roomCode: string;
+  hostName: string;
+  hostRole: UserRole;
+  description?: string;
+  scheduledTime?: string;
+  status: 'active' | 'upcoming' | 'ended';
+  participantsCount?: number;
+  meetingLink?: string;
+  createdAt: string;
+}
+
+export interface CallSession {
+  id: string;
+  callerId: string;
+  callerName: string;
+  callerRole: UserRole;
+  receiverId: string;
+  receiverName: string;
+  receiverRole: UserRole;
+  type: 'voice' | 'video';
+  status: 'ringing' | 'connected' | 'ended' | 'declined' | 'missed';
+  startedAt: string;
+  endedAt?: string;
+  durationSeconds?: number;
+}
+
+export interface AdminRealtimeEvent {
+  id: string;
+  action: string;
+  details: string;
+  performedBy: string;
+  timestamp: string;
+}
 
 export interface TimedStaffDelegation {
   id: string;
@@ -302,4 +385,9 @@ export interface AppState {
   timedStaffDelegations?: TimedStaffDelegation[];
   userPagesAccess?: UserPagesAccessState;
   timetables?: ClassTimetable[];
+  parentStaffMessages?: ParentStaffMessage[];
+  chatMessages?: ChatChannelMessage[];
+  meetings?: MeetingSession[];
+  callSessions?: CallSession[];
+  adminEvents?: AdminRealtimeEvent[];
 }

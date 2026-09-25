@@ -5,7 +5,7 @@ import { UserRole, UserPagesAccessState } from '../types';
 interface HeaderProps {
   role: UserRole;
   setRole: (role: UserRole) => void;
-  setView: (view: 'home' | 'portal' | 'apply' | 'admin' | 'teacherLogin' | 'teacher' | 'studentAuth' | 'feeChecker' | 'resultChecker' | 'about' | 'parentAuth' | 'parentPortal' | 'studentReceipts') => void;
+  setView: (view: 'home' | 'portal' | 'apply' | 'admin' | 'teacherLogin' | 'teacher' | 'studentAuth' | 'feeChecker' | 'resultChecker' | 'about' | 'parentAuth' | 'parentPortal' | 'studentReceipts' | 'parentStaffChat' | 'communityHub') => void;
   activeView: string;
   onOpenDownloadModal?: () => void;
   isAppInstalled?: boolean;
@@ -41,12 +41,16 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
     if (v === 'studentReceipts' && userPagesAccess.pages.studentReceipts?.isOpen === false) return true;
     if ((v === 'parentPortal' || v === 'parentAuth') && userPagesAccess.pages.parentPortal?.isOpen === false) return true;
     if ((v === 'portal' || v === 'studentAuth') && userPagesAccess.pages.studentPortal?.isOpen === false) return true;
+    if (v === 'parentStaffChat' && userPagesAccess.pages.parentStaffChat?.isOpen === false) return true;
+    if (v === 'communityHub' && userPagesAccess.pages.communityHub?.isOpen === false) return true;
     if (v === 'about' && userPagesAccess.pages.about?.isOpen === false) return true;
     return false;
   };
 
   const menuItems = [
     { label: 'School Home', view: 'home', icon: '🏠' },
+    { label: 'Message Staff Directly', view: 'parentStaffChat', icon: '💬' },
+    { label: 'Live Chat, Meetings & Calls', view: 'communityHub', icon: '📞' },
     { label: 'Check Student Results (₦1,000)', view: 'resultChecker', icon: '📜' },
     { label: 'Download Official Fee Receipts', view: 'studentReceipts', icon: '📑' },
     { label: 'Parent Portal & Attendance', view: role === UserRole.PARENT ? 'parentPortal' : 'parentAuth', icon: '👨‍👩‍👧‍👦' },
@@ -81,7 +85,7 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
             </a>
             <span className="text-blue-900/30 hidden lg:inline">•</span>
             <span className="hidden lg:inline whitespace-nowrap text-blue-900/80">
-              ✉️ <a href="mailto:godshandschool70@gmail.com" className="hover:underline lowercase font-medium">godshandschool70@gmail.com</a>
+              ✉️ <a href="mailto:godshandschool70@gmail.com" className="hover:underline font-medium">Godshandschool70@gmail.com</a>
             </span>
           </div>
           <div className="flex items-center justify-center shrink-0">
@@ -161,6 +165,17 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
                   <span className="sm:hidden text-[10px]">App</span>
                 </button>
               )}
+
+              {/* Community Live Hub Shortcut */}
+              <button
+                type="button"
+                onClick={() => navigateTo('communityHub')}
+                className={`hidden lg:flex items-center space-x-1.5 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 ${activeView === 'communityHub' ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md' : 'text-blue-900 border-yellow-400 bg-yellow-50 hover:bg-yellow-100 hover:border-yellow-500'}`}
+                title="School Live Chat, Meetings & Calls Hub"
+              >
+                <span>💬</span>
+                <span>Live Hub</span>
+              </button>
 
               {/* About School Shortcut for Desktop */}
               <button

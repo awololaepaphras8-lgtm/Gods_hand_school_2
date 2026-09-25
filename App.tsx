@@ -1,6 +1,33 @@
 
 import React, { useState, useEffect } from 'react';
-import { UserRole, AppState, StudentApplication, Announcement, TeacherAccount, StudentResult, Course, GradeLevel, StudentAccount, FeePayment, AttendanceRecord, StaffPagePermission, ParentAccount, PaymentStatus, ResultPublishRequest, TimedStaffDelegation, AdminSectionKey, UserPagesAccessState, UserPageKey, ALL_USER_PAGES, ClassTimetable } from './types';
+import { 
+  UserRole, 
+  AppState, 
+  StudentApplication, 
+  Announcement, 
+  TeacherAccount, 
+  StudentResult, 
+  Course, 
+  GradeLevel, 
+  StudentAccount, 
+  FeePayment, 
+  AttendanceRecord, 
+  StaffPagePermission, 
+  ParentAccount, 
+  PaymentStatus, 
+  ResultPublishRequest, 
+  TimedStaffDelegation, 
+  AdminSectionKey, 
+  UserPagesAccessState, 
+  UserPageKey, 
+  ALL_USER_PAGES, 
+  ClassTimetable,
+  ParentStaffMessage,
+  ChatChannelMessage,
+  MeetingSession,
+  CallSession,
+  AdminRealtimeEvent
+} from './types';
 import { stateService } from './services/stateService';
 import { setupRealtimeSync, fetchSupabaseState, realtimeService, isSupabaseConfigured } from './services/supabaseService';
 import { GRADE_ORDER, getNextGradeLevel } from './constants';
@@ -22,6 +49,9 @@ import { AboutUs } from './components/AboutUs';
 import { WhatsAppChatWidget } from './components/WhatsAppChatWidget';
 import { PWADownloadPrompt } from './components/PWADownloadPrompt';
 import { StudentTimetableCard } from './components/StudentTimetableCard';
+import { ParentStaffMessaging } from './components/ParentStaffMessaging';
+import { SchoolCommunityHub } from './components/SchoolCommunityHub';
+import { RealtimeSqlViewerModal } from './components/RealtimeSqlViewerModal';
 import { QRCodeSVG } from 'qrcode.react';
 
 const App: React.FC = () => {
@@ -29,10 +59,11 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [currentParentId, setCurrentParentId] = useState<string | null>(null);
   const [state, setState] = useState<AppState>(stateService.getState());
-  const [view, setView] = useState<'home' | 'portal' | 'apply' | 'admin' | 'teacherLogin' | 'teacher' | 'studentAuth' | 'feeChecker' | 'resultChecker' | 'about' | 'parentAuth' | 'parentPortal' | 'studentReceipts'>('home');
+  const [view, setView] = useState<'home' | 'portal' | 'apply' | 'admin' | 'teacherLogin' | 'teacher' | 'studentAuth' | 'feeChecker' | 'resultChecker' | 'about' | 'parentAuth' | 'parentPortal' | 'studentReceipts' | 'parentStaffChat' | 'communityHub'>('home');
   const [loginError, setLoginError] = useState('');
   const [showQRModal, setShowQRModal] = useState(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const [showSqlModal, setShowSqlModal] = useState(false);
   const [isAppInstalled, setIsAppInstalled] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return (
@@ -91,7 +122,14 @@ const App: React.FC = () => {
             announcements: (dbState.announcements && dbState.announcements.length > 0) ? dbState.announcements : prev.announcements,
             applications: (dbState.applications && dbState.applications.length > 0) ? dbState.applications : prev.applications,
             fees: (dbState.fees && Object.keys(dbState.fees).length > 0) ? dbState.fees : prev.fees,
-            academicCalendar: dbState.academicCalendar || prev.academicCalendar
+            academicCalendar: dbState.academicCalendar || prev.academicCalendar,
+            timetables: (dbState.timetables && dbState.timetables.length > 0) ? dbState.timetables : prev.timetables,
+            userPagesAccess: dbState.userPagesAccess || prev.userPagesAccess,
+            parentStaffMessages: (dbState.parentStaffMessages && dbState.parentStaffMessages.length > 0) ? dbState.parentStaffMessages : prev.parentStaffMessages,
+            chatMessages: (dbState.chatMessages && dbState.chatMessages.length > 0) ? dbState.chatMessages : prev.chatMessages,
+            meetings: (dbState.meetings && dbState.meetings.length > 0) ? dbState.meetings : prev.meetings,
+            callSessions: (dbState.callSessions && dbState.callSessions.length > 0) ? dbState.callSessions : prev.callSessions,
+            adminEvents: (dbState.adminEvents && dbState.adminEvents.length > 0) ? dbState.adminEvents : prev.adminEvents
           }));
         }
       });
@@ -1026,6 +1064,74 @@ const App: React.FC = () => {
     }
   };
 
+  const handleSendParentMessage = (msgData: Omit<ParentStaffMessage, 'id' | 'timestamp'>) => {
+    const newMsg: ParentStaffMessage = {
+      ...msgData,
+      id: 'PSM-' + Date.now(),
+      timestamp: new Date().toISOString()
+    };
+    setState(prev => ({
+      ...prev,
+      parentStaffMessages: [newMsg, ...(prev.parentStaffMessages || [])]
+    }));
+    realtimeService.sendParentStaffMessage(newMsg);
+  };
+
+  const handleSendChatMessage = (msgData: Omit<ChatChannelMessage, 'id' | 'timestamp'>) => {
+    const newMsg: ChatChannelMessage = {
+      ...msgData,
+      id: 'CHAT-' + Date.now(),
+      timestamp: new Date().toISOString()
+    };
+    setState(prev => ({
+      ...prev,
+      chatMessages: [...(prev.chatMessages || []), newMsg]
+    }));
+    realtimeService.sendChatMessage(newMsg);
+  };
+
+  const handleCreateMeeting = (meetingData: Omit<MeetingSession, 'id' | 'createdAt'>) => {
+    const meeting: MeetingSession = {
+      ...meetingData,
+      id: 'MTG-' + Date.now(),
+      createdAt: new Date().toISOString()
+    };
+    setState(prev => ({
+      ...prev,
+      meetings: [meeting, ...(prev.meetings || [])]
+    }));
+    realtimeService.createMeeting(meeting);
+  };
+
+  const handleInitiateCall = (receiverId: string, receiverName: string, receiverRole: UserRole, type: 'voice' | 'video') => {
+    const callerName = currentUser || (role === UserRole.PARENT ? (currentParentObj?.fullName || 'Parent') : 'Caller');
+    const session: CallSession = {
+      id: 'CALL-' + Date.now(),
+      callerId: currentUser || (currentParentObj?.id) || 'usr-' + Date.now(),
+      callerName,
+      callerRole: role,
+      receiverId,
+      receiverName,
+      receiverRole,
+      type,
+      status: 'ringing',
+      startedAt: new Date().toISOString()
+    };
+    setState(prev => ({
+      ...prev,
+      callSessions: [session, ...(prev.callSessions || [])]
+    }));
+    realtimeService.initiateCall(session);
+  };
+
+  const handleUpdateCallStatus = (callId: string, status: CallSession['status']) => {
+    setState(prev => ({
+      ...prev,
+      callSessions: (prev.callSessions || []).map(c => c.id === callId ? { ...c, status } : c)
+    }));
+    realtimeService.updateCallStatus(callId, status);
+  };
+
   const handleNav = (v: any) => {
     if ((v === 'apply' || v === 'portal') && role === UserRole.GUEST) {
         setLoginError("You must log in to access admission forms and school fees.");
@@ -1074,6 +1180,8 @@ const App: React.FC = () => {
     else if (pageView === 'studentReceipts') pageKey = 'studentReceipts';
     else if (pageView === 'parentPortal' || pageView === 'parentAuth') pageKey = 'parentPortal';
     else if (pageView === 'portal' || pageView === 'studentAuth') pageKey = 'studentPortal';
+    else if (pageView === 'parentStaffChat') pageKey = 'parentStaffChat';
+    else if (pageView === 'communityHub') pageKey = 'communityHub';
     else if (pageView === 'about') pageKey = 'about';
 
     if (!pageKey) {
@@ -1211,6 +1319,18 @@ const App: React.FC = () => {
               onUnlinkChild={handleUnlinkChild}
               onSubmitFeePayment={handleSubmitParentPayment}
               onSimulateGateScan={handleSimulateGateScan}
+              onGoToReceipts={() => {
+                setView('studentReceipts');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onMessageTeacher={() => {
+                setView('parentStaffChat');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onGoToCommunity={() => {
+                setView('communityHub');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
               onLogout={() => {
                 setRole(UserRole.GUEST);
                 setCurrentUser(null);
@@ -1626,6 +1746,13 @@ const App: React.FC = () => {
                onBatchShiftStudents={shiftMultipleStudentsToNextClass}
                timetables={state.timetables || []}
                onSaveTimetable={handleSaveClassTimetable}
+               parentMessages={state.parentStaffMessages || []}
+               parents={state.parents || []}
+               onSendParentMessage={handleSendParentMessage}
+               onOpenParentMessaging={() => {
+                 setView('parentStaffChat');
+                 window.scrollTo({ top: 0, behavior: 'smooth' });
+               }}
                onRequestPublishResults={handleRequestPublishResults}
                onSendResultsToPupils={handleSendResultsToPupils}
              />
@@ -1803,6 +1930,59 @@ const App: React.FC = () => {
             />
           )
         )}
+
+        {view === 'parentStaffChat' && (
+          <div className="max-w-6xl mx-auto py-8 sm:py-12 px-3 sm:px-6">
+            <ParentStaffMessaging
+              currentUserRole={role}
+              currentUserName={currentUser || (role === UserRole.PARENT ? (currentParentObj?.fullName || 'Parent') : 'User')}
+              currentParent={currentParentObj}
+              currentTeacher={currentTeacherObj}
+              parents={state.parents || []}
+              students={state.studentAccounts || []}
+              teachers={state.teachers || []}
+              messages={state.parentStaffMessages || []}
+              onSendMessage={handleSendParentMessage}
+              onInitiateCall={handleInitiateCall}
+              onBack={() => {
+                setView(role === UserRole.PARENT ? 'parentPortal' : role === UserRole.TEACHER ? 'teacher' : 'home');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onGoToCommunityHub={() => {
+                setView('communityHub');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+          </div>
+        )}
+
+        {view === 'communityHub' && (
+          <div className="max-w-7xl mx-auto py-6 sm:py-10 px-2.5 sm:px-6">
+            <SchoolCommunityHub
+              currentUserRole={role}
+              currentUserId={currentUser || (currentParentObj?.id) || 'usr-' + Date.now()}
+              currentUserName={currentUser || (currentParentObj?.fullName) || 'School Member'}
+              students={state.studentAccounts || []}
+              teachers={state.teachers || []}
+              parents={state.parents || []}
+              chatMessages={state.chatMessages || []}
+              meetings={state.meetings || []}
+              callSessions={state.callSessions || []}
+              onSendChatMessage={handleSendChatMessage}
+              onCreateMeeting={handleCreateMeeting}
+              onInitiateCall={handleInitiateCall}
+              onUpdateCallStatus={handleUpdateCallStatus}
+              onBack={() => {
+                setView('home');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onGoToParentMessaging={() => {
+                setView('parentStaffChat');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+          </div>
+        )}
           </>
         )}
       </main>
@@ -1812,8 +1992,9 @@ const App: React.FC = () => {
           setView('feeChecker');
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
+        onOpenSqlModal={() => setShowSqlModal(true)}
         onNavigate={(targetView: string) => {
-          if (['home', 'portal', 'apply', 'admin', 'teacherLogin', 'teacher', 'studentAuth', 'feeChecker', 'parentAuth', 'parentPortal', 'about', 'studentReceipts', 'resultChecker'].includes(targetView)) {
+          if (['home', 'portal', 'apply', 'admin', 'teacherLogin', 'teacher', 'studentAuth', 'feeChecker', 'parentAuth', 'parentPortal', 'about', 'studentReceipts', 'resultChecker', 'parentStaffChat', 'communityHub'].includes(targetView)) {
             handleNav(targetView as any);
           } else {
             setView('home');
@@ -1829,6 +2010,12 @@ const App: React.FC = () => {
       <PWADownloadPrompt 
         forceModalOpen={isDownloadModalOpen}
         onCloseModal={() => setIsDownloadModalOpen(false)}
+      />
+
+      {/* Supabase Master SQL & Realtime Configuration Viewer Modal */}
+      <RealtimeSqlViewerModal
+        isOpen={showSqlModal}
+        onClose={() => setShowSqlModal(false)}
       />
     </div>
   );

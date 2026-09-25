@@ -283,7 +283,7 @@ export const AboutUs: React.FC<AboutUsProps> = ({ onApply, onCheckFees, onBack }
               </p>
               <p className="flex items-center gap-2">
                 <span className="text-blue-900">✉️</span>
-                <span><strong>Email:</strong> godshandschool70@gmail.com</span>
+                <span><strong>Email:</strong> Godshandschool70@gmail.com</span>
               </p>
             </div>
           </div>

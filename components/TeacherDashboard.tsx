@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Course, StudentResult, GradeLevel, StudentAccount, AttendanceRecord, StaffPagePermission, ALL_STAFF_PAGES, Announcement, ResultPublishRequest, TimedStaffDelegation, AdminSectionKey, ALL_ADMIN_SECTIONS, ClassTimetable } from '../types';
+import { Course, StudentResult, GradeLevel, StudentAccount, AttendanceRecord, StaffPagePermission, ALL_STAFF_PAGES, Announcement, ResultPublishRequest, TimedStaffDelegation, AdminSectionKey, ALL_ADMIN_SECTIONS, ClassTimetable, ParentStaffMessage, ParentAccount } from '../types';
 import { GRADE_GROUPS, getNextGradeLevel } from '../constants';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { StandardReportCard } from './StandardReportCard';
@@ -20,6 +20,8 @@ interface TeacherDashboardProps {
   resultPublishRequests?: ResultPublishRequest[];
   timedStaffDelegations?: TimedStaffDelegation[];
   timetables?: ClassTimetable[];
+  parentMessages?: ParentStaffMessage[];
+  parents?: ParentAccount[];
   onOpenAdminDelegation?: (sectionKey?: AdminSectionKey) => void;
   onAddCourse: (name: string, grade: GradeLevel, description: string) => void;
   onDuplicateCourse?: (courseId: string, targetGrades: GradeLevel[]) => void;
@@ -31,6 +33,8 @@ interface TeacherDashboardProps {
   onSaveTimetable?: (timetable: ClassTimetable) => void;
   onRequestPublishResults?: (grade: GradeLevel, term: string, subject?: string) => void;
   onSendResultsToPupils?: (grade: GradeLevel, term: string) => void;
+  onSendParentMessage?: (msg: Omit<ParentStaffMessage, 'id' | 'timestamp'>) => void;
+  onOpenParentMessaging?: () => void;
 }
 
 export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
@@ -46,6 +50,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   resultPublishRequests = [],
   timedStaffDelegations = [],
   timetables = [],
+  parentMessages = [],
+  parents = [],
   onOpenAdminDelegation,
   onAddCourse,
   onDuplicateCourse,
@@ -56,9 +62,12 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   onBatchShiftStudents,
   onSaveTimetable,
   onRequestPublishResults,
-  onSendResultsToPupils
+  onSendResultsToPupils,
+  onSendParentMessage,
+  onOpenParentMessaging
 }) => {
   const [delegationNow, setDelegationNow] = useState<Date>(new Date());
+  const [parentReplyText, setParentReplyText] = useState<{ [msgId: string]: string }>({});
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -74,7 +83,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   // Determine available tabs based on admin-configured page permissions
   const availableTabs = ALL_STAFF_PAGES.filter(p => !allowedPages || allowedPages.includes(p.id));
   const initialTab = availableTabs[0]?.id || 'overview';
-  const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'students' | 'grading' | 'attendance' | 'termStats' | 'timetable'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'students' | 'grading' | 'attendance' | 'termStats' | 'timetable' | 'parentMessages'>(initialTab as any);
 
   useEffect(() => {
     if (availableTabs.length > 0 && !availableTabs.some(t => t.id === activeTab)) {
@@ -1736,6 +1745,168 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                   ))}
                 </div>
              </div>
+          </div>
+        )}
+
+        {/* TAB 8: PARENT MESSAGES DESK */}
+        {activeTab === 'parentMessages' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 p-6 rounded-3xl border border-slate-200">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xl">💬</span>
+                  <h3 className="font-serif font-black text-blue-950 text-xl">
+                    Parent Messages & Direct Inquiries
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500 font-medium">
+                  Direct inquiries from parents regarding pupils in your assigned class(es): <span className="font-bold text-blue-900">{assignedGrades.join(', ') || 'All Grades'}</span>.
+                </p>
+              </div>
+
+              {onOpenParentMessaging && (
+                <button
+                  type="button"
+                  onClick={onOpenParentMessaging}
+                  className="px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-2 active:scale-95 shrink-0"
+                >
+                  <span>Open Full Messaging Desk ➔</span>
+                </button>
+              )}
+            </div>
+
+            {/* Filtered Messages for this teacher */}
+            {(() => {
+              const myParentMessages = parentMessages.filter(m => 
+                m.staffId === username || 
+                m.staffId === 'staff' ||
+                (m.studentGrade && assignedGrades.includes(m.studentGrade))
+              );
+
+              if (myParentMessages.length === 0) {
+                return (
+                  <div className="p-12 text-center bg-white rounded-3xl border-2 border-dashed border-slate-200 space-y-2">
+                    <span className="text-4xl block mb-2">📬</span>
+                    <h4 className="font-serif font-black text-blue-950 text-base">No Parent Inquiries Yet</h4>
+                    <p className="text-xs text-slate-400 max-w-md mx-auto">
+                      When parents message you about homework, attendance, or student progress, their inquiries will appear here in real-time.
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-4">
+                  {myParentMessages.map(msg => (
+                    <div
+                      key={msg.id}
+                      className="bg-white rounded-3xl p-6 border-2 border-slate-100 shadow-md hover:border-blue-200 transition-all space-y-4"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-900 flex items-center justify-center font-black text-base shrink-0">
+                            👨‍👩‍👧‍👦
+                          </div>
+                          <div>
+                            <p className="font-serif font-black text-sm text-blue-950 leading-tight">
+                              {msg.parentName}
+                            </p>
+                            <p className="text-[10px] text-slate-400 font-bold">
+                              Regarding: <span className="text-blue-900 font-black">{msg.studentName || 'Pupil'}</span> ({msg.studentGrade || 'Class'})
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                            msg.priority === 'urgent' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {msg.priority || 'Inquiry'}
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-400">
+                            {new Date(msg.timestamp).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        {msg.subject && (
+                          <h5 className="font-serif font-black text-xs text-blue-900 mb-1">
+                            {msg.subject}
+                          </h5>
+                        )}
+                        <p className="text-xs sm:text-sm text-slate-700 font-medium whitespace-pre-wrap leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                          {msg.message}
+                        </p>
+                      </div>
+
+                      {/* Quick Reply Form */}
+                      {onSendParentMessage && (
+                        <div className="pt-2 flex flex-col sm:flex-row items-center gap-2">
+                          <input
+                            type="text"
+                            value={parentReplyText[msg.id] || ''}
+                            onChange={e => setParentReplyText(prev => ({ ...prev, [msg.id]: e.target.value }))}
+                            placeholder={`Reply directly to ${msg.parentName}...`}
+                            className="flex-1 w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                            onKeyDown={e => {
+                              if (e.key === 'Enter' && (parentReplyText[msg.id] || '').trim()) {
+                                onSendParentMessage({
+                                  parentId: msg.parentId,
+                                  parentName: msg.parentName,
+                                  parentEmail: msg.parentEmail,
+                                  staffId: username,
+                                  staffName: username,
+                                  studentId: msg.studentId,
+                                  studentName: msg.studentName,
+                                  studentGrade: msg.studentGrade,
+                                  subject: `Re: ${msg.subject || 'Inquiry'}`,
+                                  message: (parentReplyText[msg.id] || '').trim(),
+                                  senderRole: 'teacher',
+                                  priority: 'normal',
+                                  read: false,
+                                  replyToId: msg.id
+                                });
+                                setParentReplyText(prev => ({ ...prev, [msg.id]: '' }));
+                                alert(`Reply sent to ${msg.parentName}!`);
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const text = (parentReplyText[msg.id] || '').trim();
+                              if (!text) return;
+                              onSendParentMessage({
+                                parentId: msg.parentId,
+                                parentName: msg.parentName,
+                                parentEmail: msg.parentEmail,
+                                staffId: username,
+                                staffName: username,
+                                studentId: msg.studentId,
+                                studentName: msg.studentName,
+                                studentGrade: msg.studentGrade,
+                                subject: `Re: ${msg.subject || 'Inquiry'}`,
+                                message: text,
+                                senderRole: 'teacher',
+                                priority: 'normal',
+                                read: false,
+                                replyToId: msg.id
+                              });
+                              setParentReplyText(prev => ({ ...prev, [msg.id]: '' }));
+                              alert(`Reply sent to ${msg.parentName}!`);
+                            }}
+                            className="w-full sm:w-auto px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl font-black text-xs uppercase tracking-wider shadow-xs transition-all active:scale-95 shrink-0"
+                          >
+                            Send Reply
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>

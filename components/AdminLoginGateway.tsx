@@ -220,7 +220,7 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
                     disabled={lockoutRemaining > 0}
                     value={email}
                     onChange={(e) => handleEmailChange(e.target.value)}
-                    placeholder="e.g. godshandschool70@gmail.com"
+                    placeholder="e.g. Godshandschool70@gmail.com"
                     autoComplete="username"
                     className="w-full pl-14 pr-6 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold text-sm text-blue-900 focus:ring-4 focus:ring-blue-900/10 focus:bg-white outline-none transition-all shadow-inner disabled:opacity-50"
                   />
@@ -368,7 +368,7 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
                   <div className="p-4 bg-blue-50 rounded-2xl border border-blue-200 space-y-1 text-xs text-blue-900">
                     <p className="font-black uppercase tracking-wider">Official Administrative Email:</p>
                     <p className="text-blue-800">
-                      Emergency reset records can also be dispatched to <span className="font-black underline">godshandschool70@gmail.com</span>.
+                      Emergency reset records can also be dispatched to <span className="font-black underline">Godshandschool70@gmail.com</span>.
                     </p>
                   </div>
 

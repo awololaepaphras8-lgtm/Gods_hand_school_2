@@ -14,7 +14,12 @@ import {
   ResultPublishRequest,
   TimedStaffDelegation,
   UserPagesAccessState,
-  ClassTimetable
+  ClassTimetable,
+  ParentStaffMessage,
+  ChatChannelMessage,
+  MeetingSession,
+  CallSession,
+  AdminRealtimeEvent
 } from '../types';
 
 const SUPABASE_URL = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://jzuifdntpxjrmmrpvqfc.supabase.co';
@@ -87,7 +92,12 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
       publishReqsRes,
       delegationsRes,
       userPagesRes,
-      timetablesRes
+      timetablesRes,
+      parentStaffMessagesRes,
+      chatMessagesRes,
+      meetingsRes,
+      callSessionsRes,
+      adminEventsRes
     ] = await Promise.all([
       supabase.from('students').select('*'),
       supabase.from('parents').select('*'),
@@ -104,7 +114,12 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
       supabase.from('result_publish_requests').select('*').order('created_at', { ascending: false }),
       supabase.from('timed_staff_delegations').select('*').order('created_at', { ascending: false }),
       supabase.from('user_pages_access').select('*').eq('id', 1).maybeSingle(),
-      supabase.from('timetables').select('*').order('updated_at', { ascending: false })
+      supabase.from('timetables').select('*').order('updated_at', { ascending: false }),
+      supabase.from('parent_staff_messages').select('*').order('created_at', { ascending: true }),
+      supabase.from('chat_messages').select('*').order('created_at', { ascending: true }),
+      supabase.from('meetings').select('*').order('created_at', { ascending: false }),
+      supabase.from('call_sessions').select('*').order('started_at', { ascending: false }),
+      supabase.from('admin_realtime_events').select('*').order('timestamp', { ascending: false }).limit(50)
     ]);
 
     const partial: Partial<AppState> = {
@@ -120,7 +135,12 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
       fees: {},
       resultPublishRequests: [],
       timedStaffDelegations: [],
-      timetables: []
+      timetables: [],
+      parentStaffMessages: [],
+      chatMessages: [],
+      meetings: [],
+      callSessions: [],
+      adminEvents: []
     };
 
     // 1. Students
@@ -330,6 +350,89 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
         periods: Array.isArray(tt.periods) ? tt.periods : (typeof tt.periods === 'string' ? JSON.parse(tt.periods) : []),
         updatedAt: tt.updated_at || new Date().toISOString(),
         updatedBy: tt.updated_by || 'Teacher'
+      }));
+    }
+
+    // 16. Parent-Staff Direct Messages
+    if (parentStaffMessagesRes && parentStaffMessagesRes.data && parentStaffMessagesRes.data.length > 0) {
+      partial.parentStaffMessages = parentStaffMessagesRes.data.map((m: any): ParentStaffMessage => ({
+        id: m.id,
+        parentId: m.parent_id,
+        parentName: m.parent_name,
+        parentEmail: m.parent_email,
+        staffId: m.staff_id,
+        staffName: m.staff_name,
+        studentId: m.student_id,
+        studentName: m.student_name,
+        studentGrade: m.student_grade,
+        subject: m.subject || 'Parent Inquiry',
+        message: m.message,
+        senderRole: m.sender_role,
+        priority: m.priority || 'normal',
+        read: m.read ?? false,
+        replyToId: m.reply_to_id,
+        timestamp: m.created_at || new Date().toISOString()
+      }));
+    }
+
+    // 17. Community Chat Messages
+    if (chatMessagesRes && chatMessagesRes.data && chatMessagesRes.data.length > 0) {
+      partial.chatMessages = chatMessagesRes.data.map((cm: any): ChatChannelMessage => ({
+        id: cm.id,
+        channelId: cm.channel_id,
+        senderId: cm.sender_id,
+        senderName: cm.sender_name,
+        senderRole: cm.sender_role,
+        message: cm.message,
+        attachmentUrl: cm.attachment_url,
+        reactions: cm.reactions || {},
+        timestamp: cm.created_at || new Date().toISOString()
+      }));
+    }
+
+    // 18. Virtual Meetings
+    if (meetingsRes && meetingsRes.data && meetingsRes.data.length > 0) {
+      partial.meetings = meetingsRes.data.map((mtg: any): MeetingSession => ({
+        id: mtg.id,
+        title: mtg.title,
+        roomCode: mtg.room_code,
+        hostName: mtg.host_name,
+        hostRole: mtg.host_role,
+        description: mtg.description,
+        scheduledTime: mtg.scheduled_time,
+        status: mtg.status,
+        participantsCount: Number(mtg.participants_count || 1),
+        meetingLink: mtg.meeting_link,
+        createdAt: mtg.created_at || new Date().toISOString()
+      }));
+    }
+
+    // 19. Call Sessions
+    if (callSessionsRes && callSessionsRes.data && callSessionsRes.data.length > 0) {
+      partial.callSessions = callSessionsRes.data.map((c: any): CallSession => ({
+        id: c.id,
+        callerId: c.caller_id,
+        callerName: c.caller_name,
+        callerRole: c.caller_role,
+        receiverId: c.receiver_id,
+        receiverName: c.receiver_name,
+        receiverRole: c.receiver_role,
+        type: c.type,
+        status: c.status,
+        startedAt: c.started_at,
+        endedAt: c.ended_at,
+        durationSeconds: Number(c.duration_seconds || 0)
+      }));
+    }
+
+    // 20. Admin Realtime Events
+    if (adminEventsRes && adminEventsRes.data && adminEventsRes.data.length > 0) {
+      partial.adminEvents = adminEventsRes.data.map((ev: any): AdminRealtimeEvent => ({
+        id: ev.id,
+        action: ev.action,
+        details: ev.details,
+        performedBy: ev.performed_by,
+        timestamp: ev.timestamp
       }));
     }
 
@@ -618,6 +721,65 @@ export const setupRealtimeSync = (
         onStateUpdate(prev => ({
           ...prev,
           applications: [data, ...(prev.applications || []).filter(a => a.id !== data.id)]
+        }));
+        break;
+
+      case 'PARENT_STAFF_MESSAGE_SENT':
+        onStateUpdate(prev => {
+          const list = prev.parentStaffMessages || [];
+          const exists = list.some(m => m.id === data.id);
+          return {
+            ...prev,
+            parentStaffMessages: exists
+              ? list.map(m => m.id === data.id ? { ...m, ...data } : m)
+              : [...list, data]
+          };
+        });
+        break;
+
+      case 'CHAT_MESSAGE_SENT':
+        onStateUpdate(prev => {
+          const list = prev.chatMessages || [];
+          const exists = list.some(m => m.id === data.id);
+          return {
+            ...prev,
+            chatMessages: exists ? list : [...list, data]
+          };
+        });
+        break;
+
+      case 'MEETING_CREATED':
+      case 'MEETING_UPDATED':
+        onStateUpdate(prev => {
+          const list = prev.meetings || [];
+          const exists = list.some(m => m.id === data.id || m.roomCode === data.roomCode);
+          return {
+            ...prev,
+            meetings: exists
+              ? list.map(m => (m.id === data.id || m.roomCode === data.roomCode) ? { ...m, ...data } : m)
+              : [data, ...list]
+          };
+        });
+        break;
+
+      case 'CALL_INITIATED':
+      case 'CALL_STATUS_UPDATED':
+        onStateUpdate(prev => {
+          const list = prev.callSessions || [];
+          const exists = list.some(c => c.id === data.id);
+          return {
+            ...prev,
+            callSessions: exists
+              ? list.map(c => c.id === data.id ? { ...c, ...data } : c)
+              : [data, ...list]
+          };
+        });
+        break;
+
+      case 'ADMIN_EVENT_BROADCAST':
+        onStateUpdate(prev => ({
+          ...prev,
+          adminEvents: [data, ...(prev.adminEvents || [])]
         }));
         break;
 
@@ -1082,6 +1244,146 @@ export const setupRealtimeSync = (
               onStateUpdate(prev => ({
                 ...prev,
                 timetables: (prev.timetables || []).filter(t => t.id !== oldRecord.id)
+              }));
+            }
+            break;
+
+          case 'parent_staff_messages':
+            if (eventType === 'INSERT' || eventType === 'UPDATE') {
+              const mappedMsg: ParentStaffMessage = {
+                id: newRecord.id,
+                parentId: newRecord.parent_id,
+                parentName: newRecord.parent_name,
+                parentEmail: newRecord.parent_email,
+                staffId: newRecord.staff_id,
+                staffName: newRecord.staff_name,
+                studentId: newRecord.student_id,
+                studentName: newRecord.student_name,
+                studentGrade: newRecord.student_grade,
+                subject: newRecord.subject || 'Parent Inquiry',
+                message: newRecord.message,
+                senderRole: newRecord.sender_role,
+                priority: newRecord.priority || 'normal',
+                read: newRecord.read ?? false,
+                replyToId: newRecord.reply_to_id,
+                timestamp: newRecord.created_at || new Date().toISOString()
+              };
+              onStateUpdate(prev => {
+                const list = prev.parentStaffMessages || [];
+                const exists = list.some(m => m.id === mappedMsg.id);
+                return {
+                  ...prev,
+                  parentStaffMessages: exists
+                    ? list.map(m => m.id === mappedMsg.id ? mappedMsg : m)
+                    : [...list, mappedMsg]
+                };
+              });
+            } else if (eventType === 'DELETE' && oldRecord.id) {
+              onStateUpdate(prev => ({
+                ...prev,
+                parentStaffMessages: (prev.parentStaffMessages || []).filter(m => m.id !== oldRecord.id)
+              }));
+            }
+            break;
+
+          case 'chat_messages':
+            if (eventType === 'INSERT') {
+              const mappedChat: ChatChannelMessage = {
+                id: newRecord.id,
+                channelId: newRecord.channel_id,
+                senderId: newRecord.sender_id,
+                senderName: newRecord.sender_name,
+                senderRole: newRecord.sender_role,
+                message: newRecord.message,
+                attachmentUrl: newRecord.attachment_url,
+                reactions: newRecord.reactions || {},
+                timestamp: newRecord.created_at || new Date().toISOString()
+              };
+              onStateUpdate(prev => {
+                const list = prev.chatMessages || [];
+                const exists = list.some(m => m.id === mappedChat.id);
+                return {
+                  ...prev,
+                  chatMessages: exists ? list : [...list, mappedChat]
+                };
+              });
+            }
+            break;
+
+          case 'meetings':
+            if (eventType === 'INSERT' || eventType === 'UPDATE') {
+              const mappedMtg: MeetingSession = {
+                id: newRecord.id,
+                title: newRecord.title,
+                roomCode: newRecord.room_code,
+                hostName: newRecord.host_name,
+                hostRole: newRecord.host_role,
+                description: newRecord.description,
+                scheduledTime: newRecord.scheduled_time,
+                status: newRecord.status,
+                participantsCount: Number(newRecord.participants_count || 1),
+                meetingLink: newRecord.meeting_link,
+                createdAt: newRecord.created_at || new Date().toISOString()
+              };
+              onStateUpdate(prev => {
+                const list = prev.meetings || [];
+                const exists = list.some(m => m.id === mappedMtg.id);
+                return {
+                  ...prev,
+                  meetings: exists
+                    ? list.map(m => m.id === mappedMtg.id ? mappedMtg : m)
+                    : [mappedMtg, ...list]
+                };
+              });
+            } else if (eventType === 'DELETE' && oldRecord.id) {
+              onStateUpdate(prev => ({
+                ...prev,
+                meetings: (prev.meetings || []).filter(m => m.id !== oldRecord.id)
+              }));
+            }
+            break;
+
+          case 'call_sessions':
+            if (eventType === 'INSERT' || eventType === 'UPDATE') {
+              const mappedCall: CallSession = {
+                id: newRecord.id,
+                callerId: newRecord.caller_id,
+                callerName: newRecord.caller_name,
+                callerRole: newRecord.caller_role,
+                receiverId: newRecord.receiver_id,
+                receiverName: newRecord.receiver_name,
+                receiverRole: newRecord.receiver_role,
+                type: newRecord.type,
+                status: newRecord.status,
+                startedAt: newRecord.started_at,
+                endedAt: newRecord.ended_at,
+                durationSeconds: Number(newRecord.duration_seconds || 0)
+              };
+              onStateUpdate(prev => {
+                const list = prev.callSessions || [];
+                const exists = list.some(c => c.id === mappedCall.id);
+                return {
+                  ...prev,
+                  callSessions: exists
+                    ? list.map(c => c.id === mappedCall.id ? mappedCall : c)
+                    : [mappedCall, ...list]
+                };
+              });
+            }
+            break;
+
+          case 'admin_realtime_events':
+            if (eventType === 'INSERT') {
+              const mappedEv: AdminRealtimeEvent = {
+                id: newRecord.id,
+                action: newRecord.action,
+                details: newRecord.details,
+                performedBy: newRecord.performed_by,
+                timestamp: newRecord.timestamp
+              };
+              onStateUpdate(prev => ({
+                ...prev,
+                adminEvents: [mappedEv, ...(prev.adminEvents || [])]
               }));
             }
             break;
@@ -1705,6 +2007,146 @@ export const realtimeService = {
         await supabase.from('timetables').delete().eq('id', id);
       } catch (err) {
         console.error('Supabase delete timetable failed:', err);
+      }
+    }
+  },
+
+  // Send Parent-Staff Direct Message
+  sendParentStaffMessage: async (msg: ParentStaffMessage) => {
+    broadcastLocalChange({ type: 'PARENT_STAFF_MESSAGE_SENT', data: msg });
+
+    if (supabase) {
+      try {
+        await supabase.from('parent_staff_messages').upsert({
+          id: msg.id,
+          parent_id: msg.parentId,
+          parent_name: msg.parentName,
+          parent_email: msg.parentEmail,
+          staff_id: msg.staffId,
+          staff_name: msg.staffName,
+          student_id: msg.studentId,
+          student_name: msg.studentName,
+          student_grade: msg.studentGrade,
+          subject: msg.subject,
+          message: msg.message,
+          sender_role: msg.senderRole,
+          priority: msg.priority || 'normal',
+          read: msg.read ?? false,
+          reply_to_id: msg.replyToId,
+          created_at: msg.timestamp
+        });
+      } catch (err) {
+        console.error('Supabase sendParentStaffMessage failed:', err);
+      }
+    }
+  },
+
+  // Send Community Chat Channel Message
+  sendChatMessage: async (chatMsg: ChatChannelMessage) => {
+    broadcastLocalChange({ type: 'CHAT_MESSAGE_SENT', data: chatMsg });
+
+    if (supabase) {
+      try {
+        await supabase.from('chat_messages').insert({
+          id: chatMsg.id,
+          channel_id: chatMsg.channelId,
+          sender_id: chatMsg.senderId,
+          sender_name: chatMsg.senderName,
+          sender_role: chatMsg.senderRole,
+          message: chatMsg.message,
+          attachment_url: chatMsg.attachmentUrl,
+          reactions: chatMsg.reactions || {},
+          created_at: chatMsg.timestamp
+        });
+      } catch (err) {
+        console.error('Supabase sendChatMessage failed:', err);
+      }
+    }
+  },
+
+  // Create or Schedule Virtual Meeting
+  createMeeting: async (meeting: MeetingSession) => {
+    broadcastLocalChange({ type: 'MEETING_CREATED', data: meeting });
+
+    if (supabase) {
+      try {
+        await supabase.from('meetings').upsert({
+          id: meeting.id,
+          title: meeting.title,
+          room_code: meeting.roomCode,
+          host_name: meeting.hostName,
+          host_role: meeting.hostRole,
+          description: meeting.description,
+          scheduled_time: meeting.scheduledTime,
+          status: meeting.status,
+          participants_count: meeting.participantsCount || 1,
+          meeting_link: meeting.meetingLink,
+          created_at: meeting.createdAt
+        });
+      } catch (err) {
+        console.error('Supabase createMeeting failed:', err);
+      }
+    }
+  },
+
+  // Initiate Live Voice or Video Call
+  initiateCall: async (call: CallSession) => {
+    broadcastLocalChange({ type: 'CALL_INITIATED', data: call });
+
+    if (supabase) {
+      try {
+        await supabase.from('call_sessions').upsert({
+          id: call.id,
+          caller_id: call.callerId,
+          caller_name: call.callerName,
+          caller_role: call.callerRole,
+          receiver_id: call.receiverId,
+          receiver_name: call.receiverName,
+          receiver_role: call.receiverRole,
+          type: call.type,
+          status: call.status,
+          started_at: call.startedAt,
+          ended_at: call.endedAt,
+          duration_seconds: call.durationSeconds || 0
+        });
+      } catch (err) {
+        console.error('Supabase initiateCall failed:', err);
+      }
+    }
+  },
+
+  // Update Call Session Status (e.g. connected, ended)
+  updateCallStatus: async (callId: string, status: CallSession['status']) => {
+    const updated = { id: callId, status, endedAt: status === 'ended' ? new Date().toISOString() : undefined };
+    broadcastLocalChange({ type: 'CALL_STATUS_UPDATED', data: updated });
+
+    if (supabase) {
+      try {
+        await supabase.from('call_sessions').update({
+          status,
+          ended_at: status === 'ended' ? new Date().toISOString() : undefined
+        }).eq('id', callId);
+      } catch (err) {
+        console.error('Supabase updateCallStatus failed:', err);
+      }
+    }
+  },
+
+  // Broadcast Real-time Admin Action
+  broadcastAdminEvent: async (event: AdminRealtimeEvent) => {
+    broadcastLocalChange({ type: 'ADMIN_EVENT_BROADCAST', data: event });
+
+    if (supabase) {
+      try {
+        await supabase.from('admin_realtime_events').insert({
+          id: event.id,
+          action: event.action,
+          details: event.details,
+          performed_by: event.performedBy,
+          timestamp: event.timestamp
+        });
+      } catch (err) {
+        console.error('Supabase broadcastAdminEvent failed:', err);
       }
     }
   }

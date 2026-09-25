@@ -182,13 +182,13 @@ export const StandardReportCard: React.FC<StandardReportCardProps> = ({
                 Government Approved • Crèche, Nursery, Primary & College
               </div>
               <p className="text-[11px] font-bold italic text-blue-900 font-serif">
-                Motto: "Have Faith in God — Building Lives Upon The Solid Rock"
+                Motto: "Have Faith In God — Building Lives Upon The Solid Rock"
               </p>
               <p className="text-[10px] sm:text-[11px] text-slate-600 font-medium mt-0.5">
                 Oluwatedo Ire-Akari, Orisunmibare Area, Wire & Cable Axis, Apata, Ibadan, Oyo State
               </p>
               <p className="text-[9px] sm:text-[10px] text-slate-500 font-bold">
-                Tel: +234 805 650 7252 • Email: godshandschool70@gmail.com • Web: www.godshandmodelschool.sch.ng
+                Tel: +234 805 650 7252 • Email: Godshandschool70@gmail.com • Web: www.Godshandmodelschool.sch.ng
               </p>
             </div>
 

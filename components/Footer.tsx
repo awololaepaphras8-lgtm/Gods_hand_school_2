@@ -4,9 +4,10 @@ import React from 'react';
 interface FooterProps {
   onCheckFees?: () => void;
   onNavigate?: (view: any) => void;
+  onOpenSqlModal?: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onCheckFees, onNavigate }) => {
+export const Footer: React.FC<FooterProps> = ({ onCheckFees, onNavigate, onOpenSqlModal }) => {
   return (
     <footer className="bg-blue-900 text-white py-16 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-2 bg-yellow-400"></div>
@@ -76,7 +77,7 @@ export const Footer: React.FC<FooterProps> = ({ onCheckFees, onNavigate }) => {
             </div>
             <p className="text-blue-100/60 max-w-md mb-8 leading-relaxed font-medium">
               We provide a nurturing environment where children grow spiritually and intellectually. 
-              Our commitment is to raise a godly generation of leaders through quality education.
+              Our commitment is to raise a Godly generation of leaders through quality education.
             </p>
             <div className="flex space-x-5">
               {['FB', 'TW', 'IG', 'YT'].map(p => (
@@ -90,6 +91,26 @@ export const Footer: React.FC<FooterProps> = ({ onCheckFees, onNavigate }) => {
           <div>
             <h4 className="text-xl font-black mb-8 text-yellow-400 uppercase tracking-widest border-b border-yellow-400/30 pb-2 inline-block">Quick Access</h4>
             <ul className="space-y-4 text-blue-100/70 font-bold text-sm">
+              <li>
+                <button 
+                  onClick={() => onNavigate?.('parentStaffChat')} 
+                  className="hover:text-yellow-400 transition-colors flex items-center group text-left text-yellow-300"
+                >
+                  <span className="mr-2 text-yellow-400">»</span> 
+                  <span className="group-hover:translate-x-1 transition-transform font-black">💬 Message Staff Directly</span>
+                  <span className="ml-2 px-1.5 py-0.5 bg-yellow-400 text-blue-900 text-[9px] font-black rounded uppercase">Parents</span>
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => onNavigate?.('communityHub')} 
+                  className="hover:text-yellow-400 transition-colors flex items-center group text-left text-emerald-300"
+                >
+                  <span className="mr-2 text-emerald-400">»</span> 
+                  <span className="group-hover:translate-x-1 transition-transform font-black">📞 Live Chat, Meetings & Calls</span>
+                  <span className="ml-2 px-1.5 py-0.5 bg-emerald-500 text-white text-[9px] font-black rounded uppercase">All Users</span>
+                </button>
+              </li>
               <li>
                 <button 
                   onClick={() => onNavigate?.('resultChecker')} 
@@ -220,8 +241,8 @@ export const Footer: React.FC<FooterProps> = ({ onCheckFees, onNavigate }) => {
                 <span className="p-2 bg-white/5 rounded-lg mr-3 group-hover:bg-yellow-400 group-hover:text-blue-900 transition-all text-base shrink-0">✉️</span>
                 <div>
                   <p className="text-white font-black text-xs uppercase tracking-wider">Official Email:</p>
-                  <a href="mailto:godshandschool70@gmail.com" className="text-white hover:text-yellow-400 transition-colors lowercase">
-                    godshandschool70@gmail.com
+                  <a href="mailto:godshandschool70@gmail.com" className="text-white hover:text-yellow-400 transition-colors">
+                    Godshandschool70@gmail.com
                   </a>
                 </div>
               </li>
@@ -238,6 +259,27 @@ export const Footer: React.FC<FooterProps> = ({ onCheckFees, onNavigate }) => {
             <strong>God's Hand International Model School</strong> is celebrated as the premier institution for good academic results at the <strong>Wire and Cable</strong> corridor, Apata, Ibadan. Proudly educating pupils and students across <strong>Owode, Orisunmibare, Bembo, Kuola, Omi-Adio, Apata Ganga, Dugbe,</strong> and the broader <strong>Ibadan metropolis</strong> in Oyo State.
           </p>
         </div>
+
+        {/* Supabase Realtime SQL Code Copy Button */}
+        {onOpenSqlModal && (
+          <div className="mb-8 p-4 rounded-2xl bg-yellow-400 text-blue-950 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
+            <div className="flex items-center gap-3 text-left">
+              <span className="text-2xl p-2 bg-blue-900 text-yellow-400 rounded-xl">⚡</span>
+              <div>
+                <p className="font-serif font-black text-sm uppercase">Supabase Real-Time SQL Code</p>
+                <p className="text-xs font-semibold text-blue-900/80">Copy all 23 database tables, admin realtime sync triggers, and live chat/meetings SQL to paste in your Supabase SQL Editor.</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onOpenSqlModal}
+              className="px-5 py-2.5 bg-blue-900 hover:bg-blue-950 text-yellow-400 rounded-xl font-black text-xs uppercase tracking-wider shadow-md transition-all active:scale-95 whitespace-nowrap flex items-center gap-1.5"
+            >
+              <span>📋</span>
+              <span>Open Supabase SQL Code</span>
+            </button>
+          </div>
+        )}
         
         <div className="flex flex-col md:flex-row justify-between items-center text-xs font-black uppercase tracking-[0.2em] text-blue-100/30">
           <p>© {new Date().getFullYear()} God's Hand International Model School. Divine Excellence.</p>

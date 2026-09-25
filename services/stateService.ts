@@ -130,10 +130,116 @@ const DEFAULT_STATE: AppState = {
       studentReceipts: { isOpen: true, closedReason: '' },
       parentPortal: { isOpen: true, closedReason: '' },
       studentPortal: { isOpen: true, closedReason: '' },
+      parentStaffChat: { isOpen: true, closedReason: '' },
+      communityHub: { isOpen: true, closedReason: '' },
       about: { isOpen: true, closedReason: '' },
     }
   },
-  timetables: INITIAL_DEFAULT_TIMETABLES
+  timetables: INITIAL_DEFAULT_TIMETABLES,
+  parentStaffMessages: [
+    {
+      id: 'PSM-1',
+      parentId: 'PAR-1',
+      parentName: 'Mrs. Folashade Adebayo',
+      parentEmail: 'parent@godshand.sch.ng',
+      staffId: 'staff',
+      staffName: 'Mr. David Adeleke (Primary 4 Class Teacher)',
+      studentId: 'STU-1',
+      studentName: 'Samuel Adebayo',
+      studentGrade: 'Primary 4',
+      subject: 'Academic Progress & Homework Inquiry',
+      message: 'Good morning Mr. Adeleke, please I would like to confirm Samuel\'s homework submission for Mathematics yesterday.',
+      senderRole: 'parent',
+      timestamp: new Date(Date.now() - 3600000 * 4).toISOString(),
+      read: true,
+      priority: 'inquiry'
+    },
+    {
+      id: 'PSM-2',
+      parentId: 'PAR-1',
+      parentName: 'Mrs. Folashade Adebayo',
+      parentEmail: 'parent@godshand.sch.ng',
+      staffId: 'staff',
+      staffName: 'Mr. David Adeleke (Primary 4 Class Teacher)',
+      studentId: 'STU-1',
+      studentName: 'Samuel Adebayo',
+      studentGrade: 'Primary 4',
+      subject: 'Academic Progress & Homework Inquiry',
+      message: 'Good afternoon Mrs. Adebayo! Yes, Samuel submitted his arithmetic exercises on time and scored 95%. He is doing exceptionally well in class.',
+      senderRole: 'teacher',
+      timestamp: new Date(Date.now() - 3600000 * 2).toISOString(),
+      read: true,
+      priority: 'normal',
+      replyToId: 'PSM-1'
+    }
+  ],
+  chatMessages: [
+    {
+      id: 'CM-1',
+      channelId: 'general',
+      senderId: 'ADMIN-1',
+      senderName: 'School Administrator',
+      senderRole: 'ADMIN' as any,
+      message: 'Welcome to God\'s Hand International Model School Live Community Hub! Have faith in God.',
+      timestamp: new Date(Date.now() - 86400000).toISOString()
+    },
+    {
+      id: 'CM-2',
+      channelId: 'general',
+      senderId: 'PAR-1',
+      senderName: 'Mrs. Folashade Adebayo',
+      senderRole: 'PARENT' as any,
+      message: 'Amen! Proud to be part of the God\'s Hand model school family.',
+      timestamp: new Date(Date.now() - 3600000 * 12).toISOString()
+    },
+    {
+      id: 'CM-3',
+      channelId: 'pta',
+      senderId: 'ADMIN-1',
+      senderName: 'School Administrator',
+      senderRole: 'ADMIN' as any,
+      message: 'Notice: Next Virtual PTA General Assembly scheduled for this Saturday at 10:00 AM. Click the Meetings tab to join.',
+      timestamp: new Date(Date.now() - 3600000 * 6).toISOString()
+    }
+  ],
+  meetings: [
+    {
+      id: 'MTG-1',
+      title: 'Termly General PTA Virtual Assembly & Orientation',
+      roomCode: 'GHS-PTA-2026',
+      hostName: 'Proprietor & Head of School',
+      hostRole: 'ADMIN' as any,
+      description: 'Review of academic calendar, terminal results release, and student gate security protocol.',
+      scheduledTime: 'Saturday 10:00 AM',
+      status: 'active',
+      participantsCount: 14,
+      meetingLink: 'https://godshand.sch.ng/meet/GHS-PTA-2026',
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'MTG-2',
+      title: 'Primary 4 Mathematics & Science Virtual Clinic',
+      roomCode: 'GHS-PRI4-STUDY',
+      hostName: 'Mr. David Adeleke (Class Teacher)',
+      hostRole: 'TEACHER' as any,
+      description: 'Continuous assessment review and tutorial questions for Primary 4 pupils.',
+      scheduledTime: 'Friday 4:00 PM',
+      status: 'upcoming',
+      participantsCount: 8,
+      meetingLink: 'https://godshand.sch.ng/meet/GHS-PRI4-STUDY',
+      createdAt: new Date().toISOString()
+    }
+  ],
+  callSessions: [],
+  adminEvents: [
+    {
+      id: 'EVT-1',
+      action: 'SYSTEM_INITIALIZED',
+      details: 'Real-time database sync and multi-user live gateway activated.',
+      performedBy: 'System Administrator',
+      timestamp: new Date().toISOString()
+    }
+  ]
 };
 
 export const stateService = {
@@ -160,6 +266,11 @@ export const stateService = {
           resultPublishRequests: parsed.resultPublishRequests || [],
           timedStaffDelegations: parsed.timedStaffDelegations || [],
           timetables: (parsed.timetables && parsed.timetables.length > 0) ? parsed.timetables : DEFAULT_STATE.timetables,
+          parentStaffMessages: (parsed.parentStaffMessages && parsed.parentStaffMessages.length > 0) ? parsed.parentStaffMessages : DEFAULT_STATE.parentStaffMessages,
+          chatMessages: (parsed.chatMessages && parsed.chatMessages.length > 0) ? parsed.chatMessages : DEFAULT_STATE.chatMessages,
+          meetings: (parsed.meetings && parsed.meetings.length > 0) ? parsed.meetings : DEFAULT_STATE.meetings,
+          callSessions: parsed.callSessions || [],
+          adminEvents: parsed.adminEvents || DEFAULT_STATE.adminEvents,
           userPagesAccess: {
             ...DEFAULT_STATE.userPagesAccess,
             ...(parsed.userPagesAccess || {}),

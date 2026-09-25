@@ -308,7 +308,7 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
                   value={regEmail}
                   onChange={(e) => handleInputFilter(e.target.value, setRegEmail)}
                   className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold text-xs text-blue-900 focus:bg-white outline-none transition-all"
-                  placeholder="samuel@godshand.sch.ng"
+                  placeholder="samuel@Godshand.sch.ng"
                 />
               </div>
               <div className="space-y-1">

@@ -237,7 +237,7 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
               <input 
                 type="text"
                 required
-                placeholder="e.g. STU-1 or samuel@godshand.sch.ng"
+                placeholder="e.g. STU-1 or samuel@Godshand.sch.ng"
                 value={loginInput}
                 onChange={(e) => setLoginInput(e.target.value)}
                 className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-blue-900 outline-none focus:border-blue-900 focus:bg-white text-sm transition-all"

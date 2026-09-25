@@ -147,7 +147,7 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
   };
 
   const handleFillDemo = () => {
-    setLoginIdentifier('parent@godshand.sch.ng');
+    setLoginIdentifier('parent@Godshand.sch.ng');
     setLoginPassword('parent123');
     setLocalError('');
     setSecurityAlert(null);
@@ -307,7 +307,7 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
                     disabled={lockoutRemaining > 0}
                     value={loginIdentifier}
                     onChange={(e) => handleInputFilter(e.target.value, setLoginIdentifier)}
-                    placeholder="e.g. parent@godshand.sch.ng or 08034567890"
+                    placeholder="e.g. parent@Godshand.sch.ng or 08034567890"
                     autoComplete="username"
                     className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm text-blue-950 focus:bg-white focus:border-blue-900 outline-none transition-all disabled:opacity-50"
                   />
