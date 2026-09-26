@@ -1023,16 +1023,16 @@ ON CONFLICT (id) DO UPDATE SET content = EXCLUDED.content;
 -- 3. Initial Enrolled Students Roster
 INSERT INTO public.students (id, name, grade, email, password_hash, entry_allowed, active_term, admission_year)
 VALUES
-  ('STU-1', 'Samuel Adebayo', 'Primary 4', 'samuel@godshand.sch.ng', 'student123', TRUE, 'First Term', 2022),
-  ('STU-2', 'Grace Adebayo', 'JSS 2', 'grace@godshand.sch.ng', 'student123', TRUE, 'First Term', 2021),
-  ('STU-3', 'Boluwatife Adeleke', 'Primary 1', 'bolu.adeleke@godshand.sch.ng', 'student123', TRUE, 'First Term', 2024),
-  ('STU-4', 'Zainab Danjuma', 'SSS 1', 'zainab.d@godshand.sch.ng', 'student123', TRUE, 'First Term', 2023)
+  ('STU-1', 'Samuel Adebayo', 'Primary 4', 'samuel@Godshand.sch.ng', 'student123', TRUE, 'First Term', 2022),
+  ('STU-2', 'Grace Adebayo', 'JSS 2', 'grace@Godshand.sch.ng', 'student123', TRUE, 'First Term', 2021),
+  ('STU-3', 'Boluwatife Adeleke', 'Primary 1', 'bolu.adeleke@Godshand.sch.ng', 'student123', TRUE, 'First Term', 2024),
+  ('STU-4', 'Zainab Danjuma', 'SSS 1', 'zainab.d@Godshand.sch.ng', 'student123', TRUE, 'First Term', 2023)
 ON CONFLICT (id) DO NOTHING;
 
 -- 4. Initial Registered Parent Account
 INSERT INTO public.parents (id, full_name, email, phone, password_hash, relationship, address)
 VALUES
-  ('PAR-1', 'Mrs. Folashade Adebayo', 'parent@godshand.sch.ng', '08034567890', 'parent123', 'Mother', 'Oluwatedo Area, Wire & Cable, Apata, Ibadan')
+  ('PAR-1', 'Mrs. Folashade Adebayo', 'parent@Godshand.sch.ng', '08034567890', 'parent123', 'Mother', 'Oluwatedo Area, Wire & Cable, Apata, Ibadan')
 ON CONFLICT (id) DO NOTHING;
 
 -- 5. Link Children to Parent Account
@@ -1114,8 +1114,8 @@ INSERT INTO public.parent_staff_messages (
   student_id, student_name, student_grade, subject, message, sender_role, priority, read
 )
 VALUES
-  ('PSM-1', 'PAR-1', 'Mrs. Folashade Adebayo', 'parent@godshand.sch.ng', 'staff', 'Mr. David Adeleke', 'STU-1', 'Samuel Adebayo', 'Primary 4', 'Academic Progress & Homework Inquiry', 'Good morning Mr. Adeleke, please I would like to confirm Samuel''s homework submission for Mathematics yesterday.', 'parent', 'inquiry', TRUE),
-  ('PSM-2', 'PAR-1', 'Mrs. Folashade Adebayo', 'parent@godshand.sch.ng', 'staff', 'Mr. David Adeleke', 'STU-1', 'Samuel Adebayo', 'Primary 4', 'Academic Progress & Homework Inquiry', 'Good afternoon Mrs. Adebayo! Yes, Samuel submitted his arithmetic exercises on time and scored 95%. He is doing exceptionally well in class.', 'teacher', 'normal', TRUE)
+  ('PSM-1', 'PAR-1', 'Mrs. Folashade Adebayo', 'parent@Godshand.sch.ng', 'staff', 'Mr. David Adeleke', 'STU-1', 'Samuel Adebayo', 'Primary 4', 'Academic Progress & Homework Inquiry', 'Good morning Mr. Adeleke, please I would like to confirm Samuel''s homework submission for Mathematics yesterday.', 'parent', 'inquiry', TRUE),
+  ('PSM-2', 'PAR-1', 'Mrs. Folashade Adebayo', 'parent@Godshand.sch.ng', 'staff', 'Mr. David Adeleke', 'STU-1', 'Samuel Adebayo', 'Primary 4', 'Academic Progress & Homework Inquiry', 'Good afternoon Mrs. Adebayo! Yes, Samuel submitted his arithmetic exercises on time and scored 95%. He is doing exceptionally well in class.', 'teacher', 'normal', TRUE)
 ON CONFLICT (id) DO NOTHING;
 
 -- 14. Sample Virtual Meeting
@@ -1123,7 +1123,7 @@ INSERT INTO public.meetings (
   id, title, room_code, host_name, host_role, description, scheduled_time, status, participants_count, meeting_link
 )
 VALUES
-  ('MTG-1', 'Termly General PTA Virtual Assembly & Orientation', 'GHS-PTA-2026', 'Proprietor & Head of School', 'ADMIN', 'Review of academic calendar, terminal results release, and student gate security protocol.', 'Saturday 10:00 AM', 'active', 14, 'https://godshand.sch.ng/meet/GHS-PTA-2026')
+  ('MTG-1', 'Termly General PTA Virtual Assembly & Orientation', 'GHS-PTA-2026', 'Proprietor & Head of School', 'ADMIN', 'Review of academic calendar, terminal results release, and student gate security protocol.', 'Saturday 10:00 AM', 'active', 14, 'https://Godshand.sch.ng/meet/GHS-PTA-2026')
 ON CONFLICT (id) DO NOTHING;
 
 -- ==============================================================================

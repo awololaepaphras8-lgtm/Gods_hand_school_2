@@ -11,9 +11,10 @@ interface HeaderProps {
   isAppInstalled?: boolean;
   hasActiveDelegation?: boolean;
   userPagesAccess?: UserPagesAccessState;
+  onLogout?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeView, onOpenDownloadModal, isAppInstalled = false, hasActiveDelegation = false, userPagesAccess }) => {
+export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeView, onOpenDownloadModal, isAppInstalled = false, hasActiveDelegation = false, userPagesAccess, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -49,8 +50,10 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
 
   const menuItems = [
     { label: 'School Home', view: 'home', icon: '🏠' },
-    { label: 'Message Staff Directly', view: 'parentStaffChat', icon: '💬' },
-    { label: 'Live Chat, Meetings & Calls', view: 'communityHub', icon: '📞' },
+    ...(role !== UserRole.GUEST ? [
+      { label: 'Message Staff Directly', view: 'parentStaffChat', icon: '💬' },
+      { label: 'Live Chat, Meetings & Calls', view: 'communityHub', icon: '📞' },
+    ] : []),
     { label: 'Check Student Results (₦1,000)', view: 'resultChecker', icon: '📜' },
     { label: 'Download Official Fee Receipts', view: 'studentReceipts', icon: '📑' },
     { label: 'Parent Portal & Attendance', view: role === UserRole.PARENT ? 'parentPortal' : 'parentAuth', icon: '👨‍👩‍👧‍👦' },
@@ -85,7 +88,7 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
             </a>
             <span className="text-blue-900/30 hidden lg:inline">•</span>
             <span className="hidden lg:inline whitespace-nowrap text-blue-900/80">
-              ✉️ <a href="mailto:godshandschool70@gmail.com" className="hover:underline font-medium">Godshandschool70@gmail.com</a>
+              ✉️ <a href="mailto:Godshandschool70@gmail.com" className="hover:underline font-medium">Godshandschool70@gmail.com</a>
             </span>
           </div>
           <div className="flex items-center justify-center shrink-0">
@@ -166,16 +169,19 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
                 </button>
               )}
 
-              {/* Community Live Hub Shortcut */}
-              <button
-                type="button"
-                onClick={() => navigateTo('communityHub')}
-                className={`hidden lg:flex items-center space-x-1.5 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 ${activeView === 'communityHub' ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md' : 'text-blue-900 border-yellow-400 bg-yellow-50 hover:bg-yellow-100 hover:border-yellow-500'}`}
-                title="School Live Chat, Meetings & Calls Hub"
-              >
-                <span>💬</span>
-                <span>Live Hub</span>
-              </button>
+              {/* Community Live Hub Shortcut: Only appears to logged in users, visible on all logged in devices */}
+              {role !== UserRole.GUEST && (
+                <button
+                  type="button"
+                  onClick={() => navigateTo('communityHub')}
+                  className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 ${activeView === 'communityHub' ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md' : 'text-blue-900 border-yellow-400 bg-yellow-50 hover:bg-yellow-100 hover:border-yellow-500'}`}
+                  title="School Live Chat, Meetings & Calls Hub"
+                >
+                  <span>💬</span>
+                  <span className="hidden xs:inline">Live Hub</span>
+                  <span className="xs:hidden text-[10px]">Chat</span>
+                </button>
+              )}
 
               {/* About School Shortcut for Desktop */}
               <button
@@ -354,7 +360,14 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
                   </div>
 
                   <button 
-                    onClick={() => { setRole(UserRole.GUEST); navigateTo('home'); }}
+                    onClick={() => { 
+                      if (onLogout) {
+                        onLogout();
+                      } else {
+                        setRole(UserRole.GUEST); 
+                        navigateTo('home');
+                      }
+                    }}
                     className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider text-red-600 border border-red-200 rounded-xl hover:bg-red-50 hover:border-red-300 transition-all whitespace-nowrap shrink-0"
                   >
                     Logout

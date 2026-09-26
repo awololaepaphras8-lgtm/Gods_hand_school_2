@@ -9,6 +9,7 @@ import {
   TeacherAccount, 
   ParentAccount 
 } from '../types';
+import { UserOnlineStatusBadge } from './UserOnlineStatusBadge';
 
 interface SchoolCommunityHubProps {
   currentUserRole: UserRole;
@@ -48,33 +49,34 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
   // Navigation tabs in Community Hub: 'chat' | 'meetings' | 'calls'
   const [activeMainTab, setActiveMainTab] = useState<'chat' | 'meetings' | 'calls'>('chat');
 
-  // Community Channels
+  // Community Channels with mandated permissions
   const CHANNELS: ChatChannel[] = useMemo(() => [
     {
       id: 'general',
-      name: 'general-school-hub',
-      description: 'Official announcements, morning devotions, daily prayers & general celebration',
+      name: 'school-announcements',
+      description: 'Official bulletins & morning devotions from School Administration (Admin posts, all members react)',
       icon: '📢',
-      topic: 'Have Faith In God • Wire & Cable, Apata, Ibadan'
+      topic: 'Admin Announcements • Verified Updates from Proprietor Desk'
     },
     {
       id: 'pta',
       name: 'pta-parents-forum',
-      description: 'Parent-Teacher Association dialogue, school welfare, and family collaboration',
+      description: 'Parent-Teacher dialogue, school welfare, and family collaboration (Hidden from students & pupils)',
       icon: '👨‍👩‍👧‍👦',
-      topic: 'Parent-Teacher Partnership & Student Progress'
+      topic: 'Parent-Teacher Partnership & Student Progress (Restricted: Staff, Admin & Parents only)',
+      allowedRoles: [UserRole.ADMIN, UserRole.TEACHER, UserRole.PARENT]
     },
     {
       id: 'study',
       name: 'students-study-circle',
-      description: 'Pupil peer study, homework questions, mathematics clinics & academic quiz',
+      description: 'Pupils peer study, homework questions, mathematics clinics & quiz (Students & Admin post, read-only for others)',
       icon: '📚',
-      topic: 'Continuous Learning, Quizzes & Assignments'
+      topic: 'Continuous Learning, Quizzes & Assignments (Students & Admin only chat)'
     },
     {
       id: 'staff',
       name: 'staff-briefing-room',
-      description: 'Teachers and administration internal lesson plans, duty roasters and academic syncing',
+      description: 'Teachers and administration internal lesson plans, duty rosters and academic syncing',
       icon: '👔',
       topic: 'Staff Only • Academic Coordination',
       allowedRoles: [UserRole.ADMIN, UserRole.TEACHER]
@@ -88,9 +90,13 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
     }
   ], []);
 
-  // Filter accessible channels
+  // Filter accessible channels: PTA is strictly hidden from students/pupils
   const accessibleChannels = useMemo(() => {
     return CHANNELS.filter(c => {
+      // In parent chat: make it strictly invisible to student/pupil
+      if (c.id === 'pta' && currentUserRole === UserRole.STUDENT) {
+        return false;
+      }
       if (!c.allowedRoles) return true;
       return c.allowedRoles.includes(currentUserRole);
     });
@@ -99,6 +105,106 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
   // Selected Channel
   const [selectedChannelId, setSelectedChannelId] = useState<string>('general');
   const activeChannel = accessibleChannels.find(c => c.id === selectedChannelId) || accessibleChannels[0];
+
+  // Permission logic for posting in the active channel:
+  // 1. Announcements: ONLY admin can chat, others can react only!
+  // 2. Study circle: ONLY student and admin can chat/send messages!
+  // 3. PTA: Admin, Staff, Parents can chat (students cannot see it)
+  const canPostInActiveChannel = useMemo(() => {
+    if (!activeChannel) return false;
+    
+    // In announcements: ONLY Admin can post messages
+    if (activeChannel.id === 'general' || activeChannel.id === 'announcements') {
+      return currentUserRole === UserRole.ADMIN;
+    }
+
+    // In student study circle: ONLY Student and Admin can post messages
+    if (activeChannel.id === 'study') {
+      return currentUserRole === UserRole.STUDENT || currentUserRole === UserRole.ADMIN;
+    }
+
+    // In staff room: Staff & Admin
+    if (activeChannel.id === 'staff') {
+      return currentUserRole === UserRole.ADMIN || currentUserRole === UserRole.TEACHER;
+    }
+
+    return true;
+  }, [activeChannel, currentUserRole]);
+
+  // Online presence checker
+  // Displays handshake + green dot when online, broken handshake + offline dot when offline
+  const isUserOnline = (userId: string, role?: UserRole): boolean => {
+    // Current user is always online
+    if (userId === currentUserId || (currentUserName && userId === currentUserName)) return true;
+
+    // Admin is online if currently in Admin role or has admin id
+    if (userId === 'admin' || userId === 'pro01' || role === UserRole.ADMIN) {
+      return currentUserRole === UserRole.ADMIN || true;
+    }
+
+    // Active meeting host
+    if (meetings.some(m => m.status === 'active' && (m.hostName?.includes(userId) || m.hostRole === role))) {
+      return true;
+    }
+
+    // Active call session participant
+    if (activeCallSession && (activeCallSession.receiverId === userId || activeCallSession.callerId === userId)) {
+      return true;
+    }
+
+    // Recent message in chat within last 15 minutes
+    const isRecent = chatMessages.some(m => 
+      m.senderId === userId && 
+      (Date.now() - new Date(m.timestamp).getTime()) < 15 * 60 * 1000
+    );
+    if (isRecent) return true;
+
+    // Simulated presence for key school desk users
+    if (role === UserRole.TEACHER && (userId.toLowerCase().includes('benson') || userId.toLowerCase().includes('adeleke'))) return true;
+
+    return false;
+  };
+
+  // Reactions state for messages
+  const [localReactions, setLocalReactions] = useState<{ [msgId: string]: { [emoji: string]: string[] } }>({});
+
+  const handleToggleReaction = (msgId: string, emoji: string) => {
+    const userIdentifier = currentUserName || currentUserId || 'User';
+    setLocalReactions(prev => {
+      const msgReactions = prev[msgId] || {};
+      const currentUsers = msgReactions[emoji] || [];
+      const hasReacted = currentUsers.includes(userIdentifier);
+      const updatedUsers = hasReacted 
+        ? currentUsers.filter(u => u !== userIdentifier)
+        : [...currentUsers, userIdentifier];
+
+      return {
+        ...prev,
+        [msgId]: {
+          ...msgReactions,
+          [emoji]: updatedUsers
+        }
+      };
+    });
+  };
+
+  // Meeting host check: parent can only join if created/hosted by admin
+  const isMeetingAdminHosted = (meeting: MeetingSession): boolean => {
+    const role = (meeting.hostRole || '').toLowerCase();
+    const name = (meeting.hostName || '').toLowerCase();
+    return (
+      role === 'admin' || 
+      meeting.hostRole === UserRole.ADMIN || 
+      name.includes('admin') || 
+      name.includes('proprietor') || 
+      name.includes('pro01')
+    );
+  };
+
+  const canParentJoinMeeting = (meeting: MeetingSession): boolean => {
+    if (currentUserRole !== UserRole.PARENT) return true;
+    return isMeetingAdminHosted(meeting);
+  };
 
   // Chat message state
   const [chatInput, setChatInput] = useState('');
@@ -522,16 +628,26 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                     msg.senderRole === UserRole.PARENT ? 'bg-emerald-100 text-emerald-900 border-emerald-200' :
                     'bg-slate-100 text-slate-800 border-slate-200';
 
+                  const senderOnline = isUserOnline(msg.senderId, msg.senderRole);
+                  const msgReactions = localReactions[msg.id] || msg.reactions || {};
+
                   return (
                     <div
                       key={msg.id}
-                      className={`flex flex-col ${isSentByMe ? 'items-end' : 'items-start'}`}
+                      className={`flex flex-col ${isSentByMe ? 'items-end' : 'items-start'} space-y-1`}
                     >
-                      <div className="flex items-center gap-1.5 mb-1 text-[10px] font-bold text-slate-400">
+                      <div className="flex items-center gap-2 mb-0.5 text-[10px] font-bold text-slate-400">
                         <span className={`px-1.5 py-0.2 rounded-md font-black uppercase text-[8px] border ${roleBadgeColor}`}>
                           {msg.senderRole}
                         </span>
-                        <span className="font-bold text-slate-600">{msg.senderName}</span>
+                        
+                        {/* User name with Handshake (online: 🤝 🟢, offline: 🫲⚡🫱 ⚪) */}
+                        <UserOnlineStatusBadge
+                          isOnline={senderOnline}
+                          name={msg.senderName}
+                          className="text-slate-700 font-bold"
+                        />
+
                         <span>•</span>
                         <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
@@ -545,50 +661,96 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                           {msg.message}
                         </p>
                       </div>
+
+                      {/* Interactive Emoji Reactions Bar */}
+                      <div className="flex flex-wrap items-center gap-1.5 px-2 pt-0.5">
+                        {['👍', '❤️', '🙏', '👏', '🎉', '💡'].map(emoji => {
+                          const users = msgReactions[emoji] || [];
+                          const hasReacted = users.includes(currentUserName || currentUserId || 'User');
+                          return (
+                            <button
+                              key={emoji}
+                              type="button"
+                              onClick={() => handleToggleReaction(msg.id, emoji)}
+                              className={`px-2 py-0.5 rounded-full text-xs transition-all flex items-center gap-1 border ${
+                                hasReacted
+                                  ? 'bg-yellow-100 border-yellow-400 text-blue-950 font-black shadow-xs scale-105'
+                                  : 'bg-white/80 hover:bg-slate-100 border-slate-200 text-slate-600'
+                              }`}
+                              title={`React with ${emoji}`}
+                            >
+                              <span>{emoji}</span>
+                              {users.length > 0 && (
+                                <span className="text-[10px] font-bold">{users.length}</span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   );
                 })
               )}
             </div>
 
-            {/* Quick Emoji Bar */}
-            <div className="flex items-center gap-2 px-2">
-              <span className="text-xs text-slate-400 font-bold">Quick Reactions:</span>
-              {['👍', '🙏', '❤️', '👏', '🎉', '📚', '🌟'].map(emoji => (
+            {/* Quick Emoji Bar for composer */}
+            {canPostInActiveChannel && (
+              <div className="flex items-center gap-2 px-2">
+                <span className="text-xs text-slate-400 font-bold">Quick Reactions:</span>
+                {['👍', '🙏', '❤️', '👏', '🎉', '📚', '🌟'].map(emoji => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => setChatInput(prev => prev + ' ' + emoji)}
+                    className="w-8 h-8 rounded-full bg-white hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-sm shadow-xs transition-all active:scale-95"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Message Composer or Administrative Notice */}
+            {canPostInActiveChannel ? (
+              <form onSubmit={handleSendChat} className="bg-white rounded-3xl p-4 border-2 border-slate-100 shadow-lg flex items-center gap-3">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  placeholder={`Message #${activeChannel?.name}...`}
+                  className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-900 focus:bg-white transition-all"
+                />
+
                 <button
-                  key={emoji}
-                  type="button"
-                  onClick={() => setChatInput(prev => prev + ' ' + emoji)}
-                  className="w-8 h-8 rounded-full bg-white hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-sm shadow-xs transition-all active:scale-95"
+                  type="submit"
+                  disabled={!chatInput.trim()}
+                  className={`px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-2 shrink-0 ${
+                    chatInput.trim()
+                      ? 'bg-blue-900 hover:bg-blue-800 text-yellow-400 active:scale-95'
+                      : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  }`}
                 >
-                  {emoji}
+                  <span>Send</span>
+                  <span>➔</span>
                 </button>
-              ))}
-            </div>
-
-            {/* Message Composer */}
-            <form onSubmit={handleSendChat} className="bg-white rounded-3xl p-4 border-2 border-slate-100 shadow-lg flex items-center gap-3">
-              <input
-                type="text"
-                value={chatInput}
-                onChange={e => setChatInput(e.target.value)}
-                placeholder={`Message #${activeChannel?.name}...`}
-                className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-900 focus:bg-white transition-all"
-              />
-
-              <button
-                type="submit"
-                disabled={!chatInput.trim()}
-                className={`px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-2 shrink-0 ${
-                  chatInput.trim()
-                    ? 'bg-blue-900 hover:bg-blue-800 text-yellow-400 active:scale-95'
-                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                }`}
-              >
-                <span>Send</span>
-                <span>➔</span>
-              </button>
-            </form>
+              </form>
+            ) : (
+              <div className="bg-amber-50/90 border-2 border-amber-300 rounded-3xl p-5 shadow-sm text-center space-y-1.5 animate-in fade-in">
+                <div className="flex items-center justify-center gap-2 text-amber-950 font-serif font-black text-sm">
+                  <span>{activeChannel?.id === 'study' ? '📚' : '📢'}</span>
+                  <span>
+                    {activeChannel?.id === 'study'
+                      ? "Students' Study Circle: Pupils & Administration Posting Only"
+                      : "Official School Announcement Page: Administration Only"}
+                  </span>
+                </div>
+                <p className="text-xs text-amber-900/90 font-medium max-w-xl mx-auto">
+                  {activeChannel?.id === 'study'
+                    ? "Only registered students, pupils, and school administrators can chat in this study circle. Parents and teachers can read questions and solutions."
+                    : "Only the School Administration / Proprietor can publish announcements on this board. You can react to any announcement above using emojis!"}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -860,72 +1022,104 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setShowCreateMeetingModal(true)}
-                  className="px-5 py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-2 active:scale-95 shrink-0"
-                >
-                  <span>➕</span>
-                  <span>Schedule Virtual Meeting</span>
-                </button>
+                {currentUserRole !== UserRole.PARENT ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateMeetingModal(true)}
+                    className="px-5 py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-2 active:scale-95 shrink-0"
+                  >
+                    <span>➕</span>
+                    <span>Schedule Virtual Meeting</span>
+                  </button>
+                ) : (
+                  <div className="px-4 py-2 bg-yellow-50 border border-yellow-300 rounded-2xl text-xs text-blue-950 font-bold flex items-center gap-2 shrink-0">
+                    <span>🛡️</span>
+                    <span>Parent Portal: Join live conferences hosted by School Admin</span>
+                  </div>
+                )}
               </div>
 
               {/* Meetings Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {meetings.map(meeting => (
-                  <div
-                    key={meeting.id}
-                    className="bg-white rounded-3xl p-6 sm:p-7 border-2 border-slate-100 shadow-xl space-y-4 hover:border-blue-300 transition-all flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-2">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                          meeting.status === 'active'
-                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                            : 'bg-amber-100 text-amber-800 border border-amber-300'
-                        }`}>
-                          <span className={`w-2 h-2 rounded-full ${meeting.status === 'active' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
-                          <span>{meeting.status === 'active' ? 'Live In-Session' : 'Upcoming Schedule'}</span>
-                        </span>
+                {meetings.map(meeting => {
+                  const parentAllowed = canParentJoinMeeting(meeting);
 
-                        <span className="font-mono text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-lg">
-                          {meeting.roomCode}
-                        </span>
+                  return (
+                    <div
+                      key={meeting.id}
+                      className="bg-white rounded-3xl p-6 sm:p-7 border-2 border-slate-100 shadow-xl space-y-4 hover:border-blue-300 transition-all flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-2">
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                            meeting.status === 'active'
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                              : 'bg-amber-100 text-amber-800 border border-amber-300'
+                          }`}>
+                            <span className={`w-2 h-2 rounded-full ${meeting.status === 'active' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
+                            <span>{meeting.status === 'active' ? 'Live In-Session' : 'Upcoming Schedule'}</span>
+                          </span>
+
+                          <span className="font-mono text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-lg">
+                            {meeting.roomCode}
+                          </span>
+                        </div>
+
+                        <h4 className="font-serif font-black text-blue-950 text-lg mt-3">
+                          {meeting.title}
+                        </h4>
+                        <p className="text-xs text-slate-600 font-medium leading-relaxed mt-1">
+                          {meeting.description}
+                        </p>
+
+                        <div className="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs">
+                          <div className="text-slate-500 font-bold flex items-center gap-1">
+                            <span>Host:</span>
+                            <UserOnlineStatusBadge
+                              isOnline={isUserOnline(meeting.hostName, meeting.hostRole)}
+                              name={meeting.hostName}
+                              className="text-blue-950 font-black"
+                            />
+                            <span className="text-slate-400">({meeting.hostRole})</span>
+                          </div>
+                          <p className="text-slate-500 font-bold">
+                            Schedule: <span className="text-blue-950 font-black">{meeting.scheduledTime || 'TBD'}</span>
+                          </p>
+                        </div>
                       </div>
 
-                      <h4 className="font-serif font-black text-blue-950 text-lg mt-3">
-                        {meeting.title}
-                      </h4>
-                      <p className="text-xs text-slate-600 font-medium leading-relaxed mt-1">
-                        {meeting.description}
-                      </p>
+                      <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-bold text-slate-400">
+                          👥 {meeting.participantsCount || 1} Expected Attendees
+                        </span>
 
-                      <div className="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs">
-                        <p className="text-slate-500 font-bold">
-                          Host: <span className="text-blue-950 font-black">{meeting.hostName}</span> ({meeting.hostRole})
-                        </p>
-                        <p className="text-slate-500 font-bold">
-                          Schedule: <span className="text-blue-950 font-black">{meeting.scheduledTime || 'TBD'}</span>
-                        </p>
+                        {parentAllowed ? (
+                          <button
+                            type="button"
+                            onClick={() => setActiveMeetingRoom(meeting)}
+                            className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-2 active:scale-95"
+                          >
+                            <span>Join Room</span>
+                            <span>➔</span>
+                          </button>
+                        ) : (
+                          <div className="flex flex-col items-end">
+                            <button
+                              type="button"
+                              disabled
+                              className="px-4 py-2 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl font-bold text-xs cursor-not-allowed flex items-center gap-1.5"
+                              title="Parents can only join meetings created or hosted by the School Administration / Proprietor."
+                            >
+                              <span>🔒</span>
+                              <span>Admin Host Only</span>
+                            </button>
+                            <span className="text-[9px] text-amber-700 font-bold mt-0.5">Admin-hosted only</span>
+                          </div>
+                        )}
                       </div>
                     </div>
-
-                    <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
-                      <span className="text-[11px] font-bold text-slate-400">
-                        👥 {meeting.participantsCount || 1} Expected Attendees
-                      </span>
-
-                      <button
-                        type="button"
-                        onClick={() => setActiveMeetingRoom(meeting)}
-                        className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-2 active:scale-95"
-                      >
-                        <span>Join Room</span>
-                        <span>➔</span>
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           )}
@@ -1127,9 +1321,11 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                       {user.icon}
                     </div>
                     <div>
-                      <h4 className="font-serif font-black text-blue-950 text-sm leading-snug">
-                        {user.name}
-                      </h4>
+                      <UserOnlineStatusBadge
+                        isOnline={isUserOnline(user.id, user.role)}
+                        name={user.name}
+                        className="text-blue-950 font-serif font-black text-sm leading-snug"
+                      />
                       <p className="text-[10px] text-slate-500 font-medium mt-0.5">
                         {user.subtitle}
                       </p>

@@ -29,6 +29,7 @@ import {
   SUPABASE_MASTER_SQL_SCHEMA
 } from '../utils/supabaseSqlExport';
 import { RealtimeSqlViewerModal } from './RealtimeSqlViewerModal';
+import { ProphDatabaseAuditorModal } from './ProphDatabaseAuditorModal';
 
 interface AdminPanelProps {
   fees: FeeStructure;
@@ -130,6 +131,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [rejectFeedbackText, setRejectFeedbackText] = useState<string>('');
   const [delegationNow, setDelegationNow] = useState<Date>(new Date());
   const [showSqlModal, setShowSqlModal] = useState<boolean>(false);
+  const [showProphModal, setShowProphModal] = useState<boolean>(false);
 
   // Clock for delegated session banner
   useEffect(() => {
@@ -433,12 +435,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => setShowSqlModal(true)}
-                className="flex items-center space-x-1.5 px-4 py-3 bg-emerald-500 hover:bg-emerald-400 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg hover:scale-105 active:scale-95"
-                title="View & copy complete Supabase PostgreSQL schema with real-time replication"
+                onClick={() => setShowProphModal(true)}
+                className="flex items-center space-x-2 px-4 py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 border border-yellow-400/40 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg hover:scale-105 active:scale-95"
+                title="Audit school database for external app 'proph' using Admin Unique ID pro01"
               >
-                <span>📋</span>
-                <span>Supabase SQL & Realtime</span>
+                <span className="px-2 py-0.5 bg-yellow-400 text-blue-950 rounded-lg text-[10px] font-mono font-black">ID: pro01</span>
+                <span>Audit Database (Proph)</span>
               </button>
 
               {onNavigateToView && (
@@ -2445,6 +2447,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 studentReceipts: { isOpen: true, closedReason: '' },
                 parentPortal: { isOpen: true, closedReason: '' },
                 studentPortal: { isOpen: true, closedReason: '' },
+                parentStaffChat: { isOpen: true, closedReason: '' },
+                communityHub: { isOpen: true, closedReason: '' },
                 about: { isOpen: true, closedReason: '' },
               }
             }}
@@ -2457,6 +2461,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       <RealtimeSqlViewerModal
         isOpen={showSqlModal}
         onClose={() => setShowSqlModal(false)}
+      />
+
+      {/* Proph External App Database Audit Modal (Admin Unique ID: pro01) */}
+      <ProphDatabaseAuditorModal
+        isOpen={showProphModal}
+        onClose={() => setShowProphModal(false)}
+        appState={{
+          fees,
+          applications,
+          announcements,
+          teachers,
+          results,
+          courses,
+          attendance,
+          studentAccounts: students,
+          parents,
+          payments,
+          academicCalendar: calendar,
+          resultPublishRequests,
+          timedStaffDelegations,
+          userPagesAccess
+        }}
       />
     </div>
   );

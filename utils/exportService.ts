@@ -35,7 +35,7 @@ function escapeCSV(val: any): string {
  */
 export function exportCompleteSchoolDataExcel(state: AppState) {
   const dateStr = new Date().toISOString().split('T')[0];
-  const filename = `gods_hand_school_complete_database_${dateStr}.xlsx`;
+  const filename = `Gods_Hand_school_complete_database_${dateStr}.xlsx`;
   const wb = XLSX.utils.book_new();
 
   // Sheet 1: Executive Summary
@@ -198,7 +198,7 @@ export function exportCompleteSchoolDataExcel(state: AppState) {
  */
 export function exportCompleteSchoolDataPDF(state: AppState) {
   const dateStr = new Date().toISOString().split('T')[0];
-  const filename = `gods_hand_school_complete_report_${dateStr}.pdf`;
+  const filename = `Gods_Hand_school_complete_report_${dateStr}.pdf`;
 
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -585,7 +585,7 @@ export function exportCompleteSchoolDataBoth(state: AppState) {
  */
 export function exportCompleteSchoolDatabaseJSON(state: AppState) {
   const dateStr = new Date().toISOString().split('T')[0];
-  const filename = `gods_hand_school_master_backup_${dateStr}.json`;
+  const filename = `Gods_Hand_school_master_backup_${dateStr}.json`;
 
   const totalFeeRevenue = state.payments.reduce((sum, p) => sum + (p.amount || 0), 0);
 

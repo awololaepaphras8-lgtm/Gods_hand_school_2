@@ -1781,7 +1781,7 @@ export const realtimeService = {
     }
   },
 
-  // Update fees
+  // Update fees (single grade)
   updateFee: async (grade: string, amount: number) => {
     broadcastLocalChange({ type: 'FEES_UPDATED', data: { grade, amount } });
 
@@ -1794,6 +1794,32 @@ export const realtimeService = {
         });
       } catch (err) {
         console.error('Supabase update fee failed:', err);
+      }
+    }
+  },
+
+  // Replace fee configuration: deletes old database entries and inserts only the new active fee values
+  replaceFeeConfiguration: async (newFees: { [key: string]: number }) => {
+    broadcastLocalChange({ type: 'FEES_REPLACED', data: newFees });
+
+    if (supabase) {
+      try {
+        // Delete all old fee records from database
+        await supabase.from('fee_structures').delete().neq('grade', '__FORCE_PURGE_ALL__');
+
+        // Insert new active fee records
+        const rows = Object.entries(newFees).map(([grade, amount]) => ({
+          grade,
+          amount,
+          term: 'First Term',
+          updated_at: new Date().toISOString()
+        }));
+
+        if (rows.length > 0) {
+          await supabase.from('fee_structures').insert(rows);
+        }
+      } catch (err) {
+        console.error('Supabase replace fee configuration failed:', err);
       }
     }
   },

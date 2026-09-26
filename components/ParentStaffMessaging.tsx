@@ -192,7 +192,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
       const targetParent = activeParentObj || parents[0] || {
         id: 'PAR-1',
         fullName: 'Mrs. Folashade Adebayo',
-        email: 'parent@godshand.sch.ng'
+        email: 'parent@Godshand.sch.ng'
       };
 
       onSendMessage({

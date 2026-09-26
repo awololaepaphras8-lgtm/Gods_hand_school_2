@@ -22,6 +22,18 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- PHASE 2: DATABASE TABLES
+CREATE TABLE IF NOT EXISTS public.admin_accounts (
+  id TEXT PRIMARY KEY, -- 'pro01' format for external audit verification
+  username TEXT UNIQUE NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  full_name TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'ADMIN',
+  security_key TEXT NOT NULL DEFAULT '197005',
+  proph_verified BOOLEAN DEFAULT TRUE NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT UNIQUE NOT NULL,
@@ -375,6 +387,64 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Function to purge old fee structures and store strictly new fee values
+-- ("whenever the admin changes the school fee and then press the update fee configuration make sure the new value is stored in the data base and the old is deleted")
+CREATE OR REPLACE FUNCTION public.replace_fee_configuration(new_fees JSONB)
+RETURNS VOID AS $$
+DECLARE
+  grade_key TEXT;
+  fee_val NUMERIC;
+BEGIN
+  -- Delete all old fee records from database
+  DELETE FROM public.fee_structures;
+  
+  -- Insert only the new active fee values
+  FOR grade_key, fee_val IN SELECT * FROM jsonb_each_text(new_fees)
+  LOOP
+    INSERT INTO public.fee_structures (id, grade, amount, term, updated_at)
+    VALUES (gen_random_uuid(), grade_key, fee_val::numeric, 'First Term', timezone('utc'::text, now()));
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Database verification function for external app 'proph' using unique Admin ID 'pro01'
+-- ("make the admin have a unique id that can allow all the data base be checked when entered on another app called proph and make the admin id have this format 'pro01'")
+CREATE OR REPLACE FUNCTION public.verify_database_integrity_proph(admin_key TEXT)
+RETURNS JSONB AS $$
+DECLARE
+  result JSONB;
+BEGIN
+  IF lower(trim(admin_key)) != 'pro01' THEN
+    RETURN jsonb_build_object(
+      'success', false, 
+      'error', 'Access Denied: Invalid Admin Unique ID. Required: pro01'
+    );
+  END IF;
+
+  SELECT jsonb_build_object(
+    'success', true,
+    'admin_id', 'pro01',
+    'verified_at', timezone('utc'::text, now()),
+    'school', 'God''s Hand International Model School',
+    'status', 'AUDITED_VERIFIED_ACTIVE',
+    'metrics', jsonb_build_object(
+      'students', (SELECT COUNT(*) FROM public.students),
+      'parents', (SELECT COUNT(*) FROM public.parents),
+      'teachers', (SELECT COUNT(*) FROM public.teacher_accounts),
+      'fee_structures', (SELECT COUNT(*) FROM public.fee_structures),
+      'fee_payments', (SELECT COUNT(*) FROM public.fee_payments),
+      'attendance_records', (SELECT COUNT(*) FROM public.attendance_records),
+      'student_results', (SELECT COUNT(*) FROM public.student_results),
+      'timetables', (SELECT COUNT(*) FROM public.timetables),
+      'chat_messages', (SELECT COUNT(*) FROM public.chat_messages),
+      'meetings', (SELECT COUNT(*) FROM public.meetings)
+    )
+  ) INTO result;
+
+  RETURN result;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- PHASE 6: ROW LEVEL SECURITY & POLICIES
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
@@ -619,21 +689,33 @@ VALUES (
 )
 ON CONFLICT (id) DO UPDATE SET content = EXCLUDED.content;
 
+INSERT INTO public.admin_accounts (id, username, email, full_name, role, security_key, proph_verified)
+VALUES
+  ('pro01', 'pro01', 'Godshandschool70@gmail.com', 'School Proprietor & Chief Administrator', 'ADMIN', '197005', TRUE)
+ON CONFLICT (id) DO UPDATE SET 
+  username = EXCLUDED.username,
+  email = EXCLUDED.email,
+  security_key = EXCLUDED.security_key;
+
 INSERT INTO public.students (id, name, grade, email, password_hash, entry_allowed, active_term, admission_year)
 VALUES
-  ('STU-1', 'Samuel Adebayo', 'Primary 4', 'samuel@godshand.sch.ng', 'student123', TRUE, 'First Term', 2022),
-  ('STU-2', 'Grace Adebayo', 'JSS 2', 'grace@godshand.sch.ng', 'student123', TRUE, 'First Term', 2021),
-  ('STU-3', 'Boluwatife Adeleke', 'Primary 1', 'bolu.adeleke@godshand.sch.ng', 'student123', TRUE, 'First Term', 2024),
-  ('STU-4', 'Zainab Danjuma', 'SSS 1', 'zainab.d@godshand.sch.ng', 'student123', TRUE, 'First Term', 2023)
+  ('GHS20268001', 'Samuel Adebayo', 'Primary 4', 'samuel@Godshand.sch.ng', 'student123', TRUE, 'First Term', 2026),
+  ('GHS202611001', 'Grace Adebayo', 'JSS 2', 'grace@Godshand.sch.ng', 'student123', TRUE, 'First Term', 2026),
+  ('STU-1', 'Samuel Adebayo', 'Primary 4', 'samuel.old@Godshand.sch.ng', 'student123', TRUE, 'First Term', 2022),
+  ('STU-2', 'Grace Adebayo', 'JSS 2', 'grace.old@Godshand.sch.ng', 'student123', TRUE, 'First Term', 2021),
+  ('STU-3', 'Boluwatife Adeleke', 'Primary 1', 'bolu.adeleke@Godshand.sch.ng', 'student123', TRUE, 'First Term', 2024),
+  ('STU-4', 'Zainab Danjuma', 'SSS 1', 'zainab.d@Godshand.sch.ng', 'student123', TRUE, 'First Term', 2023)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.parents (id, full_name, email, phone, password_hash, relationship, address)
 VALUES
-  ('PAR-1', 'Mrs. Folashade Adebayo', 'parent@godshand.sch.ng', '08034567890', 'parent123', 'Mother', 'Oluwatedo Area, Wire & Cable, Apata, Ibadan')
+  ('PAR-1', 'Mrs. Folashade Adebayo', 'parent@Godshand.sch.ng', '08034567890', 'parent123', 'Mother', 'Oluwatedo Area, Wire & Cable, Apata, Ibadan')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.parent_student_links (parent_id, student_id, linked_by, is_active)
 VALUES
+  ('PAR-1', 'GHS20268001', 'admin', TRUE),
+  ('PAR-1', 'GHS202611001', 'admin', TRUE),
   ('PAR-1', 'STU-1', 'admin', TRUE),
   ('PAR-1', 'STU-2', 'admin', TRUE)
 ON CONFLICT (parent_id, student_id) DO NOTHING;
@@ -682,15 +764,15 @@ INSERT INTO public.parent_staff_messages (
   student_id, student_name, student_grade, subject, message, sender_role, priority, read
 )
 VALUES
-  ('PSM-1', 'PAR-1', 'Mrs. Folashade Adebayo', 'parent@godshand.sch.ng', 'staff', 'Mr. David Adeleke', 'STU-1', 'Samuel Adebayo', 'Primary 4', 'Academic Progress & Homework Inquiry', 'Good morning Mr. Adeleke, please I would like to confirm Samuel''s homework submission for Mathematics yesterday.', 'parent', 'inquiry', TRUE),
-  ('PSM-2', 'PAR-1', 'Mrs. Folashade Adebayo', 'parent@godshand.sch.ng', 'staff', 'Mr. David Adeleke', 'STU-1', 'Samuel Adebayo', 'Primary 4', 'Academic Progress & Homework Inquiry', 'Good afternoon Mrs. Adebayo! Yes, Samuel submitted his arithmetic exercises on time and scored 95%. He is doing exceptionally well in class.', 'teacher', 'normal', TRUE)
+  ('PSM-1', 'PAR-1', 'Mrs. Folashade Adebayo', 'parent@Godshand.sch.ng', 'staff', 'Mr. David Adeleke', 'STU-1', 'Samuel Adebayo', 'Primary 4', 'Academic Progress & Homework Inquiry', 'Good morning Mr. Adeleke, please I would like to confirm Samuel''s homework submission for Mathematics yesterday.', 'parent', 'inquiry', TRUE),
+  ('PSM-2', 'PAR-1', 'Mrs. Folashade Adebayo', 'parent@Godshand.sch.ng', 'staff', 'Mr. David Adeleke', 'STU-1', 'Samuel Adebayo', 'Primary 4', 'Academic Progress & Homework Inquiry', 'Good afternoon Mrs. Adebayo! Yes, Samuel submitted his arithmetic exercises on time and scored 95%. He is doing exceptionally well in class.', 'teacher', 'normal', TRUE)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.meetings (
   id, title, room_code, host_name, host_role, description, scheduled_time, status, participants_count, meeting_link
 )
 VALUES
-  ('MTG-1', 'Termly General PTA Virtual Assembly & Orientation', 'GHS-PTA-2026', 'Proprietor & Head of School', 'ADMIN', 'Review of academic calendar, terminal results release, and student gate security protocol.', 'Saturday 10:00 AM', 'active', 14, 'https://godshand.sch.ng/meet/GHS-PTA-2026')
+  ('MTG-1', 'Termly General PTA Virtual Assembly & Orientation', 'GHS-PTA-2026', 'Proprietor & Head of School', 'ADMIN', 'Review of academic calendar, terminal results release, and student gate security protocol.', 'Saturday 10:00 AM', 'active', 14, 'https://Godshand.sch.ng/meet/GHS-PTA-2026')
 ON CONFLICT (id) DO NOTHING;
 `;
 
@@ -699,7 +781,7 @@ ON CONFLICT (id) DO NOTHING;
  */
 export const downloadSupabaseSchemaSql = (): void => {
   triggerDownload(
-    'gods_hand_supabase_schema.sql',
+    'Gods_Hand_supabase_schema.sql',
     SUPABASE_MASTER_SQL_SCHEMA,
     'application/sql;charset=utf-8;'
   );

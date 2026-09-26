@@ -241,7 +241,7 @@ export const Footer: React.FC<FooterProps> = ({ onCheckFees, onNavigate, onOpenS
                 <span className="p-2 bg-white/5 rounded-lg mr-3 group-hover:bg-yellow-400 group-hover:text-blue-900 transition-all text-base shrink-0">✉️</span>
                 <div>
                   <p className="text-white font-black text-xs uppercase tracking-wider">Official Email:</p>
-                  <a href="mailto:godshandschool70@gmail.com" className="text-white hover:text-yellow-400 transition-colors">
+                  <a href="mailto:Godshandschool70@gmail.com" className="text-white hover:text-yellow-400 transition-colors">
                     Godshandschool70@gmail.com
                   </a>
                 </div>

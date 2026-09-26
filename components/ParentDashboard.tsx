@@ -161,7 +161,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
     e.preventDefault();
     if (!newChildName.trim()) return;
 
-    const emailToUse = newChildEmail.trim() || `${newChildName.trim().toLowerCase().replace(/\s+/g, '.')}.${Date.now().toString().slice(-4)}@godshand.sch.ng`;
+    const emailToUse = newChildEmail.trim() || `${newChildName.trim().toLowerCase().replace(/\s+/g, '.')}.${Date.now().toString().slice(-4)}@Godshand.sch.ng`;
     const created = onRegisterNewChild({
       name: newChildName.trim(),
       grade: newChildGrade,

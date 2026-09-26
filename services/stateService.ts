@@ -17,43 +17,45 @@ const DEFAULT_STATE: AppState = {
   teachers: [],
   studentAccounts: [
     {
-      id: 'STU-1',
+      id: 'GHS20268001',
       name: 'Samuel Adebayo',
-      email: 'samuel@godshand.sch.ng',
+      email: 'samuel@Godshand.sch.ng',
       password: 'student123',
       grade: 'Primary 4',
       createdAt: new Date().toISOString(),
       entryAllowed: true,
-      activeTerm: 'First Term'
+      activeTerm: 'First Term',
+      admissionYear: 2026
     },
     {
-      id: 'STU-2',
+      id: 'GHS202611001',
       name: 'Grace Adebayo',
-      email: 'grace@godshand.sch.ng',
+      email: 'grace@Godshand.sch.ng',
       password: 'student123',
       grade: 'JSS 2',
       createdAt: new Date().toISOString(),
       entryAllowed: true,
-      activeTerm: 'First Term'
+      activeTerm: 'First Term',
+      admissionYear: 2026
     }
   ],
   parents: [
     {
       id: 'PAR-1',
       fullName: 'Mrs. Folashade Adebayo',
-      email: 'parent@godshand.sch.ng',
+      email: 'parent@Godshand.sch.ng',
       phone: '08034567890',
       password: 'parent123',
       relationship: 'Mother',
       address: 'Oluwatedo Area, Wire & Cable, Apata, Ibadan',
-      childrenStudentIds: ['STU-1', 'STU-2'],
+      childrenStudentIds: ['GHS20268001', 'GHS202611001', 'STU-1', 'STU-2'],
       createdAt: new Date().toISOString()
     }
   ],
   payments: [
     {
       id: 'PAY-SAMPLE1',
-      studentId: 'STU-1',
+      studentId: 'GHS20268001',
       studentName: 'Samuel Adebayo',
       amount: 22500,
       grade: 'Primary 4',
@@ -69,7 +71,7 @@ const DEFAULT_STATE: AppState = {
   ],
   attendance: [
     {
-      studentId: 'STU-1',
+      studentId: 'GHS20268001',
       date: new Date().toLocaleDateString(),
       markedBy: 'Mr. Benson (Gate Officer)',
       term: 'First Term'
@@ -141,7 +143,7 @@ const DEFAULT_STATE: AppState = {
       id: 'PSM-1',
       parentId: 'PAR-1',
       parentName: 'Mrs. Folashade Adebayo',
-      parentEmail: 'parent@godshand.sch.ng',
+      parentEmail: 'parent@Godshand.sch.ng',
       staffId: 'staff',
       staffName: 'Mr. David Adeleke (Primary 4 Class Teacher)',
       studentId: 'STU-1',
@@ -158,7 +160,7 @@ const DEFAULT_STATE: AppState = {
       id: 'PSM-2',
       parentId: 'PAR-1',
       parentName: 'Mrs. Folashade Adebayo',
-      parentEmail: 'parent@godshand.sch.ng',
+      parentEmail: 'parent@Godshand.sch.ng',
       staffId: 'staff',
       staffName: 'Mr. David Adeleke (Primary 4 Class Teacher)',
       studentId: 'STU-1',
@@ -180,7 +182,7 @@ const DEFAULT_STATE: AppState = {
       senderId: 'ADMIN-1',
       senderName: 'School Administrator',
       senderRole: 'ADMIN' as any,
-      message: 'Welcome to God\'s Hand International Model School Live Community Hub! Have faith in God.',
+      message: 'Welcome to God\'s Hand International Model School Live Community Hub! Have Faith In God.',
       timestamp: new Date(Date.now() - 86400000).toISOString()
     },
     {
@@ -189,7 +191,7 @@ const DEFAULT_STATE: AppState = {
       senderId: 'PAR-1',
       senderName: 'Mrs. Folashade Adebayo',
       senderRole: 'PARENT' as any,
-      message: 'Amen! Proud to be part of the God\'s Hand model school family.',
+      message: 'Amen! Proud to be part of the God\'s Hand Model School family.',
       timestamp: new Date(Date.now() - 3600000 * 12).toISOString()
     },
     {
@@ -213,7 +215,7 @@ const DEFAULT_STATE: AppState = {
       scheduledTime: 'Saturday 10:00 AM',
       status: 'active',
       participantsCount: 14,
-      meetingLink: 'https://godshand.sch.ng/meet/GHS-PTA-2026',
+      meetingLink: 'https://Godshand.sch.ng/meet/GHS-PTA-2026',
       createdAt: new Date().toISOString()
     },
     {
@@ -226,7 +228,7 @@ const DEFAULT_STATE: AppState = {
       scheduledTime: 'Friday 4:00 PM',
       status: 'upcoming',
       participantsCount: 8,
-      meetingLink: 'https://godshand.sch.ng/meet/GHS-PRI4-STUDY',
+      meetingLink: 'https://Godshand.sch.ng/meet/GHS-PRI4-STUDY',
       createdAt: new Date().toISOString()
     }
   ],

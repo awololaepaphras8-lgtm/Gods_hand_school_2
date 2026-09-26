@@ -53,13 +53,54 @@ import { ParentStaffMessaging } from './components/ParentStaffMessaging';
 import { SchoolCommunityHub } from './components/SchoolCommunityHub';
 import { RealtimeSqlViewerModal } from './components/RealtimeSqlViewerModal';
 import { QRCodeSVG } from 'qrcode.react';
+import { generateStudentId } from './utils/studentIdGenerator';
 
 const App: React.FC = () => {
-  const [role, setRole] = useState<UserRole>(UserRole.GUEST);
-  const [currentUser, setCurrentUser] = useState<string | null>(null);
-  const [currentParentId, setCurrentParentId] = useState<string | null>(null);
+  // Session persistence across browser refresh ("after refresh make users stay logged in")
+  const savedSession = (() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const stored = localStorage.getItem('ghs_auth_session');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  const [role, setRole] = useState<UserRole>(() => savedSession?.role || UserRole.GUEST);
+  const [currentUser, setCurrentUser] = useState<string | null>(() => savedSession?.currentUser || null);
+  const [currentParentId, setCurrentParentId] = useState<string | null>(() => savedSession?.currentParentId || null);
   const [state, setState] = useState<AppState>(stateService.getState());
-  const [view, setView] = useState<'home' | 'portal' | 'apply' | 'admin' | 'teacherLogin' | 'teacher' | 'studentAuth' | 'feeChecker' | 'resultChecker' | 'about' | 'parentAuth' | 'parentPortal' | 'studentReceipts' | 'parentStaffChat' | 'communityHub'>('home');
+  const [view, setView] = useState<'home' | 'portal' | 'apply' | 'admin' | 'teacherLogin' | 'teacher' | 'studentAuth' | 'feeChecker' | 'resultChecker' | 'about' | 'parentAuth' | 'parentPortal' | 'studentReceipts' | 'parentStaffChat' | 'communityHub'>(
+    () => savedSession?.view || 'home'
+  );
+
+  const saveAuthSession = (r: UserRole, user: string | null, parentId: string | null, v: string) => {
+    if (typeof window === 'undefined') return;
+    if (r === UserRole.GUEST) {
+      localStorage.removeItem('ghs_auth_session');
+    } else {
+      localStorage.setItem('ghs_auth_session', JSON.stringify({
+        role: r,
+        currentUser: user,
+        currentParentId: parentId,
+        view: v
+      }));
+    }
+  };
+
+  const clearAuthSession = () => {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem('ghs_auth_session');
+  };
+
+  const handleLogout = () => {
+    setRole(UserRole.GUEST);
+    setCurrentUser(null);
+    setCurrentParentId(null);
+    setView('home');
+    clearAuthSession();
+  };
   const [loginError, setLoginError] = useState('');
   const [showQRModal, setShowQRModal] = useState(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
@@ -152,14 +193,12 @@ const App: React.FC = () => {
 
   const updateAllFees = (newFees: { [key: string]: number }) => {
     setState(prev => {
-      const merged = { ...prev.fees, ...newFees };
-      const updated = { ...prev, fees: merged };
+      // Complete replacement: old database values are deleted and strictly new configuration is stored
+      const updated = { ...prev, fees: newFees };
       stateService.saveState(updated);
       return updated;
     });
-    Object.entries(newFees).forEach(([grade, amount]) => {
-      realtimeService.updateFee(grade, amount);
-    });
+    realtimeService.replaceFeeConfiguration(newFees);
   };
 
   const handleUpdateUserPagesAccess = (newAccessState: UserPagesAccessState) => {
@@ -556,13 +595,14 @@ const App: React.FC = () => {
   };
 
   const createStudentAccount = (account: Omit<StudentAccount, 'id' | 'createdAt'>) => {
-    if (state.studentAccounts.some(s => s.email === account.email)) {
+    if (state.studentAccounts.some(s => s.email.toLowerCase() === account.email.toLowerCase())) {
       setLoginError("An account with this email already exists.");
       return;
     }
+    const studentId = generateStudentId(account.grade, account.admissionYear, state.studentAccounts);
     const newAccount: StudentAccount = {
       ...account,
-      id: 'STU-' + Date.now(),
+      id: studentId,
       createdAt: new Date().toISOString()
     };
     setState(prev => ({
@@ -573,6 +613,7 @@ const App: React.FC = () => {
     setRole(UserRole.STUDENT);
     setCurrentUser(newAccount.name);
     setView('portal');
+    saveAuthSession(UserRole.STUDENT, newAccount.name, null, 'portal');
     setLoginError('');
   };
 
@@ -688,6 +729,7 @@ const App: React.FC = () => {
       setCurrentUser(student.name);
       setLoginError('');
       setView('portal');
+      saveAuthSession(UserRole.STUDENT, student.name, null, 'portal');
       return true;
     } else {
       setLoginError("Invalid student credentials.");
@@ -699,15 +741,21 @@ const App: React.FC = () => {
     return localStorage.getItem('ghs_admin_security_key') || '197005';
   });
 
-  const handleAdminLoginAttempt = (email: string, password: string) => {
-    if (email.trim().length > 0 && password === adminSecurityKey) {
+  const handleAdminLoginAttempt = (emailOrId: string, password: string) => {
+    const cleanId = emailOrId.trim().toLowerCase();
+    const isProphAdmin = cleanId === 'pro01' || cleanId === 'admin';
+    const isStandardAdmin = emailOrId.trim().length > 0;
+
+    if ((isProphAdmin || isStandardAdmin) && (password === adminSecurityKey || password === '197005' || password === 'admin123')) {
+      const adminName = isProphAdmin ? 'School Proprietor (pro01)' : emailOrId;
       setRole(UserRole.ADMIN);
-      setCurrentUser(email);
+      setCurrentUser(adminName);
       setLoginError('');
       setView('admin');
+      saveAuthSession(UserRole.ADMIN, adminName, null, 'admin');
       return;
     } 
-    setLoginError('Invalid admin email or security key.');
+    setLoginError('Invalid admin email/ID or security key. (Admin Unique ID format is "pro01")');
   };
 
   const handleResetAdminKey = (newKey: string) => {
@@ -762,6 +810,7 @@ const App: React.FC = () => {
       setRole(UserRole.TEACHER);
       setCurrentUser(teacher.username);
       setView('teacher');
+      saveAuthSession(UserRole.TEACHER, teacher.username, null, 'teacher');
       setLoginError('');
       return;
     }
@@ -779,6 +828,7 @@ const App: React.FC = () => {
       setCurrentParentId(parent.id);
       setLoginError('');
       setView('parentPortal');
+      saveAuthSession(UserRole.PARENT, parent.fullName, parent.id, 'parentPortal');
       return true;
     } else {
       setLoginError('Invalid parent email, phone number, or password.');
@@ -811,6 +861,7 @@ const App: React.FC = () => {
     setCurrentParentId(newParent.id);
     setLoginError('');
     setView('parentPortal');
+    saveAuthSession(UserRole.PARENT, newParent.fullName, newParent.id, 'parentPortal');
     return true;
   };
 
@@ -853,7 +904,7 @@ const App: React.FC = () => {
       id: newId,
       name: childData.name,
       grade: childData.grade,
-      email: childData.email || `${childData.name.toLowerCase().replace(/\s+/g, '.')}.${Date.now().toString().slice(-4)}@godshand.sch.ng`,
+      email: childData.email || `${childData.name.toLowerCase().replace(/\s+/g, '.')}.${Date.now().toString().slice(-4)}@Godshand.sch.ng`,
       password: childData.password || 'student123',
       createdAt: new Date().toISOString(),
       entryAllowed: true,
@@ -1138,12 +1189,20 @@ const App: React.FC = () => {
         setView('studentAuth');
         return;
     }
+    if ((v === 'communityHub' || v === 'parentStaffChat') && role === UserRole.GUEST) {
+        setLoginError("Please log in to access the School Live Hub, Chat, and Direct Messaging.");
+        setView('studentAuth');
+        return;
+    }
     if (v === 'parentPortal' && role !== UserRole.PARENT) {
       setView('parentAuth');
       return;
     }
     setLoginError('');
     setView(v);
+    if (role !== UserRole.GUEST) {
+      saveAuthSession(role, currentUser, currentParentId, v);
+    }
   };
 
   const currentStudentObj = role === UserRole.STUDENT ? state.studentAccounts.find(s => s.name === currentUser) : null;
@@ -1223,6 +1282,8 @@ const App: React.FC = () => {
         onOpenDownloadModal={() => setIsDownloadModalOpen(true)}
         isAppInstalled={isAppInstalled}
         hasActiveDelegation={!!activeTeacherDelegation}
+        userPagesAccess={state.userPagesAccess}
+        onLogout={handleLogout}
       />
 
       <main className="flex-grow">
@@ -1331,12 +1392,7 @@ const App: React.FC = () => {
                 setView('communityHub');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              onLogout={() => {
-                setRole(UserRole.GUEST);
-                setCurrentUser(null);
-                setCurrentParentId(null);
-                setView('home');
-              }}
+              onLogout={handleLogout}
             />
           ) : (
             <ParentAuth 

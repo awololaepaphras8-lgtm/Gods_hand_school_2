@@ -205,7 +205,9 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
               autoComplete="off"
             >
               <div className="space-y-1.5">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] px-1">Admin Identity (Email)</label>
+                <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] px-1">
+                  Admin Identity (Email or Unique ID: pro01)
+                </label>
                 <div className="relative group">
                   <span className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-900 opacity-50">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -214,13 +216,13 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
                     </svg>
                   </span>
                   <input 
-                    type="email"
+                    type="text"
                     name="admin_email"
                     required
                     disabled={lockoutRemaining > 0}
                     value={email}
                     onChange={(e) => handleEmailChange(e.target.value)}
-                    placeholder="e.g. Godshandschool70@gmail.com"
+                    placeholder="e.g. pro01 or Godshandschool70@gmail.com"
                     autoComplete="username"
                     className="w-full pl-14 pr-6 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold text-sm text-blue-900 focus:ring-4 focus:ring-blue-900/10 focus:bg-white outline-none transition-all shadow-inner disabled:opacity-50"
                   />
