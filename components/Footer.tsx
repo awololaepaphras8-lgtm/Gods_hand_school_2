@@ -2,12 +2,13 @@
 import React from 'react';
 
 interface FooterProps {
+  isAdmin?: boolean;
   onCheckFees?: () => void;
   onNavigate?: (view: any) => void;
   onOpenSqlModal?: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onCheckFees, onNavigate, onOpenSqlModal }) => {
+export const Footer: React.FC<FooterProps> = ({ isAdmin = false, onCheckFees, onNavigate, onOpenSqlModal }) => {
   return (
     <footer className="bg-blue-900 text-white py-16 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-2 bg-yellow-400"></div>
@@ -260,8 +261,8 @@ export const Footer: React.FC<FooterProps> = ({ onCheckFees, onNavigate, onOpenS
           </p>
         </div>
 
-        {/* Supabase Realtime SQL Code Copy Button */}
-        {onOpenSqlModal && (
+        {/* Supabase Realtime SQL Code Copy Button - Strictly Visible to Administrator Only */}
+        {isAdmin && onOpenSqlModal && (
           <div className="mb-8 p-4 rounded-2xl bg-yellow-400 text-blue-950 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
             <div className="flex items-center gap-3 text-left">
               <span className="text-2xl p-2 bg-blue-900 text-yellow-400 rounded-xl">⚡</span>

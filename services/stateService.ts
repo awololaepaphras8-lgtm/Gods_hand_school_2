@@ -1,10 +1,11 @@
 
-import { AppState, UserPagesAccessState } from '../types';
-import { INITIAL_FEES, APP_STORAGE_KEY } from '../constants';
+import { AppState, UserPagesAccessState, SchoolBankAccountConfig, CallRecording } from '../types';
+import { INITIAL_FEES, APP_STORAGE_KEY, DEFAULT_BANK_ACCOUNT_CONFIG } from '../constants';
 import { INITIAL_DEFAULT_TIMETABLES } from '../constants/timetableDefaults';
 
 const DEFAULT_STATE: AppState = {
   fees: INITIAL_FEES,
+  activeTerm: 'First Term',
   announcements: [
     {
       id: '1',
@@ -84,6 +85,7 @@ const DEFAULT_STATE: AppState = {
   results: [
     {
       id: 'res-1',
+      studentId: 'GHS20268001',
       studentName: 'Samuel Adebayo',
       grade: 'Primary 4',
       subject: 'Mathematics',
@@ -96,6 +98,7 @@ const DEFAULT_STATE: AppState = {
     },
     {
       id: 'res-2',
+      studentId: 'GHS20268001',
       studentName: 'Samuel Adebayo',
       grade: 'Primary 4',
       subject: 'English Language',
@@ -108,12 +111,182 @@ const DEFAULT_STATE: AppState = {
     },
     {
       id: 'res-3',
+      studentId: 'GHS20268001',
+      studentName: 'Samuel Adebayo',
+      grade: 'Primary 4',
+      subject: 'Basic Science & Technology',
+      score: 91,
+      caScore: 35,
+      examScore: 56,
+      term: 'Second Term',
+      teacherName: 'Mr. Benson',
+      date: new Date().toLocaleDateString()
+    },
+    {
+      id: 'res-4',
+      studentId: 'GHS20268001',
+      studentName: 'Samuel Adebayo',
+      grade: 'Primary 4',
+      subject: 'Mathematics',
+      score: 94,
+      caScore: 38,
+      examScore: 56,
+      term: 'Third Term',
+      teacherName: 'Mr. Benson',
+      date: new Date().toLocaleDateString()
+    },
+    {
+      id: 'res-5',
+      studentId: 'GHS202611001',
       studentName: 'Grace Adebayo',
       grade: 'JSS 2',
       subject: 'Basic Science',
       score: 95,
       caScore: 38,
       examScore: 57,
+      term: 'First Term',
+      teacherName: 'Engr. David',
+      date: new Date().toLocaleDateString()
+    },
+    {
+      id: 'res-6',
+      studentId: 'GHS202611001',
+      studentName: 'Grace Adebayo',
+      grade: 'JSS 2',
+      subject: 'Mathematics',
+      score: 89,
+      caScore: 35,
+      examScore: 54,
+      term: 'Second Term',
+      teacherName: 'Engr. David',
+      date: new Date().toLocaleDateString()
+    },
+    {
+      id: 'res-7',
+      studentId: 'GHS202611001',
+      studentName: 'Grace Adebayo',
+      grade: 'JSS 2',
+      subject: 'English Language',
+      score: 93,
+      caScore: 37,
+      examScore: 56,
+      term: 'Third Term',
+      teacherName: 'Mrs. Taiwo',
+      date: new Date().toLocaleDateString()
+    },
+    {
+      id: 'res-8',
+      studentId: 'STU-101',
+      studentName: 'Emmanuel Okafor',
+      grade: 'Basic 1',
+      subject: 'Mathematics',
+      score: 84,
+      caScore: 32,
+      examScore: 52,
+      term: 'First Term',
+      teacherName: 'Miss Comfort',
+      date: new Date().toLocaleDateString()
+    },
+    {
+      id: 'res-9',
+      studentId: 'STU-102',
+      studentName: 'Blessing Adeleke',
+      grade: 'Basic 2',
+      subject: 'English Language',
+      score: 86,
+      caScore: 34,
+      examScore: 52,
+      term: 'First Term',
+      teacherName: 'Miss Comfort',
+      date: new Date().toLocaleDateString()
+    },
+    {
+      id: 'res-10',
+      studentId: 'STU-103',
+      studentName: 'Daniel Ajayi',
+      grade: 'Basic 3',
+      subject: 'Quantitative Reasoning',
+      score: 82,
+      caScore: 30,
+      examScore: 52,
+      term: 'First Term',
+      teacherName: 'Mr. Benson',
+      date: new Date().toLocaleDateString()
+    },
+    {
+      id: 'res-11',
+      studentId: 'STU-104',
+      studentName: 'Favour Babatunde',
+      grade: 'Basic 5',
+      subject: 'Basic Science',
+      score: 90,
+      caScore: 36,
+      examScore: 54,
+      term: 'First Term',
+      teacherName: 'Mr. Benson',
+      date: new Date().toLocaleDateString()
+    },
+    {
+      id: 'res-12',
+      studentId: 'STU-105',
+      studentName: 'Joshua Adeleke',
+      grade: 'JSS 1',
+      subject: 'Mathematics',
+      score: 85,
+      caScore: 33,
+      examScore: 52,
+      term: 'First Term',
+      teacherName: 'Engr. David',
+      date: new Date().toLocaleDateString()
+    },
+    {
+      id: 'res-13',
+      studentId: 'STU-106',
+      studentName: 'Miracle Ojo',
+      grade: 'JSS 3',
+      subject: 'Basic Technology',
+      score: 88,
+      caScore: 35,
+      examScore: 53,
+      term: 'First Term',
+      teacherName: 'Engr. David',
+      date: new Date().toLocaleDateString()
+    },
+    {
+      id: 'res-14',
+      studentId: 'STU-107',
+      studentName: 'Precious Alabi',
+      grade: 'SS 1 (Science)',
+      subject: 'Physics',
+      score: 91,
+      caScore: 36,
+      examScore: 55,
+      term: 'First Term',
+      teacherName: 'Engr. David',
+      date: new Date().toLocaleDateString()
+    },
+    {
+      id: 'res-15',
+      studentId: 'STU-108',
+      studentName: 'Victoria Balogun',
+      grade: 'SS 2 (Science)',
+      subject: 'Chemistry',
+      score: 89,
+      caScore: 35,
+      examScore: 54,
+      term: 'First Term',
+      teacherName: 'Engr. David',
+      date: new Date().toLocaleDateString()
+    },
+    {
+      id: 'res-16',
+      studentId: 'STU-109',
+      studentName: 'David Adeleke',
+      grade: 'SS 3 (Science)',
+      subject: 'Biology',
+      score: 93,
+      caScore: 37,
+      examScore: 56,
       term: 'First Term',
       teacherName: 'Engr. David',
       date: new Date().toLocaleDateString()
@@ -241,7 +414,9 @@ const DEFAULT_STATE: AppState = {
       performedBy: 'System Administrator',
       timestamp: new Date().toISOString()
     }
-  ]
+  ],
+  bankAccountConfig: DEFAULT_BANK_ACCOUNT_CONFIG,
+  callRecordings: []
 };
 
 export const stateService = {
@@ -265,6 +440,9 @@ export const stateService = {
           courses: parsed.courses || DEFAULT_STATE.courses,
           results: parsed.results || DEFAULT_STATE.results,
           academicCalendar: parsed.academicCalendar || DEFAULT_STATE.academicCalendar,
+          activeTerm: parsed.activeTerm || 'First Term',
+          bankAccountConfig: parsed.bankAccountConfig || DEFAULT_BANK_ACCOUNT_CONFIG,
+          callRecordings: parsed.callRecordings || [],
           resultPublishRequests: parsed.resultPublishRequests || [],
           timedStaffDelegations: parsed.timedStaffDelegations || [],
           timetables: (parsed.timetables && parsed.timetables.length > 0) ? parsed.timetables : DEFAULT_STATE.timetables,
@@ -300,6 +478,38 @@ export const stateService = {
       stateService.saveState(updated);
     } catch (e) {
       console.error("Failed to update user pages access", e);
+    }
+  },
+
+  updateBankAccountConfig: (config: SchoolBankAccountConfig): void => {
+    try {
+      const current = stateService.getState();
+      const updated = { ...current, bankAccountConfig: config };
+      stateService.saveState(updated);
+    } catch (e) {
+      console.error("Failed to update bank account config", e);
+    }
+  },
+
+  addCallRecording: (recording: CallRecording): void => {
+    try {
+      const current = stateService.getState();
+      const existing = current.callRecordings || [];
+      const updated = { ...current, callRecordings: [recording, ...existing] };
+      stateService.saveState(updated);
+    } catch (e) {
+      console.error("Failed to add call recording", e);
+    }
+  },
+
+  deleteCallRecording: (recordingId: string): void => {
+    try {
+      const current = stateService.getState();
+      const existing = current.callRecordings || [];
+      const updated = { ...current, callRecordings: existing.filter(r => r.id !== recordingId) };
+      stateService.saveState(updated);
+    } catch (e) {
+      console.error("Failed to delete call recording", e);
     }
   }
 };

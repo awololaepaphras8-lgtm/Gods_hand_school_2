@@ -5,6 +5,7 @@ import {
   cleanHackingKeywords, 
   checkRateLimit 
 } from '../utils/securityGuard';
+import { verifyAdminSecurityKey } from '../utils/adminSecurity';
 
 interface TeacherLoginGatewayProps {
   onLogin: (username: string, password: string) => void;
@@ -116,7 +117,7 @@ export const TeacherLoginGateway: React.FC<TeacherLoginGatewayProps> = ({
 
     // Check staff authorization passcode (Admin master recovery or school staff key)
     const normalizedCode = staffPasscode.trim().toUpperCase();
-    const isAuthorized = normalizedCode === 'GHIMS-STAFF' || normalizedCode === '197005' || normalizedCode === 'TEACHER2026';
+    const isAuthorized = normalizedCode === 'GHIMS-STAFF' || normalizedCode === 'TEACHER2026' || verifyAdminSecurityKey(staffPasscode);
 
     if (!isAuthorized) {
       setResetError('Invalid Staff Verification Passcode. Please contact the School Admin via WhatsApp.');
@@ -342,7 +343,7 @@ export const TeacherLoginGateway: React.FC<TeacherLoginGatewayProps> = ({
                         required
                         value={staffPasscode}
                         onChange={(e) => setStaffPasscode(e.target.value)}
-                        placeholder="e.g. GHIMS-STAFF or 197005"
+                        placeholder="e.g. GHIMS-STAFF or TEACHER2026"
                         className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-900 outline-none focus:border-blue-900"
                       />
                     </div>

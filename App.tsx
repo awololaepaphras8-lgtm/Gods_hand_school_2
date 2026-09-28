@@ -26,7 +26,9 @@ import {
   ChatChannelMessage,
   MeetingSession,
   CallSession,
-  AdminRealtimeEvent
+  AdminRealtimeEvent,
+  SchoolBankAccountConfig,
+  CallRecording
 } from './types';
 import { stateService } from './services/stateService';
 import { setupRealtimeSync, fetchSupabaseState, realtimeService, isSupabaseConfigured } from './services/supabaseService';
@@ -52,10 +54,13 @@ import { StudentTimetableCard } from './components/StudentTimetableCard';
 import { ParentStaffMessaging } from './components/ParentStaffMessaging';
 import { SchoolCommunityHub } from './components/SchoolCommunityHub';
 import { RealtimeSqlViewerModal } from './components/RealtimeSqlViewerModal';
+import { SplashScreen } from './components/SplashScreen';
+import { verifyAdminSecurityKey, setAdminSecurityKeyHash } from './utils/adminSecurity';
 import { QRCodeSVG } from 'qrcode.react';
 import { generateStudentId } from './utils/studentIdGenerator';
 
 const App: React.FC = () => {
+  const [showSplashScreen, setShowSplashScreen] = useState<boolean>(true);
   // Session persistence across browser refresh ("after refresh make users stay logged in")
   const savedSession = (() => {
     if (typeof window === 'undefined') return null;
@@ -209,6 +214,52 @@ const App: React.FC = () => {
     });
     stateService.updateUserPagesAccess(newAccessState);
     realtimeService.updateUserPagesAccess(newAccessState);
+  };
+
+  const handleAdvanceTerm = (nextTerm: 'First Term' | 'Second Term' | 'Third Term') => {
+    setState(prev => {
+      const updatedStudents = (prev.studentAccounts || []).map(s => ({
+        ...s,
+        activeTerm: nextTerm
+      }));
+      const updated = {
+        ...prev,
+        activeTerm: nextTerm,
+        studentAccounts: updatedStudents
+      };
+      stateService.saveState(updated);
+      return updated;
+    });
+    alert(`Academic term successfully advanced to ${nextTerm}! All student portals, fee records, and class registers have transitioned to ${nextTerm}.`);
+  };
+
+  const handleUpdateBankAccountConfig = (config: SchoolBankAccountConfig) => {
+    setState(prev => {
+      const updated = { ...prev, bankAccountConfig: config };
+      stateService.saveState(updated);
+      return updated;
+    });
+    stateService.updateBankAccountConfig(config);
+  };
+
+  const handleAddCallRecording = (recording: CallRecording) => {
+    setState(prev => {
+      const existing = prev.callRecordings || [];
+      const updated = { ...prev, callRecordings: [recording, ...existing] };
+      stateService.saveState(updated);
+      return updated;
+    });
+    stateService.addCallRecording(recording);
+  };
+
+  const handleDeleteCallRecording = (id: string) => {
+    setState(prev => {
+      const existing = prev.callRecordings || [];
+      const updated = { ...prev, callRecordings: existing.filter(r => r.id !== id) };
+      stateService.saveState(updated);
+      return updated;
+    });
+    stateService.deleteCallRecording(id);
   };
 
   const handleBatchMarkAttendance = (records: { studentId: string; date: string; term: string; markedBy: string }[]) => {
@@ -737,16 +788,12 @@ const App: React.FC = () => {
     }
   };
 
-  const [adminSecurityKey, setAdminSecurityKey] = useState<string>(() => {
-    return localStorage.getItem('ghs_admin_security_key') || '197005';
-  });
-
   const handleAdminLoginAttempt = (emailOrId: string, password: string) => {
     const cleanId = emailOrId.trim().toLowerCase();
-    const isProphAdmin = cleanId === 'pro01' || cleanId === 'admin';
+    const isProphAdmin = cleanId === 'pro01' || cleanId === 'admin' || cleanId === 'godshandschool70@gmail.com';
     const isStandardAdmin = emailOrId.trim().length > 0;
 
-    if ((isProphAdmin || isStandardAdmin) && (password === adminSecurityKey || password === '197005' || password === 'admin123')) {
+    if ((isProphAdmin || isStandardAdmin) && verifyAdminSecurityKey(password)) {
       const adminName = isProphAdmin ? 'School Proprietor (pro01)' : emailOrId;
       setRole(UserRole.ADMIN);
       setCurrentUser(adminName);
@@ -759,8 +806,7 @@ const App: React.FC = () => {
   };
 
   const handleResetAdminKey = (newKey: string) => {
-    setAdminSecurityKey(newKey);
-    localStorage.setItem('ghs_admin_security_key', newKey);
+    setAdminSecurityKeyHash(newKey);
   };
 
   const handleResetTeacherPassword = (username: string, newPass: string): boolean => {
@@ -899,7 +945,7 @@ const App: React.FC = () => {
   };
 
   const handleRegisterNewChild = (childData: { name: string; grade: GradeLevel; email?: string; password?: string }): StudentAccount => {
-    const newId = `STU-${(state.studentAccounts.length + 1).toString().padStart(3, '0')}`;
+    const newId = generateStudentId(childData.grade, new Date().getFullYear(), state.studentAccounts);
     const newStudent: StudentAccount = {
       id: newId,
       name: childData.name,
@@ -908,7 +954,8 @@ const App: React.FC = () => {
       password: childData.password || 'student123',
       createdAt: new Date().toISOString(),
       entryAllowed: true,
-      activeTerm: 'First Term',
+      activeTerm: state.activeTerm || 'First Term',
+      admissionYear: new Date().getFullYear(),
       parentId: currentParentId || undefined,
       parentEmail: currentParentObj?.email
     };
@@ -1393,6 +1440,7 @@ const App: React.FC = () => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               onLogout={handleLogout}
+              bankAccountConfig={state.bankAccountConfig}
             />
           ) : (
             <ParentAuth 
@@ -1423,6 +1471,7 @@ const App: React.FC = () => {
               currentStudentGrade={currentStudentObj?.grade || null}
               onSubmit={addPayment} 
               onBack={() => setView(role === UserRole.STUDENT ? 'portal' : 'home')} 
+              bankAccountConfig={state.bankAccountConfig}
             />
           </div>
         )}
@@ -1838,6 +1887,7 @@ const App: React.FC = () => {
                 setView('studentAuth');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
+              bankAccountConfig={state.bankAccountConfig}
             />
           </div>
         )}
@@ -1929,6 +1979,11 @@ const App: React.FC = () => {
                 timedStaffDelegations={state.timedStaffDelegations || []}
                 onGrantStaffDelegation={handleGrantStaffDelegation}
                 onRevokeStaffDelegation={handleRevokeStaffDelegation}
+                activeTerm={state.activeTerm || 'First Term'}
+                onAdvanceTerm={handleAdvanceTerm}
+                onNavigateToView={setView}
+                bankAccountConfig={state.bankAccountConfig}
+                onUpdateBankAccountConfig={handleUpdateBankAccountConfig}
               />
             </div>
           ) : (role === UserRole.TEACHER && activeTeacherDelegation) ? (
@@ -1971,6 +2026,10 @@ const App: React.FC = () => {
                 allowedAdminSections={activeTeacherDelegation.grantedSections}
                 delegationExpiresAt={activeTeacherDelegation.expiresAt}
                 activeStaffName={activeTeacherDelegation.teacherName}
+                activeTerm={state.activeTerm || 'First Term'}
+                onNavigateToView={setView}
+                bankAccountConfig={state.bankAccountConfig}
+                onUpdateBankAccountConfig={handleUpdateBankAccountConfig}
                 onExitDelegation={() => {
                   setView('teacher');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2044,11 +2103,12 @@ const App: React.FC = () => {
       </main>
 
       <Footer 
+        isAdmin={role === UserRole.ADMIN}
         onCheckFees={() => {
           setView('feeChecker');
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
-        onOpenSqlModal={() => setShowSqlModal(true)}
+        onOpenSqlModal={role === UserRole.ADMIN ? () => setShowSqlModal(true) : undefined}
         onNavigate={(targetView: string) => {
           if (['home', 'portal', 'apply', 'admin', 'teacherLogin', 'teacher', 'studentAuth', 'feeChecker', 'parentAuth', 'parentPortal', 'about', 'studentReceipts', 'resultChecker', 'parentStaffChat', 'communityHub'].includes(targetView)) {
             handleNav(targetView as any);
@@ -2068,11 +2128,20 @@ const App: React.FC = () => {
         onCloseModal={() => setIsDownloadModalOpen(false)}
       />
 
-      {/* Supabase Master SQL & Realtime Configuration Viewer Modal */}
-      <RealtimeSqlViewerModal
-        isOpen={showSqlModal}
-        onClose={() => setShowSqlModal(false)}
-      />
+      {/* Supabase Master SQL & Realtime Configuration Viewer Modal - Strictly Admin */}
+      {role === UserRole.ADMIN && (
+        <RealtimeSqlViewerModal
+          isOpen={showSqlModal}
+          onClose={() => setShowSqlModal(false)}
+        />
+      )}
+
+      {/* Welcome Splash Screen */}
+      {showSplashScreen && (
+        <SplashScreen 
+          onFinish={() => setShowSplashScreen(false)} 
+        />
+      )}
     </div>
   );
 };

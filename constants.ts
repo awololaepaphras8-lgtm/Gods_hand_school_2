@@ -1,5 +1,5 @@
 
-import { FeeStructure, GradeLevel } from './types';
+import { FeeStructure, GradeLevel, SchoolBankAccountConfig } from './types';
 
 export const INITIAL_FEES: FeeStructure = {
   'Crèche': 22000,
@@ -134,3 +134,35 @@ export const getNextGradeLevel = (currentGrade: string): string | null => {
 
   return null;
 };
+
+export const DEFAULT_BANK_ACCOUNT_CONFIG: SchoolBankAccountConfig = {
+  bankName: 'First Bank of Nigeria',
+  accountNumber: '2041982731',
+  accountName: "God's Hand International Model School",
+  paymentInstructions: "Please make transfer or direct bank deposit using the child's full name and student ID in the transfer remarks, then upload the receipt proof document.",
+  updatedAt: new Date().toISOString(),
+  updatedBy: 'School Administrator'
+};
+
+export const POPULAR_NIGERIAN_BANKS = [
+  'First Bank of Nigeria',
+  'Guaranty Trust Bank (GTBank)',
+  'Zenith Bank',
+  'Access Bank',
+  'United Bank for Africa (UBA)',
+  'Stanbic IBTC Bank',
+  'Fidelity Bank',
+  'Union Bank of Nigeria',
+  'Polaris Bank',
+  'Wema Bank',
+  'OPay',
+  'PalmPay',
+  'Moniepoint MFB',
+  'Kuda Microfinance Bank',
+  'Sterling Bank',
+  'Ecobank Nigeria',
+  'First City Monument Bank (FCMB)',
+  'Keystone Bank',
+  'Jaiz Bank',
+  'Taj Bank'
+];

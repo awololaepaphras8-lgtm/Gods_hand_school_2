@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FeePayment, PaymentStatus, StudentAccount, GradeLevel } from '../types';
+import { exportSinglePaymentReceiptPDF } from '../utils/exportService';
 
 interface PaymentReviewDashboardProps {
   payments: FeePayment[];
@@ -407,6 +408,32 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
 
                     {/* Action Controls */}
                     <div className="space-y-2">
+                      {/* Mandated Feature: Allow Admin to Download Receipt Before Accepting */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          exportSinglePaymentReceiptPDF(payment, matchingStudent);
+                          showNotification(`Official receipt voucher for ${payment.studentName} generated & downloaded!`);
+                        }}
+                        className="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center gap-2 border-2 border-yellow-400 active:scale-95"
+                        title="Download official branded PDF receipt / audit voucher for this payment before accepting"
+                      >
+                        <span>📥</span>
+                        <span>Download Receipt (PDF)</span>
+                      </button>
+
+                      {payment.receiptImage && (
+                        <a
+                          href={payment.receiptImage}
+                          download={`payment_proof_${payment.studentName.replace(/\s+/g, '_')}_${payment.id}.jpg`}
+                          className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 border border-slate-200 text-center"
+                          title="Save original uploaded bank payment document/image to device"
+                        >
+                          <span>💾</span>
+                          <span>Save Original Upload</span>
+                        </a>
+                      )}
+
                       {isPending && (
                         <>
                           <button

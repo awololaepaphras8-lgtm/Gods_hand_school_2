@@ -137,6 +137,7 @@ export interface StudentAccount {
 
 export interface StudentResult {
   id: string;
+  studentId?: string;
   studentName: string;
   grade: GradeLevel;
   subject: string;
@@ -369,6 +370,32 @@ export interface TimedStaffDelegation {
   status: 'active' | 'revoked' | 'expired';
 }
 
+export interface SchoolBankAccountConfig {
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  paymentInstructions?: string;
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
+export interface CallRecording {
+  id: string;
+  roomCode: string;
+  roomTitle: string;
+  hostName: string;
+  cameraRole: 'admin' | 'spotlight_1' | 'spotlight_2' | 'spotlight_3';
+  cameraLabel: string;
+  recordedByName: string;
+  recordedByRole: string;
+  durationSeconds: number;
+  blobUrl?: string;
+  fileSizeBytes: number;
+  mimeType: string;
+  createdAt: string;
+  downloadFileName?: string;
+}
+
 export interface AppState {
   fees: FeeStructure;
   announcements: Announcement[];
@@ -381,6 +408,7 @@ export interface AppState {
   payments: FeePayment[];
   attendance: AttendanceRecord[];
   academicCalendar: string;
+  activeTerm?: 'First Term' | 'Second Term' | 'Third Term';
   resultPublishRequests?: ResultPublishRequest[];
   timedStaffDelegations?: TimedStaffDelegation[];
   userPagesAccess?: UserPagesAccessState;
@@ -390,4 +418,6 @@ export interface AppState {
   meetings?: MeetingSession[];
   callSessions?: CallSession[];
   adminEvents?: AdminRealtimeEvent[];
+  bankAccountConfig?: SchoolBankAccountConfig;
+  callRecordings?: CallRecording[];
 }

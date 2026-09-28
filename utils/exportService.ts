@@ -999,3 +999,219 @@ export function exportStaffRosterExcel(teachers: TeacherAccount[]) {
   XLSX.utils.book_append_sheet(wb, ws, "Staff & Faculty");
   XLSX.writeFile(wb, filename);
 }
+
+/**
+ * Downloads official student fee payment receipt / audit voucher as PDF.
+ * Enables school admin to download receipt before accepting/approving payments.
+ */
+export function exportSinglePaymentReceiptPDF(payment: FeePayment, student?: StudentAccount) {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+
+  // Outer Decorative Borders
+  doc.setDrawColor(30, 58, 138); // blue-900
+  doc.setLineWidth(1.5);
+  doc.rect(10, 10, pageWidth - 20, 277);
+
+  doc.setDrawColor(245, 158, 11); // yellow-500
+  doc.setLineWidth(0.5);
+  doc.rect(12, 12, pageWidth - 24, 273);
+
+  // Header Banner
+  doc.setFillColor(30, 58, 138);
+  doc.rect(14, 14, pageWidth - 28, 38, 'F');
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text("GOD'S HAND INTERNATIONAL MODEL SCHOOL", pageWidth / 2, 26, { align: 'center' });
+
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(253, 224, 71); // yellow-300
+  doc.text("Motto: Have Faith In God - Building Lives Upon The Solid Rock", pageWidth / 2, 33, { align: 'center' });
+
+  doc.setTextColor(226, 232, 240); // slate-200
+  doc.setFontSize(7.5);
+  doc.text("Oluwatedo Area, Wire & Cable Axis, Apata, Ibadan, Oyo State • Phone: 08056507252 • WhatsApp: 07085596586", pageWidth / 2, 40, { align: 'center' });
+  doc.text("Official Email: Godshandschool70@gmail.com • Web: Godshandmodelschool.edu.ng", pageWidth / 2, 46, { align: 'center' });
+
+  // Receipt Document Title
+  doc.setTextColor(30, 58, 138);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  doc.text("OFFICIAL BURSARY PAYMENT RECEIPT & VERIFICATION VOUCHER", pageWidth / 2, 60, { align: 'center' });
+
+  // Status Badge
+  const isPending = payment.status === 'pending';
+  const isDeclined = payment.status === 'declined';
+  const statusLabel = isPending ? "STATUS: PENDING ADMIN VERIFICATION" : isDeclined ? "STATUS: DECLINED / RETURNED" : "STATUS: VERIFIED & CONFIRMED (PAID)";
+  
+  if (isPending) {
+    doc.setFillColor(254, 243, 199); // amber-100
+    doc.setDrawColor(245, 158, 11);
+    doc.setTextColor(180, 83, 9);
+  } else if (isDeclined) {
+    doc.setFillColor(254, 226, 226); // red-100
+    doc.setDrawColor(239, 68, 68);
+    doc.setTextColor(185, 28, 28);
+  } else {
+    doc.setFillColor(220, 252, 231); // green-100
+    doc.setDrawColor(34, 197, 94);
+    doc.setTextColor(21, 128, 61);
+  }
+  doc.roundedRect(pageWidth / 2 - 55, 64, 110, 8, 2, 2, 'FD');
+  doc.setFontSize(8.5);
+  doc.text(statusLabel, pageWidth / 2, 69.5, { align: 'center' });
+
+  // Transaction Meta Grid
+  doc.setDrawColor(203, 213, 225);
+  doc.setFillColor(248, 250, 252);
+  doc.roundedRect(18, 77, pageWidth - 36, 42, 2, 2, 'FD');
+
+  doc.setTextColor(71, 85, 105);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  
+  doc.text("Receipt Ref:", 22, 85);
+  doc.setTextColor(15, 23, 42);
+  doc.text(payment.id, 55, 85);
+
+  doc.setTextColor(71, 85, 105);
+  doc.text("Payment Date:", 115, 85);
+  doc.setTextColor(15, 23, 42);
+  doc.text(new Date(payment.date).toLocaleString(), 145, 85);
+
+  doc.setTextColor(71, 85, 105);
+  doc.text("Student / Pupil Name:", 22, 94);
+  doc.setTextColor(30, 58, 138);
+  doc.setFontSize(9.5);
+  doc.text(payment.studentName.toUpperCase(), 55, 94);
+
+  doc.setFontSize(8.5);
+  doc.setTextColor(71, 85, 105);
+  doc.text("Student ID:", 115, 94);
+  doc.setTextColor(15, 23, 42);
+  doc.text(student?.id || payment.studentId || 'N/A', 145, 94);
+
+  doc.setTextColor(71, 85, 105);
+  doc.text("Class / Grade Level:", 22, 103);
+  doc.setTextColor(15, 23, 42);
+  doc.text(payment.grade || student?.grade || 'General', 55, 103);
+
+  doc.setTextColor(71, 85, 105);
+  doc.text("Payer / Guardian:", 115, 103);
+  doc.setTextColor(15, 23, 42);
+  doc.text(payment.payerName || 'Direct Depositor', 145, 103);
+
+  doc.setTextColor(71, 85, 105);
+  doc.text("Bank & Transaction Ref:", 22, 112);
+  doc.setTextColor(15, 23, 42);
+  doc.text(`${payment.bankName || 'Bank Transfer'} - ${payment.transactionRef || 'N/A'}`, 60, 112);
+
+  // Line Items Table using autoTable
+  const paymentTypeLabel = 
+    payment.type === 'full' ? 'Full Session Tuition & School Fees' :
+    payment.type === 'installment_1' ? 'First Installment School Fees' :
+    payment.type === 'installment_2' ? 'Second Installment School Fees' :
+    payment.type === 'result_fee' ? 'Terminal Result Checker Fee (₦1,000)' :
+    'School Tuition & Development Levies';
+
+  autoTable(doc, {
+    startY: 126,
+    head: [['#', 'Item Description / Purpose', 'Academic Class', 'Amount (NGN)']],
+    body: [
+      ['1', paymentTypeLabel, payment.grade, `NGN ${payment.amount.toLocaleString()}`],
+      ['', 'Administrative Processing & Portal Stamping', 'N/A', 'NGN 0.00'],
+    ],
+    foot: [
+      ['', 'TOTAL AMOUNT SETTLED / SUBMITTED:', '', `NGN ${payment.amount.toLocaleString()}`]
+    ],
+    theme: 'grid',
+    headStyles: {
+      fillColor: [30, 58, 138],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      fontSize: 9
+    },
+    footStyles: {
+      fillColor: [241, 245, 249],
+      textColor: [30, 58, 138],
+      fontStyle: 'bold',
+      fontSize: 10
+    },
+    styles: {
+      fontSize: 8.5,
+      cellPadding: 3.5
+    },
+    columnStyles: {
+      0: { cellWidth: 10, halign: 'center' },
+      1: { cellWidth: 95 },
+      2: { cellWidth: 35, halign: 'center' },
+      3: { cellWidth: 35, halign: 'right', fontStyle: 'bold' }
+    }
+  });
+
+  const finalY = (doc as any).lastAutoTable?.finalY || 165;
+
+  // Student / Admin Notes
+  if (payment.studentNote || payment.adminNote) {
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(18, finalY + 6, pageWidth - 36, 18, 2, 2, 'FD');
+    doc.setFontSize(8);
+    doc.setTextColor(71, 85, 105);
+    if (payment.studentNote) {
+      doc.text(`Payer Note: "${payment.studentNote}"`, 22, finalY + 13);
+    }
+    if (payment.adminNote) {
+      doc.text(`Admin Feedback: "${payment.adminNote}"`, 22, finalY + 19);
+    }
+  }
+
+  // Verification & Signatures Section
+  const stampY = finalY + 30;
+  
+  // Left: Bursar / Admin Sign-off
+  doc.setDrawColor(148, 163, 184);
+  doc.line(22, stampY + 20, 80, stampY + 20);
+  doc.setTextColor(30, 58, 138);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.text("School Bursar / Finance Desk", 22, stampY + 25);
+  doc.setTextColor(100, 116, 139);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.text("Authorized Signature & Date", 22, stampY + 29);
+
+  // Right: Official Stamp Box
+  doc.setDrawColor(30, 58, 138);
+  doc.setLineWidth(1);
+  doc.roundedRect(pageWidth - 85, stampY, 65, 30, 3, 3);
+  doc.setTextColor(30, 58, 138);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.text("GOD'S HAND INT'L MODEL SCHOOL", pageWidth - 52.5, stampY + 8, { align: 'center' });
+  doc.setFontSize(7);
+  doc.setTextColor(180, 83, 9);
+  doc.text("★ OFFICIAL BURSARY SEAL ★", pageWidth - 52.5, stampY + 14, { align: 'center' });
+  doc.setTextColor(100, 116, 139);
+  doc.text(new Date().toLocaleDateString(), pageWidth - 52.5, stampY + 20, { align: 'center' });
+  doc.setFontSize(6.5);
+  doc.text("APATA, IBADAN • VERIFIED", pageWidth - 52.5, stampY + 25, { align: 'center' });
+
+  // Security Footer Barcode Note
+  doc.setFillColor(30, 58, 138);
+  doc.rect(14, 270, pageWidth - 28, 10, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(7);
+  doc.text(
+    `Security Audit ID: GHS-VERIFY-${payment.id} • Issued by God's Hand International Model School Bursary • Printed: ${new Date().toLocaleString()}`,
+    pageWidth / 2,
+    276,
+    { align: 'center' }
+  );
+
+  const cleanName = payment.studentName.replace(/[^a-zA-Z0-9]/g, '_');
+  doc.save(`Receipt_${cleanName}_${payment.id}.pdf`);
+}

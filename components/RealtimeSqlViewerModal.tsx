@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { copySupabaseSchemaSql, downloadSupabaseSchemaSql, SUPABASE_MASTER_SQL_SCHEMA } from '../utils/supabaseSqlExport';
+import { 
+  copySupabaseSchemaSql, 
+  downloadSupabaseSchemaSql, 
+  SUPABASE_MASTER_SQL_SCHEMA,
+  SUPABASE_ATTENDANCE_SQL,
+  copyAttendanceSql,
+  downloadAttendanceSql
+} from '../utils/supabaseSqlExport';
 
 interface RealtimeSqlViewerModalProps {
   isOpen: boolean;
@@ -10,10 +17,143 @@ export const RealtimeSqlViewerModal: React.FC<RealtimeSqlViewerModalProps> = ({
   isOpen,
   onClose
 }) => {
-  const [activeTab, setActiveTab] = useState<'all' | 'adminRealtime' | 'chatCalls'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'attendance' | 'videoRecordings' | 'adminRealtime' | 'chatCalls'>('all');
   const [copySuccess, setCopySuccess] = useState(false);
 
   if (!isOpen) return null;
+
+  // Specific SQL snippet for Video Recordings (Admin + 3 Spotlight cameras) & Bank Account Config
+  const VIDEO_RECORDINGS_SQL = `-- ==============================================================================
+-- GOD'S HAND MODEL SCHOOL - VIDEO RECORDINGS & BANK ACCOUNT SUPABASE SCHEMA
+-- Run this in your Supabase SQL Editor (https://supabase.com/dashboard/project/_/sql)
+-- Handles Admin Camera + 3 Participant Spotlight Recording Streams & Official Bank Config
+-- ==============================================================================
+
+-- 1. Call Recordings Table (Supports Admin broadcast + 3 spotlight participant cameras)
+CREATE TABLE IF NOT EXISTS public.call_recordings (
+  id TEXT PRIMARY KEY,                       -- e.g. 'REC-1725883200-cam1' or UUID
+  room_code TEXT NOT NULL,                   -- e.g. 'GHS-PTA-2026'
+  room_title TEXT NOT NULL,                  -- e.g. 'General PTA Assembly'
+  host_name TEXT NOT NULL,                   -- e.g. 'Proprietor / Admin'
+  camera_role TEXT NOT NULL CHECK (
+    camera_role IN ('admin', 'spotlight_1', 'spotlight_2', 'spotlight_3')
+  ),                                         -- 'admin' + 3 spotlight slots
+  camera_label TEXT NOT NULL,                -- e.g. 'Admin (Main Broadcast)', 'Participant Camera 1/3'
+  recorded_by_name TEXT NOT NULL,            -- Name of admin or user who initiated the recording
+  recorded_by_role TEXT NOT NULL DEFAULT 'ADMIN', -- 'ADMIN', 'TEACHER', 'PARENT', 'STUDENT'
+  duration_seconds INT NOT NULL DEFAULT 0,
+  blob_url TEXT,                             -- Direct video URL or Supabase Storage URL
+  file_size_bytes BIGINT NOT NULL DEFAULT 0,
+  mime_type TEXT NOT NULL DEFAULT 'video/webm',
+  download_file_name TEXT,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  metadata JSONB DEFAULT '{}'::jsonb
+);
+
+-- 2. School Bank Account & Fee Payment Configuration Table
+CREATE TABLE IF NOT EXISTS public.school_bank_account_config (
+  id TEXT PRIMARY KEY DEFAULT 'primary_account',
+  bank_name TEXT NOT NULL,
+  account_number TEXT NOT NULL,
+  account_name TEXT NOT NULL,
+  payment_instructions TEXT,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_by TEXT DEFAULT 'School Administrator'
+);
+
+-- Seed default bank account if not present
+INSERT INTO public.school_bank_account_config (id, bank_name, account_number, account_name, payment_instructions, updated_at, updated_by)
+VALUES (
+  'primary_account',
+  'First Bank of Nigeria',
+  '2034891120',
+  'God''s Hand International Model School',
+  'Pay directly via USSD, mobile bank app, or branch deposit. Use your child''s Name and Student ID as payment reference narration.',
+  timezone('utc'::text, now()),
+  'Initial Setup'
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- 3. High Performance Indexes
+CREATE INDEX IF NOT EXISTS idx_call_recordings_room ON public.call_recordings(room_code);
+CREATE INDEX IF NOT EXISTS idx_call_recordings_role ON public.call_recordings(camera_role);
+CREATE INDEX IF NOT EXISTS idx_call_recordings_created ON public.call_recordings(created_at DESC);
+
+-- 4. Enable Realtime Change Data Capture (CDC)
+ALTER TABLE public.call_recordings REPLICA IDENTITY FULL;
+ALTER TABLE public.school_bank_account_config REPLICA IDENTITY FULL;
+
+-- Ensure supabase_realtime publication exists and register tables
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
+END $$;
+
+DO $$
+DECLARE
+  t text;
+  tables text[] := ARRAY['call_recordings', 'school_bank_account_config'];
+BEGIN
+  FOREACH t IN ARRAY tables LOOP
+    BEGIN
+      EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE public.%I', t);
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+      WHEN undefined_table THEN NULL;
+    END;
+  END LOOP;
+END $$;
+
+-- 5. Row Level Security (RLS)
+ALTER TABLE public.call_recordings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.school_bank_account_config ENABLE ROW LEVEL SECURITY;
+
+-- Recordings RLS Policies
+DROP POLICY IF EXISTS "Public can view call recordings" ON public.call_recordings;
+CREATE POLICY "Public can view call recordings"
+  ON public.call_recordings FOR SELECT
+  USING (true);
+
+DROP POLICY IF EXISTS "Authenticated users or staff can insert recordings" ON public.call_recordings;
+CREATE POLICY "Authenticated users or staff can insert recordings"
+  ON public.call_recordings FOR INSERT
+  WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Admins can delete or manage recordings" ON public.call_recordings;
+CREATE POLICY "Admins can delete or manage recordings"
+  ON public.call_recordings FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- Bank Account RLS Policies
+DROP POLICY IF EXISTS "Anyone can read school bank account config" ON public.school_bank_account_config;
+CREATE POLICY "Anyone can read school bank account config"
+  ON public.school_bank_account_config FOR SELECT
+  USING (true);
+
+DROP POLICY IF EXISTS "Admins can update school bank account config" ON public.school_bank_account_config;
+CREATE POLICY "Admins can update school bank account config"
+  ON public.school_bank_account_config FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- 6. Optional: Supabase Storage Bucket for Video Recordings (.webm)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('call_recordings', 'call_recordings', true)
+ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "Public access to call recordings bucket" ON storage.objects;
+CREATE POLICY "Public access to call recordings bucket"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'call_recordings');
+
+DROP POLICY IF EXISTS "Allow upload to call recordings bucket" ON storage.objects;
+CREATE POLICY "Allow upload to call recordings bucket"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'call_recordings');
+`;
 
   // Specific SQL snippet for Admin Real-time Changes
   const ADMIN_REALTIME_SQL = `-- ==============================================================================
@@ -271,6 +411,8 @@ ON CONFLICT (id) DO NOTHING;
 
   const activeSqlToDisplay = 
     activeTab === 'all' ? SUPABASE_MASTER_SQL_SCHEMA :
+    activeTab === 'attendance' ? SUPABASE_ATTENDANCE_SQL :
+    activeTab === 'videoRecordings' ? VIDEO_RECORDINGS_SQL :
     activeTab === 'adminRealtime' ? ADMIN_REALTIME_SQL :
     CHAT_CALLS_SQL;
 
@@ -331,7 +473,31 @@ ON CONFLICT (id) DO NOTHING;
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            📋 Complete Master Schema (All 22 Tables)
+            📋 Complete Master Schema (All 23 Tables)
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('attendance')}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+              activeTab === 'attendance'
+                ? 'bg-blue-900 text-yellow-400 shadow-sm'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            📝 Attendance System SQL
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('videoRecordings')}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+              activeTab === 'videoRecordings'
+                ? 'bg-blue-900 text-yellow-400 shadow-sm'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            📹 Video Recordings (4 Cameras) & Bank Account SQL
           </button>
 
           <button
@@ -389,7 +555,13 @@ ON CONFLICT (id) DO NOTHING;
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
-              onClick={downloadSupabaseSchemaSql}
+              onClick={() => {
+                if (activeTab === 'attendance') {
+                  downloadAttendanceSql();
+                } else {
+                  downloadSupabaseSchemaSql();
+                }
+              }}
               className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-xs flex items-center gap-1.5"
             >
               <span>💾</span>

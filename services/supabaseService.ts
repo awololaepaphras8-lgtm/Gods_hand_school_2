@@ -783,6 +783,19 @@ export const setupRealtimeSync = (
         }));
         break;
 
+      case 'ACADEMIC_TERM_ADVANCED':
+        if (data && data.activeTerm) {
+          onStateUpdate(prev => ({
+            ...prev,
+            activeTerm: data.activeTerm,
+            studentAccounts: prev.studentAccounts.map(s => ({
+              ...s,
+              activeTerm: data.activeTerm
+            }))
+          }));
+        }
+        break;
+
       case 'FULL_STATE_REFRESH':
         if (data.state) {
           onStateUpdate(() => data.state);
@@ -1384,6 +1397,58 @@ export const setupRealtimeSync = (
               onStateUpdate(prev => ({
                 ...prev,
                 adminEvents: [mappedEv, ...(prev.adminEvents || [])]
+              }));
+            }
+            break;
+
+          case 'call_recordings':
+            if (eventType === 'INSERT' || eventType === 'UPDATE') {
+              const mappedRec = {
+                id: newRecord.id,
+                roomCode: newRecord.room_code,
+                roomTitle: newRecord.room_title,
+                hostName: newRecord.host_name,
+                cameraRole: newRecord.camera_role,
+                cameraLabel: newRecord.camera_label,
+                recordedByName: newRecord.recorded_by_name,
+                recordedByRole: newRecord.recorded_by_role,
+                durationSeconds: Number(newRecord.duration_seconds || 0),
+                blobUrl: newRecord.blob_url,
+                fileSizeBytes: Number(newRecord.file_size_bytes || 0),
+                mimeType: newRecord.mime_type || 'video/webm',
+                downloadFileName: newRecord.download_file_name,
+                createdAt: newRecord.created_at || new Date().toISOString()
+              };
+              onStateUpdate(prev => {
+                const list = prev.callRecordings || [];
+                const exists = list.some(r => r.id === mappedRec.id);
+                return {
+                  ...prev,
+                  callRecordings: exists
+                    ? list.map(r => r.id === mappedRec.id ? mappedRec : r)
+                    : [mappedRec, ...list]
+                };
+              });
+            } else if (eventType === 'DELETE' && oldRecord.id) {
+              onStateUpdate(prev => ({
+                ...prev,
+                callRecordings: (prev.callRecordings || []).filter(r => r.id !== oldRecord.id)
+              }));
+            }
+            break;
+
+          case 'school_bank_account_config':
+            if (newRecord && (newRecord.bank_name || newRecord.account_number)) {
+              onStateUpdate(prev => ({
+                ...prev,
+                bankAccountConfig: {
+                  bankName: newRecord.bank_name,
+                  accountNumber: newRecord.account_number,
+                  accountName: newRecord.account_name,
+                  paymentInstructions: newRecord.payment_instructions,
+                  updatedAt: newRecord.updated_at,
+                  updatedBy: newRecord.updated_by
+                }
               }));
             }
             break;
@@ -2173,6 +2238,26 @@ export const realtimeService = {
         });
       } catch (err) {
         console.error('Supabase broadcastAdminEvent failed:', err);
+      }
+    }
+  },
+
+  // Advance whole school academic term
+  advanceAcademicTerm: async (newTerm: 'First Term' | 'Second Term' | 'Third Term') => {
+    broadcastLocalChange({ type: 'ACADEMIC_TERM_ADVANCED', data: { activeTerm: newTerm } });
+
+    if (supabase) {
+      try {
+        await supabase.from('admin_realtime_events').insert({
+          id: 'EVT-' + Date.now(),
+          action: 'ACADEMIC_TERM_ADVANCED',
+          details: `School academic session advanced to ${newTerm}`,
+          performed_by: 'Proprietor (Admin)',
+          timestamp: new Date().toISOString()
+        });
+        await supabase.from('student_accounts').update({ active_term: newTerm }).neq('id', 'NONE');
+      } catch (err) {
+        console.error('Supabase advanceAcademicTerm failed:', err);
       }
     }
   }

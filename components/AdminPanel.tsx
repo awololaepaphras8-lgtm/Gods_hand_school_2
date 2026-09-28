@@ -30,6 +30,10 @@ import {
 } from '../utils/supabaseSqlExport';
 import { RealtimeSqlViewerModal } from './RealtimeSqlViewerModal';
 import { ProphDatabaseAuditorModal } from './ProphDatabaseAuditorModal';
+import { AcademicTrendsWidget } from './AcademicTrendsWidget';
+import { RecommendedCoursesLibrary } from './RecommendedCoursesLibrary';
+import { AdminBankAccountManager } from './AdminBankAccountManager';
+import { SchoolBankAccountConfig } from '../types';
 
 interface AdminPanelProps {
   fees: FeeStructure;
@@ -43,6 +47,8 @@ interface AdminPanelProps {
   parents?: ParentAccount[];
   calendar: string;
   payments: FeePayment[];
+  activeTerm?: 'First Term' | 'Second Term' | 'Third Term';
+  onAdvanceTerm?: (nextTerm: 'First Term' | 'Second Term' | 'Third Term') => void;
   resultPublishRequests?: ResultPublishRequest[];
   timedStaffDelegations?: TimedStaffDelegation[];
   userPagesAccess?: UserPagesAccessState;
@@ -80,6 +86,8 @@ interface AdminPanelProps {
   onApprovePublishRequest?: (requestId: string) => void;
   onRejectPublishRequest?: (requestId: string, feedback: string) => void;
   onBroadcastResultsToClass?: (grade: GradeLevel, term: string) => void;
+  bankAccountConfig?: SchoolBankAccountConfig;
+  onUpdateBankAccountConfig?: (config: SchoolBankAccountConfig) => void;
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ 
@@ -94,6 +102,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   parents = [],
   calendar,
   payments,
+  activeTerm = 'First Term',
+  onAdvanceTerm,
   resultPublishRequests = [],
   onUpdateFee,
   onUpdateAllFees,
@@ -124,9 +134,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   delegationExpiresAt,
   onExitDelegation,
   activeStaffName,
-  onNavigateToView
+  onNavigateToView,
+  bankAccountConfig,
+  onUpdateBankAccountConfig
 }) => {
-  const [activeTab, setActiveTab] = useState<'attendance' | 'payments' | 'resultPublish' | 'fees' | 'applications' | 'teachers' | 'courses' | 'calendar' | 'announcements' | 'access' | 'parents' | 'export' | 'delegations' | 'pageAccess'>('attendance');
+  const [activeTab, setActiveTab] = useState<'attendance' | 'academicTrends' | 'payments' | 'resultPublish' | 'fees' | 'bankAccount' | 'applications' | 'teachers' | 'courses' | 'calendar' | 'announcements' | 'access' | 'parents' | 'export' | 'delegations' | 'pageAccess'>('attendance');
   const [rejectModalRequestId, setRejectModalRequestId] = useState<string | null>(null);
   const [rejectFeedbackText, setRejectFeedbackText] = useState<string>('');
   const [delegationNow, setDelegationNow] = useState<Date>(new Date());
@@ -251,6 +263,63 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [targetDuplicateGrades, setTargetDuplicateGrades] = useState<GradeLevel[]>([]);
   const [courseFilterGrade, setCourseFilterGrade] = useState<string>('ALL');
 
+  // Admin Gate QR Pass Verification State
+  const [adminQrInput, setAdminQrInput] = useState('');
+  const [adminQrVerificationResult, setAdminQrVerificationResult] = useState<{
+    status: 'success' | 'warning' | 'error';
+    student?: StudentAccount;
+    message: string;
+    details?: string;
+  } | null>(null);
+
+  const handleVerifyStudentPass = (rawCode: string) => {
+    const code = rawCode.trim();
+    if (!code) return;
+
+    let targetId = code;
+    let passTerm: string = activeTerm || 'First Term';
+    if (code.includes('|')) {
+      const parts = code.split('|');
+      targetId = parts[1] || code;
+      if (parts[2]) passTerm = parts[2];
+    } else if (code.startsWith('GHS-ATT-')) {
+      const parts = code.split('-');
+      targetId = `${parts[2]}-${parts[3]}`;
+    }
+
+    const matched = students.find(s => 
+      s.id.toLowerCase() === targetId.toLowerCase() || 
+      s.email.toLowerCase() === targetId.toLowerCase() ||
+      s.name.toLowerCase() === targetId.toLowerCase()
+    );
+
+    if (!matched) {
+      setAdminQrVerificationResult({
+        status: 'error',
+        message: `Invalid Gate QR Pass: No student matching "${targetId}" found in database.`,
+        details: 'Check if student is enrolled or ID format is accurate.'
+      });
+      return;
+    }
+
+    if (matched.entryAllowed === false) {
+      setAdminQrVerificationResult({
+        status: 'warning',
+        student: matched,
+        message: `⛔ Entry Denied: ${matched.name} (${matched.grade}) gate clearance is blocked.`,
+        details: 'Student access has been paused by bursary/administration.'
+      });
+      return;
+    }
+
+    setAdminQrVerificationResult({
+      status: 'success',
+      student: matched,
+      message: `✓ Valid Gate QR Pass: ${matched.name} (${matched.grade}) is cleared for entry!`,
+      details: `Active Term: ${passTerm} • Student ID: ${matched.id}`
+    });
+  };
+
   const today = new Date().toLocaleDateString();
   const presentToday = attendance.filter(a => a.date === today);
 
@@ -339,9 +408,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   // Filter tabs if accessing through delegated staff credentials
   const allTabsConfig: { id: any; label: string; adminKey?: AdminSectionKey }[] = [
     { id: 'attendance', label: 'Attendance Hub', adminKey: 'attendance' },
+    { id: 'academicTrends', label: '📊 Academic Trends', adminKey: 'resultPublish' },
     { id: 'payments', label: `💳 Fee Verification (${payments.filter(p => p.status === 'pending').length} Pending)`, adminKey: 'payments' },
     { id: 'resultPublish', label: `📢 Result Releases (${resultPublishRequests.filter(r => r.status === 'pending').length} Pending)`, adminKey: 'resultPublish' },
     { id: 'fees', label: 'Fees Config', adminKey: 'fees' },
+    { id: 'bankAccount', label: '🏛️ Bank & Payment Account', adminKey: 'fees' },
     { id: 'applications', label: 'Admissions', adminKey: 'applications' },
     { id: 'teachers', label: 'Staff', adminKey: 'teachers' },
     { id: 'courses', label: 'Courses', adminKey: 'courses' },
@@ -433,6 +504,32 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           </div>
           {!allowedAdminSections && (
             <div className="flex flex-wrap items-center gap-2">
+              {/* Mandated Feature: Move whole app to next term from First, Second, Third */}
+              <button
+                type="button"
+                onClick={() => {
+                  const nextTerm: 'First Term' | 'Second Term' | 'Third Term' = 
+                    activeTerm === 'First Term' ? 'Second Term' :
+                    activeTerm === 'Second Term' ? 'Third Term' :
+                    'First Term';
+                  
+                  const confirmMsg = activeTerm === 'Third Term'
+                    ? "Advance whole school app from Third Term to First Term (New Academic Session)? All enrolled students will transition."
+                    : `Advance whole school app from ${activeTerm} to ${nextTerm}?`;
+                  
+                  if (window.confirm(confirmMsg)) {
+                    if (onAdvanceTerm) {
+                      onAdvanceTerm(nextTerm);
+                    }
+                  }
+                }}
+                className="flex items-center space-x-2 px-4 py-3 bg-emerald-600 hover:bg-emerald-500 text-white border-2 border-emerald-400 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg hover:scale-105 active:scale-95"
+                title={`Currently on ${activeTerm}. Click to move whole school to next academic term.`}
+              >
+                <span>🎓</span>
+                <span>Term: {activeTerm} ➔ Next</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setShowProphModal(true)}
@@ -515,6 +612,111 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                </div>
             </div>
 
+            {/* Mandated Gate QR Pass Verification Station: Strictly for Admin & Staff */}
+            <div className="bg-gradient-to-r from-blue-900 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl space-y-4 border-2 border-yellow-400/40">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-yellow-400 text-blue-950 flex items-center justify-center font-black text-2xl shadow-md">
+                    🔍
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-serif font-black text-xl text-yellow-400">
+                        Gate QR Pass Verification Station
+                      </h4>
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-wider">
+                        Staff & Admin Authorized
+                      </span>
+                    </div>
+                    <p className="text-xs text-blue-200 mt-0.5">
+                      Verify pupil and student digital gate passes, entry authorization status & fee clearance.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-right text-[11px] text-yellow-300/90 font-bold bg-white/10 px-3.5 py-1.5 rounded-xl border border-white/10">
+                  <span>Current Gate Session: <strong>{activeTerm}</strong></span>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  value={adminQrInput}
+                  onChange={e => setAdminQrInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      handleVerifyStudentPass(adminQrInput);
+                    }
+                  }}
+                  placeholder="Paste or scan Student ID / QR Code (e.g. GHS20268001 or GHS-ATT|...)"
+                  className="flex-1 px-5 py-3.5 bg-white/10 border-2 border-white/20 rounded-2xl text-xs sm:text-sm text-white placeholder-blue-300 font-mono focus:outline-none focus:border-yellow-400 transition-colors"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => handleVerifyStudentPass(adminQrInput)}
+                  className="px-6 py-3.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 shrink-0"
+                >
+                  <span>✓</span>
+                  <span>Verify Gate Pass</span>
+                </button>
+
+                {adminQrVerificationResult && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAdminQrInput('');
+                      setAdminQrVerificationResult(null);
+                    }}
+                    className="px-4 py-3.5 bg-white/10 hover:bg-white/20 text-white rounded-2xl text-xs font-bold transition-all shrink-0"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              {adminQrVerificationResult && (
+                <div className={`p-4 rounded-2xl border-2 transition-all ${
+                  adminQrVerificationResult.status === 'success'
+                    ? 'bg-emerald-950/80 border-emerald-400 text-emerald-100'
+                    : adminQrVerificationResult.status === 'warning'
+                    ? 'bg-amber-950/80 border-amber-400 text-amber-100'
+                    : 'bg-red-950/80 border-red-400 text-red-100'
+                }`}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-serif font-black text-sm sm:text-base">
+                        {adminQrVerificationResult.message}
+                      </p>
+                      {adminQrVerificationResult.details && (
+                        <p className="text-xs opacity-90 mt-1 font-mono">
+                          {adminQrVerificationResult.details}
+                        </p>
+                      )}
+                    </div>
+
+                    {adminQrVerificationResult.student && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const s = adminQrVerificationResult.student!;
+                          onToggleStudentEntry(s.id, !s.entryAllowed);
+                          setAdminQrVerificationResult(prev => prev ? {
+                            ...prev,
+                            message: `Updated: ${s.name} entry status toggled to ${!s.entryAllowed ? 'Allowed' : 'Blocked'}`
+                          } : null);
+                        }}
+                        className="px-3 py-1.5 bg-white text-blue-950 rounded-xl font-black text-xs uppercase tracking-wider shrink-0 hover:bg-yellow-300 transition-all"
+                      >
+                        Toggle Entry Clearance
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <h3 className="text-2xl font-black text-blue-900 font-serif">Live Attendance Database</h3>
             <p className="text-slate-500 text-sm font-medium mb-6 italic">Record of all students and pupils scanned present by staff today ({today}).</p>
 
@@ -570,6 +772,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'academicTrends' && (
+          <div className="space-y-8">
+            <AcademicTrendsWidget
+              results={results}
+              currentTerm={activeTerm}
+            />
           </div>
         )}
 
@@ -827,9 +1038,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             {/* Header & Primary Action Bar */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b-2 border-slate-100 pb-6">
               <div>
-                <h3 className="text-2xl font-black text-blue-900 font-serif">Academic Fee Structure & Tuition Setup</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-2xl font-black text-blue-900 font-serif">First Term Fee Structure & Tuition Setup</h3>
+                  <span className="px-3 py-1 bg-yellow-400 text-blue-950 font-black text-[10px] uppercase rounded-full tracking-wider shadow-xs">
+                    Current Active Schedule: First Term
+                  </span>
+                </div>
                 <p className="text-xs text-slate-500 font-bold mt-1">
-                  Configure and update official term tuition fees payable by students from Crèche to Senior Secondary (SS3).
+                  The tuition amounts shown below currently represent approved First Term fees payable by students from Crèche to Senior Secondary (SS3).
                 </p>
               </div>
 
@@ -949,6 +1165,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'bankAccount' && (
+          <div className="space-y-8">
+            <AdminBankAccountManager
+              currentConfig={bankAccountConfig}
+              onUpdateConfig={onUpdateBankAccountConfig || (() => {})}
+            />
           </div>
         )}
 
@@ -1269,9 +1494,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
         {activeTab === 'courses' && (
           <div className="space-y-12">
+            {/* Mandated Feature: Recommended Courses Catalog for Admin to Pick & Assign to Classes */}
+            <RecommendedCoursesLibrary
+              existingCourses={courses}
+              onAddCourse={(c) => onAddCourse(c.name, c.grade, c.description)}
+            />
+
             <div className="grid lg:grid-cols-2 gap-12">
               <div>
-                <h3 className="text-2xl font-black text-blue-900 mb-6 font-serif">Add Subject to Class</h3>
+                <h3 className="text-2xl font-black text-blue-900 mb-6 font-serif">Custom Subject / Class Manual Entry</h3>
                 <form onSubmit={handleCourseSubmit} className="space-y-6 bg-slate-50 p-8 rounded-[2.5rem] border-2 border-slate-100 shadow-sm">
                   <div>
                     <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Subject Name</label>

@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS public.admin_accounts (
   email TEXT UNIQUE NOT NULL,
   full_name TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'ADMIN',
-  security_key TEXT NOT NULL DEFAULT '197005',
+  security_key TEXT NOT NULL DEFAULT '21df605dbc7d7cc39343a2deedec28140c6b1a5771bc244fe6885ab89122d16a',
   proph_verified BOOLEAN DEFAULT TRUE NOT NULL,
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
@@ -330,6 +330,34 @@ CREATE TABLE IF NOT EXISTS public.admin_realtime_events (
   timestamp TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS public.call_recordings (
+  id TEXT PRIMARY KEY,
+  room_code TEXT NOT NULL,
+  room_title TEXT NOT NULL,
+  host_name TEXT NOT NULL,
+  camera_role TEXT NOT NULL CHECK (camera_role IN ('admin', 'spotlight_1', 'spotlight_2', 'spotlight_3')),
+  camera_label TEXT NOT NULL,
+  recorded_by_name TEXT NOT NULL,
+  recorded_by_role TEXT NOT NULL DEFAULT 'ADMIN',
+  duration_seconds INT NOT NULL DEFAULT 0,
+  blob_url TEXT,
+  file_size_bytes BIGINT NOT NULL DEFAULT 0,
+  mime_type TEXT NOT NULL DEFAULT 'video/webm',
+  download_file_name TEXT,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  metadata JSONB DEFAULT '{}'::jsonb
+);
+
+CREATE TABLE IF NOT EXISTS public.school_bank_account_config (
+  id TEXT PRIMARY KEY DEFAULT 'primary_account',
+  bank_name TEXT NOT NULL,
+  account_number TEXT NOT NULL,
+  account_name TEXT NOT NULL,
+  payment_instructions TEXT,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_by TEXT DEFAULT 'School Administrator'
+);
+
 -- PHASE 3: SAFE COLUMN UPGRADES & CONSTRAINT MIGRATIONS
 DO $$
 BEGIN
@@ -576,7 +604,21 @@ CREATE POLICY "Anyone can read admin realtime events" ON public.admin_realtime_e
 DROP POLICY IF EXISTS "Admins can insert realtime events" ON public.admin_realtime_events;
 CREATE POLICY "Admins can insert realtime events" ON public.admin_realtime_events FOR INSERT WITH CHECK (true);
 
--- PHASE 7: SUPABASE REALTIME CONFIGURATION (ALL 23 TABLES)
+ALTER TABLE public.call_recordings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public can view call recordings" ON public.call_recordings;
+CREATE POLICY "Public can view call recordings" ON public.call_recordings FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Authenticated users or staff can insert recordings" ON public.call_recordings;
+CREATE POLICY "Authenticated users or staff can insert recordings" ON public.call_recordings FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Admins can delete or manage recordings" ON public.call_recordings;
+CREATE POLICY "Admins can delete or manage recordings" ON public.call_recordings FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE public.school_bank_account_config ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can read school bank account config" ON public.school_bank_account_config;
+CREATE POLICY "Anyone can read school bank account config" ON public.school_bank_account_config FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Admins can update school bank account config" ON public.school_bank_account_config;
+CREATE POLICY "Admins can update school bank account config" ON public.school_bank_account_config FOR ALL USING (true) WITH CHECK (true);
+
+-- PHASE 7: SUPABASE REALTIME CONFIGURATION (ALL 25 TABLES)
 ALTER TABLE public.profiles REPLICA IDENTITY FULL;
 ALTER TABLE public.students REPLICA IDENTITY FULL;
 ALTER TABLE public.parents REPLICA IDENTITY FULL;
@@ -600,6 +642,8 @@ ALTER TABLE public.chat_messages REPLICA IDENTITY FULL;
 ALTER TABLE public.meetings REPLICA IDENTITY FULL;
 ALTER TABLE public.call_sessions REPLICA IDENTITY FULL;
 ALTER TABLE public.admin_realtime_events REPLICA IDENTITY FULL;
+ALTER TABLE public.call_recordings REPLICA IDENTITY FULL;
+ALTER TABLE public.school_bank_account_config REPLICA IDENTITY FULL;
 
 DO $$
 DECLARE
@@ -609,7 +653,8 @@ DECLARE
     'fee_payments', 'attendance_records', 'student_results', 'teacher_accounts', 
     'courses', 'announcements', 'admissions', 'school_calendar',
     'result_publish_requests', 'timed_staff_delegations', 'user_pages_access', 'timetables',
-    'parent_staff_messages', 'chat_channels', 'chat_messages', 'meetings', 'call_sessions', 'admin_realtime_events'
+    'parent_staff_messages', 'chat_channels', 'chat_messages', 'meetings', 'call_sessions', 'admin_realtime_events',
+    'call_recordings', 'school_bank_account_config'
   ];
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
@@ -691,7 +736,7 @@ ON CONFLICT (id) DO UPDATE SET content = EXCLUDED.content;
 
 INSERT INTO public.admin_accounts (id, username, email, full_name, role, security_key, proph_verified)
 VALUES
-  ('pro01', 'pro01', 'Godshandschool70@gmail.com', 'School Proprietor & Chief Administrator', 'ADMIN', '197005', TRUE)
+  ('pro01', 'pro01', 'Godshandschool70@gmail.com', 'School Proprietor & Chief Administrator', 'ADMIN', '21df605dbc7d7cc39343a2deedec28140c6b1a5771bc244fe6885ab89122d16a', TRUE)
 ON CONFLICT (id) DO UPDATE SET 
   username = EXCLUDED.username,
   email = EXCLUDED.email,
@@ -813,3 +858,122 @@ export const copySupabaseSchemaSql = async (): Promise<boolean> => {
     return false;
   }
 };
+
+/**
+ * Clean, production-ready Supabase SQL script specifically for the School Attendance System
+ */
+export const SUPABASE_ATTENDANCE_SQL = `-- ==============================================================================
+-- GOD'S HAND INTERNATIONAL MODEL SCHOOL - ATTENDANCE REALTIME SQL SCHEMA
+-- Wire & Cable, Apata, Ibadan • Have Faith In God
+-- Paste this directly into your Supabase SQL Editor (https://supabase.com/dashboard/project/_/sql)
+-- ==============================================================================
+
+-- 1. Enable Required Extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- 2. Attendance Records Table (Matches App & Staff Roll Call Checklist)
+CREATE TABLE IF NOT EXISTS public.attendance_records (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  student_id TEXT NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
+  student_name TEXT,
+  grade TEXT,
+  date TEXT NOT NULL,                                                    -- Formatted date e.g. '28/09/2026' or '9/28/2026'
+  term TEXT DEFAULT 'First Term' NOT NULL,                               -- 'First Term', 'Second Term', 'Third Term'
+  marked_by TEXT NOT NULL,                                               -- Teacher username or 'Gate Scanner'
+  status TEXT DEFAULT 'present' CHECK (status IN ('present', 'absent', 'late', 'excused')),
+  method TEXT DEFAULT 'manual_roll' CHECK (method IN ('manual_roll', 'gate_scanner', 'rfid_card', 'batch_checklist')),
+  scanned_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  CONSTRAINT uq_daily_attendance UNIQUE(student_id, date, term)
+);
+
+-- 3. Performance Indexes for Instant Queries
+CREATE INDEX IF NOT EXISTS idx_attendance_student ON public.attendance_records(student_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_date ON public.attendance_records(date);
+CREATE INDEX IF NOT EXISTS idx_attendance_term ON public.attendance_records(term);
+CREATE INDEX IF NOT EXISTS idx_attendance_grade ON public.attendance_records(grade);
+CREATE INDEX IF NOT EXISTS idx_attendance_scanned_at ON public.attendance_records(scanned_at DESC);
+
+-- 4. Enable Row Level Security (RLS)
+ALTER TABLE public.attendance_records ENABLE ROW LEVEL SECURITY;
+
+-- Drop previous policies to prevent duplicates
+DROP POLICY IF EXISTS "Public read attendance" ON public.attendance_records;
+DROP POLICY IF EXISTS "Public insert attendance" ON public.attendance_records;
+DROP POLICY IF EXISTS "Public update attendance" ON public.attendance_records;
+DROP POLICY IF EXISTS "Public delete attendance" ON public.attendance_records;
+
+-- Full CRUD policies allowing instant synchronization across Staff, Parent, Student, and Admin panels
+CREATE POLICY "Public read attendance" ON public.attendance_records
+  FOR SELECT USING (true);
+
+CREATE POLICY "Public insert attendance" ON public.attendance_records
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Public update attendance" ON public.attendance_records
+  FOR UPDATE USING (true);
+
+CREATE POLICY "Public delete attendance" ON public.attendance_records
+  FOR DELETE USING (true);
+
+-- 5. Enable Realtime Change Data Capture (CDC)
+ALTER TABLE public.attendance_records REPLICA IDENTITY FULL;
+
+-- Register in supabase_realtime publication
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.attendance_records;
+  EXCEPTION
+    WHEN duplicate_object THEN NULL;
+    WHEN undefined_table THEN NULL;
+  END;
+END $$;
+
+-- 6. Attendance Summary View (Daily Class Roll Rate)
+CREATE OR REPLACE VIEW public.v_daily_attendance_summary AS
+SELECT 
+  date,
+  term,
+  grade,
+  COUNT(DISTINCT student_id) as total_present,
+  MAX(scanned_at) as last_marked_at
+FROM public.attendance_records
+GROUP BY date, term, grade
+ORDER BY MAX(scanned_at) DESC;
+`;
+
+export const copyAttendanceSql = async (): Promise<boolean> => {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(SUPABASE_ATTENDANCE_SQL);
+      return true;
+    }
+    const textArea = document.createElement('textarea');
+    textArea.value = SUPABASE_ATTENDANCE_SQL;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    return successful;
+  } catch (err) {
+    console.error('Failed to copy Attendance SQL to clipboard:', err);
+    return false;
+  }
+};
+
+export const downloadAttendanceSql = (): void => {
+  triggerDownload(
+    'gods_hand_school_attendance_schema.sql',
+    SUPABASE_ATTENDANCE_SQL,
+    'application/sql;charset=utf-8;'
+  );
+};
+

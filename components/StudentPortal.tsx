@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FeeStructure, GradeLevel, FeePayment, PaymentType } from '../types';
-import { GRADE_GROUPS } from '../constants';
+import { FeeStructure, GradeLevel, FeePayment, PaymentType, SchoolBankAccountConfig } from '../types';
+import { GRADE_GROUPS, DEFAULT_BANK_ACCOUNT_CONFIG } from '../constants';
 
 interface StudentPortalProps {
   fees: FeeStructure;
@@ -11,6 +11,7 @@ interface StudentPortalProps {
   onSubmit: (payment: Omit<FeePayment, 'id' | 'date'>) => FeePayment;
   onBack: () => void;
   onGoToReceipts?: () => void;
+  bankAccountConfig?: SchoolBankAccountConfig;
 }
 
 export const StudentPortal: React.FC<StudentPortalProps> = ({ 
@@ -21,8 +22,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   currentStudentGrade,
   onSubmit, 
   onBack,
-  onGoToReceipts
+  onGoToReceipts,
+  bankAccountConfig = DEFAULT_BANK_ACCOUNT_CONFIG
 }) => {
+  const activeBank = bankAccountConfig || DEFAULT_BANK_ACCOUNT_CONFIG;
   // Step state: 'form' -> 'payment' (bank instructions) -> 'receipt_upload' (upload proof page) -> 'review_notice' ("Payment is being reviewed by the proprietor")
   const [step, setStep] = useState<'form' | 'payment' | 'receipt_upload' | 'review_notice'>('form');
   const [name, setName] = useState(currentStudentName || '');
@@ -36,7 +39,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   const [receiptFileName, setReceiptFileName] = useState<string>('');
   const [receiptFileType, setReceiptFileType] = useState<string>('');
   const [payerName, setPayerName] = useState(currentStudentName || '');
-  const [bankName, setBankName] = useState('First Bank of Nigeria');
+  const [bankName, setBankName] = useState(activeBank.bankName || 'First Bank of Nigeria');
   const [transactionRef, setTransactionRef] = useState('');
   const [studentNote, setStudentNote] = useState('');
   const [uploadError, setUploadError] = useState('');
@@ -312,7 +315,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 <p className="text-[10px] font-black uppercase text-yellow-400 tracking-wider">
                   Bank Name
                 </p>
-                <p className="text-base font-black">First Bank of Nigeria</p>
+                <p className="text-base font-black">{activeBank.bankName}</p>
               </div>
               <span className="px-2.5 py-1 bg-yellow-400 text-blue-950 font-black text-[9px] uppercase rounded-lg">
                 Official Account
@@ -323,7 +326,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               <p className="text-[10px] font-black uppercase text-yellow-400 tracking-wider">
                 Account Name
               </p>
-              <p className="text-sm font-bold">God's Hand International Model School</p>
+              <p className="text-sm font-bold">{activeBank.accountName}</p>
             </div>
 
             <div className="pt-2 border-t border-white/20 flex justify-between items-end">
@@ -332,7 +335,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   Account Number
                 </p>
                 <p className="text-2xl font-mono font-black text-yellow-300 tracking-wider">
-                  2041982731
+                  {activeBank.accountNumber}
                 </p>
               </div>
               <div className="text-right">
@@ -342,6 +345,12 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 </p>
               </div>
             </div>
+
+            {activeBank.paymentInstructions && (
+              <div className="p-2.5 bg-black/30 rounded-xl text-[10px] text-yellow-200 italic border border-white/10">
+                <strong>Transfer Guidance:</strong> {activeBank.paymentInstructions}
+              </div>
+            )}
           </div>
 
           {/* Summary pill */}

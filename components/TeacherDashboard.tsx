@@ -6,6 +6,7 @@ import { Html5QrcodeScanner } from 'html5-qrcode';
 import { StandardReportCard } from './StandardReportCard';
 import { computeClassRankings, computeSubjectRankings, formatOrdinal } from '../utils/ranking';
 import { ClassTimetableManager } from './ClassTimetableManager';
+import { AcademicTrendsWidget } from './AcademicTrendsWidget';
 
 interface TeacherDashboardProps {
   username: string;
@@ -14,6 +15,7 @@ interface TeacherDashboardProps {
   courses: Course[];
   results: StudentResult[];
   attendance: AttendanceRecord[];
+  currentTerm?: string;
   calendar?: string;
   announcements?: Announcement[];
   allowedPages?: StaffPagePermission[];
@@ -44,6 +46,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   courses,
   results,
   attendance,
+  currentTerm = 'First Term',
   calendar,
   announcements = [],
   allowedPages,
@@ -144,7 +147,12 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const [isSubmittingAttendance, setIsSubmittingAttendance] = useState(false);
 
   // Students in selected checklist class
+  const [checklistSearch, setChecklistSearch] = useState<string>('');
   const checklistClassStudents = allStudents.filter(s => s.grade === checklistClass);
+  const displayedChecklistStudents = checklistClassStudents.filter(s => 
+    s.name.toLowerCase().includes(checklistSearch.toLowerCase()) || 
+    s.id.toLowerCase().includes(checklistSearch.toLowerCase())
+  );
 
   // Synchronize checkedStudentIds with attendance state when class, date, or term changes
   useEffect(() => {
@@ -229,24 +237,24 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
       );
       
       scanner.render((decodedText) => {
-        if (decodedText.startsWith('GHS-ATT')) {
-          let actualId = '';
-          let recordTerm = scannerTerm;
+        let actualId = decodedText.trim();
+        let recordTerm = scannerTerm;
 
+        if (decodedText.startsWith('GHS-ATT')) {
           if (decodedText.includes('|')) {
             const parts = decodedText.split('|');
-            // Format: GHS-ATT|STU-12345|First Term|1700000000
-            actualId = parts[1];
+            // Format: GHS-ATT|GHS20268001|First Term|PASS
+            actualId = (parts[1] || '').trim();
             if (parts[2]) {
-              recordTerm = parts[2];
+              recordTerm = parts[2].trim();
             }
           } else if (decodedText.startsWith('GHS-ATT-')) {
             const parts = decodedText.split('-');
-            // Format: GHS-ATT-STU-TIMESTAMP-VERSION
             actualId = `${parts[2]}-${parts[3]}`;
           }
-          
-          const student = allStudents.find(s => s.id === actualId);
+        }
+        
+        const student = allStudents.find(s => s.id === actualId || s.id.toUpperCase() === actualId.toUpperCase());
           if (student) {
             const success = onMarkAttendance(actualId, recordTerm);
             if (success) {
@@ -260,7 +268,6 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
             setLastScanned("Error: Invalid Student ID");
             setTimeout(() => setLastScanned(null), 3000);
           }
-        }
       }, (error) => {
         // Handle scanning errors silently
       });
@@ -579,6 +586,16 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
               </div>
             </div>
 
+            {/* Academic Trends Recharts Visualization */}
+            <div className="md:col-span-4">
+              <AcademicTrendsWidget
+                results={results}
+                assignedGrades={assignedGrades}
+                currentTerm={currentTerm}
+                isStaffView={true}
+              />
+            </div>
+
             {/* Live Academic Calendar & Notices */}
             <div className="md:col-span-4 grid lg:grid-cols-12 gap-8 mt-2">
               <div className="lg:col-span-7 bg-white p-8 rounded-3xl border-2 border-blue-100 space-y-4">
@@ -817,13 +834,25 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
                 {/* Interactive Checklist of Students */}
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-black text-slate-500 uppercase tracking-wider">
-                      Student Roll Register: Click any row or checkbox to mark Present / Absent
-                    </p>
-                    <span className="text-xs font-bold text-blue-900">
-                      {checkedStudentIds.length} of {checklistClassStudents.length} Selected
-                    </span>
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="relative w-full sm:w-80">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+                      <input
+                        type="text"
+                        value={checklistSearch}
+                        onChange={(e) => setChecklistSearch(e.target.value)}
+                        placeholder="Search pupil by name or ID..."
+                        className="w-full pl-9 pr-4 py-2.5 bg-white border-2 border-slate-200 rounded-2xl text-xs font-bold text-blue-950 outline-none focus:border-blue-900 shadow-xs"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                      <p className="text-xs font-black text-slate-500 uppercase tracking-wider hidden sm:block">
+                        Click row, checkbox or button to mark Present
+                      </p>
+                      <span className="text-xs font-bold text-blue-900 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100">
+                        {checkedStudentIds.length} of {checklistClassStudents.length} Marked Present
+                      </span>
+                    </div>
                   </div>
 
                   {checklistClassStudents.length === 0 ? (
@@ -834,9 +863,20 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                         Students added to this class will appear here automatically for morning attendance check-listing.
                       </p>
                     </div>
+                  ) : displayedChecklistStudents.length === 0 ? (
+                    <div className="p-12 text-center bg-slate-50 rounded-3xl border border-slate-200">
+                      <p className="font-bold text-slate-500 text-sm">No pupils match "{checklistSearch}" in {checklistClass}</p>
+                      <button
+                        type="button"
+                        onClick={() => setChecklistSearch('')}
+                        className="mt-2 text-xs font-black text-blue-900 underline uppercase"
+                      >
+                        Clear Search Filter
+                      </button>
+                    </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {checklistClassStudents.map((student) => {
+                      {displayedChecklistStudents.map((student) => {
                         const isChecked = checkedStudentIds.includes(student.id);
                         return (
                           <div
@@ -850,11 +890,11 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                           >
                             <div className="flex items-center space-x-3">
                               {/* Checkbox input */}
-                              <div className="shrink-0">
+                              <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
                                 <input
                                   type="checkbox"
                                   checked={isChecked}
-                                  onChange={() => {}} // Handled by container onClick
+                                  onChange={() => toggleStudentCheck(student.id)}
                                   className="w-5 h-5 rounded-md text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600"
                                 />
                               </div>
@@ -877,16 +917,22 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                               </div>
                             </div>
 
-                            {/* Status Pill */}
-                            <div className="shrink-0 pl-2">
-                              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 ${
-                                isChecked
-                                  ? 'bg-emerald-200 text-emerald-950'
-                                  : 'bg-slate-100 text-slate-400'
-                              }`}>
-                                <span>{isChecked ? '✓' : '✗'}</span>
-                                <span>{isChecked ? 'Present' : 'Absent'}</span>
-                              </span>
+                            {/* Status & Quick Toggle Button */}
+                            <div className="flex items-center gap-2 shrink-0 pl-2">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleStudentCheck(student.id);
+                                }}
+                                className={`px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all shadow-xs active:scale-95 flex items-center gap-1 ${
+                                  isChecked
+                                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                    : 'bg-slate-100 hover:bg-yellow-400 text-slate-700 hover:text-blue-950 border border-slate-200'
+                                }`}
+                              >
+                                <span>{isChecked ? '✓ Present' : '+ Mark Present'}</span>
+                              </button>
                             </div>
                           </div>
                         );
@@ -1053,6 +1099,37 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                                   </div>
                                 </div>
                                 <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                                  {/* Today Attendance Quick Checkmark */}
+                                  <div className="flex items-center">
+                                    {(() => {
+                                      const todayStr = new Date().toLocaleDateString();
+                                      const isPresentToday = attendance.some(a => a.studentId === student.id && a.date === todayStr);
+                                      return isPresentToday ? (
+                                        <span className="px-3 py-1.5 bg-emerald-100 text-emerald-800 rounded-xl text-[11px] font-black uppercase flex items-center gap-1 shadow-xs border border-emerald-200">
+                                          <span>✓</span>
+                                          <span>Present Today</span>
+                                        </span>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const ok = onMarkAttendance(student.id, currentTerm);
+                                            if (ok) {
+                                              alert(`✓ Success: ${student.name} marked Present for today (${todayStr})!`);
+                                            } else {
+                                              alert(`${student.name} is already marked present for today.`);
+                                            }
+                                          }}
+                                          className="px-3 py-1.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all shadow-xs flex items-center gap-1 active:scale-95"
+                                          title="Check mark student present for today"
+                                        >
+                                          <span>✓</span>
+                                          <span>Mark Present</span>
+                                        </button>
+                                      );
+                                    })()}
+                                  </div>
+
                                   <div className="text-left sm:text-right">
                                     <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">Enrolled</p>
                                     <p className="text-xs font-bold text-blue-900">{new Date(student.createdAt).toLocaleDateString()}</p>

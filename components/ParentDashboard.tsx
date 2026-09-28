@@ -8,9 +8,10 @@ import {
   StudentResult, 
   GradeLevel, 
   PaymentType,
-  Announcement 
+  Announcement,
+  SchoolBankAccountConfig
 } from '../types';
-import { GRADE_GROUPS } from '../constants';
+import { GRADE_GROUPS, DEFAULT_BANK_ACCOUNT_CONFIG } from '../constants';
 import { QRCodeSVG } from 'qrcode.react';
 import { StandardReportCard } from './StandardReportCard';
 
@@ -32,6 +33,7 @@ interface ParentDashboardProps {
   onGoToReceipts?: () => void;
   onMessageTeacher?: (studentId?: string, grade?: GradeLevel) => void;
   onGoToCommunity?: () => void;
+  bankAccountConfig?: SchoolBankAccountConfig;
 }
 
 export const ParentDashboard: React.FC<ParentDashboardProps> = ({
@@ -51,8 +53,10 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   onLogout,
   onGoToReceipts,
   onMessageTeacher,
-  onGoToCommunity
+  onGoToCommunity,
+  bankAccountConfig = DEFAULT_BANK_ACCOUNT_CONFIG
 }) => {
+  const activeBank = bankAccountConfig || DEFAULT_BANK_ACCOUNT_CONFIG;
   const today = new Date().toLocaleDateString();
 
   // Selected child for deep-dive inspection (Attendance & Gate Scan / Results / Details)
@@ -1181,14 +1185,19 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
                   {/* Official School Bank Account Details */}
                   <div className="p-4 bg-yellow-50 rounded-2xl border border-yellow-200 text-xs space-y-1.5 text-blue-950">
-                    <p className="font-black text-blue-900 uppercase text-[11px]">
-                      🏛️ Official School Bank Account Details
-                    </p>
-                    <p><strong>Bank:</strong> First Bank of Nigeria</p>
-                    <p><strong>Account Name:</strong> God's Hand International Model School</p>
-                    <p><strong>Account Number:</strong> <span className="text-sm font-black text-blue-900">2041982731</span></p>
+                    <div className="flex items-center justify-between">
+                      <p className="font-black text-blue-900 uppercase text-[11px]">
+                        🏛️ Official School Bank Account Details
+                      </p>
+                      <span className="px-2 py-0.5 bg-yellow-400 text-blue-950 font-black text-[9px] uppercase rounded-md">
+                        Official Bursary
+                      </span>
+                    </div>
+                    <p><strong>Bank:</strong> {activeBank.bankName}</p>
+                    <p><strong>Account Name:</strong> {activeBank.accountName}</p>
+                    <p><strong>Account Number:</strong> <span className="text-sm font-black text-blue-900 font-mono tracking-wider">{activeBank.accountNumber}</span></p>
                     <p className="text-[10px] text-slate-500 italic">
-                      Please make the direct transfer or cash deposit using your child's name as the description, then proceed to upload receipt proof.
+                      {activeBank.paymentInstructions || "Please make the direct transfer or cash deposit using your child's name as the description, then proceed to upload receipt proof."}
                     </p>
                   </div>
 

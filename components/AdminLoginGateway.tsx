@@ -7,6 +7,7 @@ import {
   recordFailedAttempt, 
   resetFailedAttempts 
 } from '../utils/securityGuard';
+import { verifyAdminSecurityKey, setAdminSecurityKeyHash } from '../utils/adminSecurity';
 
 interface AdminLoginGatewayProps {
   onLogin: (email: string, password: string) => void;
@@ -111,8 +112,8 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
     const normalizedCode = recoveryCode.trim().toUpperCase();
     const isValidRecovery = 
       normalizedCode === 'GHIMS-PROPRIETOR-2026' || 
-      normalizedCode === '197005' ||
-      normalizedCode === 'GODSHAND-RECOVER';
+      normalizedCode === 'GODSHAND-RECOVER' ||
+      verifyAdminSecurityKey(recoveryCode);
 
     if (!isValidRecovery) {
       setRecoveryError('Invalid Recovery Passcode. Please contact the Proprietor Desk directly.');
@@ -129,11 +130,10 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
       return;
     }
 
-    // Update in application state/storage
+    // Securely update in application state/storage with zero-knowledge hash
+    setAdminSecurityKeyHash(newKey);
     if (onResetKey) {
       onResetKey(newKey);
-    } else {
-      localStorage.setItem('ghs_admin_key', newKey);
     }
 
     setRecoverySuccess(true);
@@ -391,11 +391,11 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
                         required
                         value={recoveryCode}
                         onChange={(e) => setRecoveryCode(e.target.value)}
-                        placeholder="Default master phrase or 197005"
+                        placeholder="Master phrase or current key"
                         className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-900 outline-none focus:border-blue-900"
                       />
                       <p className="text-[9px] text-slate-400 italic">
-                        Tip: Initial default master recovery code is 197005 or GHIMS-PROPRIETOR-2026
+                        Tip: Enter master recovery passphrase or contact the Proprietor Desk.
                       </p>
                     </div>
 

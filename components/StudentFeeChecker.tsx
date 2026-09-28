@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { FeeStructure, StudentAccount, FeePayment, GradeLevel } from '../types';
-import { GRADE_GROUPS } from '../constants';
+import { FeeStructure, StudentAccount, FeePayment, GradeLevel, SchoolBankAccountConfig } from '../types';
+import { GRADE_GROUPS, DEFAULT_BANK_ACCOUNT_CONFIG } from '../constants';
 
 interface StudentFeeCheckerProps {
   fees: FeeStructure;
@@ -12,6 +12,7 @@ interface StudentFeeCheckerProps {
   onPayFees: () => void;
   onBack: () => void;
   onGoToRegister?: () => void;
+  bankAccountConfig?: SchoolBankAccountConfig;
 }
 
 export const StudentFeeChecker: React.FC<StudentFeeCheckerProps> = ({
@@ -23,8 +24,10 @@ export const StudentFeeChecker: React.FC<StudentFeeCheckerProps> = ({
   onLogin,
   onPayFees,
   onBack,
-  onGoToRegister
+  onGoToRegister,
+  bankAccountConfig = DEFAULT_BANK_ACCOUNT_CONFIG
 }) => {
+  const activeBank = bankAccountConfig || DEFAULT_BANK_ACCOUNT_CONFIG;
   const [loginInput, setLoginInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -207,8 +210,13 @@ export const StudentFeeChecker: React.FC<StudentFeeCheckerProps> = ({
                     </div>
                     <div className="p-5 bg-yellow-50 rounded-2xl border border-yellow-200 flex justify-between items-center">
                       <div>
-                        <p className="text-xs font-black text-yellow-900">{selectedFeePreviewGrade} Term Fee</p>
-                        <p className="text-[10px] text-yellow-700 font-bold">Standard tuition & academic levies</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs font-black text-yellow-900">{selectedFeePreviewGrade} First Term Fee</p>
+                          <span className="px-2 py-0.5 bg-yellow-400 text-blue-950 font-black text-[9px] uppercase rounded-full">
+                            First Term
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-yellow-700 font-bold">Standard tuition & academic levies for 1st term</p>
                       </div>
                       <p className="text-2xl font-black text-blue-900 font-serif">
                         ₦{(fees[selectedFeePreviewGrade] || 0).toLocaleString()}
@@ -220,9 +228,14 @@ export const StudentFeeChecker: React.FC<StudentFeeCheckerProps> = ({
 
               {/* Master School Fee Schedule Table */}
               <div className="mt-10">
-                <h3 className="text-xl font-black text-blue-900 font-serif mb-4">
-                  Master Approved Fee Schedule by Division
-                </h3>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                  <h3 className="text-xl font-black text-blue-900 font-serif">
+                    Master Approved First Term Fee Schedule by Division
+                  </h3>
+                  <span className="px-3 py-1 bg-yellow-100 text-blue-900 font-black text-[10px] uppercase rounded-full self-start sm:self-auto">
+                    Active Schedule: First Term
+                  </span>
+                </div>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {GRADE_GROUPS.map(group => (
                     <div key={group.name} className="p-6 bg-slate-50 rounded-2xl border border-slate-200">
@@ -237,6 +250,34 @@ export const StudentFeeChecker: React.FC<StudentFeeCheckerProps> = ({
                       </div>
                     </div>
                   ))}
+                </div>
+
+                {/* Official School Bank Account Details Card */}
+                <div className="mt-8 bg-gradient-to-r from-blue-950 to-blue-900 rounded-3xl p-6 sm:p-8 text-white border-2 border-yellow-400 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div className="space-y-1">
+                    <span className="px-2.5 py-0.5 bg-yellow-400 text-blue-950 font-black text-[9px] uppercase tracking-wider rounded-md inline-block">
+                      Official Bursary Account
+                    </span>
+                    <h4 className="text-lg sm:text-xl font-serif font-black text-white">
+                      Direct Fee Remittance Bank Account
+                    </h4>
+                    <p className="text-xs text-blue-200">
+                      Bank: <strong className="text-yellow-300 font-bold">{activeBank.bankName}</strong> • Account: <strong className="text-white font-bold">{activeBank.accountName}</strong>
+                    </p>
+                    {activeBank.paymentInstructions && (
+                      <p className="text-[11px] text-slate-300 italic pt-1">
+                        {activeBank.paymentInstructions}
+                      </p>
+                    )}
+                  </div>
+                  <div className="bg-blue-900/80 p-4 rounded-2xl border border-white/20 text-center md:text-right shrink-0">
+                    <span className="text-[10px] font-black uppercase text-yellow-400 block tracking-wider">
+                      Account Number (NUBAN)
+                    </span>
+                    <span className="text-2xl sm:text-3xl font-mono font-black text-yellow-300 tracking-widest block">
+                      {activeBank.accountNumber}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

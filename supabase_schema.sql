@@ -354,6 +354,36 @@ CREATE TABLE IF NOT EXISTS public.admin_realtime_events (
   timestamp TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- 24. Call Recordings (Supports Admin Camera + 3 Participant Spotlight Cameras)
+CREATE TABLE IF NOT EXISTS public.call_recordings (
+  id TEXT PRIMARY KEY,
+  room_code TEXT NOT NULL,
+  room_title TEXT NOT NULL,
+  host_name TEXT NOT NULL,
+  camera_role TEXT NOT NULL CHECK (camera_role IN ('admin', 'spotlight_1', 'spotlight_2', 'spotlight_3')),
+  camera_label TEXT NOT NULL,
+  recorded_by_name TEXT NOT NULL,
+  recorded_by_role TEXT NOT NULL DEFAULT 'ADMIN',
+  duration_seconds INT NOT NULL DEFAULT 0,
+  blob_url TEXT,
+  file_size_bytes BIGINT NOT NULL DEFAULT 0,
+  mime_type TEXT NOT NULL DEFAULT 'video/webm',
+  download_file_name TEXT,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  metadata JSONB DEFAULT '{}'::jsonb
+);
+
+-- 25. School Bank Account & Fee Payment Configuration Table
+CREATE TABLE IF NOT EXISTS public.school_bank_account_config (
+  id TEXT PRIMARY KEY DEFAULT 'primary_account',
+  bank_name TEXT NOT NULL,
+  account_number TEXT NOT NULL,
+  account_name TEXT NOT NULL,
+  payment_instructions TEXT,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_by TEXT DEFAULT 'School Administrator'
+);
+
 -- ==============================================================================
 -- PHASE 3: SAFE COLUMN UPGRADES & CONSTRAINT MIGRATIONS (IDEMPOTENT)
 -- (Ensures scripts succeed when pasted into an already-existing database)
@@ -404,6 +434,9 @@ CREATE INDEX IF NOT EXISTS idx_results_student_id ON public.student_results(stud
 CREATE INDEX IF NOT EXISTS idx_results_term ON public.student_results(term);
 CREATE INDEX IF NOT EXISTS idx_delegations_status ON public.timed_staff_delegations(status);
 CREATE INDEX IF NOT EXISTS idx_delegations_expires ON public.timed_staff_delegations(expires_at);
+CREATE INDEX IF NOT EXISTS idx_call_recordings_room ON public.call_recordings(room_code);
+CREATE INDEX IF NOT EXISTS idx_call_recordings_role ON public.call_recordings(camera_role);
+CREATE INDEX IF NOT EXISTS idx_call_recordings_created ON public.call_recordings(created_at DESC);
 
 -- ==============================================================================
 -- PHASE 5: STORED PROCEDURES & AUTH FUNCTIONS
@@ -869,8 +902,39 @@ CREATE POLICY "Admins can insert realtime events"
   ON public.admin_realtime_events FOR INSERT
   WITH CHECK (true);
 
+-- 24. Call Recordings Policies (Admin + 3 Spotlight cameras)
+ALTER TABLE public.call_recordings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public can view call recordings" ON public.call_recordings;
+CREATE POLICY "Public can view call recordings"
+  ON public.call_recordings FOR SELECT
+  USING (true);
+
+DROP POLICY IF EXISTS "Authenticated users or staff can insert recordings" ON public.call_recordings;
+CREATE POLICY "Authenticated users or staff can insert recordings"
+  ON public.call_recordings FOR INSERT
+  WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Admins can delete or manage recordings" ON public.call_recordings;
+CREATE POLICY "Admins can delete or manage recordings"
+  ON public.call_recordings FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- 25. School Bank Account Config Policies
+ALTER TABLE public.school_bank_account_config ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can read school bank account config" ON public.school_bank_account_config;
+CREATE POLICY "Anyone can read school bank account config"
+  ON public.school_bank_account_config FOR SELECT
+  USING (true);
+
+DROP POLICY IF EXISTS "Admins can update school bank account config" ON public.school_bank_account_config;
+CREATE POLICY "Admins can update school bank account config"
+  ON public.school_bank_account_config FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
 -- ==============================================================================
--- PHASE 7: SUPABASE REALTIME CONFIGURATION (ALL 23 TABLES)
+-- PHASE 7: SUPABASE REALTIME CONFIGURATION (ALL 25 TABLES)
 -- ==============================================================================
 ALTER TABLE public.profiles REPLICA IDENTITY FULL;
 ALTER TABLE public.students REPLICA IDENTITY FULL;
@@ -895,6 +959,8 @@ ALTER TABLE public.chat_messages REPLICA IDENTITY FULL;
 ALTER TABLE public.meetings REPLICA IDENTITY FULL;
 ALTER TABLE public.call_sessions REPLICA IDENTITY FULL;
 ALTER TABLE public.admin_realtime_events REPLICA IDENTITY FULL;
+ALTER TABLE public.call_recordings REPLICA IDENTITY FULL;
+ALTER TABLE public.school_bank_account_config REPLICA IDENTITY FULL;
 
 DO $$
 DECLARE
@@ -922,7 +988,9 @@ DECLARE
     'chat_messages',
     'meetings',
     'call_sessions',
-    'admin_realtime_events'
+    'admin_realtime_events',
+    'call_recordings',
+    'school_bank_account_config'
   ];
 BEGIN
   -- 1. Ensure supabase_realtime publication exists
@@ -1126,6 +1194,26 @@ VALUES
   ('MTG-1', 'Termly General PTA Virtual Assembly & Orientation', 'GHS-PTA-2026', 'Proprietor & Head of School', 'ADMIN', 'Review of academic calendar, terminal results release, and student gate security protocol.', 'Saturday 10:00 AM', 'active', 14, 'https://Godshand.sch.ng/meet/GHS-PTA-2026')
 ON CONFLICT (id) DO NOTHING;
 
+-- 15. Default School Bank Account Configuration
+INSERT INTO public.school_bank_account_config (
+  id, bank_name, account_number, account_name, payment_instructions, updated_at, updated_by
+)
+VALUES (
+  'primary_account',
+  'First Bank of Nigeria',
+  '2034891120',
+  'God''s Hand International Model School',
+  'Pay directly via USSD, mobile bank app, or branch deposit. Use your child''s Name and Student ID as payment reference narration.',
+  timezone('utc'::text, now()),
+  'Proprietor / Bursary'
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- 16. Optional: Supabase Storage Bucket for Video Recordings (.webm)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('call_recordings', 'call_recordings', true)
+ON CONFLICT (id) DO NOTHING;
+
 -- ==============================================================================
 -- SUCCESS MESSAGE
 -- ==============================================================================
@@ -1133,6 +1221,6 @@ DO $$
 BEGIN
   RAISE NOTICE '====================================================================';
   RAISE NOTICE 'GOD''S HAND INTERNATIONAL MODEL SCHOOL - DATABASE READY!';
-  RAISE NOTICE 'All 23 tables, indexes, RLS policies, and realtime sync configured.';
+  RAISE NOTICE 'All 25 tables, storage buckets, RLS policies, and realtime sync configured.';
   RAISE NOTICE '====================================================================';
 END $$;
