@@ -26,6 +26,8 @@ interface SchoolCommunityHubProps {
   onSaveCallRecording?: (recording: CallRecording) => void;
   onDeleteCallRecording?: (recordingId: string) => void;
   onSendChatMessage: (msg: Omit<ChatChannelMessage, 'id' | 'timestamp'>) => void;
+  onEditChatMessage?: (messageId: string, newMessage: string) => void;
+  onDeleteChatMessage?: (messageId: string) => void;
   onCreateMeeting: (meeting: Omit<MeetingSession, 'id' | 'createdAt'>) => void;
   onInitiateCall: (receiverId: string, receiverName: string, receiverRole: UserRole, type: 'voice' | 'video') => void;
   onUpdateCallStatus?: (callId: string, status: CallSession['status']) => void;
@@ -47,14 +49,30 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
   onSaveCallRecording,
   onDeleteCallRecording,
   onSendChatMessage,
+  onEditChatMessage,
+  onDeleteChatMessage,
   onCreateMeeting,
   onInitiateCall,
   onUpdateCallStatus,
   onBack,
   onGoToParentMessaging
 }) => {
+  // Only Parent, Staff, and Admin are allowed to see virtual meetings, PTA page/channel, and voice/video direct calls
+  const isAuthorizedForMeetingsAndCalls = useMemo(() => {
+    return currentUserRole === UserRole.ADMIN || 
+           currentUserRole === UserRole.TEACHER || 
+           currentUserRole === UserRole.PARENT;
+  }, [currentUserRole]);
+
   // Navigation tabs in Community Hub: 'chat' | 'meetings' | 'calls'
   const [activeMainTab, setActiveMainTab] = useState<'chat' | 'meetings' | 'calls'>('chat');
+
+  // If unauthorized role attempts to view meetings or calls, redirect immediately to chat
+  useEffect(() => {
+    if (!isAuthorizedForMeetingsAndCalls && (activeMainTab === 'meetings' || activeMainTab === 'calls')) {
+      setActiveMainTab('chat');
+    }
+  }, [isAuthorizedForMeetingsAndCalls, activeMainTab]);
 
   // Community Channels with mandated permissions
   const CHANNELS: ChatChannel[] = useMemo(() => [
@@ -97,17 +115,17 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
     }
   ], []);
 
-  // Filter accessible channels: PTA is strictly hidden from students/pupils
+  // Filter accessible channels: PTA is strictly hidden from students/pupils and guests
   const accessibleChannels = useMemo(() => {
     return CHANNELS.filter(c => {
-      // In parent chat: make it strictly invisible to student/pupil
-      if (c.id === 'pta' && currentUserRole === UserRole.STUDENT) {
+      // PTA page/channel is strictly for Parent, Staff, and Admin only!
+      if (c.id === 'pta' && !isAuthorizedForMeetingsAndCalls) {
         return false;
       }
       if (!c.allowedRoles) return true;
       return c.allowedRoles.includes(currentUserRole);
     });
-  }, [CHANNELS, currentUserRole]);
+  }, [CHANNELS, isAuthorizedForMeetingsAndCalls, currentUserRole]);
 
   // Selected Channel
   const [selectedChannelId, setSelectedChannelId] = useState<string>('general');
@@ -217,6 +235,21 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
   const [chatInput, setChatInput] = useState('');
   const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
   const [searchChat, setSearchChat] = useState('');
+
+  // Message context menu & inline editing state (reactions, edit, delete on long-press or right-click)
+  const [activeContextMenuMsgId, setActiveContextMenuMsgId] = useState<string | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingMessageText, setEditingMessageText] = useState<string>('');
+  const longPressTimerRef = useRef<any>(null);
+
+  // Close context menu on outside click
+  useEffect(() => {
+    const handleOutsideClick = () => {
+      setActiveContextMenuMsgId(null);
+    };
+    window.addEventListener('click', handleOutsideClick);
+    return () => window.removeEventListener('click', handleOutsideClick);
+  }, []);
 
   // Meetings state
   const [activeMeetingRoom, setActiveMeetingRoom] = useState<MeetingSession | null>(null);
@@ -658,7 +691,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 shrink-0">
-            {onGoToParentMessaging && (
+            {isAuthorizedForMeetingsAndCalls && onGoToParentMessaging && (
               <button
                 type="button"
                 onClick={onGoToParentMessaging}
@@ -693,31 +726,35 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
             <span>Community Channels ({accessibleChannels.length})</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveMainTab('meetings')}
-            className={`px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-xs shrink-0 ${
-              activeMainTab === 'meetings'
-                ? 'bg-blue-900 text-yellow-400 shadow-md'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            <span>📹</span>
-            <span>Virtual Meetings & PTA ({meetings.length})</span>
-          </button>
+          {isAuthorizedForMeetingsAndCalls && (
+            <>
+              <button
+                type="button"
+                onClick={() => setActiveMainTab('meetings')}
+                className={`px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-xs shrink-0 ${
+                  activeMainTab === 'meetings'
+                    ? 'bg-blue-900 text-yellow-400 shadow-md'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <span>📹</span>
+                <span>Virtual Meetings & PTA ({meetings.length})</span>
+              </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveMainTab('calls')}
-            className={`px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-xs shrink-0 ${
-              activeMainTab === 'calls'
-                ? 'bg-blue-900 text-yellow-400 shadow-md'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            <span>📞</span>
-            <span>Voice & Video Direct Calls</span>
-          </button>
+              <button
+                type="button"
+                onClick={() => setActiveMainTab('calls')}
+                className={`px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-xs shrink-0 ${
+                  activeMainTab === 'calls'
+                    ? 'bg-blue-900 text-yellow-400 shadow-md'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <span>📞</span>
+                <span>Voice & Video Direct Calls</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -830,6 +867,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
               ) : (
                 channelMessages.map(msg => {
                   const isSentByMe = msg.senderName === currentUserName || (currentUserRole === msg.senderRole && msg.senderId === currentUserId);
+                  const canManage = isSentByMe || currentUserRole === UserRole.ADMIN;
                   const roleBadgeColor = 
                     msg.senderRole === UserRole.ADMIN ? 'bg-amber-100 text-amber-900 border-amber-300' :
                     msg.senderRole === UserRole.TEACHER ? 'bg-blue-100 text-blue-900 border-blue-200' :
@@ -838,11 +876,16 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
 
                   const senderOnline = isUserOnline(msg.senderId, msg.senderRole);
                   const msgReactions = localReactions[msg.id] || msg.reactions || {};
+                  const isContextMenuOpen = activeContextMenuMsgId === msg.id;
+                  const isEditing = editingMessageId === msg.id;
+
+                  // Applied reactions where at least 1 person reacted
+                  const appliedReactionEntries = Object.entries(msgReactions).filter(([_, users]) => (users || []).length > 0);
 
                   return (
                     <div
                       key={msg.id}
-                      className={`flex flex-col ${isSentByMe ? 'items-end' : 'items-start'} space-y-1`}
+                      className={`flex flex-col ${isSentByMe ? 'items-end' : 'items-start'} space-y-1 relative group`}
                     >
                       <div className="flex items-center gap-2 mb-0.5 text-[10px] font-bold text-slate-400">
                         <span className={`px-1.5 py-0.2 rounded-md font-black uppercase text-[8px] border ${roleBadgeColor}`}>
@@ -860,41 +903,182 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                         <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
 
-                      <div className={`p-4 rounded-3xl max-w-[85%] sm:max-w-[75%] shadow-sm ${
-                        isSentByMe
-                          ? 'bg-blue-900 text-white rounded-tr-xs'
-                          : 'bg-white text-slate-800 border border-slate-200 rounded-tl-xs'
-                      }`}>
-                        <p className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed font-medium">
-                          {msg.message}
-                        </p>
+                      {/* Floating Reactions & Actions Popover - ONLY triggered by Long Press or Right Click */}
+                      {isContextMenuOpen && (
+                        <div 
+                          onClick={e => e.stopPropagation()}
+                          className={`absolute z-30 -top-12 ${isSentByMe ? 'right-0' : 'left-0'} bg-slate-950/95 backdrop-blur-md text-white p-1.5 rounded-2xl shadow-2xl border border-yellow-400/50 flex items-center gap-1.5 animate-in fade-in zoom-in-95`}
+                        >
+                          {/* Quick Emoji Reactions */}
+                          <div className="flex items-center gap-1 pr-1 border-r border-slate-700">
+                            {['👍', '❤️', '🙏', '👏', '🎉', '💡', '😂', '🔥'].map(emoji => {
+                              const users = msgReactions[emoji] || [];
+                              const hasReacted = users.includes(currentUserName || currentUserId || 'User');
+                              return (
+                                <button
+                                  key={emoji}
+                                  type="button"
+                                  onClick={() => {
+                                    handleToggleReaction(msg.id, emoji);
+                                    setActiveContextMenuMsgId(null);
+                                  }}
+                                  className={`w-7 h-7 rounded-xl flex items-center justify-center text-sm transition-all hover:scale-125 ${
+                                    hasReacted ? 'bg-yellow-400 text-blue-950 shadow-xs' : 'hover:bg-white/20'
+                                  }`}
+                                  title={`React ${emoji}`}
+                                >
+                                  {emoji}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* Edit / Delete actions for author or Admin */}
+                          {canManage && (
+                            <div className="flex items-center gap-1 pl-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingMessageId(msg.id);
+                                  setEditingMessageText(msg.message);
+                                  setActiveContextMenuMsgId(null);
+                                }}
+                                className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1"
+                                title="Edit message"
+                              >
+                                <span>✏️</span>
+                                <span className="hidden sm:inline">Edit</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (window.confirm('Delete this message from the channel?')) {
+                                    if (onDeleteChatMessage) onDeleteChatMessage(msg.id);
+                                    setActiveContextMenuMsgId(null);
+                                  }
+                                }}
+                                className="px-2 py-1 bg-red-600/80 hover:bg-red-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1"
+                                title="Delete message"
+                              >
+                                <span>🗑️</span>
+                                <span className="hidden sm:inline">Delete</span>
+                              </button>
+                            </div>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => setActiveContextMenuMsgId(null)}
+                            className="px-1.5 py-0.5 text-slate-400 hover:text-white text-xs font-bold"
+                            title="Close"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Message Bubble Container with Long-Press & Right-Click events */}
+                      <div 
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setActiveContextMenuMsgId(isContextMenuOpen ? null : msg.id);
+                        }}
+                        onTouchStart={() => {
+                          longPressTimerRef.current = setTimeout(() => {
+                            setActiveContextMenuMsgId(msg.id);
+                          }, 450);
+                        }}
+                        onTouchEnd={() => {
+                          if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+                        }}
+                        onTouchMove={() => {
+                          if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+                        }}
+                        className={`p-4 rounded-3xl max-w-[85%] sm:max-w-[75%] shadow-sm relative transition-all cursor-pointer ${
+                          isSentByMe
+                            ? 'bg-blue-900 text-white rounded-tr-xs'
+                            : 'bg-white text-slate-800 border border-slate-200 rounded-tl-xs'
+                        } ${isContextMenuOpen ? 'ring-2 ring-yellow-400' : ''}`}
+                        title="Right-click or Long-press to react or edit/delete"
+                      >
+                        {isEditing ? (
+                          <div className="space-y-2 select-text cursor-auto" onClick={e => e.stopPropagation()}>
+                            <textarea
+                              rows={2}
+                              value={editingMessageText}
+                              onChange={e => setEditingMessageText(e.target.value)}
+                              className="w-full p-2 bg-white text-slate-900 rounded-xl text-xs sm:text-sm font-medium border-2 border-yellow-400 outline-none"
+                              autoFocus
+                            />
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setEditingMessageId(null)}
+                                className="px-2.5 py-1 bg-white/20 hover:bg-white/30 text-white text-[10px] font-black uppercase rounded-lg"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (editingMessageText.trim()) {
+                                    if (onEditChatMessage) onEditChatMessage(msg.id, editingMessageText.trim());
+                                    setEditingMessageId(null);
+                                  }
+                                }}
+                                className="px-3 py-1 bg-yellow-400 hover:bg-yellow-300 text-blue-950 text-[10px] font-black uppercase rounded-lg shadow-sm"
+                              >
+                                Save Edit
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed font-medium">
+                              {msg.message}
+                            </p>
+                            {/* Desktop hover action trigger */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveContextMenuMsgId(isContextMenuOpen ? null : msg.id);
+                              }}
+                              className={`absolute top-2 ${isSentByMe ? 'left-2' : 'right-2'} opacity-0 group-hover:opacity-100 transition-opacity p-1 text-slate-400 hover:text-yellow-400 text-xs`}
+                              title="Reaction / Options"
+                            >
+                              •••
+                            </button>
+                          </>
+                        )}
                       </div>
 
-                      {/* Interactive Emoji Reactions Bar */}
-                      <div className="flex flex-wrap items-center gap-1.5 px-2 pt-0.5">
-                        {['👍', '❤️', '🙏', '👏', '🎉', '💡'].map(emoji => {
-                          const users = msgReactions[emoji] || [];
-                          const hasReacted = users.includes(currentUserName || currentUserId || 'User');
-                          return (
-                            <button
-                              key={emoji}
-                              type="button"
-                              onClick={() => handleToggleReaction(msg.id, emoji)}
-                              className={`px-2 py-0.5 rounded-full text-xs transition-all flex items-center gap-1 border ${
-                                hasReacted
-                                  ? 'bg-yellow-100 border-yellow-400 text-blue-950 font-black shadow-xs scale-105'
-                                  : 'bg-white/80 hover:bg-slate-100 border-slate-200 text-slate-600'
-                              }`}
-                              title={`React with ${emoji}`}
-                            >
-                              <span>{emoji}</span>
-                              {users.length > 0 && (
-                                <span className="text-[10px] font-bold">{users.length}</span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
+                      {/* Display ONLY applied reactions (reactions with count > 0) */}
+                      {appliedReactionEntries.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5 px-2 pt-0.5">
+                          {appliedReactionEntries.map(([emoji, users]) => {
+                            const hasReacted = (users || []).includes(currentUserName || currentUserId || 'User');
+                            return (
+                              <button
+                                key={emoji}
+                                type="button"
+                                onClick={() => handleToggleReaction(msg.id, emoji)}
+                                className={`px-2 py-0.5 rounded-full text-xs transition-all flex items-center gap-1 border ${
+                                  hasReacted
+                                    ? 'bg-yellow-100 border-yellow-400 text-blue-950 font-black shadow-xs'
+                                    : 'bg-white border-slate-200 text-slate-600'
+                                }`}
+                                title={`Reacted by ${(users || []).join(', ')}`}
+                              >
+                                <span>{emoji}</span>
+                                <span className="text-[10px] font-black">{users.length}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   );
                 })

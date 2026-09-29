@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Course, StudentResult, GradeLevel, StudentAccount, AttendanceRecord, StaffPagePermission, ALL_STAFF_PAGES, Announcement, ResultPublishRequest, TimedStaffDelegation, AdminSectionKey, ALL_ADMIN_SECTIONS, ClassTimetable, ParentStaffMessage, ParentAccount } from '../types';
 import { GRADE_GROUPS, getNextGradeLevel } from '../constants';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { AttendanceCameraScanner } from './AttendanceCameraScanner';
 import { StandardReportCard } from './StandardReportCard';
 import { computeClassRankings, computeSubjectRankings, formatOrdinal } from '../utils/ranking';
 import { ClassTimetableManager } from './ClassTimetableManager';
@@ -37,6 +37,7 @@ interface TeacherDashboardProps {
   onSendResultsToPupils?: (grade: GradeLevel, term: string) => void;
   onSendParentMessage?: (msg: Omit<ParentStaffMessage, 'id' | 'timestamp'>) => void;
   onOpenParentMessaging?: () => void;
+  initialTab?: string;
 }
 
 export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
@@ -67,7 +68,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   onRequestPublishResults,
   onSendResultsToPupils,
   onSendParentMessage,
-  onOpenParentMessaging
+  onOpenParentMessaging,
+  initialTab
 }) => {
   const [delegationNow, setDelegationNow] = useState<Date>(new Date());
   const [parentReplyText, setParentReplyText] = useState<{ [msgId: string]: string }>({});
@@ -85,8 +87,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
   // Determine available tabs based on admin-configured page permissions
   const availableTabs = ALL_STAFF_PAGES.filter(p => !allowedPages || allowedPages.includes(p.id));
-  const initialTab = availableTabs[0]?.id || 'overview';
-  const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'students' | 'grading' | 'attendance' | 'termStats' | 'timetable' | 'parentMessages'>(initialTab as any);
+  const defaultTab = (initialTab as any) || availableTabs[0]?.id || 'overview';
+  const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'students' | 'grading' | 'attendance' | 'attendanceScanning' | 'termStats' | 'timetable' | 'parentMessages'>(defaultTab as any);
 
   useEffect(() => {
     if (availableTabs.length > 0 && !availableTabs.some(t => t.id === activeTab)) {
@@ -127,9 +129,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
   // Scanner status & Term state
   const [scannerTerm, setScannerTerm] = useState<string>('First Term');
-  const [lastScanned, setLastScanned] = useState<string | null>(null);
   const [previewStudentReport, setPreviewStudentReport] = useState<StudentAccount | null>(null);
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
   // Attendance Sub-Mode: 'checklist' (Roll Call by Names) vs 'scanner' (QR Camera)
   const [attendanceMode, setAttendanceMode] = useState<'checklist' | 'scanner'>('checklist');
@@ -227,61 +227,6 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const myResults = results.filter(r => r.teacherName === username);
   const today = new Date().toLocaleDateString();
   const presentToday = attendance.filter(a => a.date === today && filteredStudents.some(s => s.id === a.studentId));
-
-  useEffect(() => {
-    if (activeTab === 'attendance' && attendanceMode === 'scanner' && !scannerRef.current) {
-      const scanner = new Html5QrcodeScanner(
-        "reader", 
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        /* verbose= */ false
-      );
-      
-      scanner.render((decodedText) => {
-        let actualId = decodedText.trim();
-        let recordTerm = scannerTerm;
-
-        if (decodedText.startsWith('GHS-ATT')) {
-          if (decodedText.includes('|')) {
-            const parts = decodedText.split('|');
-            // Format: GHS-ATT|GHS20268001|First Term|PASS
-            actualId = (parts[1] || '').trim();
-            if (parts[2]) {
-              recordTerm = parts[2].trim();
-            }
-          } else if (decodedText.startsWith('GHS-ATT-')) {
-            const parts = decodedText.split('-');
-            actualId = `${parts[2]}-${parts[3]}`;
-          }
-        }
-        
-        const student = allStudents.find(s => s.id === actualId || s.id.toUpperCase() === actualId.toUpperCase());
-          if (student) {
-            const success = onMarkAttendance(actualId, recordTerm);
-            if (success) {
-              setLastScanned(`Success: ${student.name} marked present for ${recordTerm}!`);
-              setTimeout(() => setLastScanned(null), 3000);
-            } else {
-              setLastScanned(`${student.name} already marked today for ${recordTerm}.`);
-              setTimeout(() => setLastScanned(null), 3000);
-            }
-          } else {
-            setLastScanned("Error: Invalid Student ID");
-            setTimeout(() => setLastScanned(null), 3000);
-          }
-      }, (error) => {
-        // Handle scanning errors silently
-      });
-      
-      scannerRef.current = scanner;
-    }
-
-    return () => {
-      if (scannerRef.current && (activeTab !== 'attendance' || attendanceMode !== 'scanner')) {
-        scannerRef.current.clear().catch(err => console.error("Failed to clear scanner", err));
-        scannerRef.current = null;
-      }
-    };
-  }, [activeTab, attendanceMode, scannerTerm]);
 
   const handleAddCourse = (e: React.FormEvent) => {
     e.preventDefault();
@@ -968,70 +913,60 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
             {/* QR CAMERA SCANNER MODE */}
             {attendanceMode === 'scanner' && (
-              <div className="grid lg:grid-cols-2 gap-16">
-                <div className="space-y-8">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-2xl font-black text-blue-900 font-serif">Daily Attendance Scanner</h3>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-black text-slate-400 uppercase">Active Term:</span>
-                      <select 
-                        value={scannerTerm} 
-                        onChange={(e) => setScannerTerm(e.target.value)}
-                        className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl font-black text-xs text-blue-900 outline-none"
-                      >
-                        <option value="First Term">First Term</option>
-                        <option value="Second Term">Second Term</option>
-                        <option value="Third Term">Third Term</option>
-                      </select>
-                    </div>
-                  </div>
-                  <p className="text-slate-500 text-sm font-medium">
-                    Use your camera to scan a student or pupil's Daily Pass QR code for <strong className="text-blue-900">{scannerTerm}</strong>.
-                  </p>
-                  
-                  <div id="reader" className="overflow-hidden rounded-3xl border-4 border-slate-100 shadow-xl bg-slate-50 min-h-[300px]"></div>
-                  
-                  {lastScanned && (
-                    <div className={`p-6 rounded-2xl text-center font-black uppercase tracking-widest animate-pulse ${lastScanned.includes('Success') ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                      {lastScanned}
-                    </div>
-                  )}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between gap-4 pb-1">
+                  <button
+                    type="button"
+                    onClick={() => setAttendanceMode('checklist')}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-blue-950 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+                  >
+                    <span>←</span>
+                    <span>Switch to Roll Call Checklist</span>
+                  </button>
                 </div>
-
-                <div className="space-y-8">
-                  <div className="flex justify-between items-center border-b-2 border-slate-100 pb-4">
-                    <h3 className="text-2xl font-black text-blue-900 font-serif text-nowrap">Present Today</h3>
-                    <span className="bg-blue-900 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase">{today}</span>
-                  </div>
-                  
-                  <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                    {presentToday.length === 0 ? (
-                      <div className="p-12 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 text-slate-400 font-bold uppercase text-xs tracking-widest">
-                        No attendance recorded for your students and pupils yet today.
-                      </div>
-                    ) : (
-                      presentToday.map((record, i) => {
-                        const student = allStudents.find(s => s.id === record.studentId);
-                        return (
-                          <div key={i} className="p-5 bg-white border-2 border-slate-50 rounded-2xl flex items-center justify-between shadow-sm">
-                            <div className="flex items-center">
-                              <div className="w-10 h-10 bg-green-100 text-green-700 rounded-xl flex items-center justify-center font-black mr-4 border border-green-200">
-                                {student?.name.charAt(0)}
-                              </div>
-                              <div>
-                                <p className="font-black text-blue-900">{student?.name}</p>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase">{student?.grade}</p>
-                              </div>
-                            </div>
-                            <span className="text-[10px] font-black text-green-600 bg-green-50 px-3 py-1 rounded-full uppercase">Verified</span>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
+                <AttendanceCameraScanner
+                  students={staffStudents}
+                  attendance={attendance}
+                  activeTerm={currentTerm || scannerTerm}
+                  onMarkAttendance={onMarkAttendance}
+                  parents={parents}
+                  scannerRole="staff"
+                  currentUserName={username}
+                  onClose={() => setAttendanceMode('checklist')}
+                />
               </div>
             )}
+          </div>
+        )}
+
+        {/* ATTENDANCE SCANNING DEDICATED TAB */}
+        {activeTab === 'attendanceScanning' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between gap-4 pb-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab('attendance')}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-blue-950 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+              >
+                <span>←</span>
+                <span>Back to Attendance Desk</span>
+              </button>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="text-xs font-mono font-black text-slate-500">Staff Device Camera Active</span>
+              </div>
+            </div>
+
+            <AttendanceCameraScanner
+              students={staffStudents}
+              attendance={attendance}
+              activeTerm={currentTerm || scannerTerm}
+              onMarkAttendance={onMarkAttendance}
+              parents={parents}
+              scannerRole="staff"
+              currentUserName={username}
+              onClose={() => setActiveTab('attendance')}
+            />
           </div>
         )}
 

@@ -5,7 +5,7 @@ import { UserRole, UserPagesAccessState } from '../types';
 interface HeaderProps {
   role: UserRole;
   setRole: (role: UserRole) => void;
-  setView: (view: 'home' | 'portal' | 'apply' | 'admin' | 'teacherLogin' | 'teacher' | 'studentAuth' | 'feeChecker' | 'resultChecker' | 'about' | 'parentAuth' | 'parentPortal' | 'studentReceipts' | 'parentStaffChat' | 'communityHub') => void;
+  setView: (view: 'home' | 'portal' | 'apply' | 'admin' | 'teacherLogin' | 'teacher' | 'studentAuth' | 'feeChecker' | 'resultChecker' | 'about' | 'parentAuth' | 'parentPortal' | 'studentReceipts' | 'parentStaffChat' | 'communityHub' | 'attendanceScanning') => void;
   activeView: string;
   onOpenDownloadModal?: () => void;
   isAppInstalled?: boolean;
@@ -48,11 +48,18 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
     return false;
   };
 
+  const isStaffParentOrAdmin = role === UserRole.PARENT || role === UserRole.TEACHER || role === UserRole.ADMIN;
+
   const menuItems = [
     { label: 'School Home', view: 'home', icon: '🏠' },
-    ...(role !== UserRole.GUEST ? [
-      { label: 'Message Staff Directly', view: 'parentStaffChat', icon: '💬' },
-      { label: 'Live Chat, Meetings & Calls', view: 'communityHub', icon: '📞' },
+    ...((role === UserRole.ADMIN || role === UserRole.TEACHER) ? [
+      { label: '📷 Attendance Camera Scanning', view: 'attendanceScanning', icon: '📷' },
+    ] : []),
+    ...(isStaffParentOrAdmin ? [
+      { label: 'Message Staff Directly & Direct Calls', view: 'parentStaffChat', icon: '💬' },
+      { label: 'Live Chat, Virtual Meetings & Calls', view: 'communityHub', icon: '📞' },
+    ] : role === UserRole.STUDENT ? [
+      { label: 'Pupil Study & Sports Channels', view: 'communityHub', icon: '💬' },
     ] : []),
     { label: 'Check Student Results (₦1,000)', view: 'resultChecker', icon: '📜' },
     { label: 'Download Official Fee Receipts', view: 'studentReceipts', icon: '📑' },

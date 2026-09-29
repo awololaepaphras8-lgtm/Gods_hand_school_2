@@ -33,6 +33,7 @@ import { ProphDatabaseAuditorModal } from './ProphDatabaseAuditorModal';
 import { AcademicTrendsWidget } from './AcademicTrendsWidget';
 import { RecommendedCoursesLibrary } from './RecommendedCoursesLibrary';
 import { AdminBankAccountManager } from './AdminBankAccountManager';
+import { AttendanceCameraScanner } from './AttendanceCameraScanner';
 import { SchoolBankAccountConfig } from '../types';
 
 interface AdminPanelProps {
@@ -88,6 +89,8 @@ interface AdminPanelProps {
   onBroadcastResultsToClass?: (grade: GradeLevel, term: string) => void;
   bankAccountConfig?: SchoolBankAccountConfig;
   onUpdateBankAccountConfig?: (config: SchoolBankAccountConfig) => void;
+  onMarkAttendance?: (studentId: string, term?: string) => boolean;
+  initialTab?: string;
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ 
@@ -136,9 +139,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   activeStaffName,
   onNavigateToView,
   bankAccountConfig,
-  onUpdateBankAccountConfig
+  onUpdateBankAccountConfig,
+  onMarkAttendance,
+  initialTab
 }) => {
-  const [activeTab, setActiveTab] = useState<'attendance' | 'academicTrends' | 'payments' | 'resultPublish' | 'fees' | 'bankAccount' | 'applications' | 'teachers' | 'courses' | 'calendar' | 'announcements' | 'access' | 'parents' | 'export' | 'delegations' | 'pageAccess'>('attendance');
+  const [activeTab, setActiveTab] = useState<'attendance' | 'attendanceScanning' | 'academicTrends' | 'payments' | 'resultPublish' | 'fees' | 'bankAccount' | 'applications' | 'teachers' | 'courses' | 'calendar' | 'announcements' | 'access' | 'parents' | 'export' | 'delegations' | 'pageAccess'>((initialTab as any) || 'attendance');
   const [rejectModalRequestId, setRejectModalRequestId] = useState<string | null>(null);
   const [rejectFeedbackText, setRejectFeedbackText] = useState<string>('');
   const [delegationNow, setDelegationNow] = useState<Date>(new Date());
@@ -408,6 +413,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   // Filter tabs if accessing through delegated staff credentials
   const allTabsConfig: { id: any; label: string; adminKey?: AdminSectionKey }[] = [
     { id: 'attendance', label: 'Attendance Hub', adminKey: 'attendance' },
+    { id: 'attendanceScanning', label: '📷 Attendance Scanning', adminKey: 'attendance' },
     { id: 'academicTrends', label: '📊 Academic Trends', adminKey: 'resultPublish' },
     { id: 'payments', label: `💳 Fee Verification (${payments.filter(p => p.status === 'pending').length} Pending)`, adminKey: 'payments' },
     { id: 'resultPublish', label: `📢 Result Releases (${resultPublishRequests.filter(r => r.status === 'pending').length} Pending)`, adminKey: 'resultPublish' },
@@ -612,6 +618,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                </div>
             </div>
 
+            {/* Attendance Camera Scanner Featured Banner */}
+            <div className="bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-500 p-6 sm:p-7 rounded-3xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-5 border-2 border-yellow-500">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-blue-950 text-yellow-400 flex items-center justify-center text-3xl font-black shadow-lg shrink-0">
+                  📷
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-serif font-black text-blue-950 text-xl">
+                      Live Attendance Camera Scanner
+                    </h4>
+                    <span className="px-2.5 py-0.5 rounded-full bg-blue-950 text-yellow-400 text-[10px] font-black uppercase tracking-wider">
+                      Camera View
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-blue-950/80 font-bold mt-0.5">
+                    Utilize your phone or laptop camera to scan pupil term QR attendance passes with instant audible chimes, vibration, gate entry clearance & real-time attendance sync.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab('attendanceScanning')}
+                className="w-full md:w-auto px-7 py-3.5 bg-blue-950 hover:bg-blue-900 text-yellow-400 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl active:scale-95 shrink-0 flex items-center justify-center gap-2 whitespace-nowrap hover:scale-105"
+              >
+                <span>📷</span>
+                <span>Open Camera Scanner</span>
+              </button>
+            </div>
+
             {/* Mandated Gate QR Pass Verification Station: Strictly for Admin & Staff */}
             <div className="bg-gradient-to-r from-blue-900 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl space-y-4 border-2 border-yellow-400/40">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
@@ -634,8 +670,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </div>
                 </div>
 
-                <div className="text-right text-[11px] text-yellow-300/90 font-bold bg-white/10 px-3.5 py-1.5 rounded-xl border border-white/10">
-                  <span>Current Gate Session: <strong>{activeTerm}</strong></span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('attendanceScanning')}
+                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center gap-1.5"
+                    title="Switch to camera scanning view"
+                  >
+                    <span>📷</span>
+                    <span>Use Camera</span>
+                  </button>
+                  <div className="text-right text-[11px] text-yellow-300/90 font-bold bg-white/10 px-3.5 py-1.5 rounded-xl border border-white/10">
+                    <span>Current Gate Session: <strong>{activeTerm}</strong></span>
+                  </div>
                 </div>
               </div>
 
@@ -772,6 +819,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'attendanceScanning' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between gap-4 pb-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab('attendance')}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-blue-950 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+              >
+                <span>←</span>
+                <span>Back to Attendance Hub</span>
+              </button>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="text-xs font-mono font-black text-slate-500">Live Device Gate Scanner</span>
+              </div>
+            </div>
+
+            <AttendanceCameraScanner
+              students={students}
+              attendance={attendance}
+              activeTerm={activeTerm}
+              onMarkAttendance={onMarkAttendance || ((sId, t) => false)}
+              parents={parents}
+              scannerRole="admin"
+              currentUserName={activeStaffName || "School Administrator"}
+              onClose={() => setActiveTab('attendance')}
+            />
           </div>
         )}
 

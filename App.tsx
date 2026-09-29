@@ -76,7 +76,7 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<string | null>(() => savedSession?.currentUser || null);
   const [currentParentId, setCurrentParentId] = useState<string | null>(() => savedSession?.currentParentId || null);
   const [state, setState] = useState<AppState>(stateService.getState());
-  const [view, setView] = useState<'home' | 'portal' | 'apply' | 'admin' | 'teacherLogin' | 'teacher' | 'studentAuth' | 'feeChecker' | 'resultChecker' | 'about' | 'parentAuth' | 'parentPortal' | 'studentReceipts' | 'parentStaffChat' | 'communityHub'>(
+  const [view, setView] = useState<'home' | 'portal' | 'apply' | 'admin' | 'teacherLogin' | 'teacher' | 'studentAuth' | 'feeChecker' | 'resultChecker' | 'about' | 'parentAuth' | 'parentPortal' | 'studentReceipts' | 'parentStaffChat' | 'communityHub' | 'attendanceScanning'>(
     () => savedSession?.view || 'home'
   );
 
@@ -1188,6 +1188,28 @@ const App: React.FC = () => {
     realtimeService.sendChatMessage(newMsg);
   };
 
+  const handleEditChatMessage = (messageId: string, newMessage: string) => {
+    setState(prev => {
+      const updatedMessages = (prev.chatMessages || []).map(m => 
+        m.id === messageId ? { ...m, message: newMessage } : m
+      );
+      const updated = { ...prev, chatMessages: updatedMessages };
+      stateService.saveState(updated);
+      return updated;
+    });
+    realtimeService.editChatMessage(messageId, newMessage);
+  };
+
+  const handleDeleteChatMessage = (messageId: string) => {
+    setState(prev => {
+      const updatedMessages = (prev.chatMessages || []).filter(m => m.id !== messageId);
+      const updated = { ...prev, chatMessages: updatedMessages };
+      stateService.saveState(updated);
+      return updated;
+    });
+    realtimeService.deleteChatMessage(messageId);
+  };
+
   const handleCreateMeeting = (meetingData: Omit<MeetingSession, 'id' | 'createdAt'>) => {
     const meeting: MeetingSession = {
       ...meetingData,
@@ -1984,6 +2006,7 @@ const App: React.FC = () => {
                 onNavigateToView={setView}
                 bankAccountConfig={state.bankAccountConfig}
                 onUpdateBankAccountConfig={handleUpdateBankAccountConfig}
+                onMarkAttendance={markAttendance}
               />
             </div>
           ) : (role === UserRole.TEACHER && activeTeacherDelegation) ? (
@@ -2030,6 +2053,7 @@ const App: React.FC = () => {
                 onNavigateToView={setView}
                 bankAccountConfig={state.bankAccountConfig}
                 onUpdateBankAccountConfig={handleUpdateBankAccountConfig}
+                onMarkAttendance={markAttendance}
                 onExitDelegation={() => {
                   setView('teacher');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2046,29 +2070,188 @@ const App: React.FC = () => {
           )
         )}
 
+        {/* ATTENDANCE CAMERA SCANNING: STRICTLY FOR ADMIN & STAFF ONLY */}
+        {view === 'attendanceScanning' && (
+          (role === UserRole.ADMIN || (role === UserRole.TEACHER && activeTeacherDelegation)) ? (
+            <div className="max-w-6xl mx-auto py-12 px-4">
+              <AdminPanel 
+                fees={state.fees} 
+                applications={state.applications}
+                announcements={state.announcements}
+                teachers={state.teachers}
+                results={state.results}
+                courses={state.courses}
+                attendance={state.attendance}
+                students={state.studentAccounts}
+                parents={state.parents || []}
+                calendar={state.academicCalendar}
+                onUpdateFee={updateFees}
+                onUpdateAllFees={updateAllFees}
+                userPagesAccess={state.userPagesAccess}
+                onUpdateUserPagesAccess={handleUpdateUserPagesAccess}
+                onAddAnnouncement={addAnnouncement}
+                onUpdateAnnouncement={updateAnnouncement}
+                onDeleteAnnouncement={deleteAnnouncement}
+                onCreateTeacher={createTeacherAccount}
+                onUpdateTeacherPermissions={updateTeacherPermissions}
+                onDeleteTeacher={deleteTeacherAccount}
+                onAddCourse={addCourse}
+                onDuplicateCourse={duplicateCourse}
+                onUpdateCalendar={updateCalendar}
+                onToggleStudentEntry={toggleStudentEntry}
+                onAdminUnlinkChild={handleAdminUnlinkChild}
+                payments={state.payments}
+                resultPublishRequests={state.resultPublishRequests || []}
+                onConfirmPayment={handleConfirmPayment}
+                onDeclinePayment={handleDeclinePayment}
+                onConfirmAllPending={handleConfirmAllPending}
+                onAddChatMessage={handleAddPaymentChatMessage}
+                onApprovePublishRequest={handleApprovePublishRequest}
+                onRejectPublishRequest={handleRejectPublishRequest}
+                onBroadcastResultsToClass={handleSendResultsToPupils}
+                timedStaffDelegations={state.timedStaffDelegations || []}
+                onGrantStaffDelegation={handleGrantStaffDelegation}
+                onRevokeStaffDelegation={handleRevokeStaffDelegation}
+                activeTerm={state.activeTerm || 'First Term'}
+                onAdvanceTerm={handleAdvanceTerm}
+                onNavigateToView={setView}
+                bankAccountConfig={state.bankAccountConfig}
+                onUpdateBankAccountConfig={handleUpdateBankAccountConfig}
+                onMarkAttendance={markAttendance}
+                initialTab="attendanceScanning"
+              />
+            </div>
+          ) : role === UserRole.TEACHER ? (
+            <div className="max-w-6xl mx-auto py-12 px-4">
+              <TeacherDashboard 
+                username={currentUser || 'Staff'} 
+                assignedGrades={currentTeacherObj?.assignedGrades || []}
+                allStudents={state.studentAccounts}
+                courses={state.courses}
+                results={state.results}
+                attendance={state.attendance}
+                calendar={state.academicCalendar}
+                announcements={state.announcements}
+                allowedPages={currentTeacherObj?.allowedPages}
+                resultPublishRequests={state.resultPublishRequests || []}
+                timedStaffDelegations={state.timedStaffDelegations || []}
+                onOpenAdminDelegation={() => {
+                  setView('admin');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onAddCourse={addCourse}
+                onDuplicateCourse={duplicateCourse}
+                onAddResult={addResult}
+                onMarkAttendance={markAttendance}
+                onBatchMarkAttendance={handleBatchMarkAttendance}
+                onShiftStudent={shiftStudentToNextClass}
+                onBatchShiftStudents={shiftMultipleStudentsToNextClass}
+                timetables={state.timetables || []}
+                onSaveTimetable={handleSaveClassTimetable}
+                parentMessages={state.parentStaffMessages || []}
+                parents={state.parents || []}
+                onSendParentMessage={handleSendParentMessage}
+                onOpenParentMessaging={() => {
+                  setView('parentStaffChat');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onRequestPublishResults={handleRequestPublishResults}
+                onSendResultsToPupils={handleSendResultsToPupils}
+                initialTab="attendanceScanning"
+              />
+            </div>
+          ) : (
+            /* ACCESS RESTRICTED FOR STUDENTS, PARENTS, AND PUBLIC */
+            <div className="max-w-2xl mx-auto py-20 px-4 text-center">
+              <div className="bg-white rounded-3xl p-10 border-4 border-rose-200 shadow-2xl space-y-4">
+                <div className="w-20 h-20 mx-auto rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-4xl font-black">
+                  🔒
+                </div>
+                <h3 className="font-serif font-black text-2xl text-blue-950">
+                  Attendance Scanner: Authorized Staff & Admin Only
+                </h3>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  Camera QR attendance scanning is restricted strictly to God's Hand Model School administrators and teaching staff. Students and guardians should access their personal passes through the Student or Parent Portals.
+                </p>
+                <div className="pt-2 flex flex-wrap justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setView('teacherLogin');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="px-5 py-2.5 bg-blue-900 text-yellow-400 rounded-xl font-black text-xs uppercase tracking-wider"
+                  >
+                    Staff Login
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setView('admin');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="px-5 py-2.5 bg-yellow-400 text-blue-950 rounded-xl font-black text-xs uppercase tracking-wider"
+                  >
+                    Admin Login
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setView('home');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-black text-xs uppercase tracking-wider"
+                  >
+                    School Home
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        )}
+
         {view === 'parentStaffChat' && (
-          <div className="max-w-6xl mx-auto py-8 sm:py-12 px-3 sm:px-6">
-            <ParentStaffMessaging
-              currentUserRole={role}
-              currentUserName={currentUser || (role === UserRole.PARENT ? (currentParentObj?.fullName || 'Parent') : 'User')}
-              currentParent={currentParentObj}
-              currentTeacher={currentTeacherObj}
-              parents={state.parents || []}
-              students={state.studentAccounts || []}
-              teachers={state.teachers || []}
-              messages={state.parentStaffMessages || []}
-              onSendMessage={handleSendParentMessage}
-              onInitiateCall={handleInitiateCall}
-              onBack={() => {
-                setView(role === UserRole.PARENT ? 'parentPortal' : role === UserRole.TEACHER ? 'teacher' : 'home');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              onGoToCommunityHub={() => {
-                setView('communityHub');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            />
-          </div>
+          (role === UserRole.PARENT || role === UserRole.TEACHER || role === UserRole.ADMIN) ? (
+            <div className="max-w-6xl mx-auto py-8 sm:py-12 px-3 sm:px-6">
+              <ParentStaffMessaging
+                currentUserRole={role}
+                currentUserName={currentUser || (role === UserRole.PARENT ? (currentParentObj?.fullName || 'Parent') : 'User')}
+                currentParent={currentParentObj}
+                currentTeacher={currentTeacherObj}
+                parents={state.parents || []}
+                students={state.studentAccounts || []}
+                teachers={state.teachers || []}
+                messages={state.parentStaffMessages || []}
+                onSendMessage={handleSendParentMessage}
+                onInitiateCall={handleInitiateCall}
+                onBack={() => {
+                  setView(role === UserRole.PARENT ? 'parentPortal' : role === UserRole.TEACHER ? 'teacher' : 'home');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onGoToCommunityHub={() => {
+                  setView('communityHub');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              />
+            </div>
+          ) : (
+            <div className="max-w-xl mx-auto py-16 px-4 text-center">
+              <div className="bg-white p-8 rounded-3xl border-2 border-slate-200 shadow-xl space-y-4">
+                <span className="text-5xl block">🔒</span>
+                <h3 className="font-serif font-black text-2xl text-blue-950">Direct Calls & Messaging Restricted</h3>
+                <p className="text-xs text-slate-500 font-medium">
+                  Direct voice/video calls and parent-staff communications are reserved strictly for registered parents, faculty teachers, and school administrators.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setView(role === UserRole.STUDENT ? 'portal' : 'home')}
+                  className="px-6 py-3 bg-blue-900 text-yellow-400 rounded-xl font-black text-xs uppercase shadow-md"
+                >
+                  Return to Dashboard
+                </button>
+              </div>
+            </div>
+          )
         )}
 
         {view === 'communityHub' && (
@@ -2083,7 +2266,24 @@ const App: React.FC = () => {
               chatMessages={state.chatMessages || []}
               meetings={state.meetings || []}
               callSessions={state.callSessions || []}
+              callRecordings={state.callRecordings || []}
+              onSaveCallRecording={(recording) => {
+                setState(prev => ({
+                  ...prev,
+                  callRecordings: [recording, ...(prev.callRecordings || []).filter(r => r.id !== recording.id)]
+                }));
+                realtimeService.saveCallRecording(recording);
+              }}
+              onDeleteCallRecording={(recordingId) => {
+                setState(prev => ({
+                  ...prev,
+                  callRecordings: (prev.callRecordings || []).filter(r => r.id !== recordingId)
+                }));
+                realtimeService.deleteCallRecording(recordingId);
+              }}
               onSendChatMessage={handleSendChatMessage}
+              onEditChatMessage={handleEditChatMessage}
+              onDeleteChatMessage={handleDeleteChatMessage}
               onCreateMeeting={handleCreateMeeting}
               onInitiateCall={handleInitiateCall}
               onUpdateCallStatus={handleUpdateCallStatus}

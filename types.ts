@@ -55,6 +55,7 @@ export type StaffPagePermission =
   | 'termStats' 
   | 'grading' 
   | 'attendance' 
+  | 'attendanceScanning'
   | 'courses'
   | 'timetable'
   | 'parentMessages';
@@ -62,11 +63,12 @@ export type StaffPagePermission =
 export const ALL_STAFF_PAGES: { id: StaffPagePermission; label: string; description: string; icon: string }[] = [
   { id: 'overview', label: 'Summary', description: 'Overview metrics & attendance stats', icon: '📊' },
   { id: 'parentMessages', label: 'Parent Messages', description: 'Direct messaging & communications with parents of your pupils', icon: '💬' },
+  { id: 'attendanceScanning', label: 'Attendance Scanning', description: 'Real-time device camera QR pass scanner with instant audio & visual validation', icon: '📷' },
+  { id: 'attendance', label: 'Mark Attendance', description: 'Checklist roll call and attendance logs', icon: '📋' },
   { id: 'students', label: 'Students & Pupils', description: 'Class list, profiles & student promotion to next class', icon: '👨‍🎓' },
   { id: 'timetable', label: 'Class Timetable', description: 'Weekly class schedule & lesson timetable builder', icon: '🗓️' },
   { id: 'termStats', label: 'Term Attendance', description: 'Term attendance logs and summaries', icon: '📅' },
   { id: 'grading', label: 'Grading', description: 'Score entry and academic result upload', icon: '📝' },
-  { id: 'attendance', label: 'Mark Attendance', description: 'Live QR scanner and attendance verification', icon: '📷' },
   { id: 'courses', label: 'Curriculum', description: 'Course management and syllabus duplication', icon: '📚' },
 ];
 
@@ -133,6 +135,7 @@ export interface StudentAccount {
   activeTerm?: string;
   parentEmail?: string;
   parentId?: string;
+  balance?: number;
 }
 
 export interface StudentResult {

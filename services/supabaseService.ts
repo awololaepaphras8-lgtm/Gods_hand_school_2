@@ -19,7 +19,8 @@ import {
   ChatChannelMessage,
   MeetingSession,
   CallSession,
-  AdminRealtimeEvent
+  AdminRealtimeEvent,
+  CallRecording
 } from '../types';
 
 const SUPABASE_URL = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://jzuifdntpxjrmmrpvqfc.supabase.co';
@@ -97,7 +98,8 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
       chatMessagesRes,
       meetingsRes,
       callSessionsRes,
-      adminEventsRes
+      adminEventsRes,
+      bankAccountRes
     ] = await Promise.all([
       supabase.from('students').select('*'),
       supabase.from('parents').select('*'),
@@ -119,7 +121,8 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
       supabase.from('chat_messages').select('*').order('created_at', { ascending: true }),
       supabase.from('meetings').select('*').order('created_at', { ascending: false }),
       supabase.from('call_sessions').select('*').order('started_at', { ascending: false }),
-      supabase.from('admin_realtime_events').select('*').order('timestamp', { ascending: false }).limit(50)
+      supabase.from('admin_realtime_events').select('*').order('timestamp', { ascending: false }).limit(50),
+      supabase.from('school_bank_account_config').select('*').limit(1).maybeSingle()
     ]);
 
     const partial: Partial<AppState> = {
@@ -158,7 +161,8 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
         admissionYear: s.admission_year,
         qrGenerations: s.qr_generations || {},
         parentEmail: s.parent_email,
-        parentId: s.parent_id
+        parentId: s.parent_id,
+        balance: s.balance !== null && s.balance !== undefined ? Number(s.balance) : undefined
       }));
     }
 
@@ -434,6 +438,19 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
         performedBy: ev.performed_by,
         timestamp: ev.timestamp
       }));
+    }
+
+    // 21. School Bank Account Configuration
+    if (bankAccountRes && bankAccountRes.data && (bankAccountRes.data.bank_name || bankAccountRes.data.account_number)) {
+      const b = bankAccountRes.data;
+      partial.bankAccountConfig = {
+        bankName: b.bank_name,
+        accountNumber: b.account_number,
+        accountName: b.account_name,
+        paymentInstructions: b.payment_instructions,
+        updatedAt: b.updated_at,
+        updatedBy: b.updated_by
+      };
     }
 
     return partial;
@@ -796,6 +813,26 @@ export const setupRealtimeSync = (
         }
         break;
 
+      case 'BANK_ACCOUNT_CONFIG_UPDATED':
+        if (data) {
+          onStateUpdate(prev => ({
+            ...prev,
+            bankAccountConfig: data
+          }));
+        }
+        break;
+
+      case 'STUDENT_BALANCE_UPDATED':
+        if (data && data.studentId) {
+          onStateUpdate(prev => ({
+            ...prev,
+            studentAccounts: prev.studentAccounts.map(s =>
+              s.id === data.studentId ? { ...s, balance: data.balance } : s
+            )
+          }));
+        }
+        break;
+
       case 'FULL_STATE_REFRESH':
         if (data.state) {
           onStateUpdate(() => data.state);
@@ -903,7 +940,8 @@ export const setupRealtimeSync = (
                 admissionYear: newRecord.admission_year,
                 qrGenerations: newRecord.qr_generations || {},
                 parentEmail: newRecord.parent_email,
-                parentId: newRecord.parent_id
+                parentId: newRecord.parent_id,
+                balance: newRecord.balance !== null && newRecord.balance !== undefined ? Number(newRecord.balance) : undefined
               };
               onStateUpdate(prev => {
                 const exists = prev.studentAccounts.some(s => s.id === mapped.id);
@@ -1300,7 +1338,7 @@ export const setupRealtimeSync = (
             break;
 
           case 'chat_messages':
-            if (eventType === 'INSERT') {
+            if (eventType === 'INSERT' || eventType === 'UPDATE') {
               const mappedChat: ChatChannelMessage = {
                 id: newRecord.id,
                 channelId: newRecord.channel_id,
@@ -1317,9 +1355,16 @@ export const setupRealtimeSync = (
                 const exists = list.some(m => m.id === mappedChat.id);
                 return {
                   ...prev,
-                  chatMessages: exists ? list : [...list, mappedChat]
+                  chatMessages: exists 
+                    ? list.map(m => m.id === mappedChat.id ? mappedChat : m)
+                    : [...list, mappedChat]
                 };
               });
+            } else if (eventType === 'DELETE' && oldRecord.id) {
+              onStateUpdate(prev => ({
+                ...prev,
+                chatMessages: (prev.chatMessages || []).filter(m => m.id !== oldRecord.id)
+              }));
             }
             break;
 
@@ -1759,10 +1804,74 @@ export const realtimeService = {
           qr_generations: student.qrGenerations || {},
           parent_email: student.parentEmail,
           parent_id: student.parentId,
+          balance: student.balance !== undefined ? student.balance : null,
           updated_at: new Date().toISOString()
         });
       } catch (err) {
         console.error('Supabase student upsert failed:', err);
+      }
+    }
+  },
+
+  // Write and set student outstanding balance directly
+  updateStudentBalance: async (studentId: string, balance: number) => {
+    broadcastLocalChange({ type: 'STUDENT_BALANCE_UPDATED', data: { studentId, balance } });
+
+    if (supabase) {
+      try {
+        await supabase
+          .from('students')
+          .update({ balance, updated_at: new Date().toISOString() })
+          .eq('id', studentId);
+      } catch (err) {
+        console.error('Supabase updateStudentBalance failed:', err);
+      }
+    }
+  },
+
+  // Update and broadcast official school bank account details to all panels in real-time
+  updateBankAccountConfig: async (config: SchoolBankAccountConfig) => {
+    broadcastLocalChange({ type: 'BANK_ACCOUNT_CONFIG_UPDATED', data: config });
+
+    if (supabase) {
+      try {
+        await supabase.from('school_bank_account_config').upsert({
+          id: 'primary_account',
+          bank_name: config.bankName,
+          account_number: config.accountNumber,
+          account_name: config.accountName,
+          payment_instructions: config.paymentInstructions || null,
+          updated_at: config.updatedAt || new Date().toISOString(),
+          updated_by: config.updatedBy || 'School Administrator'
+        });
+      } catch (err) {
+        console.error('Supabase updateBankAccountConfig failed:', err);
+      }
+    }
+  },
+
+  // Broadcast WebRTC call signaling for real-time voice transmission
+  sendCallSignal: async (signal: {
+    callId: string;
+    senderId: string;
+    receiverId: string;
+    type: 'offer' | 'answer' | 'ice_candidate' | 'mic_status' | 'end_call';
+    payload: any;
+  }) => {
+    broadcastLocalChange({ type: 'CALL_SIGNAL_RECEIVED', data: signal });
+
+    if (supabase) {
+      try {
+        await supabase.from('call_signals').insert({
+          call_id: signal.callId,
+          sender_id: signal.senderId,
+          receiver_id: signal.receiverId,
+          type: signal.type,
+          signal_data: signal.payload,
+          created_at: new Date().toISOString()
+        });
+      } catch (err) {
+        // Fallback gracefully to crossTabChannel
       }
     }
   },
@@ -2155,6 +2264,32 @@ export const realtimeService = {
     }
   },
 
+  // Edit Community Chat Channel Message
+  editChatMessage: async (messageId: string, newMessage: string) => {
+    broadcastLocalChange({ type: 'CHAT_MESSAGE_EDITED', data: { messageId, message: newMessage } });
+
+    if (supabase) {
+      try {
+        await supabase.from('chat_messages').update({ message: newMessage }).eq('id', messageId);
+      } catch (err) {
+        console.error('Supabase editChatMessage failed:', err);
+      }
+    }
+  },
+
+  // Delete Community Chat Channel Message
+  deleteChatMessage: async (messageId: string) => {
+    broadcastLocalChange({ type: 'CHAT_MESSAGE_DELETED', data: { messageId } });
+
+    if (supabase) {
+      try {
+        await supabase.from('chat_messages').delete().eq('id', messageId);
+      } catch (err) {
+        console.error('Supabase deleteChatMessage failed:', err);
+      }
+    }
+  },
+
   // Create or Schedule Virtual Meeting
   createMeeting: async (meeting: MeetingSession) => {
     broadcastLocalChange({ type: 'MEETING_CREATED', data: meeting });
@@ -2258,6 +2393,47 @@ export const realtimeService = {
         await supabase.from('student_accounts').update({ active_term: newTerm }).neq('id', 'NONE');
       } catch (err) {
         console.error('Supabase advanceAcademicTerm failed:', err);
+      }
+    }
+  },
+
+  // Save or update participant call recording
+  saveCallRecording: async (recording: CallRecording) => {
+    broadcastLocalChange({ type: 'CALL_RECORDING_SAVED', data: recording });
+
+    if (supabase) {
+      try {
+        await supabase.from('call_recordings').upsert({
+          id: recording.id,
+          room_code: recording.roomCode,
+          room_title: recording.roomTitle,
+          host_name: recording.hostName,
+          camera_role: recording.cameraRole,
+          camera_label: recording.cameraLabel,
+          recorded_by_name: recording.recordedByName,
+          recorded_by_role: recording.recordedByRole,
+          duration_seconds: recording.durationSeconds,
+          blob_url: recording.blobUrl,
+          file_size_bytes: recording.fileSizeBytes,
+          mime_type: recording.mimeType,
+          download_file_name: recording.downloadFileName,
+          created_at: recording.createdAt
+        });
+      } catch (err) {
+        console.error('Supabase saveCallRecording failed:', err);
+      }
+    }
+  },
+
+  // Delete call recording
+  deleteCallRecording: async (recordingId: string) => {
+    broadcastLocalChange({ type: 'CALL_RECORDING_DELETED', data: { recordingId } });
+
+    if (supabase) {
+      try {
+        await supabase.from('call_recordings').delete().eq('id', recordingId);
+      } catch (err) {
+        console.error('Supabase deleteCallRecording failed:', err);
       }
     }
   }
