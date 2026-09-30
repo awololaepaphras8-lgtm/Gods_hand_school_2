@@ -20,7 +20,8 @@ import {
   MeetingSession,
   CallSession,
   AdminRealtimeEvent,
-  CallRecording
+  CallRecording,
+  SchoolBankAccountConfig
 } from '../types';
 
 const SUPABASE_URL = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://jzuifdntpxjrmmrpvqfc.supabase.co';

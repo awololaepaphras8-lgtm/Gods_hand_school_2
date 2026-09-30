@@ -90,6 +90,7 @@ interface AdminPanelProps {
   bankAccountConfig?: SchoolBankAccountConfig;
   onUpdateBankAccountConfig?: (config: SchoolBankAccountConfig) => void;
   onMarkAttendance?: (studentId: string, term?: string) => boolean;
+  onUpdateStudentBalance?: (studentId: string, balance: number) => void;
   initialTab?: string;
 }
 
@@ -141,8 +142,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   bankAccountConfig,
   onUpdateBankAccountConfig,
   onMarkAttendance,
+  onUpdateStudentBalance,
   initialTab
 }) => {
+  const [editingBalanceStudentId, setEditingBalanceStudentId] = useState<string | null>(null);
+  const [inputBalanceValue, setInputBalanceValue] = useState<string>('');
+  const [balanceSaveSuccessId, setBalanceSaveSuccessId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'attendance' | 'attendanceScanning' | 'academicTrends' | 'payments' | 'resultPublish' | 'fees' | 'bankAccount' | 'applications' | 'teachers' | 'courses' | 'calendar' | 'announcements' | 'access' | 'parents' | 'export' | 'delegations' | 'pageAccess'>((initialTab as any) || 'attendance');
   const [rejectModalRequestId, setRejectModalRequestId] = useState<string | null>(null);
   const [rejectFeedbackText, setRejectFeedbackText] = useState<string>('');
@@ -2022,42 +2027,140 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <p className="text-slate-500 text-sm font-medium mb-6 italic">Manually override entry restrictions for students and pupils who haven't settled fees.</p>
 
             <div className="bg-white rounded-[2rem] border-2 border-slate-100 overflow-x-auto shadow-sm">
-              <table className="w-full text-left min-w-[700px]">
+              <table className="w-full text-left min-w-[850px]">
                 <thead>
                   <tr className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
-                    <th className="px-8 py-5">Student / Pupil Name</th>
-                    <th className="px-8 py-5">Grade</th>
-                    <th className="px-8 py-5">Fee Status</th>
-                    <th className="px-8 py-5 text-right">Entry Permission</th>
+                    <th className="px-6 py-5">Student / Pupil Name</th>
+                    <th className="px-5 py-5">Grade</th>
+                    <th className="px-6 py-5">Fee Balance & Clearance</th>
+                    <th className="px-6 py-5 text-center">Admin Direct Balance (Write/Edit)</th>
+                    <th className="px-6 py-5 text-right">Entry Permission</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y-2 divide-slate-50">
                   {students.length === 0 ? (
-                    <tr><td colSpan={4} className="py-24 text-center text-slate-300 font-bold uppercase tracking-widest text-xs">No students or pupils registered</td></tr>
+                    <tr><td colSpan={5} className="py-24 text-center text-slate-300 font-bold uppercase tracking-widest text-xs">No students or pupils registered</td></tr>
                   ) : (
                     students.map(student => {
                       const studentPayments = payments.filter(p => p.studentName === student.name);
                       const totalPaid = studentPayments.reduce((acc, p) => acc + p.amount, 0);
                       const targetFee = fees[student.grade] || 0;
-                      const isPaid = targetFee > 0 && totalPaid >= targetFee;
+                      const hasCustomBalance = student.balance !== undefined && student.balance !== null;
+                      const effectiveBalance = hasCustomBalance ? student.balance! : Math.max(0, targetFee - totalPaid);
+                      const isPaid = effectiveBalance <= 0;
+                      const isEditingThisStudent = editingBalanceStudentId === student.id;
 
                       return (
                         <tr key={student.id} className="hover:bg-blue-50/30 transition-colors">
-                          <td className="px-8 py-6">
+                          <td className="px-6 py-5">
                             <p className="font-black text-blue-900">{student.name}</p>
-                            <p className="text-[10px] text-slate-400 font-bold">{student.email}</p>
+                            <p className="text-[10px] text-slate-400 font-bold">ID: {student.id} • {student.email}</p>
                           </td>
-                          <td className="px-8 py-6">
+                          <td className="px-5 py-5">
                             <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-[10px] font-black uppercase">{student.grade}</span>
                           </td>
-                          <td className="px-8 py-6">
+                          <td className="px-6 py-5">
                             {isPaid ? (
-                              <span className="text-green-600 font-black text-[10px] uppercase tracking-widest">Settled</span>
+                              <div className="flex flex-col items-start gap-1">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-black text-[10px] uppercase tracking-wider">
+                                  ✓ Cleared (₦0)
+                                </span>
+                                {hasCustomBalance && (
+                                  <span className="text-[9px] font-bold text-emerald-600">Admin Bursar Waiver Set</span>
+                                )}
+                              </div>
                             ) : (
-                              <span className="text-red-500 font-black text-[10px] uppercase tracking-widest">Outstanding (₦{(targetFee - totalPaid).toLocaleString()})</span>
+                              <div className="flex flex-col items-start gap-0.5">
+                                <span className="text-red-600 font-black text-xs uppercase tracking-wide">
+                                  ₦{effectiveBalance.toLocaleString()} Outstanding
+                                </span>
+                                <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${
+                                  hasCustomBalance ? 'bg-amber-100 text-amber-800' : 'text-slate-400'
+                                }`}>
+                                  {hasCustomBalance ? '⭐ Admin Override' : `Standard (Paid ₦${totalPaid.toLocaleString()})`}
+                                </span>
+                              </div>
                             )}
                           </td>
-                          <td className="px-8 py-6 text-right">
+                          <td className="px-6 py-5 text-center">
+                            {isEditingThisStudent ? (
+                              <div className="inline-flex flex-col items-center gap-2 p-3 bg-blue-50 border-2 border-blue-300 rounded-2xl shadow-lg animate-in zoom-in-95 duration-150">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-black text-xs text-blue-950">₦</span>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="500"
+                                    value={inputBalanceValue}
+                                    onChange={(e) => setInputBalanceValue(e.target.value)}
+                                    placeholder="Enter balance"
+                                    className="w-32 px-3 py-1.5 text-xs font-mono font-bold bg-white border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:outline-hidden text-blue-950"
+                                    autoFocus
+                                  />
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => setInputBalanceValue('0')}
+                                    className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded text-[9px] font-black uppercase"
+                                    title="Set balance to ₦0 (Cleared/Scholarship)"
+                                  >
+                                    ₦0 (Clear)
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const num = parseFloat(inputBalanceValue);
+                                      if (isNaN(num) || num < 0) {
+                                        alert('Please enter a valid non-negative balance amount.');
+                                        return;
+                                      }
+                                      if (onUpdateStudentBalance) {
+                                        onUpdateStudentBalance(student.id, num);
+                                      }
+                                      setBalanceSaveSuccessId(student.id);
+                                      setEditingBalanceStudentId(null);
+                                      setTimeout(() => setBalanceSaveSuccessId(null), 3000);
+                                    }}
+                                    className="px-3 py-1 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-lg text-[10px] font-black uppercase shadow-xs"
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingBalanceStudentId(null)}
+                                    className="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-[10px] font-bold"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="inline-flex flex-col items-center gap-1">
+                                {balanceSaveSuccessId === student.id ? (
+                                  <span className="px-3 py-1 bg-emerald-500 text-white rounded-lg text-[10px] font-black uppercase tracking-wider animate-bounce">
+                                    ✓ Saved & Synced!
+                                  </span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingBalanceStudentId(student.id);
+                                      setInputBalanceValue(effectiveBalance.toString());
+                                    }}
+                                    className="px-3 py-1.5 bg-yellow-400 hover:bg-yellow-300 active:scale-95 text-blue-950 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-sm flex items-center gap-1 border border-yellow-500"
+                                    title="Directly write or override pupil balance in real-time"
+                                  >
+                                    <span>✍️</span> Write / Edit Balance
+                                  </button>
+                                )}
+                                <span className="text-[9px] text-slate-400 font-mono">
+                                  Current: ₦{effectiveBalance.toLocaleString()}
+                                </span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-5 text-right">
                             <button 
                               onClick={() => onToggleStudentEntry(student.id, !student.entryAllowed)}
                               className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-md ${student.entryAllowed ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-green-100 text-green-600 hover:bg-green-200'}`}

@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS public.students (
   parent_id TEXT,
   date_of_birth DATE,
   gender TEXT CHECK (gender IN ('Male', 'Female', 'Other')),
+  balance NUMERIC(12, 2) DEFAULT NULL,
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -384,6 +385,17 @@ CREATE TABLE IF NOT EXISTS public.school_bank_account_config (
   updated_by TEXT DEFAULT 'School Administrator'
 );
 
+-- 26. Real-Time Call Audio Signaling & WebRTC Stream Coordination Table
+CREATE TABLE IF NOT EXISTS public.call_signals (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  call_id TEXT NOT NULL,
+  sender_id TEXT NOT NULL,
+  receiver_id TEXT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('offer', 'answer', 'ice_candidate', 'mic_status', 'end_call')),
+  signal_data JSONB NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- ==============================================================================
 -- PHASE 3: SAFE COLUMN UPGRADES & CONSTRAINT MIGRATIONS (IDEMPOTENT)
 -- (Ensures scripts succeed when pasted into an already-existing database)
@@ -403,6 +415,7 @@ ALTER TABLE public.students ADD COLUMN IF NOT EXISTS admission_year INT;
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS qr_generations JSONB DEFAULT '{}'::jsonb;
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS parent_email TEXT;
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS parent_id TEXT;
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS balance NUMERIC(12, 2) DEFAULT NULL;
 
 -- Add new columns to public.fee_payments if not present
 ALTER TABLE public.fee_payments ADD COLUMN IF NOT EXISTS receipt_file_type TEXT;
@@ -561,6 +574,79 @@ BEGIN
     'message', 'Child successfully delinked by administrator.',
     'parent_id', p_parent_id,
     'student_id', p_student_id
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Admin Function to Set or Override Student Balance Directly
+CREATE OR REPLACE FUNCTION public.set_student_balance(
+  p_student_id TEXT,
+  p_balance NUMERIC
+)
+RETURNS JSONB AS $$
+DECLARE
+  v_student RECORD;
+BEGIN
+  UPDATE public.students
+  SET balance = p_balance,
+      updated_at = timezone('utc'::text, now())
+  WHERE UPPER(TRIM(id)) = UPPER(TRIM(p_student_id))
+  RETURNING id, name, grade, balance INTO v_student;
+
+  IF v_student.id IS NULL THEN
+    RAISE EXCEPTION 'Student ID "%" was not found in the student registry.', p_student_id;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'message', 'Student balance updated successfully in real time.',
+    'student_id', v_student.id,
+    'student_name', v_student.name,
+    'grade', v_student.grade,
+    'balance', v_student.balance
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Admin Function to Change School Bank Account Details (Proprietor & Bursary)
+CREATE OR REPLACE FUNCTION public.update_school_bank_account(
+  p_bank_name TEXT,
+  p_account_number TEXT,
+  p_account_name TEXT,
+  p_payment_instructions TEXT DEFAULT NULL,
+  p_updated_by TEXT DEFAULT 'School Administrator'
+)
+RETURNS JSONB AS $$
+DECLARE
+  v_cfg RECORD;
+BEGIN
+  INSERT INTO public.school_bank_account_config (
+    id, bank_name, account_number, account_name, payment_instructions, updated_at, updated_by
+  ) VALUES (
+    'primary_account',
+    p_bank_name,
+    p_account_number,
+    p_account_name,
+    p_payment_instructions,
+    timezone('utc'::text, now()),
+    p_updated_by
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    bank_name = EXCLUDED.bank_name,
+    account_number = EXCLUDED.account_number,
+    account_name = EXCLUDED.account_name,
+    payment_instructions = EXCLUDED.payment_instructions,
+    updated_at = EXCLUDED.updated_at,
+    updated_by = EXCLUDED.updated_by
+  RETURNING * INTO v_cfg;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'message', 'School official bank account updated and published in real time to all panels.',
+    'bank_name', v_cfg.bank_name,
+    'account_number', v_cfg.account_number,
+    'account_name', v_cfg.account_name,
+    'updated_at', v_cfg.updated_at
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -933,8 +1019,16 @@ CREATE POLICY "Admins can update school bank account config"
   USING (true)
   WITH CHECK (true);
 
+-- 26. Real-Time Call Signals Policies
+ALTER TABLE public.call_signals ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can exchange call signals" ON public.call_signals;
+CREATE POLICY "Anyone can exchange call signals"
+  ON public.call_signals FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
 -- ==============================================================================
--- PHASE 7: SUPABASE REALTIME CONFIGURATION (ALL 25 TABLES)
+-- PHASE 7: SUPABASE REALTIME CONFIGURATION (ALL 26 TABLES)
 -- ==============================================================================
 ALTER TABLE public.profiles REPLICA IDENTITY FULL;
 ALTER TABLE public.students REPLICA IDENTITY FULL;
@@ -961,6 +1055,7 @@ ALTER TABLE public.call_sessions REPLICA IDENTITY FULL;
 ALTER TABLE public.admin_realtime_events REPLICA IDENTITY FULL;
 ALTER TABLE public.call_recordings REPLICA IDENTITY FULL;
 ALTER TABLE public.school_bank_account_config REPLICA IDENTITY FULL;
+ALTER TABLE public.call_signals REPLICA IDENTITY FULL;
 
 DO $$
 DECLARE
@@ -990,7 +1085,8 @@ DECLARE
     'call_sessions',
     'admin_realtime_events',
     'call_recordings',
-    'school_bank_account_config'
+    'school_bank_account_config',
+    'call_signals'
   ];
 BEGIN
   -- 1. Ensure supabase_realtime publication exists

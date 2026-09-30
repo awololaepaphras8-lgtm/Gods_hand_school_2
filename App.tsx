@@ -240,6 +240,19 @@ const App: React.FC = () => {
       return updated;
     });
     stateService.updateBankAccountConfig(config);
+    realtimeService.updateBankAccountConfig(config);
+  };
+
+  const handleUpdateStudentBalance = (studentId: string, balance: number) => {
+    setState(prev => {
+      const updatedStudents = prev.studentAccounts.map(s =>
+        s.id === studentId ? { ...s, balance } : s
+      );
+      const updated = { ...prev, studentAccounts: updatedStudents };
+      stateService.saveState(updated);
+      return updated;
+    });
+    realtimeService.updateStudentBalance(studentId, balance);
   };
 
   const handleAddCallRecording = (recording: CallRecording) => {
@@ -2007,6 +2020,7 @@ const App: React.FC = () => {
                 bankAccountConfig={state.bankAccountConfig}
                 onUpdateBankAccountConfig={handleUpdateBankAccountConfig}
                 onMarkAttendance={markAttendance}
+                onUpdateStudentBalance={handleUpdateStudentBalance}
               />
             </div>
           ) : (role === UserRole.TEACHER && activeTeacherDelegation) ? (
@@ -2054,6 +2068,7 @@ const App: React.FC = () => {
                 bankAccountConfig={state.bankAccountConfig}
                 onUpdateBankAccountConfig={handleUpdateBankAccountConfig}
                 onMarkAttendance={markAttendance}
+                onUpdateStudentBalance={handleUpdateStudentBalance}
                 onExitDelegation={() => {
                   setView('teacher');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2118,6 +2133,7 @@ const App: React.FC = () => {
                 bankAccountConfig={state.bankAccountConfig}
                 onUpdateBankAccountConfig={handleUpdateBankAccountConfig}
                 onMarkAttendance={markAttendance}
+                onUpdateStudentBalance={handleUpdateStudentBalance}
                 initialTab="attendanceScanning"
               />
             </div>

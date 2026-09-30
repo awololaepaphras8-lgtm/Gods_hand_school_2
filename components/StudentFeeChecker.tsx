@@ -55,10 +55,12 @@ export const StudentFeeChecker: React.FC<StudentFeeCheckerProps> = ({
 
   const totalFee = currentStudent ? (fees[currentStudent.grade] || 0) : 0;
   const totalPaid = studentPayments.reduce((acc, p) => acc + p.amount, 0);
-  const outstandingBalance = Math.max(0, totalFee - totalPaid);
+  const outstandingBalance = currentStudent?.balance !== undefined && currentStudent?.balance !== null
+    ? currentStudent.balance
+    : Math.max(0, totalFee - totalPaid);
   const paymentProgress = totalFee > 0 ? Math.min(100, Math.round((totalPaid / totalFee) * 100)) : (totalPaid > 0 ? 100 : 0);
-  const isFullySettled = totalFee > 0 && totalPaid >= totalFee;
-  const isPartiallySettled = totalPaid > 0 && totalPaid < totalFee;
+  const isFullySettled = outstandingBalance <= 0;
+  const isPartiallySettled = outstandingBalance > 0 && totalPaid > 0;
 
   const handlePrint = () => {
     setIsPrinting(true);

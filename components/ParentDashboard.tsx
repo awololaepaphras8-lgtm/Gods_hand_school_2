@@ -127,8 +127,10 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
     const totalFee = fees[child.grade] || 0;
     const childPayments = payments.filter(p => p.studentId === child.id && p.status !== 'declined');
     const amountPaid = childPayments.reduce((acc, p) => acc + (p.amount || 0), 0);
-    const balance = Math.max(0, totalFee - amountPaid);
-    const isFullPaid = balance === 0 && totalFee > 0;
+    const balance = child.balance !== undefined && child.balance !== null 
+      ? child.balance 
+      : Math.max(0, totalFee - amountPaid);
+    const isFullPaid = balance === 0;
     const isPartPaid = amountPaid > 0 && balance > 0;
     return { totalFee, amountPaid, balance, isFullPaid, isPartPaid, childPayments };
   };
