@@ -163,7 +163,8 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
         qrGenerations: s.qr_generations || {},
         parentEmail: s.parent_email,
         parentId: s.parent_id,
-        balance: s.balance !== null && s.balance !== undefined ? Number(s.balance) : undefined
+        balance: s.balance !== null && s.balance !== undefined ? Number(s.balance) : undefined,
+        photo: s.photo || undefined
       }));
     }
 
@@ -373,8 +374,16 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
         subject: m.subject || 'Parent Inquiry',
         message: m.message,
         senderRole: m.sender_role,
+        senderId: m.sender_id || (m.sender_role === 'parent' ? m.parent_id : m.staff_id),
         priority: m.priority || 'normal',
         read: m.read ?? false,
+        status: m.status || (m.read ? 'read' : 'delivered'),
+        deliveredAt: m.delivered_at,
+        readAt: m.read_at,
+        seenAt: m.seen_at,
+        isEdited: m.is_edited ?? false,
+        editedAt: m.edited_at,
+        reactions: m.reactions || {},
         replyToId: m.reply_to_id,
         timestamp: m.created_at || new Date().toISOString()
       }));
@@ -600,6 +609,15 @@ export const setupRealtimeSync = (
         }));
         break;
 
+      case 'STUDENT_PHOTO_UPDATED':
+        onStateUpdate(prev => ({
+          ...prev,
+          studentAccounts: prev.studentAccounts.map(s => 
+            s.id === data.studentId ? { ...s, photo: data.photo } : s
+          )
+        }));
+        break;
+
       case 'STUDENT_ADDED':
       case 'STUDENT_UPDATED':
         onStateUpdate(prev => ({
@@ -753,6 +771,44 @@ export const setupRealtimeSync = (
               : [...list, data]
           };
         });
+        break;
+
+      case 'PARENT_STAFF_MESSAGE_EDITED':
+        onStateUpdate(prev => ({
+          ...prev,
+          parentStaffMessages: (prev.parentStaffMessages || []).map(m =>
+            m.id === data.id
+              ? { ...m, message: data.message, isEdited: true, editedAt: data.editedAt || new Date().toISOString() }
+              : m
+          )
+        }));
+        break;
+
+      case 'PARENT_STAFF_MESSAGE_DELETED':
+        onStateUpdate(prev => ({
+          ...prev,
+          parentStaffMessages: (prev.parentStaffMessages || []).filter(m => m.id !== data.id)
+        }));
+        break;
+
+      case 'PARENT_STAFF_MESSAGE_REACTED':
+        onStateUpdate(prev => ({
+          ...prev,
+          parentStaffMessages: (prev.parentStaffMessages || []).map(m =>
+            m.id === data.id ? { ...m, reactions: data.reactions } : m
+          )
+        }));
+        break;
+
+      case 'PARENT_STAFF_MESSAGES_READ':
+        onStateUpdate(prev => ({
+          ...prev,
+          parentStaffMessages: (prev.parentStaffMessages || []).map(m =>
+            (data.ids || []).includes(m.id)
+              ? { ...m, read: true, status: 'read', readAt: data.readAt || new Date().toISOString() }
+              : m
+          )
+        }));
         break;
 
       case 'CHAT_MESSAGE_SENT':
@@ -942,7 +998,8 @@ export const setupRealtimeSync = (
                 qrGenerations: newRecord.qr_generations || {},
                 parentEmail: newRecord.parent_email,
                 parentId: newRecord.parent_id,
-                balance: newRecord.balance !== null && newRecord.balance !== undefined ? Number(newRecord.balance) : undefined
+                balance: newRecord.balance !== null && newRecord.balance !== undefined ? Number(newRecord.balance) : undefined,
+                photo: newRecord.photo || undefined
               };
               onStateUpdate(prev => {
                 const exists = prev.studentAccounts.some(s => s.id === mapped.id);
@@ -1315,8 +1372,16 @@ export const setupRealtimeSync = (
                 subject: newRecord.subject || 'Parent Inquiry',
                 message: newRecord.message,
                 senderRole: newRecord.sender_role,
+                senderId: newRecord.sender_id || (newRecord.sender_role === 'parent' ? newRecord.parent_id : newRecord.staff_id),
                 priority: newRecord.priority || 'normal',
                 read: newRecord.read ?? false,
+                status: newRecord.status || (newRecord.read ? 'read' : 'delivered'),
+                deliveredAt: newRecord.delivered_at,
+                readAt: newRecord.read_at,
+                seenAt: newRecord.seen_at,
+                isEdited: newRecord.is_edited ?? false,
+                editedAt: newRecord.edited_at,
+                reactions: newRecord.reactions || {},
                 replyToId: newRecord.reply_to_id,
                 timestamp: newRecord.created_at || new Date().toISOString()
               };
@@ -1806,10 +1871,27 @@ export const realtimeService = {
           parent_email: student.parentEmail,
           parent_id: student.parentId,
           balance: student.balance !== undefined ? student.balance : null,
+          photo: student.photo || null,
           updated_at: new Date().toISOString()
         });
       } catch (err) {
         console.error('Supabase student upsert failed:', err);
+      }
+    }
+  },
+
+  // Update student profile photo
+  updateStudentPhoto: async (studentId: string, photo: string) => {
+    broadcastLocalChange({ type: 'STUDENT_PHOTO_UPDATED', data: { studentId, photo } });
+
+    if (supabase) {
+      try {
+        await supabase
+          .from('students')
+          .update({ photo, updated_at: new Date().toISOString() })
+          .eq('id', studentId);
+      } catch (err) {
+        console.error('Supabase student photo update failed:', err);
       }
     }
   },
@@ -2214,30 +2296,129 @@ export const realtimeService = {
 
   // Send Parent-Staff Direct Message
   sendParentStaffMessage: async (msg: ParentStaffMessage) => {
-    broadcastLocalChange({ type: 'PARENT_STAFF_MESSAGE_SENT', data: msg });
+    const enrichedMsg: ParentStaffMessage = {
+      ...msg,
+      status: msg.status || 'delivered',
+      deliveredAt: msg.deliveredAt || new Date().toISOString()
+    };
+    broadcastLocalChange({ type: 'PARENT_STAFF_MESSAGE_SENT', data: enrichedMsg });
 
     if (supabase) {
       try {
         await supabase.from('parent_staff_messages').upsert({
-          id: msg.id,
-          parent_id: msg.parentId,
-          parent_name: msg.parentName,
-          parent_email: msg.parentEmail,
-          staff_id: msg.staffId,
-          staff_name: msg.staffName,
-          student_id: msg.studentId,
-          student_name: msg.studentName,
-          student_grade: msg.studentGrade,
-          subject: msg.subject,
-          message: msg.message,
-          sender_role: msg.senderRole,
-          priority: msg.priority || 'normal',
-          read: msg.read ?? false,
-          reply_to_id: msg.replyToId,
-          created_at: msg.timestamp
+          id: enrichedMsg.id,
+          parent_id: enrichedMsg.parentId,
+          parent_name: enrichedMsg.parentName,
+          parent_email: enrichedMsg.parentEmail,
+          staff_id: enrichedMsg.staffId,
+          staff_name: enrichedMsg.staffName,
+          student_id: enrichedMsg.studentId,
+          student_name: enrichedMsg.studentName,
+          student_grade: enrichedMsg.studentGrade,
+          subject: enrichedMsg.subject,
+          message: enrichedMsg.message,
+          sender_role: enrichedMsg.senderRole,
+          sender_id: enrichedMsg.senderId,
+          priority: enrichedMsg.priority || 'normal',
+          read: enrichedMsg.read ?? false,
+          status: enrichedMsg.status || 'delivered',
+          delivered_at: enrichedMsg.deliveredAt,
+          read_at: enrichedMsg.readAt,
+          is_edited: enrichedMsg.isEdited ?? false,
+          edited_at: enrichedMsg.editedAt,
+          reactions: enrichedMsg.reactions || {},
+          reply_to_id: enrichedMsg.replyToId,
+          created_at: enrichedMsg.timestamp
         });
       } catch (err) {
         console.error('Supabase sendParentStaffMessage failed:', err);
+      }
+    }
+  },
+
+  // Edit Parent-Staff Message (Only transmitter can edit)
+  editParentStaffMessage: async (messageId: string, newMessage: string) => {
+    const editedAt = new Date().toISOString();
+    broadcastLocalChange({
+      type: 'PARENT_STAFF_MESSAGE_EDITED',
+      data: { id: messageId, message: newMessage, editedAt }
+    });
+
+    if (supabase) {
+      try {
+        await supabase.from('parent_staff_messages').update({
+          message: newMessage,
+          is_edited: true,
+          edited_at: editedAt
+        }).eq('id', messageId);
+      } catch (err) {
+        console.error('Supabase editParentStaffMessage failed:', err);
+      }
+    }
+  },
+
+  // Delete Parent-Staff Message (Only transmitter can delete)
+  deleteParentStaffMessage: async (messageId: string) => {
+    broadcastLocalChange({
+      type: 'PARENT_STAFF_MESSAGE_DELETED',
+      data: { id: messageId }
+    });
+
+    if (supabase) {
+      try {
+        await supabase.from('parent_staff_messages').delete().eq('id', messageId);
+      } catch (err) {
+        console.error('Supabase deleteParentStaffMessage failed:', err);
+      }
+    }
+  },
+
+  // React to Parent-Staff Message with Emoji
+  reactParentStaffMessage: async (messageId: string, emoji: string, userId: string, currentReactions: { [emoji: string]: string[] } = {}) => {
+    const updatedReactions = { ...currentReactions };
+    const currentUsers = updatedReactions[emoji] || [];
+    if (currentUsers.includes(userId)) {
+      updatedReactions[emoji] = currentUsers.filter(u => u !== userId);
+      if (updatedReactions[emoji].length === 0) {
+        delete updatedReactions[emoji];
+      }
+    } else {
+      updatedReactions[emoji] = [...currentUsers, userId];
+    }
+
+    broadcastLocalChange({
+      type: 'PARENT_STAFF_MESSAGE_REACTED',
+      data: { id: messageId, reactions: updatedReactions }
+    });
+
+    if (supabase) {
+      try {
+        await supabase.from('parent_staff_messages').update({
+          reactions: updatedReactions
+        }).eq('id', messageId);
+      } catch (err) {
+        console.error('Supabase reactParentStaffMessage failed:', err);
+      }
+    }
+  },
+
+  // Mark Parent-Staff Messages as Read/Seen by Recipient
+  markParentStaffMessagesRead: async (messageIds: string[]) => {
+    if (!messageIds || messageIds.length === 0) return;
+    const now = new Date().toISOString();
+    broadcastLocalChange({
+      type: 'PARENT_STAFF_MESSAGES_READ',
+      data: { ids: messageIds, readAt: now }
+    });
+
+    if (supabase) {
+      try {
+        await supabase
+          .from('parent_staff_messages')
+          .update({ read: true, status: 'read', read_at: now, seen_at: now })
+          .in('id', messageIds);
+      } catch (err) {
+        console.error('Supabase markParentStaffMessagesRead failed:', err);
       }
     }
   },

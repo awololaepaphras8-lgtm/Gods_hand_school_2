@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { UserRole, UserPagesAccessState } from '../types';
+import { getInitialTheme, toggleTheme, ThemeMode } from '../utils/themeManager';
 
 interface HeaderProps {
   role: UserRole;
@@ -16,7 +17,23 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeView, onOpenDownloadModal, isAppInstalled = false, hasActiveDelegation = false, userPagesAccess, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState<ThemeMode>(() => getInitialTheme());
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleThemeChange = (e: any) => {
+      if (e.detail?.theme) {
+        setCurrentTheme(e.detail.theme);
+      }
+    };
+    window.addEventListener('ghs-theme-changed', handleThemeChange);
+    return () => window.removeEventListener('ghs-theme-changed', handleThemeChange);
+  }, []);
+
+  const handleToggleTheme = () => {
+    const next = toggleTheme();
+    setCurrentTheme(next);
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -108,7 +125,7 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
       </div>
       
       {/* Main Navigation Bar */}
-      <header className="bg-white/95 backdrop-blur-md border-b border-blue-100 sticky top-0 z-40 shadow-xs">
+      <header className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-blue-100 dark:border-slate-800 sticky top-0 z-40 shadow-xs transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center min-h-[3.5rem] xs:min-h-[4rem] sm:min-h-[4.5rem] md:min-h-[5rem] py-1 sm:py-2 gap-1.5 sm:gap-4">
             {/* School Brand Identity (Logo + Name) */}
@@ -117,7 +134,7 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
               onClick={() => navigateTo('home')}
             >
               <div className="w-10 h-10 xs:w-12 xs:h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 relative group-hover:scale-105 transition-all duration-300 shrink-0">
-                <div className="w-full h-full bg-white rounded-xl sm:rounded-2xl border-2 border-yellow-400 shadow-sm ring-2 ring-blue-900/10 overflow-hidden flex items-center justify-center p-0">
+                <div className="w-full h-full bg-white dark:bg-slate-800 rounded-xl sm:rounded-2xl border-2 border-yellow-400 shadow-sm ring-2 ring-blue-900/10 overflow-hidden flex items-center justify-center p-0">
                   <img 
                     src="/logo.png" 
                     alt="God's Hand International Model School Logo" 
@@ -137,7 +154,7 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
               </div>
 
               <div className="flex flex-col justify-center min-w-0 flex-1 overflow-hidden">
-                <h1 className="font-serif font-black text-blue-950 leading-tight tracking-tight group-hover:text-blue-900 transition-colors min-w-0 truncate">
+                <h1 className="font-serif font-black text-blue-950 dark:text-white leading-tight tracking-tight group-hover:text-blue-900 dark:group-hover:text-yellow-300 transition-colors min-w-0 truncate">
                   <span className="hidden xl:inline text-xl lg:text-2xl truncate block">
                     God's Hand International Model School
                   </span>
@@ -153,7 +170,7 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
                   <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[7.5px] xs:text-[8.5px] sm:text-[10px] font-black uppercase tracking-wider bg-yellow-400 text-blue-950 shadow-xs border border-yellow-500/20 whitespace-nowrap shrink-0">
                     Have Faith In God
                   </span>
-                  <span className="text-[10px] sm:text-xs text-slate-500 font-bold hidden md:inline truncate">
+                  <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-bold hidden md:inline truncate">
                     • Wire & Cable, Apata, Ibadan
                   </span>
                 </div>
@@ -162,6 +179,18 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
 
             {/* Navigation & Action Controls */}
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+              {/* Theme Toggle Button (Light / Dark Mode with Brand Contrast) */}
+              <button
+                type="button"
+                onClick={handleToggleTheme}
+                aria-label={`Switch to ${currentTheme === 'dark' ? 'Light' : 'Dark'} Mode`}
+                className="flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-yellow-400 dark:border-slate-700 shadow-xs active:scale-95"
+                title={`Switch to ${currentTheme === 'dark' ? 'Light Mode (Normal)' : 'Dark Mode (Night)'}`}
+              >
+                <span className="text-sm">{currentTheme === 'dark' ? '☀️' : '🌙'}</span>
+                <span className="hidden md:inline">{currentTheme === 'dark' ? 'Light' : 'Dark'}</span>
+              </button>
+
               {/* Download App Shortcut Button - completely removed once installed/downloaded */}
               {!isAppInstalled && onOpenDownloadModal && (
                 <button
@@ -181,7 +210,7 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
                 <button
                   type="button"
                   onClick={() => navigateTo('communityHub')}
-                  className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 ${activeView === 'communityHub' ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md' : 'text-blue-900 border-yellow-400 bg-yellow-50 hover:bg-yellow-100 hover:border-yellow-500'}`}
+                  className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 ${activeView === 'communityHub' ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md dark:bg-yellow-400 dark:text-blue-950 dark:border-yellow-400' : 'text-blue-900 dark:text-yellow-400 border-yellow-400 bg-yellow-50 dark:bg-slate-800 hover:bg-yellow-100 dark:hover:bg-slate-700 hover:border-yellow-500'}`}
                   title="School Live Chat, Meetings & Calls Hub"
                 >
                   <span>💬</span>
@@ -194,7 +223,7 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
               <button
                 type="button"
                 onClick={() => navigateTo('about')}
-                className={`hidden xl:flex items-center space-x-1 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 ${activeView === 'about' ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md' : 'text-blue-900 border-slate-100 hover:border-blue-900 hover:bg-slate-50'}`}
+                className={`hidden xl:flex items-center space-x-1 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 ${activeView === 'about' ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md dark:bg-yellow-400 dark:text-blue-950 dark:border-yellow-400' : 'text-blue-900 dark:text-slate-200 border-slate-100 dark:border-slate-800 hover:border-blue-900 dark:hover:border-yellow-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
               >
                 <span>🏛️</span>
                 <span>About</span>
@@ -205,7 +234,7 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
                 <button 
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
                   aria-label="Toggle Navigation Menu"
-                  className={`flex items-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 ${isMenuOpen ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md' : 'text-blue-900 border-slate-200 hover:border-blue-900 hover:bg-slate-50'}`}
+                  className={`flex items-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 ${isMenuOpen ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md dark:bg-yellow-400 dark:text-blue-950 dark:border-yellow-400' : 'text-blue-900 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-blue-900 dark:hover:border-yellow-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
                 >
                   <span className="text-sm sm:text-base leading-none">☰</span>
                   <span className="text-[11px] sm:text-xs">Menu</span>
@@ -222,15 +251,24 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
                       onClick={() => setIsMenuOpen(false)} 
                     />
                     
-                    <div className="absolute right-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] bg-white rounded-2xl shadow-2xl border-2 border-slate-100 overflow-hidden py-2 animate-in slide-in-from-top-2 duration-200 z-50 max-h-[80vh] overflow-y-auto">
-                      <div className="px-4 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 flex items-center justify-between">
+                    <div className="absolute right-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border-2 border-slate-100 dark:border-slate-800 overflow-hidden py-2 animate-in slide-in-from-top-2 duration-200 z-50 max-h-[80vh] overflow-y-auto">
+                      <div className="px-4 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 dark:border-slate-800 flex items-center justify-between">
                         <span>School Portals & Navigation</span>
-                        <button 
-                          onClick={() => setIsMenuOpen(false)}
-                          className="text-slate-400 hover:text-slate-600 text-xs font-bold p-1"
-                        >
-                          ✕
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={handleToggleTheme}
+                            className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-700 dark:text-yellow-400"
+                          >
+                            {currentTheme === 'dark' ? '☀️ Light' : '🌙 Dark'}
+                          </button>
+                          <button 
+                            onClick={() => setIsMenuOpen(false)}
+                            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold p-1"
+                          >
+                            ✕
+                          </button>
+                        </div>
                       </div>
 
                       <div className="py-1">
@@ -240,7 +278,7 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
                               setIsMenuOpen(false);
                               onOpenDownloadModal();
                             }}
-                            className="w-full text-left px-4 py-2.5 text-xs sm:text-sm font-black flex items-center transition-all bg-yellow-50 text-blue-950 hover:bg-yellow-100 border-b border-yellow-200"
+                            className="w-full text-left px-4 py-2.5 text-xs sm:text-sm font-black flex items-center transition-all bg-yellow-50 dark:bg-yellow-950/40 text-blue-950 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-950/60 border-b border-yellow-200 dark:border-yellow-900/50"
                           >
                             <span className="mr-3 text-base sm:text-lg">📲</span>
                             <span className="truncate">Download School App (PWA)</span>
@@ -253,12 +291,12 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
                             <button 
                               key={item.label}
                               onClick={() => navigateTo(item.view as any)}
-                              className={`w-full text-left px-4 py-2.5 text-xs sm:text-sm font-bold flex items-center transition-all ${activeView === item.view ? 'bg-blue-50 text-blue-900 font-black' : 'text-slate-700 hover:bg-slate-50 hover:text-blue-900'}`}
+                              className={`w-full text-left px-4 py-2.5 text-xs sm:text-sm font-bold flex items-center transition-all ${activeView === item.view ? 'bg-blue-50 dark:bg-blue-950/80 text-blue-900 dark:text-yellow-400 font-black' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-blue-900 dark:hover:text-yellow-300'}`}
                             >
                               <span className="mr-3 text-base sm:text-lg">{item.icon}</span>
                               <span className="truncate">{item.label}</span>
                               {closed && (
-                                <span className="ml-auto text-[9px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-black uppercase">
+                                <span className="ml-auto text-[9px] bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 px-1.5 py-0.5 rounded font-black uppercase">
                                   Closed
                                 </span>
                               )}

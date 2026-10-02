@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS public.students (
   date_of_birth DATE,
   gender TEXT CHECK (gender IN ('Male', 'Female', 'Other')),
   balance NUMERIC(12, 2) DEFAULT NULL,
+  photo TEXT,
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -138,8 +139,10 @@ CREATE TABLE IF NOT EXISTS public.attendance_records (
   date TEXT NOT NULL, -- formatted date string (e.g., '9/9/2026')
   term TEXT DEFAULT 'First Term',
   marked_by TEXT NOT NULL,
-  method TEXT DEFAULT 'gate_scanner' CHECK (method IN ('gate_scanner', 'manual_roll', 'rfid_card')),
+  status TEXT DEFAULT 'present' CHECK (status IN ('present', 'absent', 'late', 'excused')),
+  method TEXT DEFAULT 'manual_roll' CHECK (method IN ('gate_scanner', 'manual_roll', 'rfid_card', 'batch_checklist')),
   scanned_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
   CONSTRAINT uq_daily_attendance UNIQUE(student_id, date)
 );
 
@@ -169,10 +172,14 @@ CREATE TABLE IF NOT EXISTS public.teacher_accounts (
   profile_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   username TEXT UNIQUE NOT NULL,
   password_hash TEXT,
+  full_name TEXT,
+  email TEXT,
+  phone TEXT,
   assigned_grades TEXT[] DEFAULT '{}' NOT NULL,
   assigned_courses TEXT[] DEFAULT '{}' NOT NULL,
-  allowed_pages TEXT[] DEFAULT '{"overview", "students", "termStats", "grading", "attendance", "courses"}' NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+  allowed_pages TEXT[] DEFAULT '{"overview", "parentMessages", "attendanceScanning", "attendance", "students", "timetable", "termStats", "grading", "courses"}' NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- 10. Courses & Curriculum (matches Course)
@@ -265,6 +272,7 @@ CREATE TABLE IF NOT EXISTS public.timetables (
   term TEXT NOT NULL DEFAULT 'First Term',
   academic_year TEXT DEFAULT '2024/2025',
   periods JSONB DEFAULT '[]'::jsonb NOT NULL,
+  notes TEXT,
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_by TEXT DEFAULT 'Teacher',
   CONSTRAINT uq_timetable_grade_term UNIQUE (grade, term)
@@ -284,8 +292,16 @@ CREATE TABLE IF NOT EXISTS public.parent_staff_messages (
   subject TEXT DEFAULT 'Parent Inquiry',
   message TEXT NOT NULL,
   sender_role TEXT NOT NULL CHECK (sender_role IN ('parent', 'teacher', 'admin')),
+  sender_id TEXT,
   priority TEXT DEFAULT 'normal' CHECK (priority IN ('normal', 'urgent', 'inquiry')),
   read BOOLEAN DEFAULT FALSE NOT NULL,
+  status TEXT DEFAULT 'delivered' CHECK (status IN ('sent', 'delivered', 'read', 'seen')),
+  delivered_at TIMESTAMPTZ,
+  read_at TIMESTAMPTZ,
+  seen_at TIMESTAMPTZ,
+  is_edited BOOLEAN DEFAULT FALSE NOT NULL,
+  edited_at TIMESTAMPTZ,
+  reactions JSONB DEFAULT '{}'::jsonb,
   reply_to_id TEXT,
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -416,6 +432,20 @@ ALTER TABLE public.students ADD COLUMN IF NOT EXISTS qr_generations JSONB DEFAUL
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS parent_email TEXT;
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS parent_id TEXT;
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS balance NUMERIC(12, 2) DEFAULT NULL;
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS photo TEXT;
+
+-- Update attendance_records method check to include batch_checklist and roll call
+DO $$
+BEGIN
+  ALTER TABLE public.attendance_records DROP CONSTRAINT IF EXISTS attendance_records_method_check;
+  ALTER TABLE public.attendance_records ADD CONSTRAINT attendance_records_method_check 
+    CHECK (method IN ('gate_scanner', 'manual_roll', 'rfid_card', 'batch_checklist'));
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+ALTER TABLE public.attendance_records ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'present';
+ALTER TABLE public.attendance_records ADD COLUMN IF NOT EXISTS term TEXT DEFAULT 'First Term';
+ALTER TABLE public.attendance_records ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now());
 
 -- Add new columns to public.fee_payments if not present
 ALTER TABLE public.fee_payments ADD COLUMN IF NOT EXISTS receipt_file_type TEXT;
@@ -427,9 +457,30 @@ ALTER TABLE public.student_results ADD COLUMN IF NOT EXISTS ca_score NUMERIC(5, 
 ALTER TABLE public.student_results ADD COLUMN IF NOT EXISTS exam_score NUMERIC(5, 2);
 ALTER TABLE public.student_results ADD COLUMN IF NOT EXISTS position TEXT;
 ALTER TABLE public.student_results ADD COLUMN IF NOT EXISTS published BOOLEAN DEFAULT TRUE NOT NULL;
+ALTER TABLE public.student_results ADD COLUMN IF NOT EXISTS academic_year TEXT DEFAULT '2024/2025';
 
 -- Add new columns to public.teacher_accounts if not present
-ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS allowed_pages TEXT[] DEFAULT '{"overview", "students", "termStats", "grading", "attendance", "courses"}' NOT NULL;
+ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now());
+ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS full_name TEXT;
+ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS allowed_pages TEXT[] DEFAULT '{"overview", "parentMessages", "attendanceScanning", "attendance", "students", "timetable", "termStats", "grading", "courses"}' NOT NULL;
+
+-- Add new columns to public.timetables if not present
+ALTER TABLE public.timetables ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE public.timetables ADD COLUMN IF NOT EXISTS updated_by TEXT DEFAULT 'Teacher';
+ALTER TABLE public.timetables ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now());
+
+-- Add new columns to public.parent_staff_messages if not present
+ALTER TABLE public.parent_staff_messages ADD COLUMN IF NOT EXISTS sender_id TEXT;
+ALTER TABLE public.parent_staff_messages ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'delivered';
+ALTER TABLE public.parent_staff_messages ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMPTZ;
+ALTER TABLE public.parent_staff_messages ADD COLUMN IF NOT EXISTS read_at TIMESTAMPTZ;
+ALTER TABLE public.parent_staff_messages ADD COLUMN IF NOT EXISTS seen_at TIMESTAMPTZ;
+ALTER TABLE public.parent_staff_messages ADD COLUMN IF NOT EXISTS is_edited BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.parent_staff_messages ADD COLUMN IF NOT EXISTS edited_at TIMESTAMPTZ;
+ALTER TABLE public.parent_staff_messages ADD COLUMN IF NOT EXISTS reactions JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE public.parent_staff_messages ADD COLUMN IF NOT EXISTS reply_to_id TEXT;
 
 -- ==============================================================================
 -- PHASE 4: PERFORMANCE & LOOKUP INDEXES
@@ -1209,7 +1260,7 @@ ON CONFLICT (parent_id, student_id) DO NOTHING;
 -- 6. Initial Staff Account
 INSERT INTO public.teacher_accounts (id, username, password_hash, assigned_grades, allowed_pages)
 VALUES
-  ('TCH-1', 'staff', 'staff123', ARRAY['Primary 1', 'Primary 2', 'Primary 3', 'Primary 4', 'Primary 5', 'Primary 6'], ARRAY['overview', 'students', 'termStats', 'grading', 'attendance', 'courses'])
+  ('TCH-1', 'staff', 'staff123', ARRAY['Primary 1', 'Primary 2', 'Primary 3', 'Primary 4', 'Primary 5', 'Primary 6'], ARRAY['overview', 'parentMessages', 'attendanceScanning', 'attendance', 'students', 'timetable', 'termStats', 'grading', 'courses'])
 ON CONFLICT (username) DO NOTHING;
 
 -- 7. Sample Initial Course Curriculum
@@ -1306,9 +1357,15 @@ VALUES (
 ON CONFLICT (id) DO NOTHING;
 
 -- 16. Optional: Supabase Storage Bucket for Video Recordings (.webm)
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('call_recordings', 'call_recordings', true)
-ON CONFLICT (id) DO NOTHING;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'storage') THEN
+    INSERT INTO storage.buckets (id, name, public)
+    VALUES ('call_recordings', 'call_recordings', true)
+    ON CONFLICT (id) DO NOTHING;
+  END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
 
 -- ==============================================================================
 -- SUCCESS MESSAGE

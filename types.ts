@@ -136,6 +136,7 @@ export interface StudentAccount {
   parentEmail?: string;
   parentId?: string;
   balance?: number;
+  photo?: string; // Base64 or image URL profile photo
 }
 
 export interface StudentResult {
@@ -296,8 +297,16 @@ export interface ParentStaffMessage {
   subject?: string;
   message: string;
   senderRole: 'parent' | 'teacher' | 'admin';
+  senderId?: string; // Transmitter user identifier (e.g. parent.id, teacher.username, 'admin')
   timestamp: string;
   read?: boolean;
+  status?: 'sending' | 'sent' | 'delivered' | 'read' | 'seen';
+  deliveredAt?: string;
+  readAt?: string;
+  seenAt?: string;
+  isEdited?: boolean;
+  editedAt?: string;
+  reactions?: { [emoji: string]: string[] };
   priority?: 'normal' | 'urgent' | 'inquiry';
   replyToId?: string;
 }

@@ -58,6 +58,7 @@ import { SplashScreen } from './components/SplashScreen';
 import { verifyAdminSecurityKey, setAdminSecurityKeyHash } from './utils/adminSecurity';
 import { QRCodeSVG } from 'qrcode.react';
 import { generateStudentId } from './utils/studentIdGenerator';
+import { getInitialTheme, applyThemeToDocument } from './utils/themeManager';
 
 const App: React.FC = () => {
   const [showSplashScreen, setShowSplashScreen] = useState<boolean>(true);
@@ -144,6 +145,12 @@ const App: React.FC = () => {
   useEffect(() => {
     stateService.saveState(state);
   }, [state]);
+
+  // Initial Theme Setup (Light / Dark mode persistence)
+  useEffect(() => {
+    const initialTheme = getInitialTheme();
+    applyThemeToDocument(initialTheme);
+  }, []);
 
   // Real-time synchronization & initial Supabase database hydration
   useEffect(() => {
@@ -1179,13 +1186,68 @@ const App: React.FC = () => {
     const newMsg: ParentStaffMessage = {
       ...msgData,
       id: 'PSM-' + Date.now(),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      status: 'delivered',
+      deliveredAt: new Date().toISOString()
     };
     setState(prev => ({
       ...prev,
-      parentStaffMessages: [newMsg, ...(prev.parentStaffMessages || [])]
+      parentStaffMessages: [...(prev.parentStaffMessages || []), newMsg]
     }));
     realtimeService.sendParentStaffMessage(newMsg);
+  };
+
+  const handleEditParentMessage = (messageId: string, newMessage: string) => {
+    const editedAt = new Date().toISOString();
+    setState(prev => ({
+      ...prev,
+      parentStaffMessages: (prev.parentStaffMessages || []).map(m =>
+        m.id === messageId ? { ...m, message: newMessage, isEdited: true, editedAt } : m
+      )
+    }));
+    realtimeService.editParentStaffMessage(messageId, newMessage);
+  };
+
+  const handleDeleteParentMessage = (messageId: string) => {
+    setState(prev => ({
+      ...prev,
+      parentStaffMessages: (prev.parentStaffMessages || []).filter(m => m.id !== messageId)
+    }));
+    realtimeService.deleteParentStaffMessage(messageId);
+  };
+
+  const handleReactParentMessage = (messageId: string, emoji: string) => {
+    const userId = currentUser || (role === UserRole.PARENT ? (currentParentObj?.id || 'Parent') : 'User');
+    const msg = (state.parentStaffMessages || []).find(m => m.id === messageId);
+    const existingReactions = msg?.reactions || {};
+    const updated = { ...existingReactions };
+    const users = updated[emoji] || [];
+    if (users.includes(userId)) {
+      updated[emoji] = users.filter(u => u !== userId);
+      if (updated[emoji].length === 0) delete updated[emoji];
+    } else {
+      updated[emoji] = [...users, userId];
+    }
+
+    setState(prev => ({
+      ...prev,
+      parentStaffMessages: (prev.parentStaffMessages || []).map(m =>
+        m.id === messageId ? { ...m, reactions: updated } : m
+      )
+    }));
+    realtimeService.reactParentStaffMessage(messageId, emoji, userId, existingReactions);
+  };
+
+  const handleMarkParentMessagesRead = (messageIds: string[]) => {
+    if (!messageIds || messageIds.length === 0) return;
+    const now = new Date().toISOString();
+    setState(prev => ({
+      ...prev,
+      parentStaffMessages: (prev.parentStaffMessages || []).map(m =>
+        messageIds.includes(m.id) ? { ...m, read: true, status: 'read', readAt: now, seenAt: now } : m
+      )
+    }));
+    realtimeService.markParentStaffMessagesRead(messageIds);
   };
 
   const handleSendChatMessage = (msgData: Omit<ChatChannelMessage, 'id' | 'timestamp'>) => {
@@ -2239,6 +2301,10 @@ const App: React.FC = () => {
                 teachers={state.teachers || []}
                 messages={state.parentStaffMessages || []}
                 onSendMessage={handleSendParentMessage}
+                onEditMessage={handleEditParentMessage}
+                onDeleteMessage={handleDeleteParentMessage}
+                onReactMessage={handleReactParentMessage}
+                onMarkAsRead={handleMarkParentMessagesRead}
                 onInitiateCall={handleInitiateCall}
                 onBack={() => {
                   setView(role === UserRole.PARENT ? 'parentPortal' : role === UserRole.TEACHER ? 'teacher' : 'home');

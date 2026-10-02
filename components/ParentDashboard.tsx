@@ -14,6 +14,7 @@ import {
 import { GRADE_GROUPS, DEFAULT_BANK_ACCOUNT_CONFIG } from '../constants';
 import { QRCodeSVG } from 'qrcode.react';
 import { StandardReportCard } from './StandardReportCard';
+import { StudentPhotoUploadModal } from './StudentPhotoUploadModal';
 
 interface ParentDashboardProps {
   parent: ParentAccount;
@@ -33,6 +34,7 @@ interface ParentDashboardProps {
   onGoToReceipts?: () => void;
   onMessageTeacher?: (studentId?: string, grade?: GradeLevel) => void;
   onGoToCommunity?: () => void;
+  onUpdateChildPhoto?: (studentId: string, photoBase64: string) => void;
   bankAccountConfig?: SchoolBankAccountConfig;
 }
 
@@ -54,6 +56,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   onGoToReceipts,
   onMessageTeacher,
   onGoToCommunity,
+  onUpdateChildPhoto,
   bankAccountConfig = DEFAULT_BANK_ACCOUNT_CONFIG
 }) => {
   const activeBank = bankAccountConfig || DEFAULT_BANK_ACCOUNT_CONFIG;
@@ -69,6 +72,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   const [paymentTargetChild, setPaymentTargetChild] = useState<StudentAccount | null>(null);
   const [showChildQrModal, setShowChildQrModal] = useState(false);
   const [selectedChildForReport, setSelectedChildForReport] = useState<StudentAccount | null>(null);
+  const [photoUploadChild, setPhotoUploadChild] = useState<StudentAccount | null>(null);
 
   // Link Child Form
   const [linkStudentId, setLinkStudentId] = useState('');
@@ -363,10 +367,14 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg ${
-                          isSelected ? 'bg-yellow-400 text-blue-900' : 'bg-blue-100 text-blue-900'
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg overflow-hidden border-2 shrink-0 ${
+                          isSelected ? 'bg-yellow-400 text-blue-900 border-yellow-300' : 'bg-blue-100 text-blue-900 border-blue-200'
                         }`}>
-                          {child.name.charAt(0)}
+                          {child.photo ? (
+                            <img src={child.photo} alt={child.name} className="w-full h-full object-cover" />
+                          ) : (
+                            child.name.charAt(0)
+                          )}
                         </div>
                         <div>
                           <h3 className={`font-serif font-black text-base leading-tight ${isSelected ? 'text-white' : 'text-blue-900'}`}>
@@ -417,8 +425,27 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
               {/* Active Child Header Bar */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-blue-900 text-yellow-400 flex items-center justify-center font-black text-2xl font-serif shadow-md border-2 border-yellow-400">
-                    {activeChild.name.charAt(0)}
+                  <div className="relative group shrink-0">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-blue-900 text-yellow-400 flex items-center justify-center font-black text-2xl font-serif shadow-md border-2 border-yellow-400 overflow-hidden">
+                      {activeChild.photo ? (
+                        <img src={activeChild.photo} alt={activeChild.name} className="w-full h-full object-cover" />
+                      ) : (
+                        activeChild.name.charAt(0)
+                      )}
+                    </div>
+                    {onUpdateChildPhoto && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPhotoUploadChild(activeChild);
+                        }}
+                        className="absolute -bottom-1 -right-1 p-1.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-lg text-xs font-black shadow-md border-2 border-white transition-transform active:scale-95"
+                        title="Upload child profile photo from camera or mobile device"
+                      >
+                        📷
+                      </button>
+                    )}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
@@ -434,6 +461,17 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
+                  {onUpdateChildPhoto && (
+                    <button
+                      type="button"
+                      onClick={() => setPhotoUploadChild(activeChild)}
+                      className="px-4 py-3 bg-indigo-900 hover:bg-indigo-800 text-yellow-300 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5 border border-indigo-700"
+                      title="Upload or update this child's profile photo from phone camera or gallery"
+                    >
+                      <span>📸</span>
+                      <span>{activeChild.photo ? 'Change Photo' : 'Upload Photo'}</span>
+                    </button>
+                  )}
                   {onMessageTeacher && (
                     <button
                       type="button"
@@ -1469,6 +1507,18 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
             />
           </div>
         </div>
+      )}
+
+      {/* Student/Pupil Profile Photo Upload & Camera Modal */}
+      {photoUploadChild && onUpdateChildPhoto && (
+        <StudentPhotoUploadModal
+          student={photoUploadChild}
+          isOpen={true}
+          onClose={() => setPhotoUploadChild(null)}
+          onSavePhoto={(photo) => onUpdateChildPhoto(photoUploadChild.id, photo)}
+          uploaderTitle={`Upload Profile Photo for ${photoUploadChild.name}`}
+          isParentView={true}
+        />
       )}
     </div>
   );

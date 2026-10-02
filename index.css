@@ -31,6 +31,27 @@ body {
   padding-bottom: var(--sab);
   padding-left: var(--sal);
   padding-right: var(--sar);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+html.dark body {
+  background-color: #0b141a;
+  color: #f1f5f9;
+}
+
+/* WhatsApp Pattern Background */
+.whatsapp-chat-bg {
+  background-color: #efeae2;
+  background-image: radial-gradient(#d1c7b8 0.75px, transparent 0.75px), radial-gradient(#d1c7b8 0.75px, #efeae2 0.75px);
+  background-size: 30px 30px;
+  background-position: 0 0, 15px 15px;
+}
+
+html.dark .whatsapp-chat-bg {
+  background-color: #0b141a;
+  background-image: radial-gradient(#1b2a32 0.75px, transparent 0.75px), radial-gradient(#1b2a32 0.75px, #0b141a 0.75px);
+  background-size: 30px 30px;
+  background-position: 0 0, 15px 15px;
 }
 
 /* iOS Safari: Prevent automatic zoom on focus while maintaining legibility */

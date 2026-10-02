@@ -96,20 +96,20 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     }
   }, [allowedPages, availableTabs.length]);
 
-  // Staff class assignment restriction: Staff can ONLY grade and manage their assigned class(es)
-  const hasAssignedGrades = assignedGrades && assignedGrades.length > 0;
+  // Staff class assignment restriction: Staff can ONLY mark attendance, grade, and write timetable for their assigned class(es)
+  const hasAssignedGrades = Boolean(assignedGrades && assignedGrades.length > 0);
   const authorizedGrades: GradeLevel[] = hasAssignedGrades 
     ? assignedGrades 
-    : (GRADE_GROUPS.flatMap(g => g.levels) as GradeLevel[]);
+    : [];
   
   // Only students belonging to the staff's assigned classes
   const staffStudents = hasAssignedGrades
     ? allStudents.filter(s => assignedGrades.includes(s.grade))
-    : allStudents;
+    : [];
   
   // Course form state
   const [courseName, setCourseName] = useState('');
-  const [courseGrade, setCourseGrade] = useState<GradeLevel>(authorizedGrades[0] || 'Primary 1');
+  const [courseGrade, setCourseGrade] = useState<GradeLevel>(authorizedGrades[0] || ('Primary 1' as GradeLevel));
   const [courseDesc, setCourseDesc] = useState('');
 
   // Course duplication state for teachers
@@ -133,7 +133,19 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
   // Attendance Sub-Mode: 'checklist' (Roll Call by Names) vs 'scanner' (QR Camera)
   const [attendanceMode, setAttendanceMode] = useState<'checklist' | 'scanner'>('checklist');
-  const [checklistClass, setChecklistClass] = useState<GradeLevel>(authorizedGrades[0] || 'Basic 1');
+  const [checklistClass, setChecklistClass] = useState<GradeLevel>(authorizedGrades[0] || ('Basic 1' as GradeLevel));
+
+  // Sync state if assigned classes change
+  useEffect(() => {
+    if (authorizedGrades.length > 0) {
+      if (!authorizedGrades.includes(checklistClass)) {
+        setChecklistClass(authorizedGrades[0]);
+      }
+      if (gradeClassFilter !== 'all' && !authorizedGrades.includes(gradeClassFilter as GradeLevel)) {
+        setGradeClassFilter(authorizedGrades[0]);
+      }
+    }
+  }, [assignedGrades]);
   const [checklistDate, setChecklistDate] = useState<string>(() => {
     const d = new Date();
     const year = d.getFullYear();
@@ -191,6 +203,10 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
   const handleSubmitChecklistAttendance = () => {
     if (checklistClassStudents.length === 0) return;
+    if (!hasAssignedGrades || !assignedGrades.includes(checklistClass)) {
+      alert(`Access Restricted: Staff members can only mark attendance for their assigned class (${assignedGrades.join(', ') || 'No assigned class'}).`);
+      return;
+    }
     setIsSubmittingAttendance(true);
 
     const [y, m, d] = checklistDate.split('-').map(Number);
@@ -266,8 +282,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     }
 
     // Strict class restriction check: Staff can ONLY grade the class assigned to them!
-    if (hasAssignedGrades && !assignedGrades.includes(student.grade)) {
-      alert(`Access Denied: As a staff member, you are only authorized to grade students in your assigned class(es): ${assignedGrades.join(', ')}.`);
+    if (!hasAssignedGrades || !assignedGrades.includes(student.grade)) {
+      alert(`Access Denied: As a staff member, you are only authorized to grade students in your assigned class(es): ${assignedGrades.join(', ') || 'No assigned class'}.`);
       return;
     }
 
@@ -634,6 +650,19 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 </button>
               </div>
             </div>
+
+            {/* Attendance class assignment alert if unassigned */}
+            {!hasAssignedGrades && (
+              <div className="p-5 bg-amber-50 border-2 border-amber-300 rounded-3xl text-amber-950 flex items-center gap-3.5 shadow-sm">
+                <span className="text-3xl">🔒</span>
+                <div>
+                  <h4 className="font-serif font-black text-sm uppercase">Assigned Class Required for Daily Attendance</h4>
+                  <p className="text-xs text-amber-800 mt-0.5">
+                    Staff members can only mark daily attendance for pupils in their assigned class. You currently have no class assigned to your staff account. Please contact the School Administrator to assign your class.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* CHECKLIST ROLL CALL MODE */}
             {attendanceMode === 'checklist' && (
@@ -1202,6 +1231,20 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
         {activeTab === 'grading' && (
            <div className="space-y-12">
               {/* Staff Assigned Class Restriction Alert */}
+              {!hasAssignedGrades && (
+                <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-5 flex items-center gap-3.5 shadow-sm text-amber-950">
+                  <span className="text-3xl">🔒</span>
+                  <div>
+                    <h4 className="font-serif font-black text-sm uppercase">
+                      Assigned Class Required for Grading
+                    </h4>
+                    <p className="text-xs text-amber-800 mt-0.5">
+                      Staff members can only record assessment marks for pupils in their assigned class. You currently have no class assigned to your staff account. Please contact the School Administrator to assign your class.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {hasAssignedGrades && (
                 <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">

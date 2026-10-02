@@ -137,6 +137,11 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
   };
 
   const handleSaveAndBroadcast = () => {
+    if (!assignedGrades || assignedGrades.length === 0 || !assignedGrades.includes(selectedGrade)) {
+      alert(`Access Restricted: You are only authorized to write and publish timetables for your assigned class(es): ${assignedGrades?.join(', ') || 'No assigned class'}.`);
+      return;
+    }
+
     const payload: ClassTimetable = {
       id: existingTimetable?.id || `TT-${selectedGrade.replace(/[^a-zA-Z0-9]/g, '-')}-${selectedTerm.replace(/\s+/g, '')}`,
       grade: selectedGrade,
@@ -158,6 +163,29 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
   const handlePrintTimetable = () => {
     window.print();
   };
+
+  if (!assignedGrades || assignedGrades.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 border-b-2 border-slate-100 pb-4">
+          <span className="text-3xl">🗓️</span>
+          <div>
+            <h3 className="text-2xl font-black text-blue-900 font-serif">Class Timetable Manager</h3>
+            <p className="text-xs text-slate-500 font-medium">Build, edit, and publish weekly lesson schedules.</p>
+          </div>
+        </div>
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-3xl p-8 text-amber-950 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+          <span className="text-4xl">🔒</span>
+          <div>
+            <h4 className="font-serif font-black text-base uppercase">Assigned Class Required to Write Timetable</h4>
+            <p className="text-xs text-amber-800 mt-1 max-w-xl">
+              Staff members can only write and edit lesson timetables for their assigned class. You currently have no class assigned to your staff account. Please request the School Administrator to assign your class in Staff Management.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

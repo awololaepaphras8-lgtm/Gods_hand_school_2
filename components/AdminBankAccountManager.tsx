@@ -7,6 +7,123 @@ interface AdminBankAccountManagerProps {
   onUpdateConfig: (config: SchoolBankAccountConfig) => void;
 }
 
+export const BANK_ACCOUNT_REALTIME_SQL = `-- ==============================================================================
+-- GOD'S HAND INTERNATIONAL MODEL SCHOOL - OFFICIAL BANK ACCOUNT REALTIME SYNC SQL
+-- Wire & Cable, Apata, Ibadan, Oyo State, Nigeria
+-- Run this in your Supabase SQL Editor (https://supabase.com/dashboard/project/_/sql)
+-- Allows Admin to save official account number with realtime sync across the entire app
+-- ==============================================================================
+
+-- 1. Create the bank account configuration table
+CREATE TABLE IF NOT EXISTS public.school_bank_account_config (
+  id TEXT PRIMARY KEY DEFAULT 'primary_account',
+  bank_name TEXT NOT NULL,
+  account_number TEXT NOT NULL,
+  account_name TEXT NOT NULL,
+  payment_instructions TEXT,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_by TEXT DEFAULT 'School Administrator'
+);
+
+-- 2. Seed Default Official Account
+INSERT INTO public.school_bank_account_config (
+  id, bank_name, account_number, account_name, payment_instructions, updated_at, updated_by
+)
+VALUES (
+  'primary_account',
+  'First Bank of Nigeria',
+  '2034891120',
+  'God''s Hand International Model School',
+  'Pay tuition and fees via mobile bank app, USSD, or branch transfer. Use student name and ID as payment narration.',
+  timezone('utc'::text, now()),
+  'Initial Setup'
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- 3. Stored Procedure for Admin to Save & Broadcast Account Number
+CREATE OR REPLACE FUNCTION public.update_school_bank_account(
+  p_bank_name TEXT,
+  p_account_number TEXT,
+  p_account_name TEXT,
+  p_payment_instructions TEXT DEFAULT NULL,
+  p_updated_by TEXT DEFAULT 'School Administrator'
+)
+RETURNS JSONB AS $$
+DECLARE
+  v_cfg RECORD;
+BEGIN
+  INSERT INTO public.school_bank_account_config (
+    id, bank_name, account_number, account_name, payment_instructions, updated_at, updated_by
+  ) VALUES (
+    'primary_account',
+    p_bank_name,
+    p_account_number,
+    p_account_name,
+    p_payment_instructions,
+    timezone('utc'::text, now()),
+    p_updated_by
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    bank_name = EXCLUDED.bank_name,
+    account_number = EXCLUDED.account_number,
+    account_name = EXCLUDED.account_name,
+    payment_instructions = EXCLUDED.payment_instructions,
+    updated_at = EXCLUDED.updated_at,
+    updated_by = EXCLUDED.updated_by
+  RETURNING * INTO v_cfg;
+
+  -- Audit log to admin realtime stream
+  INSERT INTO public.admin_realtime_events (action, details, performed_by, payload, timestamp)
+  VALUES (
+    'BANK_ACCOUNT_CONFIG_UPDATED',
+    'Official school bank account updated to: ' || v_cfg.bank_name || ' (' || v_cfg.account_number || ')',
+    p_updated_by,
+    jsonb_build_object('bank_name', v_cfg.bank_name, 'account_number', v_cfg.account_number),
+    timezone('utc'::text, now())
+  );
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'message', 'School official bank account updated and published in real time to all panels.',
+    'bank_name', v_cfg.bank_name,
+    'account_number', v_cfg.account_number,
+    'account_name', v_cfg.account_name,
+    'updated_at', v_cfg.updated_at
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 4. Enable Row Level Security (RLS)
+ALTER TABLE public.school_bank_account_config ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can read school bank account config" ON public.school_bank_account_config;
+CREATE POLICY "Anyone can read school bank account config"
+  ON public.school_bank_account_config FOR SELECT
+  USING (true);
+
+DROP POLICY IF EXISTS "Admins can update school bank account config" ON public.school_bank_account_config;
+CREATE POLICY "Admins can update school bank account config"
+  ON public.school_bank_account_config FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- 5. Enable Realtime Change Data Capture (CDC)
+ALTER TABLE public.school_bank_account_config REPLICA IDENTITY FULL;
+
+-- Ensure table is registered in supabase_realtime publication
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.school_bank_account_config;
+  EXCEPTION WHEN duplicate_object THEN
+    NULL;
+  END;
+END $$;
+`;
+
 export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = ({
   currentConfig = DEFAULT_BANK_ACCOUNT_CONFIG,
   onUpdateConfig
@@ -23,6 +140,8 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
   );
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
+  const [showSqlModal, setShowSqlModal] = useState<boolean>(false);
+  const [sqlCopied, setSqlCopied] = useState<boolean>(false);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,6 +202,22 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
     setTimeout(() => setCopied(false), 3000);
   };
 
+  const handleCopySql = () => {
+    navigator.clipboard.writeText(BANK_ACCOUNT_REALTIME_SQL);
+    setSqlCopied(true);
+    setTimeout(() => setSqlCopied(false), 3000);
+  };
+
+  const handleDownloadSql = () => {
+    const blob = new Blob([BANK_ACCOUNT_REALTIME_SQL], { type: 'text/sql' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ghs_bank_account_realtime_sync_${Date.now()}.sql`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const effectiveBank = isCustomBank ? (customBank || 'Custom Bank') : bankName;
 
   return (
@@ -102,12 +237,20 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
                 Official School Bank Account Configuration
               </h2>
               <p className="text-xs text-blue-200 mt-0.5 max-w-2xl font-medium">
-                Set and update the designated school bank account and payment instructions. Any change made here immediately updates the Student Fee Checker, Parent Dashboard fee payment portal, and Bursary invoice vouchers across the entire school.
+                Set and update the designated school bank account and payment instructions. Any change made here immediately updates the Student Fee Checker, Parent Dashboard fee payment portal, and Bursary invoice vouchers across the entire school in real-time.
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowSqlModal(true)}
+              className="px-4 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 active:scale-95 shadow-md"
+              title="View and copy generated SQL for saving the account number with realtime sync"
+            >
+              <span>📄 View Realtime SQL</span>
+            </button>
             <button
               type="button"
               onClick={handleCopyDetails}
@@ -137,19 +280,75 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
         )}
       </div>
 
+      {/* SQL Viewer Modal */}
+      {showSqlModal && (
+        <div className="fixed inset-0 z-[120] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border-2 border-yellow-400 rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl relative space-y-4 max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl">⚡</span>
+                <div>
+                  <h3 className="font-serif font-black text-blue-950 dark:text-white text-lg">
+                    Realtime SQL Schema for Bank Account Sync
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    PostgreSQL script to create table, stored procedure, RLS rules and register CDC realtime replication
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSqlModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              <pre className="p-4 bg-slate-950 text-emerald-400 rounded-2xl font-mono text-xs overflow-x-auto leading-relaxed border border-slate-800">
+                {BANK_ACCOUNT_REALTIME_SQL}
+              </pre>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Run this script in your Supabase SQL Editor to enable automatic real-time propagation across all devices.
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleDownloadSql}
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl font-bold text-xs uppercase"
+                >
+                  Download .SQL
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCopySql}
+                  className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-xs uppercase shadow-sm flex items-center gap-1.5"
+                >
+                  <span>{sqlCopied ? '✓ Copied SQL!' : '📋 Copy Entire SQL'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid lg:grid-cols-12 gap-8 items-start">
         {/* Left Column: Form Editor */}
-        <div className="lg:col-span-7 bg-white rounded-[2.5rem] p-8 border-2 border-slate-100 shadow-xl space-y-6">
-          <div className="border-b border-slate-100 pb-4 flex items-center justify-between">
+        <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border-2 border-slate-100 dark:border-slate-800 shadow-xl space-y-6 transition-colors">
+          <div className="border-b border-slate-100 dark:border-slate-800 pb-4 flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-serif font-black text-blue-950">
+              <h3 className="text-xl font-serif font-black text-blue-950 dark:text-white">
                 Edit Bank & Remittance Details
               </h3>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                 Ensure account number and bank name are 100% accurate before saving.
               </p>
             </div>
-            <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-black uppercase tracking-wider">
+            <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 rounded-full text-[10px] font-black uppercase tracking-wider">
               Live Gateway
             </span>
           </div>
@@ -157,7 +356,7 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
           <form onSubmit={handleSave} className="space-y-6">
             {/* Bank Name Selector */}
             <div className="space-y-2">
-              <label className="block text-xs font-black text-slate-600 uppercase tracking-widest">
+              <label className="block text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">
                 Bank Name *
               </label>
 
@@ -172,7 +371,7 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
                         setBankName(e.target.value);
                       }
                     }}
-                    className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-blue-950 outline-none focus:border-blue-900 focus:bg-white transition-all text-sm"
+                    className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl font-bold text-blue-950 dark:text-white outline-none focus:border-blue-900 dark:focus:border-yellow-400 focus:bg-white dark:focus:bg-slate-900 transition-all text-sm"
                   >
                     {POPULAR_NIGERIAN_BANKS.map((b) => (
                       <option key={b} value={b}>
@@ -195,8 +394,8 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
                           }}
                           className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase transition-all ${
                             bankName === full && !isCustomBank
-                              ? 'bg-blue-900 text-yellow-400 shadow-sm'
-                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                              ? 'bg-blue-900 text-yellow-400 shadow-sm dark:bg-yellow-400 dark:text-blue-950'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
                           }`}
                         >
                           {quick}
@@ -214,12 +413,12 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
                       value={customBank}
                       onChange={(e) => setCustomBank(e.target.value)}
                       placeholder="Type custom bank name (e.g. Standard Chartered, Jaiz, etc.)"
-                      className="flex-1 px-5 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-blue-950 outline-none focus:border-blue-900 focus:bg-white transition-all text-sm"
+                      className="flex-1 px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl font-bold text-blue-950 dark:text-white outline-none focus:border-blue-900 focus:bg-white transition-all text-sm"
                     />
                     <button
                       type="button"
                       onClick={() => setIsCustomBank(false)}
-                      className="px-4 py-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-black text-xs uppercase rounded-2xl"
+                      className="px-4 py-4 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 font-black text-xs uppercase rounded-2xl"
                     >
                       Preset List
                     </button>
@@ -230,7 +429,7 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
 
             {/* Account Number */}
             <div className="space-y-2">
-              <label className="block text-xs font-black text-slate-600 uppercase tracking-widest flex items-center justify-between">
+              <label className="block text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center justify-between">
                 <span>Account Number (NUBAN) *</span>
                 <span className="text-[10px] font-mono text-slate-400">
                   {accountNumber.trim().replace(/\s+/g, '').length} Digits
@@ -244,21 +443,21 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
                   value={accountNumber}
                   onChange={(e) => setAccountNumber(e.target.value)}
                   placeholder="e.g. 2041982731"
-                  className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-mono font-black text-blue-950 text-xl tracking-widest outline-none focus:border-blue-900 focus:bg-white transition-all"
+                  className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl font-mono font-black text-blue-950 dark:text-yellow-300 text-xl tracking-widest outline-none focus:border-blue-900 dark:focus:border-yellow-400 focus:bg-white transition-all"
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-yellow-400 text-blue-950 font-black text-[10px] uppercase rounded-lg">
                   NUBAN
                 </span>
               </div>
-              <p className="text-[10px] text-slate-500 font-medium">
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
                 Standard Nigerian bank account numbers are 10 numerical digits.
               </p>
             </div>
 
             {/* Account Name */}
             <div className="space-y-2">
-              <label className="block text-xs font-black text-slate-600 uppercase tracking-widest">
-                Official Account Beneficiary Name *
+              <label className="block text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">
+                Official Account Name *
               </label>
               <input
                 type="text"
@@ -266,57 +465,53 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
                 value={accountName}
                 onChange={(e) => setAccountName(e.target.value)}
                 placeholder="e.g. God's Hand International Model School"
-                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-blue-950 outline-none focus:border-blue-900 focus:bg-white transition-all text-sm"
+                className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl font-bold text-blue-950 dark:text-white outline-none focus:border-blue-900 dark:focus:border-yellow-400 focus:bg-white transition-all text-sm"
               />
-              <p className="text-[10px] text-slate-500 font-medium">
-                The exact name that appears when parents perform an interbank transfer or lookup.
-              </p>
             </div>
 
-            {/* Payment Instructions / Remarks Guidance */}
+            {/* Payment Instructions / Narration Advisory */}
             <div className="space-y-2">
-              <label className="block text-xs font-black text-slate-600 uppercase tracking-widest">
-                Parent Transfer Instructions & Remarks Note
+              <label className="block text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">
+                Payment Narration Instructions (Optional)
               </label>
               <textarea
                 rows={3}
                 value={paymentInstructions}
                 onChange={(e) => setPaymentInstructions(e.target.value)}
-                placeholder="Guidance for parents on what to write in transfer description..."
-                className="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl text-xs font-medium text-slate-800 outline-none focus:border-blue-900 focus:bg-white transition-all"
+                placeholder="e.g. Please put student's Full Name and Student ID in the transfer narration..."
+                className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl font-medium text-slate-900 dark:text-slate-100 outline-none focus:border-blue-900 dark:focus:border-yellow-400 focus:bg-white transition-all text-xs"
               />
             </div>
 
-            {/* Submit Action */}
+            {/* Submit Button */}
             <div className="pt-2">
               <button
                 type="submit"
-                className="w-full py-5 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-2xl font-black text-base uppercase tracking-wider transition-all shadow-xl hover:scale-[1.01] active:scale-[0.98] flex items-center justify-center gap-2 border-2 border-yellow-400"
+                className="w-full py-4 bg-blue-900 hover:bg-blue-800 dark:bg-yellow-400 dark:hover:bg-yellow-300 text-yellow-400 dark:text-blue-950 font-black text-sm uppercase tracking-widest rounded-2xl shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
               >
-                <span>💾</span>
-                <span>Save & Broadcast Bank Account Details</span>
+                <span>💾 Save & Broadcast Account Number</span>
+                <span>➔</span>
               </button>
+              <p className="text-[10px] text-center text-slate-400 mt-2 font-medium">
+                Changes apply instantly across all open browser tabs and database state.
+              </p>
             </div>
           </form>
         </div>
 
-        {/* Right Column: Live Visual Previews */}
+        {/* Right Column: Live Portal Preview Card */}
         <div className="lg:col-span-5 space-y-6">
-          {/* Live Preview Card */}
-          <div className="bg-slate-900 rounded-[2.5rem] p-7 text-white shadow-2xl border-2 border-slate-800 space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <h4 className="font-serif font-black text-sm text-yellow-400 uppercase tracking-wider">
-                  Live Parent & Student Preview
-                </h4>
-              </div>
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                Interactive Mockup
+          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border-2 border-slate-100 dark:border-slate-800 shadow-xl space-y-5 transition-colors">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-lg font-serif font-black text-blue-950 dark:text-white">
+                Live Public Card Preview
+              </h3>
+              <span className="px-2 py-0.5 bg-yellow-400 text-blue-950 rounded-md text-[9px] font-black uppercase">
+                What Parents See
               </span>
             </div>
 
-            <p className="text-[11px] text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               This is exactly how parents and students will see the official bursary bank transfer card on their portals:
             </p>
 

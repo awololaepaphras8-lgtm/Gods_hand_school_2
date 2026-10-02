@@ -5,7 +5,9 @@ import {
   SUPABASE_MASTER_SQL_SCHEMA,
   SUPABASE_ATTENDANCE_SQL,
   copyAttendanceSql,
-  downloadAttendanceSql
+  downloadAttendanceSql,
+  SUPABASE_STAFF_AND_ADMIN_SQL,
+  downloadStaffAndAdminSql
 } from '../utils/supabaseSqlExport';
 
 interface RealtimeSqlViewerModalProps {
@@ -17,10 +19,127 @@ export const RealtimeSqlViewerModal: React.FC<RealtimeSqlViewerModalProps> = ({
   isOpen,
   onClose
 }) => {
-  const [activeTab, setActiveTab] = useState<'all' | 'attendance' | 'videoRecordings' | 'adminRealtime' | 'chatCalls'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'staffAdmin' | 'bankAccount' | 'attendance' | 'videoRecordings' | 'adminRealtime' | 'chatCalls'>('all');
   const [copySuccess, setCopySuccess] = useState(false);
 
   if (!isOpen) return null;
+
+  // Specific SQL snippet for School Official Bank Account & Realtime Sync
+  const BANK_ACCOUNT_SYNC_SQL = `-- ==============================================================================
+-- GOD'S HAND MODEL SCHOOL - OFFICIAL BANK ACCOUNT & REALTIME SYNC SQL
+-- Run this in your Supabase SQL Editor (https://supabase.com/dashboard/project/_/sql)
+-- Allows Admin to save official account number with realtime sync across the entire app
+-- ==============================================================================
+
+-- 1. Create the bank account configuration table
+CREATE TABLE IF NOT EXISTS public.school_bank_account_config (
+  id TEXT PRIMARY KEY DEFAULT 'primary_account',
+  bank_name TEXT NOT NULL,
+  account_number TEXT NOT NULL,
+  account_name TEXT NOT NULL,
+  payment_instructions TEXT,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_by TEXT DEFAULT 'School Administrator'
+);
+
+-- 2. Seed Default Official Account
+INSERT INTO public.school_bank_account_config (
+  id, bank_name, account_number, account_name, payment_instructions, updated_at, updated_by
+)
+VALUES (
+  'primary_account',
+  'First Bank of Nigeria',
+  '2034891120',
+  'God''s Hand International Model School',
+  'Pay tuition and fees via mobile bank app, USSD, or branch transfer. Use student name and ID as payment narration.',
+  timezone('utc'::text, now()),
+  'Initial Setup'
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- 3. Stored Procedure for Admin to Save & Broadcast Account Number
+CREATE OR REPLACE FUNCTION public.update_school_bank_account(
+  p_bank_name TEXT,
+  p_account_number TEXT,
+  p_account_name TEXT,
+  p_payment_instructions TEXT DEFAULT NULL,
+  p_updated_by TEXT DEFAULT 'School Administrator'
+)
+RETURNS JSONB AS $$
+DECLARE
+  v_cfg RECORD;
+BEGIN
+  INSERT INTO public.school_bank_account_config (
+    id, bank_name, account_number, account_name, payment_instructions, updated_at, updated_by
+  ) VALUES (
+    'primary_account',
+    p_bank_name,
+    p_account_number,
+    p_account_name,
+    p_payment_instructions,
+    timezone('utc'::text, now()),
+    p_updated_by
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    bank_name = EXCLUDED.bank_name,
+    account_number = EXCLUDED.account_number,
+    account_name = EXCLUDED.account_name,
+    payment_instructions = EXCLUDED.payment_instructions,
+    updated_at = EXCLUDED.updated_at,
+    updated_by = EXCLUDED.updated_by
+  RETURNING * INTO v_cfg;
+
+  -- Audit log to admin realtime stream
+  INSERT INTO public.admin_realtime_events (action, details, performed_by, payload, timestamp)
+  VALUES (
+    'BANK_ACCOUNT_CONFIG_UPDATED',
+    'Official school bank account updated to: ' || v_cfg.bank_name || ' (' || v_cfg.account_number || ')',
+    p_updated_by,
+    jsonb_build_object('bank_name', v_cfg.bank_name, 'account_number', v_cfg.account_number),
+    timezone('utc'::text, now())
+  );
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'message', 'School official bank account updated and published in real time to all panels.',
+    'bank_name', v_cfg.bank_name,
+    'account_number', v_cfg.account_number,
+    'account_name', v_cfg.account_name,
+    'updated_at', v_cfg.updated_at
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 4. Enable Row Level Security (RLS)
+ALTER TABLE public.school_bank_account_config ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can read school bank account config" ON public.school_bank_account_config;
+CREATE POLICY "Anyone can read school bank account config"
+  ON public.school_bank_account_config FOR SELECT
+  USING (true);
+
+DROP POLICY IF EXISTS "Admins can update school bank account config" ON public.school_bank_account_config;
+CREATE POLICY "Admins can update school bank account config"
+  ON public.school_bank_account_config FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- 5. Enable Realtime Change Data Capture (CDC)
+ALTER TABLE public.school_bank_account_config REPLICA IDENTITY FULL;
+
+-- Ensure table is registered in supabase_realtime publication
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.school_bank_account_config;
+  EXCEPTION WHEN duplicate_object THEN
+    NULL;
+  END;
+END $$;
+`;
 
   // Specific SQL snippet for Video Recordings (Admin + 3 Spotlight cameras) & Bank Account Config
   const VIDEO_RECORDINGS_SQL = `-- ==============================================================================
@@ -411,6 +530,8 @@ ON CONFLICT (id) DO NOTHING;
 
   const activeSqlToDisplay = 
     activeTab === 'all' ? SUPABASE_MASTER_SQL_SCHEMA :
+    activeTab === 'staffAdmin' ? SUPABASE_STAFF_AND_ADMIN_SQL :
+    activeTab === 'bankAccount' ? BANK_ACCOUNT_SYNC_SQL :
     activeTab === 'attendance' ? SUPABASE_ATTENDANCE_SQL :
     activeTab === 'videoRecordings' ? VIDEO_RECORDINGS_SQL :
     activeTab === 'adminRealtime' ? ADMIN_REALTIME_SQL :
@@ -474,6 +595,30 @@ ON CONFLICT (id) DO NOTHING;
             }`}
           >
             📋 Complete Master Schema (All 23 Tables)
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('staffAdmin')}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+              activeTab === 'staffAdmin'
+                ? 'bg-blue-900 text-yellow-400 shadow-sm'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            👔 Staff & Admin Panel Sync SQL
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('bankAccount')}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+              activeTab === 'bankAccount'
+                ? 'bg-blue-900 text-yellow-400 shadow-sm'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            💳 Official Bank Account & Realtime Sync SQL
           </button>
 
           <button
@@ -556,7 +701,9 @@ ON CONFLICT (id) DO NOTHING;
             <button
               type="button"
               onClick={() => {
-                if (activeTab === 'attendance') {
+                if (activeTab === 'staffAdmin') {
+                  downloadStaffAndAdminSql();
+                } else if (activeTab === 'attendance') {
                   downloadAttendanceSql();
                 } else {
                   downloadSupabaseSchemaSql();

@@ -325,8 +325,13 @@ const DEFAULT_STATE: AppState = {
       subject: 'Academic Progress & Homework Inquiry',
       message: 'Good morning Mr. Adeleke, please I would like to confirm Samuel\'s homework submission for Mathematics yesterday.',
       senderRole: 'parent',
+      senderId: 'PAR-1',
       timestamp: new Date(Date.now() - 3600000 * 4).toISOString(),
       read: true,
+      status: 'read',
+      readAt: new Date(Date.now() - 3600000 * 3.8).toISOString(),
+      deliveredAt: new Date(Date.now() - 3600000 * 3.9).toISOString(),
+      reactions: { '👍': ['staff'] },
       priority: 'inquiry'
     },
     {
@@ -342,8 +347,13 @@ const DEFAULT_STATE: AppState = {
       subject: 'Academic Progress & Homework Inquiry',
       message: 'Good afternoon Mrs. Adebayo! Yes, Samuel submitted his arithmetic exercises on time and scored 95%. He is doing exceptionally well in class.',
       senderRole: 'teacher',
+      senderId: 'staff',
       timestamp: new Date(Date.now() - 3600000 * 2).toISOString(),
       read: true,
+      status: 'read',
+      readAt: new Date(Date.now() - 3600000 * 1.9).toISOString(),
+      deliveredAt: new Date(Date.now() - 3600000 * 1.95).toISOString(),
+      reactions: { '❤️': ['PAR-1'] },
       priority: 'normal',
       replyToId: 'PSM-1'
     }
