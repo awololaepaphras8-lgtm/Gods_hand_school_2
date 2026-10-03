@@ -10,7 +10,7 @@ import {
 
 interface StudentAuthProps {
   onLogin: (email: string, pass: string) => void;
-  onRegister: (account: Omit<StudentAccount, 'id' | 'createdAt'>) => void;
+  onRegister?: (account: Omit<StudentAccount, 'id' | 'createdAt'>) => void;
   onBack: () => void;
   error: string;
   onResetPassword?: (emailOrId: string, newPass: string) => boolean;
@@ -18,12 +18,11 @@ interface StudentAuthProps {
 
 export const StudentAuth: React.FC<StudentAuthProps> = ({ 
   onLogin, 
-  onRegister, 
   onBack, 
   error,
   onResetPassword 
 }) => {
-  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
+  const [mode, setMode] = useState<'login' | 'forgot'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [securityAlert, setSecurityAlert] = useState<string | null>(null);
   
@@ -33,14 +32,6 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
   // Login State
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPass, setLoginPass] = useState('');
-
-  // Register State
-  const [regName, setRegName] = useState('');
-  const [regEmail, setRegEmail] = useState('');
-  const [regPass, setRegPass] = useState('');
-  const [regGrade, setRegGrade] = useState<GradeLevel>('Primary 1');
-  const currentYear = new Date().getFullYear();
-  const [regAdmissionYear, setRegAdmissionYear] = useState<number>(currentYear);
 
   // Forgot Pass State
   const [forgotEmailOrId, setForgotEmailOrId] = useState('');
@@ -94,27 +85,6 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
     }
 
     onLogin(loginEmail.trim(), loginPass.trim());
-  };
-
-  const handleRegister = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSecurityAlert(null);
-
-    const nameCheck = detectHackingPayload(regName);
-    const emailCheck = detectHackingPayload(regEmail);
-    const passCheck = detectHackingPayload(regPass);
-    if (nameCheck.isMalicious || emailCheck.isMalicious || passCheck.isMalicious) {
-      setSecurityAlert("Prohibited input characters or injection detected in registration form.");
-      return;
-    }
-
-    onRegister({ 
-      name: regName.trim(), 
-      email: regEmail.trim().toLowerCase(), 
-      password: regPass.trim(), 
-      grade: regGrade,
-      admissionYear: regAdmissionYear
-    });
   };
 
   const handleForgot = (e: React.FormEvent) => {
@@ -173,10 +143,14 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
           <div className="text-center mb-8">
             <h2 className="text-2xl sm:text-3xl font-black text-blue-900 uppercase tracking-tighter font-serif">
               {mode === 'login' && 'Students & Pupils Login'}
-              {mode === 'register' && 'New Student & Pupil Account'}
               {mode === 'forgot' && 'Reset Student Password'}
             </h2>
             <div className="h-1.5 w-16 bg-yellow-400 rounded-full mx-auto mt-2"></div>
+            {mode === 'login' && (
+              <p className="text-xs text-slate-500 font-medium mt-2">
+                Official Student Portal • Accounts provisioned strictly by Admin & Class Teacher
+              </p>
+            )}
           </div>
 
           {/* Security alert */}
@@ -250,8 +224,8 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
                 />
               </div>
 
-              {/* Action Buttons: Forgotten Password & Create Account */}
-              <div className="flex justify-between items-center text-[11px] font-black uppercase tracking-wider px-1 pt-1">
+              {/* Action Buttons: Forgotten Password & Restricted Registration Notice */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-[11px] font-black uppercase tracking-wider px-1 pt-1">
                 <button 
                   type="button" 
                   onClick={() => { setMode('forgot'); setSecurityAlert(null); }} 
@@ -260,13 +234,10 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
                   <span>🔑</span>
                   <span className="underline decoration-yellow-400 underline-offset-2">Forgot Password?</span>
                 </button>
-                <button 
-                  type="button" 
-                  onClick={() => { setMode('register'); setSecurityAlert(null); }} 
-                  className="text-yellow-600 hover:text-blue-900"
-                >
-                  Create Account
-                </button>
+                <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+                  <span>🔒</span>
+                  <span>Created by Admin / Teacher</span>
+                </span>
               </div>
 
               <button 
@@ -276,124 +247,15 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
               >
                 Enter Students & Pupils Hub
               </button>
-            </form>
-          )}
 
-          {mode === 'register' && (
-            <form 
-              method="POST" 
-              action="#" 
-              onSubmit={handleRegister} 
-              className="space-y-4"
-              autoComplete="off"
-            >
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Full Name</label>
-                <input 
-                  type="text" 
-                  name="reg_fullname"
-                  required 
-                  value={regName}
-                  onChange={(e) => handleInputFilter(e.target.value, setRegName)}
-                  className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold text-xs text-blue-900 focus:bg-white outline-none transition-all"
-                  placeholder="e.g. Samuel Adebayo"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Email</label>
-                <input 
-                  type="email" 
-                  name="reg_email"
-                  required 
-                  value={regEmail}
-                  onChange={(e) => handleInputFilter(e.target.value, setRegEmail)}
-                  className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold text-xs text-blue-900 focus:bg-white outline-none transition-all"
-                  placeholder="samuel@Godshand.sch.ng"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Current Grade</label>
-                <select 
-                  value={regGrade}
-                  onChange={(e) => setRegGrade(e.target.value as GradeLevel)}
-                  className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold text-xs text-blue-900 focus:bg-white outline-none transition-all"
-                >
-                   {GRADE_GROUPS.flatMap(g => g.levels).map(l => <option key={l} value={l}>{l}</option>)}
-                </select>
-              </div>
-
-              {/* Year Student Started Attending The School */}
-              <div className="space-y-2 p-3 bg-blue-50/70 border-2 border-blue-100 rounded-2xl">
-                <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-black text-blue-950 uppercase tracking-wider flex items-center gap-1">
-                    <span>📅</span>
-                    <span>Year Started Attending School</span>
-                  </label>
-                  <span className="text-[11px] font-black bg-yellow-400 text-blue-950 px-2 py-0.5 rounded-lg shadow-xs">
-                    {regAdmissionYear}
-                  </span>
+              {/* Informative Policy Card */}
+              <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-2xl text-[11px] text-blue-950 font-medium flex items-start gap-2.5">
+                <span className="text-base shrink-0">🛡️</span>
+                <div>
+                  <strong className="font-black text-blue-900 uppercase block text-[10px]">Enrollment Policy</strong>
+                  <span>Pupils and students cannot self-register. Your account is provisioned directly by your Class Teacher or the School Administrator.</span>
                 </div>
-
-                <div className="grid grid-cols-4 gap-1.5">
-                  {[currentYear, currentYear - 1, currentYear - 2, currentYear - 3, currentYear - 4, currentYear - 5, currentYear - 6].map((yr) => (
-                    <button
-                      type="button"
-                      key={yr}
-                      onClick={() => setRegAdmissionYear(yr)}
-                      className={`py-2 px-1 text-xs font-black rounded-xl border transition-all ${
-                        regAdmissionYear === yr
-                          ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md scale-[1.02]'
-                          : 'bg-white text-slate-700 border-blue-100 hover:bg-blue-100/50'
-                      }`}
-                    >
-                      {yr === currentYear ? `${yr} ★` : yr}
-                    </button>
-                  ))}
-                  
-                  {/* Stepper buttons to easily adjust to any past year */}
-                  <div className="flex items-center bg-white border border-blue-200 rounded-xl overflow-hidden shadow-2xs">
-                    <button
-                      type="button"
-                      onClick={() => setRegAdmissionYear(prev => Math.max(2010, prev - 1))}
-                      className="w-1/2 py-2 text-xs font-black text-blue-900 hover:bg-yellow-200 active:bg-yellow-300 transition-colors"
-                      title="Earlier Year"
-                    >
-                      ▼
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setRegAdmissionYear(prev => Math.min(currentYear + 1, prev + 1))}
-                      className="w-1/2 py-2 text-xs font-black text-blue-900 hover:bg-yellow-200 active:bg-yellow-300 transition-colors"
-                      title="Later Year"
-                    >
-                      ▲
-                    </button>
-                  </div>
-                </div>
-                <p className="text-[9px] text-blue-900/70 font-medium">
-                  Click the button representing the year the student/pupil first enrolled at God's Hand International Model School.
-                </p>
               </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Password</label>
-                <input 
-                  type="password" 
-                  name="reg_password"
-                  required 
-                  value={regPass}
-                  onChange={(e) => handleInputFilter(e.target.value, setRegPass)}
-                  className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold text-xs text-blue-900 focus:bg-white outline-none transition-all"
-                  placeholder="At least 5 characters"
-                  autoComplete="new-password"
-                />
-              </div>
-              <button type="submit" className="w-full py-4 bg-blue-900 text-yellow-400 font-black rounded-2xl shadow-lg mt-2 hover:bg-blue-800 transition-all">
-                Register Student / Pupil
-              </button>
-              <button type="button" onClick={() => setMode('login')} className="w-full text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 hover:text-blue-900">
-                Already have an account? Login
-              </button>
             </form>
           )}
 

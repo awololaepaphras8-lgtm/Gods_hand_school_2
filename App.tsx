@@ -58,6 +58,7 @@ import { SplashScreen } from './components/SplashScreen';
 import { verifyAdminSecurityKey, setAdminSecurityKeyHash } from './utils/adminSecurity';
 import { QRCodeSVG } from 'qrcode.react';
 import { generateStudentId } from './utils/studentIdGenerator';
+import { downloadQrCodeImage } from './utils/exportService';
 import { getInitialTheme, applyThemeToDocument } from './utils/themeManager';
 
 const App: React.FC = () => {
@@ -788,6 +789,31 @@ const App: React.FC = () => {
       )
     }));
     realtimeService.toggleStudentEntry(studentId, allowed);
+  };
+
+  const handleAddStudentAccount = (newStudent: StudentAccount) => {
+    setState(prev => ({
+      ...prev,
+      studentAccounts: [...prev.studentAccounts, newStudent]
+    }));
+    realtimeService.addStudent(newStudent);
+  };
+
+  const handleAddParentAccount = (newParent: ParentAccount) => {
+    setState(prev => {
+      const existing = (prev.parents || []).some(p => p.id === newParent.id || p.email.toLowerCase() === newParent.email.toLowerCase());
+      if (existing) {
+        return {
+          ...prev,
+          parents: (prev.parents || []).map(p => (p.id === newParent.id || p.email.toLowerCase() === newParent.email.toLowerCase()) ? { ...p, ...newParent } : p)
+        };
+      }
+      return {
+        ...prev,
+        parents: [...(prev.parents || []), newParent]
+      };
+    });
+    realtimeService.registerParent(newParent);
   };
 
   const handleStudentLogin = (emailOrId: string, pass: string): boolean => {
@@ -1711,6 +1737,7 @@ const App: React.FC = () => {
                             <>
                               <div className="bg-slate-50 p-6 rounded-3xl inline-block border-4 border-slate-100 shadow-inner my-4">
                                 <QRCodeSVG 
+                                  id={`student-qr-svg-${currentStudentObj.id}`}
                                   value={activeQrValue} 
                                   size={180}
                                   level="H"
@@ -1724,6 +1751,80 @@ const App: React.FC = () => {
                                 {termInfo.generatedAt && (
                                   <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Generated on: {new Date(termInfo.generatedAt).toLocaleString()}</p>
                                 )}
+                              </div>
+
+                              {/* Active Status Badge */}
+                              <div className="mt-3 py-2 px-3 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
+                                <span className="inline-flex items-center gap-1.5 text-[11px] font-black text-emerald-800 uppercase tracking-wide">
+                                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                  <span>Active Pass — Valid Until New Pass Generated</span>
+                                </span>
+                                <p className="text-[10px] text-emerald-700 font-medium mt-0.5">
+                                  This QR code remains fully active for daily school gate entry and classroom attendance until you generate a new QR pass.
+                                </p>
+                              </div>
+
+                              {/* Download Attendance QR Code as Image Buttons (Active until new QR code is generated) */}
+                              <div className="mt-4 pt-3 border-t border-slate-100 space-y-2">
+                                <div className="flex items-center justify-between text-[10px] font-black text-slate-500 uppercase tracking-wider px-1">
+                                  <span>Download For Printing / Storage:</span>
+                                  <span className="text-emerald-700 font-bold">✓ Ready</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      downloadQrCodeImage(
+                                        `student-qr-svg-${currentStudentObj.id}`,
+                                        `GodsHand_${currentStudentObj.name}_${selectedTermForQR}_QR`,
+                                        {
+                                          format: 'png',
+                                          studentName: currentStudentObj.name,
+                                          grade: currentStudentObj.grade,
+                                          term: selectedTermForQR,
+                                          studentId: currentStudentObj.id
+                                        }
+                                      );
+                                    }}
+                                    className="py-3 px-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5"
+                                    title="Download your active QR code pass as a high-resolution PNG image file"
+                                  >
+                                    <span>📥</span>
+                                    <span>Download PNG</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      downloadQrCodeImage(
+                                        `student-qr-svg-${currentStudentObj.id}`,
+                                        `GodsHand_${currentStudentObj.name}_${selectedTermForQR}_QR`,
+                                        {
+                                          format: 'jpeg',
+                                          studentName: currentStudentObj.name,
+                                          grade: currentStudentObj.grade,
+                                          term: selectedTermForQR,
+                                          studentId: currentStudentObj.id
+                                        }
+                                      );
+                                    }}
+                                    className="py-3 px-3 bg-slate-800 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5"
+                                    title="Download your active QR code pass as a JPEG image file"
+                                  >
+                                    <span>🖼️</span>
+                                    <span>Download JPEG</span>
+                                  </button>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => window.print()}
+                                  className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-[11px] uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5"
+                                  title="Print attendance gate pass card"
+                                >
+                                  <span>🖨️</span>
+                                  <span>Print Pass Card</span>
+                                </button>
                               </div>
                             </>
                           )}
@@ -1957,6 +2058,9 @@ const App: React.FC = () => {
                }}
                onRequestPublishResults={handleRequestPublishResults}
                onSendResultsToPupils={handleSendResultsToPupils}
+               canCreateStudents={currentTeacherObj?.canCreateStudents}
+               onAddStudent={handleAddStudentAccount}
+               onAddParentAccount={handleAddParentAccount}
              />
            </div>
         )}
@@ -2083,6 +2187,8 @@ const App: React.FC = () => {
                 onUpdateBankAccountConfig={handleUpdateBankAccountConfig}
                 onMarkAttendance={markAttendance}
                 onUpdateStudentBalance={handleUpdateStudentBalance}
+                onAddStudent={handleAddStudentAccount}
+                onAddParent={handleAddParentAccount}
               />
             </div>
           ) : (role === UserRole.TEACHER && activeTeacherDelegation) ? (
@@ -2131,6 +2237,8 @@ const App: React.FC = () => {
                 onUpdateBankAccountConfig={handleUpdateBankAccountConfig}
                 onMarkAttendance={markAttendance}
                 onUpdateStudentBalance={handleUpdateStudentBalance}
+                onAddStudent={handleAddStudentAccount}
+                onAddParent={handleAddParentAccount}
                 onExitDelegation={() => {
                   setView('teacher');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2196,6 +2304,8 @@ const App: React.FC = () => {
                 onUpdateBankAccountConfig={handleUpdateBankAccountConfig}
                 onMarkAttendance={markAttendance}
                 onUpdateStudentBalance={handleUpdateStudentBalance}
+                onAddStudent={handleAddStudentAccount}
+                onAddParent={handleAddParentAccount}
                 initialTab="attendanceScanning"
               />
             </div>
@@ -2235,6 +2345,9 @@ const App: React.FC = () => {
                 }}
                 onRequestPublishResults={handleRequestPublishResults}
                 onSendResultsToPupils={handleSendResultsToPupils}
+                canCreateStudents={currentTeacherObj?.canCreateStudents}
+                onAddStudent={handleAddStudentAccount}
+                onAddParentAccount={handleAddParentAccount}
                 initialTab="attendanceScanning"
               />
             </div>

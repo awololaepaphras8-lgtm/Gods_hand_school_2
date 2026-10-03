@@ -262,7 +262,8 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
         createdAt: t.created_at,
         assignedGrades: t.assigned_grades || [],
         assignedCourses: t.assigned_courses || [],
-        allowedPages: t.allowed_pages
+        allowedPages: t.allowed_pages,
+        canCreateStudents: t.can_create_students ?? false
       }));
     }
 
@@ -354,6 +355,7 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
         term: tt.term || 'First Term',
         academicYear: tt.academic_year || '2024/2025',
         periods: Array.isArray(tt.periods) ? tt.periods : (typeof tt.periods === 'string' ? JSON.parse(tt.periods) : []),
+        notes: tt.notes || '',
         updatedAt: tt.updated_at || new Date().toISOString(),
         updatedBy: tt.updated_by || 'Teacher'
       }));
@@ -1336,6 +1338,7 @@ export const setupRealtimeSync = (
                 term: newRecord.term || 'First Term',
                 academicYear: newRecord.academic_year || '2024/2025',
                 periods: Array.isArray(newRecord.periods) ? newRecord.periods : (typeof newRecord.periods === 'string' ? JSON.parse(newRecord.periods) : []),
+                notes: newRecord.notes || '',
                 updatedAt: newRecord.updated_at || new Date().toISOString(),
                 updatedBy: newRecord.updated_by || 'Teacher'
               };
@@ -2111,6 +2114,7 @@ export const realtimeService = {
           assigned_grades: teacher.assignedGrades,
           assigned_courses: teacher.assignedCourses,
           allowed_pages: teacher.allowedPages || ['overview', 'students', 'termStats', 'grading', 'attendance', 'courses'],
+          can_create_students: teacher.canCreateStudents ?? false,
           updated_at: new Date().toISOString()
         });
       } catch (err) {
@@ -2268,6 +2272,7 @@ export const realtimeService = {
           term: timetable.term,
           academic_year: timetable.academicYear,
           periods: timetable.periods,
+          notes: timetable.notes || null,
           updated_at: timetable.updatedAt,
           updated_by: timetable.updatedBy
         }, { onConflict: 'id' });

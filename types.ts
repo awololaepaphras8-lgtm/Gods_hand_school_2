@@ -101,6 +101,7 @@ export interface TeacherAccount {
   assignedGrades: GradeLevel[];
   assignedCourses: string[]; // Array of Course IDs
   allowedPages?: StaffPagePermission[];
+  canCreateStudents?: boolean;
 }
 
 export interface TermQrInfo {
@@ -137,6 +138,8 @@ export interface StudentAccount {
   parentId?: string;
   balance?: number;
   photo?: string; // Base64 or image URL profile photo
+  gender?: 'Male' | 'Female' | 'Other';
+  createdBy?: string;
 }
 
 export interface StudentResult {

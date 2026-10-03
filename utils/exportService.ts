@@ -1215,3 +1215,148 @@ export function exportSinglePaymentReceiptPDF(payment: FeePayment, student?: Stu
   const cleanName = payment.studentName.replace(/[^a-zA-Z0-9]/g, '_');
   doc.save(`Receipt_${cleanName}_${payment.id}.pdf`);
 }
+
+/**
+ * Exports a rendered SVG QR Code element as a high-resolution PNG or JPEG image file
+ * with God's Hand International Model School branding for easy printing or mobile storage.
+ */
+export async function downloadQrCodeImage(
+  svgElementId: string,
+  fileName: string,
+  options: {
+    format?: 'png' | 'jpeg';
+    title?: string;
+    studentName?: string;
+    grade?: string;
+    term?: string;
+    studentId?: string;
+  } = {}
+): Promise<boolean> {
+  const {
+    format = 'png',
+    title = "GOD'S HAND INT'L MODEL SCHOOL",
+    studentName,
+    grade,
+    term,
+    studentId
+  } = options;
+
+  const svgElement = document.getElementById(svgElementId) as unknown as SVGElement | null;
+  if (!svgElement) {
+    console.error(`SVG element #${svgElementId} not found`);
+    return false;
+  }
+
+  return new Promise<boolean>((resolve) => {
+    try {
+      const serializer = new XMLSerializer();
+      let source = serializer.serializeToString(svgElement);
+
+      if (!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)) {
+        source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+      }
+      if (!source.match(/^<svg[^>]+xmlns\:xlink="http\:\/\/www\.w3\.org\/1999\/xlink"/)) {
+        source = source.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"');
+      }
+
+      const svgBlob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
+      const URLObj = window.URL || window.webkitURL;
+      const blobURL = URLObj.createObjectURL(svgBlob);
+
+      const img = new Image();
+      img.onload = () => {
+        const qrSize = 360;
+        const width = 480;
+        const height = 620;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+          URLObj.revokeObjectURL(blobURL);
+          resolve(false);
+          return;
+        }
+
+        // Crisp white card background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+
+        // Header Banner
+        ctx.fillStyle = '#1e3a8a'; // dark navy blue
+        ctx.fillRect(0, 0, width, 84);
+
+        // Header Text
+        ctx.fillStyle = '#facc15'; // yellow-400
+        ctx.font = 'bold 18px "Georgia", serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(title, width / 2, 36);
+
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText('OFFICIAL DIGITAL ATTENDANCE GATE PASS', width / 2, 58);
+
+        // Framing border for QR code
+        ctx.fillStyle = '#f8fafc';
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 2;
+        const qrX = (width - qrSize) / 2;
+        const qrY = 104;
+        ctx.fillRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 20);
+        ctx.strokeRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 20);
+
+        // Draw QR Code
+        ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+
+        // Footer Card Details
+        const footerY = qrY + qrSize + 28;
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.textAlign = 'center';
+        if (studentName) {
+          ctx.fillText(studentName, width / 2, footerY);
+        }
+
+        ctx.fillStyle = '#475569';
+        ctx.font = '12px sans-serif';
+        const subDetails = [
+          grade ? `Class: ${grade}` : '',
+          studentId ? `ID: ${studentId}` : '',
+          term ? `Term: ${term}` : ''
+        ].filter(Boolean).join(' • ');
+        ctx.fillText(subDetails, width / 2, footerY + 22);
+
+        // School Motto
+        ctx.fillStyle = '#1e3a8a';
+        ctx.font = 'italic bold 11px "Georgia", serif';
+        ctx.fillText('Motto: Have Faith In God • Valid for Term Gate Scanning', width / 2, footerY + 44);
+
+        // Export canvas to target format
+        const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
+        const dataUrl = canvas.toDataURL(mimeType, 0.95);
+        const link = document.createElement('a');
+        link.download = `${fileName.replace(/[^a-zA-Z0-9_-]/g, '_')}.${format}`;
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        URLObj.revokeObjectURL(blobURL);
+        resolve(true);
+      };
+
+      img.onerror = () => {
+        URLObj.revokeObjectURL(blobURL);
+        resolve(false);
+      };
+
+      img.src = blobURL;
+    } catch (err) {
+      console.error('Failed to export QR code image:', err);
+      resolve(false);
+    }
+  });
+}
+

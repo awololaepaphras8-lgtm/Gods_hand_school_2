@@ -15,6 +15,7 @@ import { GRADE_GROUPS, DEFAULT_BANK_ACCOUNT_CONFIG } from '../constants';
 import { QRCodeSVG } from 'qrcode.react';
 import { StandardReportCard } from './StandardReportCard';
 import { StudentPhotoUploadModal } from './StudentPhotoUploadModal';
+import { downloadQrCodeImage } from '../utils/exportService';
 
 interface ParentDashboardProps {
   parent: ParentAccount;
@@ -910,27 +911,15 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
               </button>
             </div>
 
-            {/* Tab switch between Linking vs Registering */}
+            {/* Link Enrolled Student Only */}
             <div className="p-6 space-y-6">
-              <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
-                <button
-                  type="button"
-                  onClick={() => setAddChildTab('link')}
-                  className={`py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all ${
-                    addChildTab === 'link' ? 'bg-white text-blue-900 shadow' : 'text-slate-500 hover:text-blue-900'
-                  }`}
-                >
-                  Link Enrolled Student
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAddChildTab('register')}
-                  className={`py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all ${
-                    addChildTab === 'register' ? 'bg-white text-blue-900 shadow' : 'text-slate-500 hover:text-blue-900'
-                  }`}
-                >
-                  Register New Child
-                </button>
+              <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-2xl flex items-center justify-between">
+                <span className="text-xs font-black uppercase tracking-wider text-blue-900">
+                  Link Enrolled Pupil
+                </span>
+                <span className="text-[10px] font-bold text-slate-500 bg-white px-2.5 py-1 rounded-lg shadow-2xs">
+                  Accounts created by Admin & Class Teacher
+                </span>
               </div>
 
               {linkError && (
@@ -940,136 +929,55 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
               )}
 
               {/* LINK EXISTING STUDENT */}
-              {addChildTab === 'link' ? (
-                <form onSubmit={handleLinkChildSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2">
-                      Pupil / Student ID Number *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={linkStudentId}
-                      onChange={(e) => setLinkStudentId(e.target.value.trim())}
-                      placeholder="e.g. STU-1 or STU-002"
-                      autoComplete="off"
-                      autoCorrect="off"
-                      autoCapitalize="characters"
-                      spellCheck={false}
-                      className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-black text-sm text-blue-950 focus:bg-white focus:border-blue-900 outline-none uppercase placeholder:normal-case placeholder:font-normal"
-                    />
-                  </div>
+              <form onSubmit={handleLinkChildSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2">
+                    Pupil / Student ID Number *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={linkStudentId}
+                    onChange={(e) => setLinkStudentId(e.target.value.trim())}
+                    placeholder="e.g. STU-1 or STU-002"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-black text-sm text-blue-950 focus:bg-white focus:border-blue-900 outline-none uppercase placeholder:normal-case placeholder:font-normal"
+                  />
+                </div>
 
-                  <div className="p-3.5 bg-amber-50/90 border border-amber-200 rounded-xl text-xs text-amber-950 space-y-1.5">
-                    <p className="font-black flex items-center gap-1 text-amber-900">
-                      <span>🛡️</span>
-                      <span>Strict Identity Verification & Privacy</span>
-                    </p>
-                    <p className="text-[11px] leading-relaxed">
-                      To protect student identity and privacy, the system does not provide autocomplete suggestions or student roll browsing. Please enter the exact <strong>Student ID</strong> provided on your child's admission slip or school ID badge.
-                    </p>
-                    <p className="text-[11px] font-bold text-blue-900 pt-1 border-t border-amber-200/60">
-                      🔒 <strong>Permanent Link Rule:</strong> Once linked, a child remains permanently attached to your parent profile and can only be delinked by the School Administrator or Bursar.
-                    </p>
-                  </div>
+                <div className="p-3.5 bg-amber-50/90 border border-amber-200 rounded-xl text-xs text-amber-950 space-y-1.5">
+                  <p className="font-black flex items-center gap-1 text-amber-900">
+                    <span>🛡️</span>
+                    <span>Official Enrollment Verification</span>
+                  </p>
+                  <p className="text-[11px] leading-relaxed">
+                    Pupil accounts cannot be self-registered. All student accounts are created by the <strong>School Administrator</strong> or your child's assigned <strong>Class Teacher</strong>.
+                  </p>
+                  <p className="text-[11px] font-bold text-blue-900 pt-1 border-t border-amber-200/60">
+                    🔒 Enter the exact Student ID assigned to your child by their Class Teacher or on their official admission slip.
+                  </p>
+                </div>
 
-                  <div className="flex justify-end gap-3 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowAddChildModal(false)}
-                      className="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={!linkStudentId.trim()}
-                      className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 disabled:opacity-50 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all"
-                    >
-                      Verify & Link Child
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                /* REGISTER NEW CHILD */
-                <form onSubmit={handleRegisterChildSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">
-                      Child Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={newChildName}
-                      onChange={(e) => setNewChildName(e.target.value)}
-                      placeholder="e.g. Daniel Adebayo"
-                      className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-blue-950 focus:bg-white focus:border-blue-900 outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">
-                      Class / Grade *
-                    </label>
-                    <select
-                      value={newChildGrade}
-                      onChange={(e) => setNewChildGrade(e.target.value as any)}
-                      className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-blue-950 focus:bg-white focus:border-blue-900 outline-none"
-                    >
-                      {GRADE_GROUPS.map(group => (
-                        <optgroup key={group.name} label={group.name}>
-                          {group.levels.map(lvl => (
-                            <option key={lvl} value={lvl}>{lvl}</option>
-                          ))}
-                        </optgroup>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">
-                        Student Email (Optional)
-                      </label>
-                      <input
-                        type="email"
-                        value={newChildEmail}
-                        onChange={(e) => setNewChildEmail(e.target.value)}
-                        placeholder="Auto-generated if blank"
-                        className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-blue-950 focus:bg-white focus:border-blue-900 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">
-                        Portal Passcode
-                      </label>
-                      <input
-                        type="text"
-                        value={newChildPassword}
-                        onChange={(e) => setNewChildPassword(e.target.value)}
-                        placeholder="student123"
-                        className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-blue-950 focus:bg-white focus:border-blue-900 outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end gap-3 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowAddChildModal(false)}
-                      className="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all"
-                    >
-                      Enroll Child to Account
-                    </button>
-                  </div>
-                </form>
-              )}
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddChildModal(false)}
+                    className="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!linkStudentId.trim()}
+                    className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 disabled:opacity-50 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all"
+                  >
+                    Verify & Link Child
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
@@ -1441,6 +1349,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
               <div className="p-5 bg-white border-2 border-dashed border-blue-900/40 rounded-2xl flex flex-col items-center justify-center gap-3 shadow-inner">
                 <QRCodeSVG
+                  id={`child-qr-svg-${activeChild.id}`}
                   value={`GHS-ATT|${activeChild.id}|${activeChild.activeTerm || 'First Term'}|${Date.now()}`}
                   size={200}
                   level="H"
@@ -1457,6 +1366,52 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
                   Scan at School Security Gate
                 </span>
+              </div>
+
+              {/* Download Attendance Pass Image Buttons */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    downloadQrCodeImage(
+                      `child-qr-svg-${activeChild.id}`,
+                      `GodsHand_${activeChild.name}_GatePass_QR`,
+                      {
+                        format: 'png',
+                        studentName: activeChild.name,
+                        grade: activeChild.grade,
+                        term: activeChild.activeTerm || 'First Term',
+                        studentId: activeChild.id
+                      }
+                    );
+                  }}
+                  className="py-2.5 px-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5"
+                  title="Download gate pass as PNG image file"
+                >
+                  <span>📥</span>
+                  <span>Save PNG</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    downloadQrCodeImage(
+                      `child-qr-svg-${activeChild.id}`,
+                      `GodsHand_${activeChild.name}_GatePass_QR`,
+                      {
+                        format: 'jpeg',
+                        studentName: activeChild.name,
+                        grade: activeChild.grade,
+                        term: activeChild.activeTerm || 'First Term',
+                        studentId: activeChild.id
+                      }
+                    );
+                  }}
+                  className="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5"
+                  title="Download gate pass as JPEG image file"
+                >
+                  <span>🖼️</span>
+                  <span>Save JPEG</span>
+                </button>
               </div>
 
               <div className={`p-3 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 ${

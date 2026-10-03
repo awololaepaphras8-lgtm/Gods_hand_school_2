@@ -7,7 +7,11 @@ import {
   copyAttendanceSql,
   downloadAttendanceSql,
   SUPABASE_STAFF_AND_ADMIN_SQL,
-  downloadStaffAndAdminSql
+  downloadStaffAndAdminSql,
+  SUPABASE_TABULAR_TIMETABLE_AND_QR_SQL,
+  downloadTabularTimetableAndQrSql,
+  SUPABASE_RESTRICTED_ACCOUNT_CREATION_SQL,
+  downloadRestrictedAccountCreationSql
 } from '../utils/supabaseSqlExport';
 
 interface RealtimeSqlViewerModalProps {
@@ -19,7 +23,7 @@ export const RealtimeSqlViewerModal: React.FC<RealtimeSqlViewerModalProps> = ({
   isOpen,
   onClose
 }) => {
-  const [activeTab, setActiveTab] = useState<'all' | 'staffAdmin' | 'bankAccount' | 'attendance' | 'videoRecordings' | 'adminRealtime' | 'chatCalls'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'accountCreation' | 'timetableQr' | 'staffAdmin' | 'bankAccount' | 'attendance' | 'videoRecordings' | 'adminRealtime' | 'chatCalls'>('accountCreation');
   const [copySuccess, setCopySuccess] = useState(false);
 
   if (!isOpen) return null;
@@ -530,6 +534,8 @@ ON CONFLICT (id) DO NOTHING;
 
   const activeSqlToDisplay = 
     activeTab === 'all' ? SUPABASE_MASTER_SQL_SCHEMA :
+    activeTab === 'accountCreation' ? SUPABASE_RESTRICTED_ACCOUNT_CREATION_SQL :
+    activeTab === 'timetableQr' ? SUPABASE_TABULAR_TIMETABLE_AND_QR_SQL :
     activeTab === 'staffAdmin' ? SUPABASE_STAFF_AND_ADMIN_SQL :
     activeTab === 'bankAccount' ? BANK_ACCOUNT_SYNC_SQL :
     activeTab === 'attendance' ? SUPABASE_ATTENDANCE_SQL :
@@ -595,6 +601,30 @@ ON CONFLICT (id) DO NOTHING;
             }`}
           >
             📋 Complete Master Schema (All 23 Tables)
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('accountCreation')}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+              activeTab === 'accountCreation'
+                ? 'bg-blue-900 text-yellow-400 shadow-sm'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            🛡️ Restricted Account Creation & Realtime Sync SQL
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('timetableQr')}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+              activeTab === 'timetableQr'
+                ? 'bg-blue-900 text-yellow-400 shadow-sm'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            📅 Tabular Timetable (Mon-Fri) & Student QR Pass SQL
           </button>
 
           <button
@@ -701,7 +731,11 @@ ON CONFLICT (id) DO NOTHING;
             <button
               type="button"
               onClick={() => {
-                if (activeTab === 'staffAdmin') {
+                if (activeTab === 'accountCreation') {
+                  downloadRestrictedAccountCreationSql();
+                } else if (activeTab === 'timetableQr') {
+                  downloadTabularTimetableAndQrSql();
+                } else if (activeTab === 'staffAdmin') {
                   downloadStaffAndAdminSql();
                 } else if (activeTab === 'attendance') {
                   downloadAttendanceSql();

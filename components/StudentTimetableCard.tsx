@@ -19,7 +19,7 @@ export const StudentTimetableCard: React.FC<StudentTimetableCardProps> = ({
   const defaultTab = isSchoolDay ? todayName : 'Monday';
 
   const [selectedDay, setSelectedDay] = useState<string>(defaultTab);
-  const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
+  const [viewMode, setViewMode] = useState<'tabular' | 'day' | 'scheduleList'>('tabular');
 
   // Find class timetable for this grade & term (with fallback for any term)
   const classTimetable = timetables.find(
@@ -27,6 +27,18 @@ export const StudentTimetableCard: React.FC<StudentTimetableCardProps> = ({
   ) || timetables.find(t => t.grade === grade);
 
   const periods: TimetablePeriod[] = classTimetable?.periods || [];
+
+  // Group periods by period index or time slot across Monday to Friday
+  const uniqueTimes = Array.from(new Set(periods.map(p => `${p.startTime}-${p.endTime}`))).sort();
+
+  // Or better: determine max periods per day and map 1..N
+  const periodsByDay: Record<string, TimetablePeriod[]> = {};
+  DAYS_OF_WEEK.forEach(d => {
+    periodsByDay[d] = periods.filter(p => p.day === d).sort((a, b) => a.startTime.localeCompare(b.startTime));
+  });
+
+  const maxPeriodsInAnyDay = Math.max(...DAYS_OF_WEEK.map(d => periodsByDay[d]?.length || 0), 8);
+  const periodRows = Array.from({ length: maxPeriodsInAnyDay }, (_, idx) => idx);
 
   const handlePrint = () => {
     window.print();
@@ -44,45 +56,58 @@ export const StudentTimetableCard: React.FC<StudentTimetableCardProps> = ({
             </h3>
           </div>
           <p className="text-xs sm:text-sm text-blue-200 font-medium mt-1">
-            Weekly lesson timetable for <span className="font-bold text-white">{grade}</span> ({activeTerm})
+            Official lesson schedule for <span className="font-bold text-white">{grade}</span> ({activeTerm})
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {/* View Mode Toggle */}
           <div className="bg-blue-950/80 p-1 rounded-xl border border-blue-800/60 flex items-center gap-1">
             <button
               type="button"
-              onClick={() => setViewMode('day')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
-                viewMode === 'day' ? 'bg-yellow-400 text-blue-950 shadow-xs' : 'text-blue-200 hover:text-white'
+              onClick={() => setViewMode('tabular')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1 ${
+                viewMode === 'tabular' ? 'bg-yellow-400 text-blue-950 shadow-xs' : 'text-blue-200 hover:text-white'
               }`}
             >
-              Day View
+              <span>📊</span>
+              <span>Tabular Form</span>
             </button>
             <button
               type="button"
-              onClick={() => setViewMode('week')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
-                viewMode === 'week' ? 'bg-yellow-400 text-blue-950 shadow-xs' : 'text-blue-200 hover:text-white'
+              onClick={() => setViewMode('scheduleList')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1 ${
+                viewMode === 'scheduleList' ? 'bg-yellow-400 text-blue-950 shadow-xs' : 'text-blue-200 hover:text-white'
               }`}
             >
-              Full Week
+              <span>📋</span>
+              <span>Schedule Table</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('day')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1 ${
+                viewMode === 'day' ? 'bg-yellow-400 text-blue-950 shadow-xs' : 'text-blue-200 hover:text-white'
+              }`}
+            >
+              <span>📅</span>
+              <span>Day Focus</span>
             </button>
           </div>
 
           <button
             type="button"
             onClick={handlePrint}
-            className="p-2.5 bg-blue-800/80 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition-all shadow-xs"
+            className="p-2.5 bg-blue-800/80 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition-all shadow-xs flex items-center gap-1"
             title="Print or Save Timetable"
           >
-            🖨️
+            <span>🖨️</span>
+            <span className="hidden sm:inline text-[11px] uppercase tracking-wider">Print</span>
           </button>
         </div>
       </div>
 
-      {/* Day Selector Tabs (only shown in Day view) */}
+      {/* Quick Day Selector Tabs (for Day Focus or Table Filtering) */}
       {viewMode === 'day' && (
         <div className="bg-slate-50 border-b border-slate-200 px-6 py-3 flex flex-wrap items-center gap-2">
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mr-1">Select Day:</span>
@@ -128,8 +153,292 @@ export const StudentTimetableCard: React.FC<StudentTimetableCardProps> = ({
               Please check back shortly or consult with your class teacher!
             </p>
           </div>
-        ) : viewMode === 'day' ? (
-          /* Day Timeline View */
+        ) : viewMode === 'tabular' ? (
+          /* TABULAR FORM: Monday to Friday Matrix with Time, Period, and Subject */
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
+              <div>
+                <h4 className="font-serif font-black text-blue-950 text-base sm:text-lg flex items-center gap-2">
+                  <span>Weekly Tabular Schedule Matrix</span>
+                  <span className="px-2 py-0.5 bg-blue-100 text-blue-900 text-[10px] font-black rounded-lg uppercase">
+                    Monday — Friday
+                  </span>
+                </h4>
+                <p className="text-xs text-slate-500 font-medium">
+                  Showing period numbers, active time intervals, and scheduled subjects for each day of the week.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500 font-medium">
+                  Today is <strong className="text-blue-900">{todayName}</strong> {isSchoolDay ? '(School Day)' : '(Weekend)'}
+                </span>
+              </div>
+            </div>
+
+            {/* Responsive Table Wrapper */}
+            <div className="overflow-x-auto rounded-2xl border-2 border-slate-200 shadow-xs">
+              <table className="w-full border-collapse text-left text-xs min-w-[760px]">
+                <thead>
+                  <tr className="bg-blue-900 text-white border-b-2 border-blue-950">
+                    <th className="py-3.5 px-3 font-black text-[11px] uppercase tracking-wider text-yellow-400 w-24 text-center">
+                      Period
+                    </th>
+                    <th className="py-3.5 px-3 font-black text-[11px] uppercase tracking-wider text-blue-200 w-32 text-center">
+                      Time Slot
+                    </th>
+                    {DAYS_OF_WEEK.map(day => {
+                      const isToday = isSchoolDay && todayName === day;
+                      return (
+                        <th 
+                          key={day} 
+                          className={`py-3.5 px-3 font-black text-[11px] uppercase tracking-wider ${
+                            isToday ? 'bg-indigo-950 text-yellow-400 border-x border-indigo-800' : 'text-white'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-1">
+                            <span>{day}</span>
+                            {isToday && (
+                              <span className="px-1.5 py-0.2 bg-emerald-500 text-white text-[8px] font-black rounded uppercase">
+                                Today
+                              </span>
+                            )}
+                          </div>
+                        </th>
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 bg-white">
+                  {periodRows.map((rowIdx) => {
+                    // Representative period for time / label (search across days)
+                    const samplePeriod = DAYS_OF_WEEK.map(d => periodsByDay[d]?.[rowIdx]).find(Boolean);
+                    if (!samplePeriod) return null;
+
+                    const periodNumberLabel = `Period ${rowIdx + 1}`;
+                    const isAllBreak = DAYS_OF_WEEK.every(d => {
+                      const p = periodsByDay[d]?.[rowIdx];
+                      return p ? (p.subject.toLowerCase().includes('break') || p.subject.toLowerCase().includes('lunch')) : true;
+                    });
+
+                    return (
+                      <tr 
+                        key={rowIdx}
+                        className={`transition-colors hover:bg-blue-50/40 ${isAllBreak ? 'bg-amber-50/70 font-bold' : ''}`}
+                      >
+                        {/* Period Column */}
+                        <td className="py-3 px-3 text-center border-r border-slate-200 bg-slate-50 font-black text-slate-700 text-xs">
+                          {isAllBreak ? (
+                            <span className="px-2 py-1 bg-amber-200 text-amber-900 rounded-lg text-[10px] uppercase font-black tracking-wider inline-block">
+                              Break
+                            </span>
+                          ) : (
+                            <span className="font-mono text-blue-900 font-black">
+                              {periodNumberLabel}
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Standard / Representative Time */}
+                        <td className="py-3 px-3 text-center border-r border-slate-200 font-mono text-[11px] font-bold text-slate-600 bg-slate-50/50 whitespace-nowrap">
+                          ⏰ {samplePeriod.startTime} - {samplePeriod.endTime}
+                        </td>
+
+                        {/* Monday to Friday Cells */}
+                        {DAYS_OF_WEEK.map(day => {
+                          const p = periodsByDay[day]?.[rowIdx];
+                          const isToday = isSchoolDay && todayName === day;
+
+                          if (!p) {
+                            return (
+                              <td key={day} className={`py-3 px-3 text-slate-400 italic text-[11px] ${isToday ? 'bg-indigo-50/40' : ''}`}>
+                                —
+                              </td>
+                            );
+                          }
+
+                          const isBreak = p.subject.toLowerCase().includes('break') || p.subject.toLowerCase().includes('lunch');
+                          const isDevotion = p.subject.toLowerCase().includes('devotion') || p.subject.toLowerCase().includes('assembly');
+                          const hasCustomTime = p.startTime !== samplePeriod.startTime || p.endTime !== samplePeriod.endTime;
+
+                          return (
+                            <td 
+                              key={day} 
+                              className={`py-3 px-3 align-top transition-colors ${
+                                isToday ? 'bg-indigo-50/50 border-x border-indigo-100' : ''
+                              } ${isBreak ? 'bg-amber-50/80 text-amber-950' : ''}`}
+                            >
+                              <div className="space-y-1">
+                                {hasCustomTime && (
+                                  <span className="inline-block px-1.5 py-0.5 bg-yellow-100 text-yellow-900 font-mono text-[9px] font-black rounded">
+                                    ⏰ {p.startTime} - {p.endTime}
+                                  </span>
+                                )}
+                                <div className={`font-black text-xs leading-snug ${
+                                  isBreak ? 'text-amber-900 italic' : isDevotion ? 'text-purple-900' : 'text-blue-950'
+                                }`}>
+                                  {p.subject}
+                                </div>
+                                {(p.teacherName || p.room) && !isBreak && (
+                                  <div className="text-[10px] text-slate-500 font-medium flex items-center justify-between gap-1">
+                                    {p.teacherName && (
+                                      <span className="truncate max-w-[90px]">{p.teacherName}</span>
+                                    )}
+                                    {p.room && (
+                                      <span className="text-slate-400 font-mono text-[9px]">{p.room}</span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Tabular Schedule Legend & Summary */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-2xl text-xs">
+                <span className="font-black text-blue-900 uppercase tracking-wider block text-[10px]">
+                  ⏰ Standard School Day Timing
+                </span>
+                <p className="text-slate-600 mt-1 font-medium">
+                  Morning assembly: <strong>07:45 AM</strong>. Lessons commence promptly at <strong>08:00 AM</strong>.
+                </p>
+              </div>
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-xs">
+                <span className="font-black text-amber-900 uppercase tracking-wider block text-[10px]">
+                  ☕ Daily Intervals & Lunch
+                </span>
+                <p className="text-amber-900 mt-1 font-medium">
+                  Short snack break followed by standard midday lunch. Pupils must remain within school grounds.
+                </p>
+              </div>
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs">
+                <span className="font-black text-emerald-900 uppercase tracking-wider block text-[10px]">
+                  📌 Class Teacher Synchronization
+                </span>
+                <p className="text-emerald-900 mt-1 font-medium">
+                  Timetable updates by your class teacher or admin are published in real time to this board.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : viewMode === 'scheduleList' ? (
+          /* SCHEDULE TABLE: Detailed Tabular List with Time, Period, and Subject */
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
+              <div>
+                <h4 className="font-serif font-black text-blue-950 text-base sm:text-lg">
+                  Full Lesson Schedule Table
+                </h4>
+                <p className="text-xs text-slate-500 font-medium">
+                  Filter by day or view all scheduled periods from Monday to Friday.
+                </p>
+              </div>
+
+              {/* Day filter pills */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setSelectedDay('All')}
+                  className={`px-3 py-1 rounded-xl text-xs font-black uppercase transition-all ${
+                    selectedDay === 'All' ? 'bg-blue-900 text-yellow-400 shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  All Days
+                </button>
+                {DAYS_OF_WEEK.map(d => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setSelectedDay(d)}
+                    className={`px-3 py-1 rounded-xl text-xs font-black uppercase transition-all ${
+                      selectedDay === d ? 'bg-blue-900 text-yellow-400 shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {d.slice(0, 3)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="overflow-x-auto rounded-2xl border-2 border-slate-200 shadow-xs">
+              <table className="w-full border-collapse text-left text-xs min-w-[650px]">
+                <thead>
+                  <tr className="bg-blue-900 text-white">
+                    <th className="py-3 px-3 font-black text-[10px] uppercase tracking-wider text-yellow-400 w-24">
+                      Day
+                    </th>
+                    <th className="py-3 px-3 font-black text-[10px] uppercase tracking-wider text-blue-200 w-24">
+                      Period
+                    </th>
+                    <th className="py-3 px-3 font-black text-[10px] uppercase tracking-wider text-yellow-400 w-32">
+                      Time Interval
+                    </th>
+                    <th className="py-3 px-4 font-black text-[10px] uppercase tracking-wider text-white">
+                      Subject / Activity
+                    </th>
+                    <th className="py-3 px-3 font-black text-[10px] uppercase tracking-wider text-blue-200">
+                      Instructor
+                    </th>
+                    <th className="py-3 px-3 font-black text-[10px] uppercase tracking-wider text-blue-200">
+                      Venue
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 bg-white">
+                  {periods
+                    .filter(p => selectedDay === 'All' || p.day === selectedDay)
+                    .sort((a, b) => {
+                      const dayOrder = DAYS_OF_WEEK.indexOf(a.day as any) - DAYS_OF_WEEK.indexOf(b.day as any);
+                      if (dayOrder !== 0) return dayOrder;
+                      return a.startTime.localeCompare(b.startTime);
+                    })
+                    .map((p, idx) => {
+                      const isBreak = p.subject.toLowerCase().includes('break') || p.subject.toLowerCase().includes('lunch');
+                      const isDevotion = p.subject.toLowerCase().includes('devotion') || p.subject.toLowerCase().includes('assembly');
+
+                      return (
+                        <tr 
+                          key={p.id || idx}
+                          className={`hover:bg-blue-50/40 transition-colors ${
+                            isBreak ? 'bg-amber-50/60 font-semibold text-amber-950' : isDevotion ? 'bg-purple-50/40' : ''
+                          }`}
+                        >
+                          <td className="py-2.5 px-3 font-black text-blue-900">
+                            {p.day}
+                          </td>
+                          <td className="py-2.5 px-3 font-mono font-bold text-slate-500">
+                            {isBreak ? 'Interval' : `Period ${idx + 1}`}
+                          </td>
+                          <td className="py-2.5 px-3 font-mono font-bold text-slate-700 whitespace-nowrap">
+                            <span className="px-2 py-0.5 bg-slate-100 rounded-md border border-slate-200">
+                              ⏰ {p.startTime} - {p.endTime}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-4 font-black text-blue-950 text-sm">
+                            {p.subject}
+                          </td>
+                          <td className="py-2.5 px-3 text-slate-600 font-medium">
+                            {p.teacherName || 'Class Teacher'}
+                          </td>
+                          <td className="py-2.5 px-3 text-slate-500 font-mono text-[11px]">
+                            {p.room || `Room ${grade}`}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          /* DAY TIMELINE / DAY CARDS FOCUS */
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <h4 className="font-serif font-black text-blue-950 text-base sm:text-lg flex items-center gap-2">
@@ -193,52 +502,6 @@ export const StudentTimetableCard: React.FC<StudentTimetableCardProps> = ({
                   );
                 })}
             </div>
-          </div>
-        ) : (
-          /* Full Week Grid View */
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-            {DAYS_OF_WEEK.map(day => {
-              const dayLessons = periods
-                .filter(p => p.day === day)
-                .sort((a, b) => a.startTime.localeCompare(b.startTime));
-
-              return (
-                <div key={day} className="bg-slate-50 rounded-2xl border-2 border-slate-200 overflow-hidden flex flex-col">
-                  <div className="bg-blue-900 text-white px-3 py-2 flex items-center justify-between">
-                    <span className="font-serif font-black text-xs text-yellow-400">{day}</span>
-                    <span className="text-[9px] text-blue-200 font-bold">{dayLessons.length}</span>
-                  </div>
-
-                  <div className="p-2 space-y-2 flex-1 overflow-y-auto max-h-[420px]">
-                    {dayLessons.map((p, i) => {
-                      const isBreak = p.subject.toLowerCase().includes('break') || p.subject.toLowerCase().includes('lunch');
-                      return (
-                        <div
-                          key={p.id || i}
-                          className={`p-2 rounded-xl text-xs ${
-                            isBreak
-                              ? 'bg-amber-100/60 border border-amber-200'
-                              : 'bg-white border border-slate-200'
-                          }`}
-                        >
-                          <div className="font-mono text-[9px] font-black text-slate-400">
-                            {p.startTime} - {p.endTime}
-                          </div>
-                          <div className="font-black text-blue-950 text-xs mt-0.5">
-                            {p.subject}
-                          </div>
-                          {p.room && (
-                            <div className="text-[9px] text-slate-400 mt-0.5">
-                              {p.room}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
           </div>
         )}
 

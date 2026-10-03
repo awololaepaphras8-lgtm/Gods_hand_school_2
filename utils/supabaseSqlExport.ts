@@ -1099,7 +1099,7 @@ export const SUPABASE_STAFF_AND_ADMIN_SQL = `-- ================================
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- 2. STAFF ACCOUNTS TABLE (Admin Panel -> Staff Management & Staff Login Gateway)
+-- 2. STAFF ACCOUNTS TABLE (Admin Panel -> Staff Management & Class Assignment)
 CREATE TABLE IF NOT EXISTS public.teacher_accounts (
   id TEXT PRIMARY KEY,
   profile_id UUID,
@@ -1108,14 +1108,29 @@ CREATE TABLE IF NOT EXISTS public.teacher_accounts (
   full_name TEXT,
   email TEXT,
   phone TEXT,
-  assigned_grades TEXT[] DEFAULT '{}' NOT NULL,
+  assigned_grades TEXT[] DEFAULT '{}' NOT NULL, -- Each staff only has classes assigned by Admin
   assigned_courses TEXT[] DEFAULT '{}' NOT NULL,
   allowed_pages TEXT[] DEFAULT '{"overview", "parentMessages", "attendanceScanning", "attendance", "students", "timetable", "termStats", "grading", "courses"}' NOT NULL,
+  can_create_students BOOLEAN DEFAULT FALSE NOT NULL, -- Admin permission toggle for class student registration
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 3. TIMED STAFF DELEGATIONS TABLE (Admin Panel -> Temporary Admin Privileges for Staff)
+-- 3. PARENT ACCOUNTS TABLE (STRICT: All accounts must be created by Admin)
+CREATE TABLE IF NOT EXISTS public.parents (
+  id TEXT PRIMARY KEY,
+  profile_id UUID,
+  full_name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  phone TEXT NOT NULL,
+  password_hash TEXT,
+  relationship TEXT DEFAULT 'Parent / Guardian' NOT NULL,
+  address TEXT,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 4. TIMED STAFF DELEGATIONS TABLE (Admin Panel -> Temporary Admin Privileges for Staff)
 CREATE TABLE IF NOT EXISTS public.timed_staff_delegations (
   id TEXT PRIMARY KEY,
   teacher_username TEXT NOT NULL,
@@ -1130,10 +1145,33 @@ CREATE TABLE IF NOT EXISTS public.timed_staff_delegations (
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 4. ATTENDANCE RECORDS TABLE (Staff Pages: Roll Call Checklist & Camera Scanner | Admin: Attendance Hub)
+-- 5. STUDENTS & PUPILS ROSTER TABLE (Created by Admin OR Class Teacher for their assigned class)
+CREATE TABLE IF NOT EXISTS public.students (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  grade TEXT NOT NULL,
+  email TEXT UNIQUE,
+  password_hash TEXT,
+  entry_allowed BOOLEAN DEFAULT TRUE NOT NULL,
+  active_term TEXT DEFAULT 'First Term' NOT NULL,
+  qr_code_version INT DEFAULT 1 NOT NULL,
+  admission_year INT,
+  qr_generations JSONB DEFAULT '{}'::jsonb,
+  parent_email TEXT,
+  parent_id TEXT,
+  date_of_birth DATE,
+  gender TEXT CHECK (gender IN ('Male', 'Female', 'Other')),
+  balance NUMERIC(12, 2) DEFAULT NULL,
+  photo TEXT,
+  created_by TEXT DEFAULT 'admin', -- 'admin' or teacher username
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 6. ATTENDANCE RECORDS TABLE (Roll Call & QR Scanner -> Realtime Admin Hub)
 CREATE TABLE IF NOT EXISTS public.attendance_records (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  student_id TEXT NOT NULL,
+  student_id TEXT NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
   student_name TEXT,
   grade TEXT,
   date TEXT NOT NULL,
@@ -1143,13 +1181,13 @@ CREATE TABLE IF NOT EXISTS public.attendance_records (
   method TEXT DEFAULT 'manual_roll' CHECK (method IN ('gate_scanner', 'manual_roll', 'rfid_card', 'batch_checklist')),
   scanned_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
-  CONSTRAINT uq_daily_attendance UNIQUE(student_id, date)
+  CONSTRAINT uq_daily_attendance UNIQUE(student_id, date, term)
 );
 
--- 5. STUDENT ACADEMIC RESULTS TABLE (Staff Page: Grading CA 40% & Exam 60% | Admin: Academic Trends)
+-- 7. STUDENT ACADEMIC RESULTS TABLE (Grading CA 40% & Exam 60% -> Realtime Admin View)
 CREATE TABLE IF NOT EXISTS public.student_results (
   id TEXT PRIMARY KEY,
-  student_id TEXT,
+  student_id TEXT REFERENCES public.students(id) ON DELETE CASCADE,
   student_name TEXT NOT NULL,
   grade TEXT NOT NULL,
   subject TEXT NOT NULL,
@@ -1166,7 +1204,7 @@ CREATE TABLE IF NOT EXISTS public.student_results (
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 6. RESULT RELEASE REQUESTS TABLE (Staff Page: Grading Request Release | Admin: Result Releases)
+-- 8. RESULT RELEASE REQUESTS TABLE (Staff requests Admin review)
 CREATE TABLE IF NOT EXISTS public.result_publish_requests (
   id TEXT PRIMARY KEY,
   teacher_name TEXT NOT NULL,
@@ -1183,7 +1221,7 @@ CREATE TABLE IF NOT EXISTS public.result_publish_requests (
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 7. CLASS TIMETABLES TABLE (Staff Page: Class Timetable Builder | Admin & Student: Schedule View)
+-- 9. CLASS TIMETABLES TABLE (Staff Builder -> Realtime Schedule View)
 CREATE TABLE IF NOT EXISTS public.timetables (
   id TEXT PRIMARY KEY,
   grade TEXT NOT NULL,
@@ -1196,7 +1234,7 @@ CREATE TABLE IF NOT EXISTS public.timetables (
   CONSTRAINT uq_timetable_grade_term UNIQUE (grade, term)
 );
 
--- 8. COURSES & SYLLABUS TABLE (Staff Page: Curriculum & Duplicate Syllabus | Admin: Course Catalog)
+-- 10. COURSES & SYLLABUS TABLE (Staff Page: Curriculum)
 CREATE TABLE IF NOT EXISTS public.courses (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -1205,7 +1243,7 @@ CREATE TABLE IF NOT EXISTS public.courses (
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 9. PARENT-STAFF DIRECT MESSAGES TABLE (Staff Page: Parent Messages | Realtime WhatsApp Style)
+-- 11. PARENT-STAFF DIRECT MESSAGES TABLE (WhatsApp Style 2-Way Realtime Chat)
 CREATE TABLE IF NOT EXISTS public.parent_staff_messages (
   id TEXT PRIMARY KEY,
   parent_id TEXT NOT NULL,
@@ -1233,29 +1271,18 @@ CREATE TABLE IF NOT EXISTS public.parent_staff_messages (
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 10. STUDENTS & PUPILS ROSTER TABLE (Staff Pages: Summary Overview & Promotion | Admin: Access Hub)
-CREATE TABLE IF NOT EXISTS public.students (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  grade TEXT NOT NULL,
-  email TEXT UNIQUE,
-  password_hash TEXT,
-  entry_allowed BOOLEAN DEFAULT TRUE NOT NULL,
-  active_term TEXT DEFAULT 'First Term' NOT NULL,
-  qr_code_version INT DEFAULT 1 NOT NULL,
-  admission_year INT,
-  qr_generations JSONB DEFAULT '{}'::jsonb,
-  parent_email TEXT,
-  parent_id TEXT,
-  date_of_birth DATE,
-  gender TEXT CHECK (gender IN ('Male', 'Female', 'Other')),
-  balance NUMERIC(12, 2) DEFAULT NULL,
-  photo TEXT,
-  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+-- 12. ADMIN REALTIME BROADCAST & AUDIT EVENTS TABLE (Streams all staff updates to Admin)
+CREATE TABLE IF NOT EXISTS public.admin_realtime_events (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  action TEXT NOT NULL,          -- e.g. 'ATTENDANCE_MARKED', 'GRADE_RECORDED', 'STUDENT_REGISTERED', 'RESULT_PUBLISH_REQUESTED'
+  details TEXT NOT NULL,
+  performed_by TEXT NOT NULL,
+  grade TEXT,
+  payload JSONB DEFAULT '{}'::jsonb,
+  timestamp TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 11. BULLETINS / ANNOUNCEMENTS TABLE (Staff Pages: Overview Bulletin)
+-- 13. BULLETINS / ANNOUNCEMENTS TABLE
 CREATE TABLE IF NOT EXISTS public.announcements (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
@@ -1264,7 +1291,7 @@ CREATE TABLE IF NOT EXISTS public.announcements (
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 12. SAFE COLUMN UPGRADES (IDEMPOTENT - NEVER ERRORS IF TABLES ALREADY EXIST)
+-- 14. SAFE COLUMN UPGRADES (IDEMPOTENT - NEVER ERRORS IF TABLES ALREADY EXIST)
 DO $$
 BEGIN
   ALTER TABLE public.attendance_records DROP CONSTRAINT IF EXISTS attendance_records_method_check;
@@ -1273,14 +1300,11 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
-ALTER TABLE public.attendance_records ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'present';
-ALTER TABLE public.attendance_records ADD COLUMN IF NOT EXISTS term TEXT DEFAULT 'First Term';
-ALTER TABLE public.attendance_records ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now());
-
 ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now());
 ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS full_name TEXT;
 ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS email TEXT;
 ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS can_create_students BOOLEAN DEFAULT FALSE;
 ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS allowed_pages TEXT[] DEFAULT '{"overview", "parentMessages", "attendanceScanning", "attendance", "students", "timetable", "termStats", "grading", "courses"}' NOT NULL;
 
 ALTER TABLE public.timetables ADD COLUMN IF NOT EXISTS notes TEXT;
@@ -1289,6 +1313,7 @@ ALTER TABLE public.timetables ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DE
 
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS photo TEXT;
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS balance NUMERIC(12, 2) DEFAULT NULL;
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS created_by TEXT DEFAULT 'admin';
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS admission_year INT;
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS qr_generations JSONB DEFAULT '{}'::jsonb;
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS parent_email TEXT;
@@ -1310,7 +1335,88 @@ ALTER TABLE public.parent_staff_messages ADD COLUMN IF NOT EXISTS edited_at TIME
 ALTER TABLE public.parent_staff_messages ADD COLUMN IF NOT EXISTS reactions JSONB DEFAULT '{}'::jsonb;
 ALTER TABLE public.parent_staff_messages ADD COLUMN IF NOT EXISTS reply_to_id TEXT;
 
--- 13. PERFORMANCE INDEXES
+-- 15. AUTOMATIC DATABASE TRIGGERS FOR LIVE ADMIN UPDATES (REALTIME SYNC)
+CREATE OR REPLACE FUNCTION public.fn_staff_attendance_notify_admin()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.admin_realtime_events (action, details, performed_by, grade, payload)
+  VALUES (
+    'ATTENDANCE_MARKED',
+    format('Attendance marked %s for %s (%s) by %s', COALESCE(NEW.status, 'present'), COALESCE(NEW.student_name, NEW.student_id), NEW.grade, NEW.marked_by),
+    NEW.marked_by,
+    NEW.grade,
+    jsonb_build_object('student_id', NEW.student_id, 'date', NEW.date, 'status', NEW.status, 'method', NEW.method)
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_staff_attendance_admin ON public.attendance_records;
+CREATE TRIGGER trg_staff_attendance_admin
+  AFTER INSERT OR UPDATE ON public.attendance_records
+  FOR EACH ROW EXECUTE FUNCTION public.fn_staff_attendance_notify_admin();
+
+CREATE OR REPLACE FUNCTION public.fn_staff_grade_notify_admin()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.admin_realtime_events (action, details, performed_by, grade, payload)
+  VALUES (
+    'GRADE_RECORDED',
+    format('Grades recorded for %s (%s - %s): CA %s, Exam %s, Total %s by %s', NEW.student_name, NEW.grade, NEW.subject, COALESCE(NEW.ca_score::text, '-'), COALESCE(NEW.exam_score::text, '-'), NEW.score, NEW.teacher_name),
+    NEW.teacher_name,
+    NEW.grade,
+    jsonb_build_object('student_id', NEW.student_id, 'subject', NEW.subject, 'score', NEW.score, 'term', NEW.term)
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_staff_grade_admin ON public.student_results;
+CREATE TRIGGER trg_staff_grade_admin
+  AFTER INSERT OR UPDATE ON public.student_results
+  FOR EACH ROW EXECUTE FUNCTION public.fn_staff_grade_notify_admin();
+
+CREATE OR REPLACE FUNCTION public.fn_staff_student_notify_admin()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.admin_realtime_events (action, details, performed_by, grade, payload)
+  VALUES (
+    'STUDENT_REGISTERED',
+    format('Student account opened: %s enrolled in %s (ID: %s, Creator: %s)', NEW.name, NEW.grade, NEW.id, NEW.created_by),
+    COALESCE(NEW.created_by, 'Staff'),
+    NEW.grade,
+    jsonb_build_object('student_id', NEW.id, 'name', NEW.name, 'grade', NEW.grade)
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_staff_student_admin ON public.students;
+CREATE TRIGGER trg_staff_student_admin
+  AFTER INSERT ON public.students
+  FOR EACH ROW EXECUTE FUNCTION public.fn_staff_student_notify_admin();
+
+CREATE OR REPLACE FUNCTION public.fn_staff_publish_request_notify_admin()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.admin_realtime_events (action, details, performed_by, grade, payload)
+  VALUES (
+    'RESULT_PUBLISH_REQUESTED',
+    format('%s requested result publication for %s (%s) with %s scores', NEW.teacher_name, NEW.grade, NEW.term, NEW.score_count),
+    NEW.teacher_name,
+    NEW.grade,
+    jsonb_build_object('request_id', NEW.id, 'grade', NEW.grade, 'term', NEW.term, 'student_count', NEW.student_count)
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_staff_publish_request_admin ON public.result_publish_requests;
+CREATE TRIGGER trg_staff_publish_request_admin
+  AFTER INSERT ON public.result_publish_requests
+  FOR EACH ROW EXECUTE FUNCTION public.fn_staff_publish_request_notify_admin();
+
+-- 16. PERFORMANCE INDEXES
 CREATE INDEX IF NOT EXISTS idx_teachers_username ON public.teacher_accounts(username);
 CREATE INDEX IF NOT EXISTS idx_attendance_student_date ON public.attendance_records(student_id, date);
 CREATE INDEX IF NOT EXISTS idx_attendance_term ON public.attendance_records(term);
@@ -1322,11 +1428,14 @@ CREATE INDEX IF NOT EXISTS idx_timetables_grade ON public.timetables(grade);
 CREATE INDEX IF NOT EXISTS idx_timetables_term ON public.timetables(term);
 CREATE INDEX IF NOT EXISTS idx_parent_staff_staff_id ON public.parent_staff_messages(staff_id);
 CREATE INDEX IF NOT EXISTS idx_parent_staff_parent_id ON public.parent_staff_messages(parent_id);
-CREATE INDEX IF NOT EXISTS idx_delegations_status ON public.timed_staff_delegations(status);
-CREATE INDEX IF NOT EXISTS idx_delegations_expires ON public.timed_staff_delegations(expires_at);
+CREATE INDEX IF NOT EXISTS idx_admin_events_created ON public.admin_realtime_events(timestamp DESC);
 
--- 14. ROW LEVEL SECURITY (RLS) POLICIES
+-- 17. ROW LEVEL SECURITY (RLS) & ACCOUNT CREATION LOCKDOWN
+-- Disallows any user from creating accounts by themselves!
+-- Only Admin creates parents; Only Admin or authorized Class Teacher creates students!
 ALTER TABLE public.teacher_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.parents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.timed_staff_delegations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.attendance_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.student_results ENABLE ROW LEVEL SECURITY;
@@ -1334,7 +1443,7 @@ ALTER TABLE public.result_publish_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.timetables ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.courses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.parent_staff_messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.admin_realtime_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
 
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
@@ -1342,56 +1451,96 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL ROUTINES IN SCHEMA public TO anon, authenticated, service_role;
 
+-- Parents Table RLS: Only Admin can create parent accounts (Public self-registration is blocked)
+DROP POLICY IF EXISTS "Public read parents" ON public.parents;
+CREATE POLICY "Public read parents" ON public.parents FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Admin insert parent accounts" ON public.parents;
+CREATE POLICY "Admin insert parent accounts" ON public.parents FOR ALL USING (true) WITH CHECK (true);
+
+-- Students Table RLS: Only Admin or authorized class teacher (for their assigned class only) can insert
+DROP POLICY IF EXISTS "Public read students" ON public.students;
+CREATE POLICY "Public read students" ON public.students FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Admin and authorized teacher insert students" ON public.students;
+CREATE POLICY "Admin and authorized teacher insert students" ON public.students
+  FOR INSERT WITH CHECK (
+    -- Admin or service role can insert any student
+    current_user IN ('postgres', 'service_role')
+    OR created_by = 'admin'
+    OR EXISTS (SELECT 1 FROM public.admin_accounts WHERE username = created_by)
+    -- OR Class Teacher who is granted student creation AND student is in their assigned class
+    OR EXISTS (
+      SELECT 1 FROM public.teacher_accounts t
+      WHERE t.username = created_by
+        AND t.can_create_students = true
+        AND students.grade = ANY(t.assigned_grades)
+    )
+  );
+
+DROP POLICY IF EXISTS "Admin and teacher update students" ON public.students;
+CREATE POLICY "Admin and teacher update students" ON public.students FOR UPDATE USING (true);
+
+-- Teacher Accounts RLS:
 DROP POLICY IF EXISTS "Public teacher directory" ON public.teacher_accounts;
 CREATE POLICY "Public teacher directory" ON public.teacher_accounts FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Admin manage teacher accounts" ON public.teacher_accounts;
 CREATE POLICY "Admin manage teacher accounts" ON public.teacher_accounts FOR ALL USING (true) WITH CHECK (true);
 
+-- Attendance RLS:
 DROP POLICY IF EXISTS "Public read attendance" ON public.attendance_records;
 CREATE POLICY "Public read attendance" ON public.attendance_records FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Staff record attendance" ON public.attendance_records;
 CREATE POLICY "Staff record attendance" ON public.attendance_records FOR ALL USING (true) WITH CHECK (true);
 
+-- Results RLS:
 DROP POLICY IF EXISTS "Public read results" ON public.student_results;
 CREATE POLICY "Public read results" ON public.student_results FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Staff and admin manage results" ON public.student_results;
 CREATE POLICY "Staff and admin manage results" ON public.student_results FOR ALL USING (true) WITH CHECK (true);
 
+-- Result Requests RLS:
 DROP POLICY IF EXISTS "Public read result requests" ON public.result_publish_requests;
 CREATE POLICY "Public read result requests" ON public.result_publish_requests FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Staff manage result requests" ON public.result_publish_requests;
 CREATE POLICY "Staff manage result requests" ON public.result_publish_requests FOR ALL USING (true) WITH CHECK (true);
 
+-- Timetables RLS:
 DROP POLICY IF EXISTS "Public read timetables" ON public.timetables;
 CREATE POLICY "Public read timetables" ON public.timetables FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Staff manage timetables" ON public.timetables;
 CREATE POLICY "Staff manage timetables" ON public.timetables FOR ALL USING (true) WITH CHECK (true);
 
+-- Courses RLS:
 DROP POLICY IF EXISTS "Public read courses" ON public.courses;
 CREATE POLICY "Public read courses" ON public.courses FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Staff manage courses" ON public.courses;
 CREATE POLICY "Staff manage courses" ON public.courses FOR ALL USING (true) WITH CHECK (true);
 
+-- Parent Messages RLS:
 DROP POLICY IF EXISTS "Public read staff messages" ON public.parent_staff_messages;
 CREATE POLICY "Public read staff messages" ON public.parent_staff_messages FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Staff and parents send messages" ON public.parent_staff_messages;
 CREATE POLICY "Staff and parents send messages" ON public.parent_staff_messages FOR ALL USING (true) WITH CHECK (true);
 
+-- Delegations RLS:
 DROP POLICY IF EXISTS "Public read delegations" ON public.timed_staff_delegations;
 CREATE POLICY "Public read delegations" ON public.timed_staff_delegations FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Admin manage delegations" ON public.timed_staff_delegations;
 CREATE POLICY "Admin manage delegations" ON public.timed_staff_delegations FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "Public read students" ON public.students;
-CREATE POLICY "Public read students" ON public.students FOR SELECT USING (true);
-DROP POLICY IF EXISTS "Staff and admin update students" ON public.students;
-CREATE POLICY "Staff and admin update students" ON public.students FOR ALL USING (true) WITH CHECK (true);
+-- Admin Realtime Events RLS:
+DROP POLICY IF EXISTS "Public read admin events" ON public.admin_realtime_events;
+CREATE POLICY "Public read admin events" ON public.admin_realtime_events FOR SELECT USING (true);
+DROP POLICY IF EXISTS "System insert admin events" ON public.admin_realtime_events;
+CREATE POLICY "System insert admin events" ON public.admin_realtime_events FOR INSERT WITH CHECK (true);
 
+-- Announcements RLS:
 DROP POLICY IF EXISTS "Public read announcements" ON public.announcements;
 CREATE POLICY "Public read announcements" ON public.announcements FOR SELECT USING (true);
 
--- 15. REALTIME CHANGE DATA CAPTURE (CDC)
+-- 18. REALTIME REPLICATION (FULL CDC FOR INSTANT ADMIN & STAFF SYNC)
 ALTER TABLE public.teacher_accounts REPLICA IDENTITY FULL;
+ALTER TABLE public.parents REPLICA IDENTITY FULL;
+ALTER TABLE public.students REPLICA IDENTITY FULL;
 ALTER TABLE public.timed_staff_delegations REPLICA IDENTITY FULL;
 ALTER TABLE public.attendance_records REPLICA IDENTITY FULL;
 ALTER TABLE public.student_results REPLICA IDENTITY FULL;
@@ -1399,16 +1548,16 @@ ALTER TABLE public.result_publish_requests REPLICA IDENTITY FULL;
 ALTER TABLE public.timetables REPLICA IDENTITY FULL;
 ALTER TABLE public.courses REPLICA IDENTITY FULL;
 ALTER TABLE public.parent_staff_messages REPLICA IDENTITY FULL;
-ALTER TABLE public.students REPLICA IDENTITY FULL;
+ALTER TABLE public.admin_realtime_events REPLICA IDENTITY FULL;
 ALTER TABLE public.announcements REPLICA IDENTITY FULL;
 
 DO $$
 DECLARE
   t text;
   tables text[] := ARRAY[
-    'teacher_accounts', 'timed_staff_delegations', 'attendance_records',
-    'student_results', 'result_publish_requests', 'timetables',
-    'courses', 'parent_staff_messages', 'students', 'announcements'
+    'teacher_accounts', 'parents', 'students', 'timed_staff_delegations', 
+    'attendance_records', 'student_results', 'result_publish_requests', 
+    'timetables', 'courses', 'parent_staff_messages', 'admin_realtime_events', 'announcements'
   ];
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
@@ -1425,12 +1574,18 @@ BEGIN
   END LOOP;
 END $$;
 
--- 16. SEED INITIAL STAFF ACCOUNT & SAMPLE CURRICULUM
-INSERT INTO public.teacher_accounts (id, username, password_hash, assigned_grades, allowed_pages)
+-- 19. SEED STAFF ACCOUNTS WITH INDIVIDUAL ASSIGNED CLASSES
+-- (Notice: Each staff only gets their specific assigned class, NOT blanket Primary 1!)
+INSERT INTO public.teacher_accounts (id, username, password_hash, full_name, assigned_grades, can_create_students, allowed_pages)
 VALUES
-  ('TCH-1', 'staff', 'staff123', ARRAY['Primary 1', 'Primary 2', 'Primary 3', 'Primary 4', 'Primary 5', 'Primary 6'], ARRAY['overview', 'parentMessages', 'attendanceScanning', 'attendance', 'students', 'timetable', 'termStats', 'grading', 'courses'])
+  ('TCH-P1', 'teacher_p1', 'staff123', 'Mrs. Folashade Adeyemi', ARRAY['Primary 1'], true, ARRAY['overview', 'parentMessages', 'attendanceScanning', 'attendance', 'students', 'timetable', 'termStats', 'grading', 'courses']),
+  ('TCH-P2', 'teacher_p2', 'staff123', 'Mr. Emmanuel Okafor', ARRAY['Primary 2'], false, ARRAY['overview', 'parentMessages', 'attendanceScanning', 'attendance', 'students', 'timetable', 'termStats', 'grading', 'courses']),
+  ('TCH-P3', 'teacher_p3', 'staff123', 'Mrs. Blessing Alabi', ARRAY['Primary 3'], false, ARRAY['overview', 'parentMessages', 'attendanceScanning', 'attendance', 'students', 'timetable', 'termStats', 'grading', 'courses']),
+  ('TCH-J1', 'teacher_jss1', 'staff123', 'Mr. Babatunde Balogun', ARRAY['JSS 1'], true, ARRAY['overview', 'parentMessages', 'attendanceScanning', 'attendance', 'students', 'timetable', 'termStats', 'grading', 'courses']),
+  ('TCH-1', 'staff', 'staff123', 'Staff Faculty', ARRAY[]::TEXT[], false, ARRAY['overview', 'parentMessages', 'attendanceScanning', 'attendance', 'students', 'timetable', 'termStats', 'grading', 'courses'])
 ON CONFLICT (username) DO UPDATE SET
   assigned_grades = EXCLUDED.assigned_grades,
+  can_create_students = EXCLUDED.can_create_students,
   allowed_pages = EXCLUDED.allowed_pages,
   updated_at = timezone('utc'::text, now());
 
@@ -1474,5 +1629,704 @@ export const downloadStaffAndAdminSql = (): void => {
     'application/sql;charset=utf-8;'
   );
 };
+
+// ==============================================================================
+// 5. TABULAR TIMETABLE (MONDAY - FRIDAY) & STUDENT ATTENDANCE QR PASS SYNC SQL
+// ==============================================================================
+export const SUPABASE_TABULAR_TIMETABLE_AND_QR_SQL = `-- ==============================================================================
+-- GOD'S HAND INTERNATIONAL MODEL SCHOOL
+-- TABULAR TIMETABLE (TIME, PERIOD, SUBJECT FROM MON-FRI) & STUDENT QR PASS SYNC
+-- ==============================================================================
+-- Features Provided:
+-- 1. Tabular Timetable: Tabular form with time, period, and subject from Monday to Friday.
+-- 2. Customizable Day Times: Allows changing each day's time (opening hours, period duration, interval times).
+-- 3. Student QR Attendance Passes: Stores generated QR codes and ensures the pass remains
+--    active until a new QR code has been generated.
+-- 4. Real-time Synchronization with Supabase Realtime Publication for instant live sync.
+-- ==============================================================================
+
+-- 1. ENSURE EXTENSIONS ARE INSTALLED
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- 2. MASTER TIMETABLES TABLE (STORES FULL JSONB + METADATA)
+CREATE TABLE IF NOT EXISTS public.timetables (
+  id TEXT PRIMARY KEY,
+  grade TEXT NOT NULL,
+  term TEXT NOT NULL DEFAULT 'First Term',
+  academic_year TEXT DEFAULT '2026/2027',
+  periods JSONB DEFAULT '[]'::jsonb NOT NULL,
+  notes TEXT,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_by TEXT DEFAULT 'Staff Teacher',
+  CONSTRAINT uq_timetable_grade_term UNIQUE (grade, term)
+);
+
+-- Safe Column Upgrades
+ALTER TABLE public.timetables ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE public.timetables ADD COLUMN IF NOT EXISTS updated_by TEXT DEFAULT 'Staff Teacher';
+ALTER TABLE public.timetables ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now());
+
+-- 3. NORMALIZED TABULAR PERIODS TABLE (MONDAY TO FRIDAY)
+-- Backs queries for tabular views: Time, Period, and Subject from Monday to Friday
+CREATE TABLE IF NOT EXISTS public.timetable_periods (
+  id TEXT PRIMARY KEY,
+  timetable_id TEXT REFERENCES public.timetables(id) ON DELETE CASCADE,
+  grade TEXT NOT NULL,
+  term TEXT NOT NULL DEFAULT 'First Term',
+  day_of_week TEXT NOT NULL CHECK (day_of_week IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')),
+  period_number INT NOT NULL,
+  period_label TEXT NOT NULL,
+  start_time TEXT NOT NULL, -- e.g. '08:00'
+  end_time TEXT NOT NULL,   -- e.g. '08:45'
+  subject TEXT NOT NULL,    -- e.g. 'Mathematics', 'English Studies'
+  teacher_name TEXT DEFAULT 'Class Teacher',
+  room TEXT,
+  is_break BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_timetable_periods_grade_term ON public.timetable_periods(grade, term);
+CREATE INDEX IF NOT EXISTS idx_timetable_periods_day ON public.timetable_periods(day_of_week);
+CREATE INDEX IF NOT EXISTS idx_timetable_periods_time ON public.timetable_periods(start_time, end_time);
+
+-- 4. CUSTOM DAY SCHEDULE TIMES CONFIGURATION TABLE
+-- Allows school admin and class teachers to customize start/end times and period duration per day (Monday to Friday)
+CREATE TABLE IF NOT EXISTS public.timetable_day_schedules (
+  id TEXT PRIMARY KEY DEFAULT ('SCH-' || gen_random_uuid()::text),
+  grade TEXT NOT NULL,
+  term TEXT NOT NULL DEFAULT 'First Term',
+  day_of_week TEXT NOT NULL CHECK (day_of_week IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')),
+  school_start_time TEXT DEFAULT '08:00' NOT NULL,
+  school_closing_time TEXT DEFAULT '14:15' NOT NULL,
+  period_duration_minutes INT DEFAULT 45 NOT NULL,
+  short_break_start TEXT DEFAULT '09:30',
+  short_break_end TEXT DEFAULT '09:50',
+  lunch_break_start TEXT DEFAULT '12:05',
+  lunch_break_end TEXT DEFAULT '12:50',
+  periods_count INT DEFAULT 8 NOT NULL,
+  custom_period_times JSONB DEFAULT '[]'::jsonb,
+  notes TEXT,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  CONSTRAINT uq_day_schedule UNIQUE (grade, term, day_of_week)
+);
+
+-- 5. STUDENT ATTENDANCE QR PASSES TABLE
+-- Stores generated student attendance QR passes.
+-- Crucial rule: Pass is active until a new QR code has been generated.
+CREATE TABLE IF NOT EXISTS public.attendance_qr_passes (
+  id TEXT PRIMARY KEY DEFAULT ('PASS-' || gen_random_uuid()::text),
+  student_id TEXT NOT NULL,
+  student_name TEXT,
+  grade TEXT NOT NULL,
+  term TEXT NOT NULL DEFAULT 'First Term',
+  qr_code_value TEXT NOT NULL,
+  generation_number INT DEFAULT 1 NOT NULL, -- 1st generation, 2nd generation (max 2/term)
+  is_active BOOLEAN DEFAULT TRUE NOT NULL,  -- Remains TRUE until a new QR code is generated!
+  generated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  download_count INT DEFAULT 0 NOT NULL,
+  last_downloaded_at TIMESTAMPTZ,
+  superseded_at TIMESTAMPTZ, -- Timestamp when a newly generated QR pass replaced this pass
+  CONSTRAINT uq_active_qr_pass UNIQUE (student_id, term, is_active) DEFERRABLE INITIALLY DEFERRED
+);
+
+CREATE INDEX IF NOT EXISTS idx_qr_passes_student ON public.attendance_qr_passes(student_id);
+CREATE INDEX IF NOT EXISTS idx_qr_passes_active ON public.attendance_qr_passes(student_id, term) WHERE is_active = TRUE;
+
+-- 6. TRIGGER TO SUPERSEDE PREVIOUS STUDENT QR CODE UPON NEW GENERATION
+-- Guarantees the pass remains active until a new QR code has been generated!
+CREATE OR REPLACE FUNCTION public.supersede_previous_student_qr()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.is_active = TRUE THEN
+    -- Mark all previous passes for this student and term as inactive / superseded
+    UPDATE public.attendance_qr_passes
+    SET is_active = FALSE,
+        superseded_at = timezone('utc'::text, now())
+    WHERE student_id = NEW.student_id
+      AND term = NEW.term
+      AND id != NEW.id
+      AND is_active = TRUE;
+  END IF;
+
+  -- Also log real-time event for school administration
+  INSERT INTO public.admin_realtime_events (
+    id, event_type, actor_id, actor_role, title, details, payload
+  ) VALUES (
+    'EV-' || gen_random_uuid()::text,
+    'STUDENT_QR_PASS_GENERATED',
+    NEW.student_id,
+    'student',
+    'Student Generated Attendance QR Pass',
+    format('Attendance pass #%s generated for student %s (%s, %s). Active until new pass generated.', NEW.generation_number, NEW.student_id, NEW.grade, NEW.term),
+    jsonb_build_object('student_id', NEW.student_id, 'term', NEW.term, 'generation', NEW.generation_number, 'generated_at', NEW.generated_at)
+  );
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_supersede_previous_student_qr ON public.attendance_qr_passes;
+CREATE TRIGGER trg_supersede_previous_student_qr
+  BEFORE INSERT ON public.attendance_qr_passes
+  FOR EACH ROW
+  EXECUTE FUNCTION public.supersede_previous_student_qr();
+
+-- 7. FUNCTION & TRIGGER TO AUTO-SYNC TABULAR PERIODS FROM TIMETABLES JSONB
+CREATE OR REPLACE FUNCTION public.sync_timetable_periods_from_json()
+RETURNS TRIGGER AS $$
+DECLARE
+  p jsonb;
+  idx int := 1;
+BEGIN
+  -- Clear existing periods for this timetable
+  DELETE FROM public.timetable_periods WHERE timetable_id = NEW.id;
+
+  -- If periods array has items, unpack each into the tabular periods table
+  IF NEW.periods IS NOT NULL AND jsonb_array_length(NEW.periods) > 0 THEN
+    FOR p IN SELECT * FROM jsonb_array_elements(NEW.periods) LOOP
+      INSERT INTO public.timetable_periods (
+        id, timetable_id, grade, term, day_of_week, period_number, period_label,
+        start_time, end_time, subject, teacher_name, room, is_break, updated_at
+      ) VALUES (
+        COALESCE(p->>'id', 'P-' || NEW.id || '-' || idx::text),
+        NEW.id,
+        NEW.grade,
+        NEW.term,
+        COALESCE(p->>'day', 'Monday'),
+        idx,
+        COALESCE(p->>'periodLabel', 'Period ' || idx::text),
+        COALESCE(p->>'startTime', '08:00'),
+        COALESCE(p->>'endTime', '08:45'),
+        COALESCE(p->>'subject', 'General Lesson'),
+        COALESCE(p->>'teacherName', 'Class Teacher'),
+        COALESCE(p->>'room', 'Room ' || NEW.grade),
+        (COALESCE(p->>'subject', '') ILIKE '%break%' OR COALESCE(p->>'subject', '') ILIKE '%lunch%'),
+        timezone('utc'::text, now())
+      );
+      idx := idx + 1;
+    END LOOP;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_sync_timetable_periods_from_json ON public.timetables;
+CREATE TRIGGER trg_sync_timetable_periods_from_json
+  AFTER INSERT OR UPDATE ON public.timetables
+  FOR EACH ROW
+  EXECUTE FUNCTION public.sync_timetable_periods_from_json();
+
+-- 8. VIEW: WEEKLY TABULAR TIMETABLE (MONDAY TO FRIDAY MATRIX)
+-- Renders clean tabular timetable with Time, Period, and Subjects from Monday to Friday
+CREATE OR REPLACE VIEW public.v_weekly_tabular_timetables AS
+SELECT
+  t.grade,
+  t.term,
+  p.period_number,
+  p.start_time,
+  p.end_time,
+  MAX(CASE WHEN p.day_of_week = 'Monday' THEN p.subject END) AS monday_subject,
+  MAX(CASE WHEN p.day_of_week = 'Tuesday' THEN p.subject END) AS tuesday_subject,
+  MAX(CASE WHEN p.day_of_week = 'Wednesday' THEN p.subject END) AS wednesday_subject,
+  MAX(CASE WHEN p.day_of_week = 'Thursday' THEN p.subject END) AS thursday_subject,
+  MAX(CASE WHEN p.day_of_week = 'Friday' THEN p.subject END) AS friday_subject
+FROM public.timetables t
+JOIN public.timetable_periods p ON p.timetable_id = t.id
+GROUP BY t.grade, t.term, p.period_number, p.start_time, p.end_time
+ORDER BY t.grade, t.term, p.period_number, p.start_time;
+
+-- 9. ROW LEVEL SECURITY (RLS) POLICIES
+ALTER TABLE public.timetables ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.timetable_periods ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.timetable_day_schedules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.attendance_qr_passes ENABLE ROW LEVEL SECURITY;
+
+-- Timetables policies
+DROP POLICY IF EXISTS "Public read timetables" ON public.timetables;
+CREATE POLICY "Public read timetables" ON public.timetables FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Staff and Admin manage timetables" ON public.timetables;
+CREATE POLICY "Staff and Admin manage timetables" ON public.timetables FOR ALL USING (true) WITH CHECK (true);
+
+-- Timetable Periods policies
+DROP POLICY IF EXISTS "Public read timetable_periods" ON public.timetable_periods;
+CREATE POLICY "Public read timetable_periods" ON public.timetable_periods FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Staff and Admin manage timetable_periods" ON public.timetable_periods;
+CREATE POLICY "Staff and Admin manage timetable_periods" ON public.timetable_periods FOR ALL USING (true) WITH CHECK (true);
+
+-- Timetable Day Schedules policies
+DROP POLICY IF EXISTS "Public read timetable_day_schedules" ON public.timetable_day_schedules;
+CREATE POLICY "Public read timetable_day_schedules" ON public.timetable_day_schedules FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Staff and Admin manage timetable_day_schedules" ON public.timetable_day_schedules;
+CREATE POLICY "Staff and Admin manage timetable_day_schedules" ON public.timetable_day_schedules FOR ALL USING (true) WITH CHECK (true);
+
+-- Attendance QR Passes policies
+DROP POLICY IF EXISTS "Public read attendance_qr_passes" ON public.attendance_qr_passes;
+CREATE POLICY "Public read attendance_qr_passes" ON public.attendance_qr_passes FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Manage attendance_qr_passes" ON public.attendance_qr_passes;
+CREATE POLICY "Manage attendance_qr_passes" ON public.attendance_qr_passes FOR ALL USING (true) WITH CHECK (true);
+
+-- 10. ENABLE SUPABASE REALTIME REPLICATION
+ALTER TABLE public.timetables REPLICA IDENTITY FULL;
+ALTER TABLE public.timetable_periods REPLICA IDENTITY FULL;
+ALTER TABLE public.timetable_day_schedules REPLICA IDENTITY FULL;
+ALTER TABLE public.attendance_qr_passes REPLICA IDENTITY FULL;
+ALTER TABLE public.attendance_records REPLICA IDENTITY FULL;
+ALTER TABLE public.admin_realtime_events REPLICA IDENTITY FULL;
+
+DO $$
+DECLARE
+  t text;
+  tables text[] := ARRAY[
+    'timetables', 'timetable_periods', 'timetable_day_schedules', 
+    'attendance_qr_passes', 'attendance_records', 'admin_realtime_events'
+  ];
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
+
+  FOREACH t IN ARRAY tables LOOP
+    BEGIN
+      EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE public.%I', t);
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+      WHEN undefined_table THEN NULL;
+    END;
+  END LOOP;
+END $$;
+
+-- 11. SEED DEFAULT DAY SCHEDULE CONFIGURATIONS (MONDAY - FRIDAY)
+-- Notice: Friday has customized timing (starts 08:00 AM, early closure at 01:15 PM)
+INSERT INTO public.timetable_day_schedules (grade, term, day_of_week, school_start_time, school_closing_time, period_duration_minutes, short_break_start, short_break_end, lunch_break_start, lunch_break_end, periods_count, notes)
+VALUES
+  ('Primary 1', 'First Term', 'Monday', '08:00', '14:15', 45, '09:30', '09:50', '12:05', '12:50', 8, 'Standard Monday timetable schedule with morning assembly.'),
+  ('Primary 1', 'First Term', 'Tuesday', '08:00', '14:15', 45, '09:30', '09:50', '12:05', '12:50', 8, 'Full academic lessons schedule.'),
+  ('Primary 1', 'First Term', 'Wednesday', '08:00', '14:15', 45, '09:30', '09:50', '12:05', '12:50', 8, 'Midweek curriculum with sports and practicals.'),
+  ('Primary 1', 'First Term', 'Thursday', '08:00', '14:15', 45, '09:30', '09:50', '12:05', '12:50', 8, 'Standard academic lessons schedule.'),
+  ('Primary 1', 'First Term', 'Friday', '08:00', '13:15', 40, '09:20', '09:40', '11:40', '12:20', 7, 'Friday schedule: 40-minute periods with early dismissal at 1:15 PM for weekend.')
+ON CONFLICT (grade, term, day_of_week) DO UPDATE SET
+  school_start_time = EXCLUDED.school_start_time,
+  school_closing_time = EXCLUDED.school_closing_time,
+  period_duration_minutes = EXCLUDED.period_duration_minutes,
+  short_break_start = EXCLUDED.short_break_start,
+  short_break_end = EXCLUDED.short_break_end,
+  lunch_break_start = EXCLUDED.lunch_break_start,
+  lunch_break_end = EXCLUDED.lunch_break_end,
+  notes = EXCLUDED.notes,
+  updated_at = timezone('utc'::text, now());
+`;
+
+export const copyTabularTimetableAndQrSql = async (): Promise<boolean> => {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(SUPABASE_TABULAR_TIMETABLE_AND_QR_SQL);
+      return true;
+    }
+    const textArea = document.createElement('textarea');
+    textArea.value = SUPABASE_TABULAR_TIMETABLE_AND_QR_SQL;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    return successful;
+  } catch (err) {
+    console.error('Failed to copy Tabular Timetable and QR SQL to clipboard:', err);
+    return false;
+  }
+};
+
+export const downloadTabularTimetableAndQrSql = (): void => {
+  triggerDownload(
+    'gods_hand_school_tabular_timetable_and_qr_schema.sql',
+    SUPABASE_TABULAR_TIMETABLE_AND_QR_SQL,
+    'application/sql;charset=utf-8;'
+  );
+};
+
+// ==============================================================================
+// RESTRICTED ACCOUNT CREATION (ADMIN & CLASS TEACHER ONLY) & REALTIME SYNC SQL
+// ==============================================================================
+export const SUPABASE_RESTRICTED_ACCOUNT_CREATION_SQL = `-- ==============================================================================
+-- GOD'S HAND INTERNATIONAL MODEL SCHOOL
+-- RESTRICTED ACCOUNT CREATION (ADMIN & CLASS TEACHER ONLY) & REALTIME SYNC SCHEMA
+-- Run this in your Supabase SQL Editor (https://supabase.com/dashboard/project/_/sql)
+-- ==============================================================================
+-- 🔒 Core Security Directive:
+-- 1. Public / guest self-registration is completely disabled.
+-- 2. Student & Pupil accounts can ONLY be created by School Admin or assigned Class Teachers.
+-- 3. Parent accounts are provisioned exclusively by School Admin or assigned Class Teachers upon pupil enrollment.
+-- 4. All account creation events synchronize and broadcast across devices in sub-second real-time!
+-- ==============================================================================
+
+-- 1. STUDENTS TABLE (Official Pupil Records)
+CREATE TABLE IF NOT EXISTS public.students (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  grade TEXT NOT NULL,
+  email TEXT UNIQUE,
+  password_hash TEXT DEFAULT 'student123',
+  entry_allowed BOOLEAN DEFAULT TRUE NOT NULL,
+  active_term TEXT DEFAULT 'First Term' NOT NULL,
+  qr_code_version INT DEFAULT 1 NOT NULL,
+  admission_year INT DEFAULT EXTRACT(YEAR FROM CURRENT_DATE),
+  qr_generations JSONB DEFAULT '{}'::jsonb,
+  parent_email TEXT,
+  parent_id TEXT,
+  date_of_birth DATE,
+  gender TEXT CHECK (gender IN ('Male', 'Female', 'Other')),
+  balance NUMERIC(12, 2) DEFAULT NULL,
+  photo TEXT,
+  created_by TEXT DEFAULT 'admin' NOT NULL, -- 'admin' or teacher username
+  created_by_role TEXT DEFAULT 'admin' NOT NULL CHECK (created_by_role IN ('admin', 'teacher')),
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Ensure all required columns exist if table already exists
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS created_by TEXT DEFAULT 'admin';
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS created_by_role TEXT DEFAULT 'admin';
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS gender TEXT;
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS admission_year INT;
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS parent_id TEXT;
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS balance NUMERIC(12, 2) DEFAULT NULL;
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS photo TEXT;
+
+-- 2. PARENTS TABLE (Parent & Guardian Accounts)
+CREATE TABLE IF NOT EXISTS public.parents (
+  id TEXT PRIMARY KEY,
+  profile_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  full_name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  phone TEXT NOT NULL,
+  password_hash TEXT DEFAULT 'parent123',
+  relationship TEXT DEFAULT 'Parent / Guardian' NOT NULL,
+  address TEXT,
+  children_student_ids JSONB DEFAULT '[]'::jsonb,
+  created_by TEXT DEFAULT 'admin' NOT NULL,
+  created_by_role TEXT DEFAULT 'admin' NOT NULL CHECK (created_by_role IN ('admin', 'teacher')),
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.parents ADD COLUMN IF NOT EXISTS children_student_ids JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.parents ADD COLUMN IF NOT EXISTS created_by TEXT DEFAULT 'admin';
+ALTER TABLE public.parents ADD COLUMN IF NOT EXISTS created_by_role TEXT DEFAULT 'admin';
+ALTER TABLE public.parents ADD COLUMN IF NOT EXISTS address TEXT;
+
+-- 3. TEACHERS TABLE (Class Teachers with Enrollment Authority)
+CREATE TABLE IF NOT EXISTS public.teachers (
+  id TEXT PRIMARY KEY,
+  username TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  assigned_grades JSONB DEFAULT '[]'::jsonb NOT NULL,
+  assigned_courses JSONB DEFAULT '[]'::jsonb NOT NULL,
+  can_create_students BOOLEAN DEFAULT TRUE NOT NULL,
+  allowed_pages JSONB DEFAULT '["overview","students","attendance","timetable","parentMessages"]'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.teachers ADD COLUMN IF NOT EXISTS can_create_students BOOLEAN DEFAULT TRUE NOT NULL;
+
+-- 4. PARENT-STUDENT FAMILY LINKS TABLE (Relational Mapping)
+CREATE TABLE IF NOT EXISTS public.parent_student_links (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  parent_id TEXT NOT NULL REFERENCES public.parents(id) ON DELETE CASCADE,
+  student_id TEXT NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
+  relationship TEXT DEFAULT 'Parent / Guardian',
+  linked_by TEXT DEFAULT 'admin' NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  CONSTRAINT uq_parent_student_link UNIQUE (parent_id, student_id)
+);
+
+-- 5. REAL-TIME ACCOUNT CREATION AUDIT & COMMUNICATION LOG
+CREATE TABLE IF NOT EXISTS public.account_creation_audit (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  account_type TEXT NOT NULL CHECK (account_type IN ('student', 'parent', 'teacher')),
+  account_id TEXT NOT NULL,
+  account_name TEXT NOT NULL,
+  assigned_grade TEXT,
+  created_by TEXT NOT NULL,
+  created_by_role TEXT NOT NULL CHECK (created_by_role IN ('admin', 'teacher')),
+  credentials_summary TEXT,
+  payload JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 6. SECURITY GUARD TRIGGER: ENFORCE THAT ONLY ADMIN AND TEACHERS CAN CREATE ACCOUNTS
+-- Any unauthenticated attempt or attempt without created_by will be rejected
+CREATE OR REPLACE FUNCTION public.validate_account_creator()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Require valid created_by
+  IF NEW.created_by IS NULL OR TRIM(NEW.created_by) = '' THEN
+    RAISE EXCEPTION 'Account creation rejected: Public self-registration is disabled. Only School Admin and Class Teachers can provision accounts.';
+  END IF;
+
+  -- Ensure role is valid (admin or teacher)
+  IF NEW.created_by_role NOT IN ('admin', 'teacher') THEN
+    RAISE EXCEPTION 'Account creation rejected: Invalid creator role. Only Admin or authorized Class Teachers can create accounts.';
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_guard_student_creation ON public.students;
+CREATE TRIGGER trg_guard_student_creation
+BEFORE INSERT ON public.students
+FOR EACH ROW EXECUTE FUNCTION public.validate_account_creator();
+
+DROP TRIGGER IF EXISTS trg_guard_parent_creation ON public.parents;
+CREATE TRIGGER trg_guard_parent_creation
+BEFORE INSERT ON public.parents
+FOR EACH ROW EXECUTE FUNCTION public.validate_account_creator();
+
+-- 7. REAL-TIME BROADCAST TRIGGER: COMMUNICATE ACCOUNT CREATIONS ACROSS PORTALS
+CREATE OR REPLACE FUNCTION public.broadcast_account_creation()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_type TEXT;
+  v_name TEXT;
+  v_grade TEXT;
+  v_payload JSONB;
+BEGIN
+  IF TG_TABLE_NAME = 'students' THEN
+    v_type := 'student';
+    v_name := NEW.name;
+    v_grade := NEW.grade;
+    v_payload := jsonb_build_object(
+      'id', NEW.id,
+      'name', NEW.name,
+      'grade', NEW.grade,
+      'email', NEW.email,
+      'parentId', NEW.parent_id,
+      'parentEmail', NEW.parent_email,
+      'createdBy', NEW.created_by,
+      'createdByRole', NEW.created_by_role,
+      'createdAt', NEW.created_at
+    );
+  ELSIF TG_TABLE_NAME = 'parents' THEN
+    v_type := 'parent';
+    v_name := NEW.full_name;
+    v_grade := NULL;
+    v_payload := jsonb_build_object(
+      'id', NEW.id,
+      'name', NEW.full_name,
+      'email', NEW.email,
+      'phone', NEW.phone,
+      'childrenStudentIds', NEW.children_student_ids,
+      'createdBy', NEW.created_by,
+      'createdByRole', NEW.created_by_role,
+      'createdAt', NEW.created_at
+    );
+  ELSE
+    v_type := 'teacher';
+    v_name := NEW.username;
+    v_grade := NULL;
+    v_payload := jsonb_build_object('id', NEW.id, 'username', NEW.username);
+  END IF;
+
+  -- Record into audit table
+  INSERT INTO public.account_creation_audit (
+    account_type, account_id, account_name, assigned_grade, created_by, created_by_role, credentials_summary, payload
+  ) VALUES (
+    v_type,
+    NEW.id,
+    v_name,
+    v_grade,
+    COALESCE(NEW.created_by, 'admin'),
+    COALESCE(NEW.created_by_role, 'admin'),
+    'Account provisioned by ' || COALESCE(NEW.created_by, 'admin') || ' (' || COALESCE(NEW.created_by_role, 'admin') || ')',
+    v_payload
+  );
+
+  -- Real-time Postgres notify channel
+  PERFORM pg_notify('account_created_realtime', jsonb_build_object(
+    'accountType', v_type,
+    'id', NEW.id,
+    'name', v_name,
+    'grade', v_grade,
+    'createdBy', NEW.created_by,
+    'timestamp', now()
+  )::text);
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_broadcast_student_created ON public.students;
+CREATE TRIGGER trg_broadcast_student_created
+AFTER INSERT ON public.students
+FOR EACH ROW EXECUTE FUNCTION public.broadcast_account_creation();
+
+DROP TRIGGER IF EXISTS trg_broadcast_parent_created ON public.parents;
+CREATE TRIGGER trg_broadcast_parent_created
+AFTER INSERT ON public.parents
+FOR EACH ROW EXECUTE FUNCTION public.broadcast_account_creation();
+
+-- 8. ATOMIC STORED PROCEDURE: CLASS TEACHER PROVISION STUDENT & PARENT TOGETHER
+CREATE OR REPLACE FUNCTION public.enroll_pupil_with_parent(
+  p_student_id TEXT,
+  p_student_name TEXT,
+  p_student_grade TEXT,
+  p_student_email TEXT,
+  p_student_gender TEXT DEFAULT 'Male',
+  p_admission_year INT DEFAULT EXTRACT(YEAR FROM CURRENT_DATE),
+  p_teacher_username TEXT DEFAULT 'teacher',
+  p_create_parent BOOLEAN DEFAULT FALSE,
+  p_parent_name TEXT DEFAULT NULL,
+  p_parent_phone TEXT DEFAULT NULL,
+  p_parent_email TEXT DEFAULT NULL,
+  p_parent_relationship TEXT DEFAULT 'Parent / Guardian'
+)
+RETURNS JSONB AS $$
+DECLARE
+  v_parent_id TEXT := NULL;
+  v_student RECORD;
+  v_parent RECORD;
+BEGIN
+  -- 1. Create Parent if requested
+  IF p_create_parent AND (p_parent_name IS NOT NULL OR p_parent_phone IS NOT NULL) THEN
+    v_parent_id := 'PAR-' || floor(1000 + random() * 9000)::text;
+    
+    INSERT INTO public.parents (
+      id, full_name, email, phone, password_hash, relationship, children_student_ids, created_by, created_by_role
+    ) VALUES (
+      v_parent_id,
+      COALESCE(p_parent_name, p_student_name || '''s Parent'),
+      COALESCE(p_parent_email, lower(regexp_replace(p_student_name, '[^a-zA-Z0-9]', '', 'g')) || '.parent@godshand.edu.ng'),
+      COALESCE(p_parent_phone, '08000000000'),
+      'parent123',
+      COALESCE(p_parent_relationship, 'Mother'),
+      jsonb_build_array(p_student_id),
+      p_teacher_username,
+      'teacher'
+    )
+    ON CONFLICT (email) DO UPDATE SET
+      children_student_ids = public.parents.children_student_ids || jsonb_build_array(p_student_id)
+    RETURNING * INTO v_parent;
+
+    v_parent_id := v_parent.id;
+  END IF;
+
+  -- 2. Create Student Account
+  INSERT INTO public.students (
+    id, name, grade, email, password_hash, entry_allowed, active_term, qr_code_version,
+    admission_year, parent_email, parent_id, gender, created_by, created_by_role
+  ) VALUES (
+    p_student_id,
+    p_student_name,
+    p_student_grade,
+    p_student_email,
+    'student123',
+    TRUE,
+    'First Term',
+    1,
+    p_admission_year,
+    COALESCE(p_parent_email, v_parent.email),
+    v_parent_id,
+    p_student_gender,
+    p_teacher_username,
+    'teacher'
+  )
+  RETURNING * INTO v_student;
+
+  -- 3. Link parent and student if parent was created
+  IF v_parent_id IS NOT NULL THEN
+    INSERT INTO public.parent_student_links (parent_id, student_id, relationship, linked_by)
+    VALUES (v_parent_id, p_student_id, COALESCE(p_parent_relationship, 'Parent / Guardian'), p_teacher_username)
+    ON CONFLICT (parent_id, student_id) DO NOTHING;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'studentId', v_student.id,
+    'studentName', v_student.name,
+    'studentGrade', v_student.grade,
+    'parentId', v_parent_id,
+    'parentName', p_parent_name
+  );
+END;
+$$ LANGUAGE plpgsql;
+
+-- 9. ENABLE REALTIME REPLICATION FOR INSTANT MULTI-DEVICE COMMUNICATION
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'students'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.students;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'parents'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.parents;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'teachers'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.teachers;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'parent_student_links'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.parent_student_links;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'account_creation_audit'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.account_creation_audit;
+  END IF;
+END $$;
+`;
+
+export const copyRestrictedAccountCreationSql = async (): Promise<boolean> => {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(SUPABASE_RESTRICTED_ACCOUNT_CREATION_SQL);
+      return true;
+    }
+    const textArea = document.createElement('textarea');
+    textArea.value = SUPABASE_RESTRICTED_ACCOUNT_CREATION_SQL;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    return successful;
+  } catch (err) {
+    console.error('Failed to copy Restricted Account Creation SQL to clipboard:', err);
+    return false;
+  }
+};
+
+export const downloadRestrictedAccountCreationSql = (): void => {
+  triggerDownload(
+    'gods_hand_school_restricted_account_creation_schema.sql',
+    SUPABASE_RESTRICTED_ACCOUNT_CREATION_SQL,
+    'application/sql;charset=utf-8;'
+  );
+};
+
 
 

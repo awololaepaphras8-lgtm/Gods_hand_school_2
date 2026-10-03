@@ -91,6 +91,8 @@ interface AdminPanelProps {
   onUpdateBankAccountConfig?: (config: SchoolBankAccountConfig) => void;
   onMarkAttendance?: (studentId: string, term?: string) => boolean;
   onUpdateStudentBalance?: (studentId: string, balance: number) => void;
+  onAddStudent?: (student: StudentAccount) => void;
+  onAddParent?: (parent: ParentAccount) => void;
   initialTab?: string;
 }
 
@@ -143,8 +145,111 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onUpdateBankAccountConfig,
   onMarkAttendance,
   onUpdateStudentBalance,
+  onAddStudent,
+  onAddParent,
   initialTab
 }) => {
+  // Admin Provisioning State
+  const [showAdminAddStudentModal, setShowAdminAddStudentModal] = useState(false);
+  const [adminPupilName, setAdminPupilName] = useState('');
+  const [adminPupilGrade, setAdminPupilGrade] = useState<GradeLevel>('Primary 1');
+  const [adminPupilGender, setAdminPupilGender] = useState<'Male' | 'Female' | 'Other'>('Male');
+  const [adminPupilAdmissionYear, setAdminPupilAdmissionYear] = useState<number>(new Date().getFullYear());
+  const [adminPupilParentEmail, setAdminPupilParentEmail] = useState('');
+  const [adminPupilParentPhone, setAdminPupilParentPhone] = useState('');
+  const [adminPupilCreateParent, setAdminPupilCreateParent] = useState(false);
+  const [adminPupilParentName, setAdminPupilParentName] = useState('');
+  const [adminPupilParentRel, setAdminPupilParentRel] = useState<'Father' | 'Mother' | 'Guardian' | 'Other'>('Mother');
+
+  const [showAdminAddParentModal, setShowAdminAddParentModal] = useState(false);
+  const [adminParentName, setAdminParentName] = useState('');
+  const [adminParentEmail, setAdminParentEmail] = useState('');
+  const [adminParentPhone, setAdminParentPhone] = useState('');
+  const [adminParentRel, setAdminParentRel] = useState<'Father' | 'Mother' | 'Guardian' | 'Other'>('Mother');
+  const [adminParentAddress, setAdminParentAddress] = useState('');
+  const [adminParentSelectedPupils, setAdminParentSelectedPupils] = useState<string[]>([]);
+
+  const handleAdminCreateStudent = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminPupilName.trim()) {
+      alert("Please enter pupil name.");
+      return;
+    }
+    const cleanName = adminPupilName.trim();
+    const initials = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const studentId = `GHS-${adminPupilGrade.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const studentEmail = `${initials}.${Math.floor(100 + Math.random() * 900)}@godshand.edu.ng`;
+
+    let parentObj: ParentAccount | undefined = undefined;
+    if (adminPupilCreateParent && (adminPupilParentName.trim() || adminPupilParentPhone.trim() || adminPupilParentEmail.trim())) {
+      const parentId = `PAR-${Math.floor(1000 + Math.random() * 9000)}`;
+      parentObj = {
+        id: parentId,
+        fullName: adminPupilParentName.trim() || `${cleanName}'s Parent`,
+        email: adminPupilParentEmail.trim() || `${initials}.parent@godshand.edu.ng`,
+        phone: adminPupilParentPhone.trim() || '08000000000',
+        password: 'parent123',
+        relationship: adminPupilParentRel,
+        childrenStudentIds: [studentId],
+        createdAt: new Date().toISOString()
+      };
+      onAddParent?.(parentObj);
+    }
+
+    const newStudent: StudentAccount = {
+      id: studentId,
+      name: cleanName,
+      grade: adminPupilGrade,
+      email: studentEmail,
+      password: 'student123',
+      entryAllowed: true,
+      activeTerm: activeTerm,
+      qrCodeVersion: 1,
+      admissionYear: adminPupilAdmissionYear,
+      createdAt: new Date().toISOString(),
+      parentEmail: parentObj ? parentObj.email : (adminPupilParentEmail.trim() || undefined),
+      parentId: parentObj ? parentObj.id : undefined,
+      gender: adminPupilGender
+    };
+
+    onAddStudent?.(newStudent);
+    alert(`✓ Pupil Account Successfully Provisioned by Admin!\n\nName: ${cleanName}\nClass: ${adminPupilGrade}\nStudent ID: ${studentId}\nDefault Password: student123\n\nSynchronized to database in real-time.`);
+    setAdminPupilName('');
+    setAdminPupilParentEmail('');
+    setAdminPupilParentPhone('');
+    setAdminPupilParentName('');
+    setAdminPupilCreateParent(false);
+    setShowAdminAddStudentModal(false);
+  };
+
+  const handleAdminCreateParent = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminParentName.trim() || !adminParentEmail.trim()) {
+      alert("Please provide Parent Name and Email address.");
+      return;
+    }
+    const parentId = `PAR-${Math.floor(1000 + Math.random() * 9000)}`;
+    const newParent: ParentAccount = {
+      id: parentId,
+      fullName: adminParentName.trim(),
+      email: adminParentEmail.trim().toLowerCase(),
+      phone: adminParentPhone.trim() || '08000000000',
+      password: 'parent123',
+      relationship: adminParentRel,
+      address: adminParentAddress.trim(),
+      childrenStudentIds: adminParentSelectedPupils,
+      createdAt: new Date().toISOString()
+    };
+    onAddParent?.(newParent);
+    alert(`✓ Parent Account Successfully Provisioned by Admin!\n\nName: ${newParent.fullName}\nParent ID: ${parentId}\nLogin Email: ${newParent.email}\nPhone: ${newParent.phone}\nPassword: parent123\n\nLinked to ${adminParentSelectedPupils.length} pupil(s). Synchronized in real-time.`);
+    setAdminParentName('');
+    setAdminParentEmail('');
+    setAdminParentPhone('');
+    setAdminParentAddress('');
+    setAdminParentSelectedPupils([]);
+    setShowAdminAddParentModal(false);
+  };
+
   const [editingBalanceStudentId, setEditingBalanceStudentId] = useState<string | null>(null);
   const [inputBalanceValue, setInputBalanceValue] = useState<string>('');
   const [balanceSaveSuccessId, setBalanceSaveSuccessId] = useState<string | null>(null);
@@ -177,8 +282,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [annSaveMsg, setAnnSaveMsg] = useState('');
   const [teacherUser, setTeacherUser] = useState('');
   const [teacherPass, setTeacherPass] = useState('');
-  const [assignedGrades, setAssignedGrades] = useState<GradeLevel[]>(['Primary 1']);
+  const [assignedGrades, setAssignedGrades] = useState<GradeLevel[]>([]);
   const [assignedCourses, setAssignedCourses] = useState<string[]>([]);
+  const [canCreateStudents, setCanCreateStudents] = useState<boolean>(false);
   const [selectedNewPermissions, setSelectedNewPermissions] = useState<StaffPagePermission[]>(ALL_STAFF_PAGES.map(p => p.id));
   const [editingTeacherId, setEditingTeacherId] = useState<string | null>(null);
   const [courseName, setCourseName] = useState('');
@@ -353,16 +459,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       onCreateTeacher({ 
         username: teacherUser.trim(), 
         password: teacherPass.trim(),
-        assignedGrades: assignedGrades.length > 0 ? assignedGrades : ['Primary 1'],
+        assignedGrades: assignedGrades,
         assignedCourses,
-        allowedPages: selectedNewPermissions
+        allowedPages: selectedNewPermissions,
+        canCreateStudents
       });
       setTeacherUser('');
       setTeacherPass('');
-      setAssignedGrades(['Primary 1']);
+      setAssignedGrades([]);
       setAssignedCourses([]);
+      setCanCreateStudents(false);
       setSelectedNewPermissions(ALL_STAFF_PAGES.map(p => p.id));
-      alert("Staff account created with assigned page permissions!");
+      alert("Staff account created with assigned class(es) & permissions!");
     }
   };
 
@@ -1414,6 +1522,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </div>
                 </div>
 
+                {/* Class Teacher Student Registration Permission Toggle */}
+                <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 space-y-2">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={canCreateStudents}
+                      onChange={(e) => setCanCreateStudents(e.target.checked)}
+                      className="mt-1 w-4 h-4 rounded text-blue-900 border-slate-300 focus:ring-blue-900"
+                    />
+                    <div>
+                      <span className="text-xs font-black text-blue-950 uppercase tracking-wider block">
+                        Allow Class Teacher to Open Student Accounts
+                      </span>
+                      <p className="text-[11px] text-amber-900 leading-snug mt-0.5">
+                        Permits this staff member to register pupils strictly for their assigned class(es). Unassigned classes remain blocked.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
                 <button 
                   type="submit" 
                   className="w-full py-4 bg-blue-900 text-yellow-400 font-black text-sm uppercase tracking-widest rounded-2xl shadow-xl hover:bg-blue-800 transition-all active:scale-[0.99]"
@@ -1489,8 +1617,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                   </span>
                                 )}
                               </div>
-                              <p className="text-[11px] text-slate-500 font-bold mt-0.5">
-                                Assigned Classes: <span className="text-blue-900">{teacher.assignedGrades?.join(', ') || 'None'}</span>
+                              <p className="text-[11px] text-slate-500 font-bold mt-0.5 flex items-center gap-2 flex-wrap">
+                                <span>Assigned Classes: <strong className="text-blue-900">{teacher.assignedGrades && teacher.assignedGrades.length > 0 ? teacher.assignedGrades.join(', ') : 'None (Admin unassigned)'}</strong></span>
+                                {teacher.canCreateStudents && (
+                                  <span className="px-2 py-0.5 bg-amber-100 text-amber-900 rounded-full text-[9px] font-black uppercase">
+                                    ✓ Class Student Account Creator
+                                  </span>
+                                )}
                               </p>
                             </div>
                           </div>
@@ -2023,8 +2156,195 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
         {activeTab === 'access' && (
           <div className="space-y-8">
-            <h3 className="text-2xl font-black text-blue-900 font-serif">Students & Pupils Entry Permissions</h3>
-            <p className="text-slate-500 text-sm font-medium mb-6 italic">Manually override entry restrictions for students and pupils who haven't settled fees.</p>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-2 border-slate-100 pb-6">
+              <div>
+                <h3 className="text-3xl font-black text-blue-900 font-serif">Students & Pupils Official Registry</h3>
+                <p className="text-slate-500 text-sm font-medium mt-1">
+                  School registry & clearance permissions. Self-creation is restricted; only Admin and authorized Class Teachers can enroll pupils.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAdminAddStudentModal(true)}
+                className="px-6 py-3.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl transition-all flex items-center gap-2 active:scale-95 shrink-0"
+              >
+                <span>➕</span>
+                <span>Provision Pupil Account</span>
+              </button>
+            </div>
+
+            {/* Modal: Admin Provision Pupil */}
+            {showAdminAddStudentModal && (
+              <div className="fixed inset-0 z-50 bg-blue-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+                <div className="max-w-xl w-full bg-white rounded-3xl shadow-2xl border-4 border-blue-900 overflow-hidden">
+                  <div className="bg-blue-900 text-white p-6 flex justify-between items-center">
+                    <div>
+                      <h3 className="font-serif font-black text-xl">Admin Pupil Account Provisioning</h3>
+                      <p className="text-xs text-blue-200 font-medium">Create an authoritative pupil record with real-time database sync</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowAdminAddStudentModal(false)}
+                      className="text-white hover:text-yellow-400 font-black text-xl p-1"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleAdminCreateStudent} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider block">
+                        Pupil Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={adminPupilName}
+                        onChange={(e) => setAdminPupilName(e.target.value)}
+                        placeholder="e.g. Samuel Olawale"
+                        className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="space-y-1 sm:col-span-2">
+                        <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider block">
+                          Assigned Class / Grade *
+                        </label>
+                        <select
+                          value={adminPupilGrade}
+                          onChange={(e) => setAdminPupilGrade(e.target.value as GradeLevel)}
+                          className="w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+                        >
+                          {GRADE_GROUPS.flatMap(g => g.levels).map(lvl => (
+                            <option key={lvl} value={lvl}>{lvl}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider block">
+                          Gender
+                        </label>
+                        <select
+                          value={adminPupilGender}
+                          onChange={(e) => setAdminPupilGender(e.target.value as any)}
+                          className="w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+                        >
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider block">
+                          Admission Year
+                        </label>
+                        <input
+                          type="number"
+                          value={adminPupilAdmissionYear}
+                          onChange={(e) => setAdminPupilAdmissionYear(Number(e.target.value))}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider block">
+                          Parent Contact Phone
+                        </label>
+                        <input
+                          type="tel"
+                          value={adminPupilParentPhone}
+                          onChange={(e) => setAdminPupilParentPhone(e.target.value)}
+                          placeholder="08012345678"
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider block">
+                        Parent Email Address (Optional)
+                      </label>
+                      <input
+                        type="email"
+                        value={adminPupilParentEmail}
+                        onChange={(e) => setAdminPupilParentEmail(e.target.value)}
+                        placeholder="parent@example.com"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-xs text-blue-950 outline-none"
+                      />
+                    </div>
+
+                    <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-2xl space-y-3">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={adminPupilCreateParent}
+                          onChange={(e) => setAdminPupilCreateParent(e.target.checked)}
+                          className="w-4 h-4 rounded text-blue-900 focus:ring-blue-900"
+                        />
+                        <span className="text-xs font-black text-blue-950 uppercase tracking-wider">
+                          Also Provision Parent Account in Real Time
+                        </span>
+                      </label>
+                      {adminPupilCreateParent && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                              Parent Full Name
+                            </label>
+                            <input
+                              type="text"
+                              value={adminPupilParentName}
+                              onChange={(e) => setAdminPupilParentName(e.target.value)}
+                              placeholder="e.g. Chief Adeleke"
+                              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                              Relationship
+                            </label>
+                            <select
+                              value={adminPupilParentRel}
+                              onChange={(e) => setAdminPupilParentRel(e.target.value as any)}
+                              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none"
+                            >
+                              <option value="Father">Father</option>
+                              <option value="Mother">Mother</option>
+                              <option value="Guardian">Guardian</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-950">
+                      ⚡ Default credentials created: Pupil Password: <strong>student123</strong> • Parent Password: <strong>parent123</strong>. Both accounts can change passwords on login.
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowAdminAddStudentModal(false)}
+                        className="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95"
+                      >
+                        ✓ Create & Synchronize Pupil
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
 
             <div className="bg-white rounded-[2rem] border-2 border-slate-100 overflow-x-auto shadow-sm">
               <table className="w-full text-left min-w-[850px]">
@@ -2184,13 +2504,178 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <div>
                 <h3 className="text-3xl font-black text-blue-900 font-serif">Parent Accounts & Family Links</h3>
                 <p className="text-slate-500 text-sm font-medium mt-1">
-                  Authoritative registry of registered parents and guardians. Review attached pupils and manage authorized delinking requests.
+                  Authoritative registry of registered parents and guardians. Public self-registration is closed; accounts are provisioned exclusively by Admin & Class Teachers.
                 </p>
               </div>
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl text-xs text-blue-900 max-w-md">
-                🔒 <strong>Delinking Authority Notice:</strong> For student safety and integrity, parents cannot unlink children from their portal. Only the School Administrator can authorize and execute a family link removal.
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAdminAddParentModal(true)}
+                  className="px-6 py-3.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl transition-all flex items-center gap-2 active:scale-95 shrink-0"
+                >
+                  <span>➕</span>
+                  <span>Provision Parent Account</span>
+                </button>
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-2xl text-[11px] text-blue-900 max-w-sm">
+                  🔒 <strong>Delinking Authority Notice:</strong> For student safety, parents cannot self-unlink children. Only the School Administrator can authorize a family link removal.
+                </div>
               </div>
             </div>
+
+            {/* Modal: Admin Provision Parent */}
+            {showAdminAddParentModal && (
+              <div className="fixed inset-0 z-50 bg-blue-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+                <div className="max-w-xl w-full bg-white rounded-3xl shadow-2xl border-4 border-blue-900 overflow-hidden">
+                  <div className="bg-blue-900 text-white p-6 flex justify-between items-center">
+                    <div>
+                      <h3 className="font-serif font-black text-xl">Admin Parent Account Provisioning</h3>
+                      <p className="text-xs text-blue-200 font-medium">Create and link a parent or guardian portal account</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowAdminAddParentModal(false)}
+                      className="text-white hover:text-yellow-400 font-black text-xl p-1"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleAdminCreateParent} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider block">
+                        Parent / Guardian Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={adminParentName}
+                        onChange={(e) => setAdminParentName(e.target.value)}
+                        placeholder="e.g. Mrs. Funke Adeyemi"
+                        className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider block">
+                          Email Address *
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={adminParentEmail}
+                          onChange={(e) => setAdminParentEmail(e.target.value)}
+                          placeholder="parent@example.com"
+                          className="w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider block">
+                          Phone Number *
+                        </label>
+                        <input
+                          type="tel"
+                          required
+                          value={adminParentPhone}
+                          onChange={(e) => setAdminParentPhone(e.target.value)}
+                          placeholder="08034567890"
+                          className="w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider block">
+                          Relationship
+                        </label>
+                        <select
+                          value={adminParentRel}
+                          onChange={(e) => setAdminParentRel(e.target.value as any)}
+                          className="w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+                        >
+                          <option value="Father">Father</option>
+                          <option value="Mother">Mother</option>
+                          <option value="Guardian">Guardian</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider block">
+                          Residential Address
+                        </label>
+                        <input
+                          type="text"
+                          value={adminParentAddress}
+                          onChange={(e) => setAdminParentAddress(e.target.value)}
+                          placeholder="e.g. 15 Ikoyi Crescent, Lagos"
+                          className="w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-medium text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Linked Pupils Selection */}
+                    <div className="space-y-2 border border-slate-200 rounded-2xl p-4 bg-slate-50/50">
+                      <label className="text-[11px] font-black text-blue-950 uppercase tracking-wider block">
+                        Attach Enrolled Pupil(s) to this Parent
+                      </label>
+                      <p className="text-[11px] text-slate-500">Select any pupils who belong to this family:</p>
+                      <div className="max-h-40 overflow-y-auto divide-y divide-slate-100 bg-white rounded-xl border border-slate-200 p-2">
+                        {students.length === 0 ? (
+                          <p className="text-xs text-slate-400 p-2 text-center">No enrolled pupils in registry yet.</p>
+                        ) : (
+                          students.map(s => {
+                            const isChecked = adminParentSelectedPupils.includes(s.id);
+                            return (
+                              <label key={s.id} className="flex items-center justify-between p-2 hover:bg-blue-50/50 rounded-lg cursor-pointer">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setAdminParentSelectedPupils([...adminParentSelectedPupils, s.id]);
+                                      } else {
+                                        setAdminParentSelectedPupils(adminParentSelectedPupils.filter(id => id !== s.id));
+                                      }
+                                    }}
+                                    className="w-4 h-4 rounded text-blue-900 focus:ring-blue-900"
+                                  />
+                                  <span className="text-xs font-bold text-blue-950">{s.name}</span>
+                                </div>
+                                <span className="text-[10px] font-mono text-slate-500 font-bold">{s.id} ({s.grade})</span>
+                              </label>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-950">
+                      ⚡ Default credentials created: Parent Password: <strong>parent123</strong>. The parent can sign in using their email or phone number.
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowAdminAddParentModal(false)}
+                        className="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95"
+                      >
+                        ✓ Create & Link Parent
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
 
             {parents.length === 0 ? (
               <div className="p-12 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">

@@ -37,6 +37,9 @@ interface TeacherDashboardProps {
   onSendResultsToPupils?: (grade: GradeLevel, term: string) => void;
   onSendParentMessage?: (msg: Omit<ParentStaffMessage, 'id' | 'timestamp'>) => void;
   onOpenParentMessaging?: () => void;
+  canCreateStudents?: boolean;
+  onAddStudent?: (student: StudentAccount) => void;
+  onAddParentAccount?: (parent: ParentAccount) => void;
   initialTab?: string;
 }
 
@@ -56,6 +59,9 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   timetables = [],
   parentMessages = [],
   parents = [],
+  canCreateStudents = false,
+  onAddStudent,
+  onAddParentAccount,
   onOpenAdminDelegation,
   onAddCourse,
   onDuplicateCourse,
@@ -157,6 +163,80 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const [checkedStudentIds, setCheckedStudentIds] = useState<string[]>([]);
   const [attendanceSubmitSuccess, setAttendanceSubmitSuccess] = useState<string | null>(null);
   const [isSubmittingAttendance, setIsSubmittingAttendance] = useState(false);
+
+  // Class Teacher Student Registration State (Admin delegated permission)
+  const [showAddStudentForm, setShowAddStudentForm] = useState(false);
+  const [newPupilName, setNewPupilName] = useState('');
+  const [newPupilGrade, setNewPupilGrade] = useState<GradeLevel>(authorizedGrades[0] || ('Primary 1' as GradeLevel));
+  const [newPupilParentEmail, setNewPupilParentEmail] = useState('');
+  const [newPupilParentPhone, setNewPupilParentPhone] = useState('');
+  const [newPupilParentName, setNewPupilParentName] = useState('');
+  const [newPupilParentRelationship, setNewPupilParentRelationship] = useState<'Father' | 'Mother' | 'Guardian' | 'Other'>('Mother');
+  const [newPupilGender, setNewPupilGender] = useState<'Male' | 'Female' | 'Other'>('Male');
+  const [newPupilAdmissionYear, setNewPupilAdmissionYear] = useState<number>(new Date().getFullYear());
+  const [createParentWithPupil, setCreateParentWithPupil] = useState(true);
+  const [lastEnrollmentSuccess, setLastEnrollmentSuccess] = useState<{
+    student: StudentAccount;
+    parent?: ParentAccount;
+  } | null>(null);
+
+  const handleTeacherCreateStudent = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPupilName.trim()) {
+      alert("Please enter the pupil's full name.");
+      return;
+    }
+    if (!authorizedGrades.includes(newPupilGrade)) {
+      alert(`Access Restricted: You are only authorized to register students for your assigned class (${authorizedGrades.join(', ')}).`);
+      return;
+    }
+
+    const cleanName = newPupilName.trim();
+    const initials = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const studentId = `GHS-${newPupilGrade.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const studentEmail = `${initials}.${Math.floor(100 + Math.random() * 900)}@godshand.edu.ng`;
+
+    let parentAccount: ParentAccount | undefined = undefined;
+    if (createParentWithPupil && (newPupilParentName.trim() || newPupilParentPhone.trim() || newPupilParentEmail.trim())) {
+      const parentId = `PAR-${Math.floor(1000 + Math.random() * 9000)}`;
+      const pEmail = newPupilParentEmail.trim() || `${initials}.parent@godshand.edu.ng`;
+      parentAccount = {
+        id: parentId,
+        fullName: newPupilParentName.trim() || `${cleanName}'s Parent`,
+        email: pEmail,
+        phone: newPupilParentPhone.trim() || '08000000000',
+        password: 'parent123',
+        relationship: newPupilParentRelationship,
+        childrenStudentIds: [studentId],
+        createdAt: new Date().toISOString()
+      };
+      onAddParentAccount?.(parentAccount);
+    }
+
+    const newStudent: StudentAccount = {
+      id: studentId,
+      name: cleanName,
+      grade: newPupilGrade,
+      email: studentEmail,
+      password: 'student123',
+      entryAllowed: true,
+      activeTerm: currentTerm,
+      qrCodeVersion: 1,
+      admissionYear: newPupilAdmissionYear,
+      createdAt: new Date().toISOString(),
+      parentEmail: parentAccount ? parentAccount.email : (newPupilParentEmail.trim() || undefined),
+      parentId: parentAccount ? parentAccount.id : undefined,
+      gender: newPupilGender
+    };
+
+    onAddStudent?.(newStudent);
+    setLastEnrollmentSuccess({ student: newStudent, parent: parentAccount });
+    setNewPupilName('');
+    setNewPupilParentEmail('');
+    setNewPupilParentPhone('');
+    setNewPupilParentName('');
+    setShowAddStudentForm(false);
+  };
 
   // Students in selected checklist class
   const [checklistSearch, setChecklistSearch] = useState<string>('');
@@ -1001,7 +1081,274 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
         {activeTab === 'students' && (
           <div className="space-y-8">
-            <h3 className="text-2xl font-black text-blue-900 font-serif">Class Registers</h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-2xl font-black text-blue-900 font-serif">Class Registers</h3>
+                <p className="text-xs text-slate-500 font-bold mt-0.5">
+                  View pupils enrolled strictly in your assigned classes ({authorizedGrades.join(', ') || 'None'}).
+                </p>
+              </div>
+
+              {canCreateStudents && authorizedGrades.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAddStudentForm(!showAddStudentForm)}
+                  className="px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-2xl shadow-md transition-all flex items-center gap-2 self-start sm:self-auto active:scale-95"
+                >
+                  <span>{showAddStudentForm ? '✕ Close Form' : '➕ Register Pupil for My Class'}</span>
+                </button>
+              )}
+            </div>
+
+            {/* Class Teacher Student Registration Form */}
+            {canCreateStudents && showAddStudentForm && authorizedGrades.length > 0 && (
+              <div className="p-6 sm:p-8 bg-amber-50/70 border-2 border-amber-200 rounded-3xl shadow-sm space-y-4 animate-in fade-in duration-200">
+                <div className="flex items-center gap-3 border-b border-amber-200/60 pb-3">
+                  <span className="p-2 bg-amber-500 text-white rounded-xl text-lg">📝</span>
+                  <div>
+                    <h4 className="font-serif font-black text-blue-950 text-base">Class Teacher Pupil Enrollment Portal</h4>
+                    <p className="text-[11px] text-amber-900 font-medium">
+                      Admin has authorized you to register pupils for: <strong className="text-blue-900">{authorizedGrades.join(', ')}</strong>. Unassigned classes cannot be registered.
+                    </p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleTeacherCreateStudent} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="space-y-1 sm:col-span-2">
+                    <label className="text-[11px] font-black text-blue-950 uppercase tracking-wider block">
+                      Pupil Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newPupilName}
+                      onChange={(e) => setNewPupilName(e.target.value)}
+                      placeholder="e.g. Oluwaseun Adeleke"
+                      className="w-full px-4 py-2.5 bg-white border border-amber-200 rounded-xl font-bold text-sm text-blue-950 outline-none focus:ring-2 focus:ring-blue-900"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-black text-blue-950 uppercase tracking-wider block">
+                      Class / Grade *
+                    </label>
+                    <select
+                      value={newPupilGrade}
+                      onChange={(e) => setNewPupilGrade(e.target.value as GradeLevel)}
+                      className="w-full px-3 py-2.5 bg-white border border-amber-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:ring-2 focus:ring-blue-900"
+                    >
+                      {authorizedGrades.map(g => (
+                        <option key={g} value={g}>{g}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-black text-blue-950 uppercase tracking-wider block">
+                      Gender
+                    </label>
+                    <select
+                      value={newPupilGender}
+                      onChange={(e) => setNewPupilGender(e.target.value as any)}
+                      className="w-full px-3 py-2.5 bg-white border border-amber-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:ring-2 focus:ring-blue-900"
+                    >
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  {/* Parent Provisioning Section */}
+                  <div className="sm:col-span-2 lg:col-span-4 p-4 bg-white/80 border border-amber-200 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={createParentWithPupil}
+                          onChange={(e) => setCreateParentWithPupil(e.target.checked)}
+                          className="w-4 h-4 rounded text-blue-900 focus:ring-blue-900"
+                        />
+                        <span className="text-xs font-black text-blue-950 uppercase tracking-wider">
+                          Also Provision Parent Portal Account for this Pupil
+                        </span>
+                      </label>
+                      <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md">
+                        Auto-linked to pupil
+                      </span>
+                    </div>
+
+                    {createParentWithPupil && (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                            Parent Full Name
+                          </label>
+                          <input
+                            type="text"
+                            value={newPupilParentName}
+                            onChange={(e) => setNewPupilParentName(e.target.value)}
+                            placeholder="e.g. Mr. Babatunde Adeleke"
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                            Parent Phone Number
+                          </label>
+                          <input
+                            type="tel"
+                            value={newPupilParentPhone}
+                            onChange={(e) => setNewPupilParentPhone(e.target.value)}
+                            placeholder="08034567890"
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                            Relationship & Email
+                          </label>
+                          <div className="flex gap-2">
+                            <select
+                              value={newPupilParentRelationship}
+                              onChange={(e) => setNewPupilParentRelationship(e.target.value as any)}
+                              className="px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none"
+                            >
+                              <option value="Father">Father</option>
+                              <option value="Mother">Mother</option>
+                              <option value="Guardian">Guardian</option>
+                              <option value="Other">Other</option>
+                            </select>
+                            <input
+                              type="email"
+                              value={newPupilParentEmail}
+                              onChange={(e) => setNewPupilParentEmail(e.target.value)}
+                              placeholder="parent@email.com"
+                              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="sm:col-span-2 lg:col-span-4 flex items-center justify-between gap-3 pt-2">
+                    <p className="text-[11px] text-amber-900 font-medium">
+                      ⚡ Default credentials created: Pupil Password: <code className="bg-white px-1.5 py-0.5 rounded font-bold text-blue-900">student123</code> • Parent Password: <code className="bg-white px-1.5 py-0.5 rounded font-bold text-blue-900">parent123</code>
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddStudentForm(false)}
+                        className="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-black text-xs uppercase rounded-xl transition-all"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95"
+                      >
+                        ✓ Provision Account in {newPupilGrade}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Enrollment Receipt Modal for Class Teacher */}
+            {lastEnrollmentSuccess && (
+              <div className="fixed inset-0 z-50 bg-blue-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+                <div className="max-w-lg w-full bg-white rounded-3xl shadow-2xl border-4 border-yellow-400 overflow-hidden space-y-4">
+                  <div className="bg-blue-900 text-white p-6 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <span className="p-2 bg-yellow-400 text-blue-900 rounded-xl text-xl font-black">✓</span>
+                      <div>
+                        <h3 className="font-serif font-black text-lg">Pupil Enrolled Successfully</h3>
+                        <p className="text-xs text-yellow-300 font-bold">Synchronized to Supabase in Real Time</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setLastEnrollmentSuccess(null)}
+                      className="text-white hover:text-yellow-400 font-black text-xl p-1"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="p-6 space-y-5">
+                    {/* Pupil Slip */}
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl space-y-2">
+                      <div className="flex items-center justify-between border-b border-blue-200/60 pb-2">
+                        <span className="text-[10px] font-black uppercase text-blue-900 tracking-wider">🎓 Pupil Credentials</span>
+                        <span className="px-2 py-0.5 bg-blue-900 text-yellow-400 text-[10px] font-black rounded-md">{lastEnrollmentSuccess.student.grade}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="text-slate-400 text-[10px] uppercase font-bold block">Pupil Full Name</span>
+                          <span className="font-black text-blue-950">{lastEnrollmentSuccess.student.name}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 text-[10px] uppercase font-bold block">Assigned Student ID</span>
+                          <span className="font-mono font-black text-blue-900">{lastEnrollmentSuccess.student.id}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 text-[10px] uppercase font-bold block">Portal Email</span>
+                          <span className="font-bold text-slate-700">{lastEnrollmentSuccess.student.email}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 text-[10px] uppercase font-bold block">Default Password</span>
+                          <span className="font-mono font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">student123</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Parent Slip if created */}
+                    {lastEnrollmentSuccess.parent && (
+                      <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl space-y-2">
+                        <div className="flex items-center justify-between border-b border-amber-200/60 pb-2">
+                          <span className="text-[10px] font-black uppercase text-amber-900 tracking-wider">👨‍👩‍👧 Linked Parent Account</span>
+                          <span className="px-2 py-0.5 bg-amber-800 text-white text-[10px] font-black rounded-md">{lastEnrollmentSuccess.parent.relationship || 'Guardian'}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <span className="text-slate-400 text-[10px] uppercase font-bold block">Parent Name</span>
+                            <span className="font-black text-amber-950">{lastEnrollmentSuccess.parent.fullName}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 text-[10px] uppercase font-bold block">Parent ID</span>
+                            <span className="font-mono font-black text-amber-900">{lastEnrollmentSuccess.parent.id}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 text-[10px] uppercase font-bold block">Login Phone / Email</span>
+                            <span className="font-bold text-slate-700">{lastEnrollmentSuccess.parent.phone} / {lastEnrollmentSuccess.parent.email}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 text-[10px] uppercase font-bold block">Default Password</span>
+                            <span className="font-mono font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">parent123</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-[11px] text-emerald-900 font-medium flex items-center gap-2">
+                      <span>⚡</span>
+                      <span>This pupil is now saved to Supabase and immediately visible across the Admin Panel and Roll Call checklists.</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setLastEnrollmentSuccess(null)}
+                      className="w-full py-3.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg transition-all"
+                    >
+                      Done & Return to Class List
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             {assignedGrades.length === 0 ? (
               <div className="p-12 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 text-slate-400 font-bold uppercase text-xs tracking-widest">No classes assigned to you yet.</div>
             ) : (

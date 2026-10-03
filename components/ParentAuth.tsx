@@ -8,7 +8,7 @@ import {
 
 interface ParentAuthProps {
   onLogin: (emailOrPhone: string, pass: string) => boolean | void;
-  onRegister: (data: Omit<ParentAccount, 'id' | 'createdAt'>) => boolean | void;
+  onRegister?: (data: Omit<ParentAccount, 'id' | 'createdAt'>) => boolean | void;
   onBack: () => void;
   error?: string;
   onResetPassword?: (email: string, newPass: string) => boolean;
@@ -16,12 +16,11 @@ interface ParentAuthProps {
 
 export const ParentAuth: React.FC<ParentAuthProps> = ({
   onLogin,
-  onRegister,
   onBack,
   error: externalError,
   onResetPassword
 }) => {
-  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login');
+  const [mode, setMode] = useState<'login' | 'forgot'>('login');
   const [localError, setLocalError] = useState<string>('');
   const [securityAlert, setSecurityAlert] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -32,15 +31,6 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
   // Login State
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-
-  // Sign Up State
-  const [fullName, setFullName] = useState('');
-  const [relationship, setRelationship] = useState<'Father' | 'Mother' | 'Guardian' | 'Other'>('Mother');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [address, setAddress] = useState('');
 
   // Reset State
   const [resetEmail, setResetEmail] = useState('');
@@ -102,47 +92,6 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
     const result = onLogin(loginIdentifier.trim(), loginPassword.trim());
     if (result === false) {
       setLocalError('Invalid email/phone or password. Please check your credentials.');
-    }
-  };
-
-  const handleRegisterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setLocalError('');
-    setSecurityAlert(null);
-
-    const checks = [fullName, email, phone, password, address].map(detectHackingPayload);
-    if (checks.some(c => c.isMalicious)) {
-      setSecurityAlert("Prohibited or malicious script tags detected in registration input.");
-      return;
-    }
-
-    if (!fullName.trim() || !email.trim() || !phone.trim() || !password) {
-      setLocalError('Please fill in all required parent details.');
-      return;
-    }
-
-    if (password.length < 5) {
-      setLocalError('Password must be at least 5 characters long.');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setLocalError('Passwords do not match. Please verify.');
-      return;
-    }
-
-    const result = onRegister({
-      fullName: fullName.trim(),
-      email: email.trim().toLowerCase(),
-      phone: phone.trim(),
-      password,
-      relationship,
-      address: address.trim(),
-      childrenStudentIds: []
-    });
-
-    if (result === false) {
-      setLocalError('An account with this email address already exists. Please log in.');
     }
   };
 
@@ -224,13 +173,11 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
             </div>
             <h2 className="text-2xl sm:text-3xl font-serif font-black text-blue-900 leading-tight">
               {mode === 'login' && 'Parent & Guardian Login'}
-              {mode === 'signup' && 'Create Parent Account'}
               {mode === 'forgot' && 'Reset Parent Password'}
             </h2>
             <p className="text-xs text-slate-500 font-medium mt-1">
-              {mode === 'login' && 'Manage your children, track gate attendance, and pay school fees.'}
-              {mode === 'signup' && 'Register your family to connect your children and monitor their schooling.'}
-              {mode === 'forgot' && 'Enter your email to recover or change your parent password.'}
+              {mode === 'login' && 'Official Parent Portal • Accounts provisioned strictly by Admin & Class Teacher.'}
+              {mode === 'forgot' && 'Enter your registered email to reset your parent password.'}
             </p>
           </div>
 
@@ -250,31 +197,16 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
             </div>
           )}
 
-          {/* Mode Switcher Tabs */}
+          {/* Mode Switcher Banner */}
           {mode !== 'forgot' && (
-            <div className="grid grid-cols-2 gap-2 p-1.5 bg-slate-100 rounded-2xl mb-8">
-              <button
-                type="button"
-                onClick={() => { setMode('login'); setLocalError(''); setSecurityAlert(null); }}
-                className={`py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
-                  mode === 'login'
-                    ? 'bg-white text-blue-900 shadow-md'
-                    : 'text-slate-500 hover:text-blue-900'
-                }`}
-              >
-                Parent Login
-              </button>
-              <button
-                type="button"
-                onClick={() => { setMode('signup'); setLocalError(''); setSecurityAlert(null); }}
-                className={`py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
-                  mode === 'signup'
-                    ? 'bg-white text-blue-900 shadow-md'
-                    : 'text-slate-500 hover:text-blue-900'
-                }`}
-              >
-                Sign Up / Register
-              </button>
+            <div className="p-3 bg-slate-100 rounded-2xl mb-8 flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-blue-900 px-3">
+                Parent & Guardian Portal Login
+              </span>
+              <span className="text-[10px] font-black uppercase tracking-wider bg-white text-slate-500 px-3 py-1.5 rounded-xl shadow-xs flex items-center gap-1">
+                <span>🔒</span>
+                <span>Created by Admin / Teacher</span>
+              </span>
             </div>
           )}
 
@@ -370,144 +302,29 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
                 <span>→</span>
               </button>
 
-              {/* Demo Helper */}
-              <div className="pt-2 border-t border-slate-100 text-center">
-                <button
-                  type="button"
-                  onClick={handleFillDemo}
-                  className="px-4 py-2 bg-yellow-50 hover:bg-yellow-100 text-blue-900 border border-yellow-300 rounded-xl text-xs font-bold transition-all"
-                >
-                  ⚡ Quick Demo: Use Sample Parent Account
-                </button>
-                <p className="text-[10px] text-slate-400 mt-1">
-                  Prefills Mrs. Adebayo's account with 2 linked children and attendance data.
-                </p>
-              </div>
-            </form>
-          )}
-
-          {/* SIGN UP FORM */}
-          {mode === 'signup' && (
-            <form onSubmit={handleRegisterSubmit} className="space-y-4">
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">
-                    Parent / Guardian Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Mr. & Mrs. Adeleke"
-                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-blue-950 focus:bg-white focus:border-blue-900 outline-none transition-all"
-                  />
+              <div className="pt-2 border-t border-slate-100 space-y-3">
+                {/* Official Enrollment Policy Card */}
+                <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-2xl text-[11px] text-blue-950 font-medium flex items-start gap-2.5 text-left">
+                  <span className="text-base shrink-0">🛡️</span>
+                  <div>
+                    <strong className="font-black text-blue-900 uppercase block text-[10px]">Official Account Notice</strong>
+                    <span>Parent accounts cannot be self-registered. Your account is created and linked to your children exclusively by the School Administrator or your child's assigned Class Teacher.</span>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">
-                    Relationship to Child *
-                  </label>
-                  <select
-                    value={relationship}
-                    onChange={(e) => setRelationship(e.target.value as any)}
-                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-blue-950 focus:bg-white focus:border-blue-900 outline-none transition-all"
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={handleFillDemo}
+                    className="px-4 py-2 bg-yellow-50 hover:bg-yellow-100 text-blue-900 border border-yellow-300 rounded-xl text-xs font-bold transition-all"
                   >
-                    <option value="Mother">Mother</option>
-                    <option value="Father">Father</option>
-                    <option value="Guardian">Legal Guardian</option>
-                    <option value="Other">Sponsor / Other</option>
-                  </select>
+                    ⚡ Quick Demo: Use Sample Parent Account
+                  </button>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    Prefills Mrs. Adebayo's account with 2 linked children and attendance data.
+                  </p>
                 </div>
               </div>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="parent@example.com"
-                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-blue-950 focus:bg-white focus:border-blue-900 outline-none transition-all"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">
-                    Phone Number (WhatsApp) *
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="e.g. 08056507252"
-                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-blue-950 focus:bg-white focus:border-blue-900 outline-none transition-all"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">
-                  Residential Address (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="e.g. Wire and Cable Axis, Apata, Ibadan"
-                  className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-blue-950 focus:bg-white focus:border-blue-900 outline-none transition-all"
-                />
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">
-                    Create Password *
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Min. 5 characters"
-                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-blue-950 focus:bg-white focus:border-blue-900 outline-none transition-all"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">
-                    Confirm Password *
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Repeat password"
-                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-blue-950 focus:bg-white focus:border-blue-900 outline-none transition-all"
-                  />
-                </div>
-              </div>
-
-              <div className="p-3.5 bg-blue-50/60 rounded-2xl border border-blue-100 flex items-start gap-2.5 text-xs text-blue-900">
-                <span className="text-base">ℹ️</span>
-                <p>
-                  After signing up, you can immediately add your children using their student ID or register new pupils to begin monitoring attendance and fee records.
-                </p>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-4 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-sm uppercase tracking-wider rounded-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2"
-              >
-                <span>Complete Parent Registration</span>
-                <span>→</span>
-              </button>
             </form>
           )}
 

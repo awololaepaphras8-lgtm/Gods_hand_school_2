@@ -178,6 +178,7 @@ CREATE TABLE IF NOT EXISTS public.teacher_accounts (
   assigned_grades TEXT[] DEFAULT '{}' NOT NULL,
   assigned_courses TEXT[] DEFAULT '{}' NOT NULL,
   allowed_pages TEXT[] DEFAULT '{"overview", "parentMessages", "attendanceScanning", "attendance", "students", "timetable", "termStats", "grading", "courses"}' NOT NULL,
+  can_create_students BOOLEAN DEFAULT FALSE NOT NULL,
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -433,6 +434,8 @@ ALTER TABLE public.students ADD COLUMN IF NOT EXISTS parent_email TEXT;
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS parent_id TEXT;
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS balance NUMERIC(12, 2) DEFAULT NULL;
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS photo TEXT;
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS created_by TEXT DEFAULT 'admin';
+ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS can_create_students BOOLEAN DEFAULT FALSE;
 
 -- Update attendance_records method check to include batch_checklist and roll call
 DO $$
