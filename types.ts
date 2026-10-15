@@ -411,6 +411,58 @@ export interface CallRecording {
   downloadFileName?: string;
 }
 
+export type AssignmentType = 'written' | 'document' | 'picture' | 'hybrid';
+
+export interface AssignmentAttachment {
+  name: string;
+  url: string; // Base64 Data URL or public link
+  type: 'document' | 'picture';
+  mimeType?: string;
+  sizeBytes?: number;
+}
+
+export interface Assignment {
+  id: string;
+  title: string;
+  subject: string;
+  grade: GradeLevel;
+  description: string; // Written questions, rubric, instructions
+  assignmentType: AssignmentType;
+  attachmentUrl?: string; // Primary document or picture
+  attachmentName?: string;
+  attachmentType?: 'document' | 'picture';
+  attachmentSizeBytes?: number;
+  additionalAttachments?: AssignmentAttachment[];
+  dueDate: string; // ISO date or YYYY-MM-DD
+  totalPoints: number; // e.g. 20, 50, 100 marks
+  term: string; // e.g. 'First Term'
+  academicYear?: string; // '2024/2025'
+  status: 'active' | 'closed' | 'draft' | 'archived';
+  createdBy: string;
+  createdByRole: 'admin' | 'teacher';
+  createdAt: string;
+  updatedAt?: string;
+  submissionsCount?: number;
+}
+
+export interface AssignmentSubmission {
+  id: string;
+  assignmentId: string;
+  studentId: string;
+  studentName: string;
+  grade: GradeLevel;
+  writtenAnswer?: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
+  attachmentType?: 'document' | 'picture';
+  submittedAt: string;
+  status: 'submitted' | 'graded' | 'late';
+  score?: number;
+  feedback?: string;
+  gradedBy?: string;
+  gradedAt?: string;
+}
+
 export interface AppState {
   fees: FeeStructure;
   announcements: Announcement[];
@@ -435,4 +487,6 @@ export interface AppState {
   adminEvents?: AdminRealtimeEvent[];
   bankAccountConfig?: SchoolBankAccountConfig;
   callRecordings?: CallRecording[];
+  assignments?: Assignment[];
+  assignmentSubmissions?: AssignmentSubmission[];
 }

@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { FeeStructure, StudentApplication, Announcement, TeacherAccount, StudentResult, Course, GradeLevel, AttendanceRecord, StudentAccount, FeePayment, StaffPagePermission, ALL_STAFF_PAGES, AppState, ParentAccount, ResultPublishRequest, TimedStaffDelegation, AdminSectionKey, UserPagesAccessState } from '../types';
+import { FeeStructure, StudentApplication, Announcement, TeacherAccount, StudentResult, Course, GradeLevel, AttendanceRecord, StudentAccount, FeePayment, StaffPagePermission, ALL_STAFF_PAGES, AppState, ParentAccount, ResultPublishRequest, TimedStaffDelegation, AdminSectionKey, UserPagesAccessState, Assignment } from '../types';
+import { AdminAssignmentsManager } from './AdminAssignmentsManager';
 import { GRADE_GROUPS, GRADE_ORDER } from '../constants';
 import { PaymentReviewDashboard } from './PaymentReviewDashboard';
 import { AdminStaffDelegationManager } from './AdminStaffDelegationManager';
@@ -93,6 +94,10 @@ interface AdminPanelProps {
   onUpdateStudentBalance?: (studentId: string, balance: number) => void;
   onAddStudent?: (student: StudentAccount) => void;
   onAddParent?: (parent: ParentAccount) => void;
+  assignments?: Assignment[];
+  onAddAssignment?: (assignment: Assignment) => void;
+  onUpdateAssignment?: (assignment: Assignment) => void;
+  onDeleteAssignment?: (id: string) => void;
   initialTab?: string;
 }
 
@@ -147,6 +152,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onUpdateStudentBalance,
   onAddStudent,
   onAddParent,
+  assignments = [],
+  onAddAssignment,
+  onUpdateAssignment,
+  onDeleteAssignment,
   initialTab
 }) => {
   // Admin Provisioning State
@@ -253,7 +262,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [editingBalanceStudentId, setEditingBalanceStudentId] = useState<string | null>(null);
   const [inputBalanceValue, setInputBalanceValue] = useState<string>('');
   const [balanceSaveSuccessId, setBalanceSaveSuccessId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'attendance' | 'attendanceScanning' | 'academicTrends' | 'payments' | 'resultPublish' | 'fees' | 'bankAccount' | 'applications' | 'teachers' | 'courses' | 'calendar' | 'announcements' | 'access' | 'parents' | 'export' | 'delegations' | 'pageAccess'>((initialTab as any) || 'attendance');
+  const [activeTab, setActiveTab] = useState<'attendance' | 'attendanceScanning' | 'academicTrends' | 'payments' | 'resultPublish' | 'fees' | 'bankAccount' | 'applications' | 'teachers' | 'courses' | 'calendar' | 'announcements' | 'access' | 'parents' | 'export' | 'delegations' | 'pageAccess' | 'assignments'>((initialTab as any) || 'attendance');
   const [rejectModalRequestId, setRejectModalRequestId] = useState<string | null>(null);
   const [rejectFeedbackText, setRejectFeedbackText] = useState<string>('');
   const [delegationNow, setDelegationNow] = useState<Date>(new Date());
@@ -535,6 +544,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     { id: 'applications', label: 'Admissions', adminKey: 'applications' },
     { id: 'teachers', label: 'Staff', adminKey: 'teachers' },
     { id: 'courses', label: 'Courses', adminKey: 'courses' },
+    { id: 'assignments', label: '📝 Assignments & Homework (Basic 5 - SS 3)', adminKey: 'courses' },
     { id: 'calendar', label: 'Calendar', adminKey: 'calendar' },
     { id: 'announcements', label: 'Bulletins', adminKey: 'announcements' },
     { id: 'access', label: 'Students & Pupils Access', adminKey: 'applications' },
@@ -1859,6 +1869,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
           </div>
+        )}
+
+        {activeTab === 'assignments' && (
+          <AdminAssignmentsManager
+            assignments={assignments}
+            onAddAssignment={onAddAssignment || (() => {})}
+            onUpdateAssignment={onUpdateAssignment || (() => {})}
+            onDeleteAssignment={onDeleteAssignment || (() => {})}
+            activeTerm={activeTerm}
+            adminName="School Administrator"
+          />
         )}
 
         {activeTab === 'calendar' && (

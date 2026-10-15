@@ -428,7 +428,27 @@ ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS updated_at TIMESTAM
 ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS full_name TEXT;
 ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS email TEXT;
 ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS assigned_grades TEXT[] DEFAULT '{}' NOT NULL;
+ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS assigned_courses TEXT[] DEFAULT '{}' NOT NULL;
+ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS can_create_students BOOLEAN DEFAULT TRUE NOT NULL;
 ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS allowed_pages TEXT[] DEFAULT '{"overview", "parentMessages", "attendanceScanning", "attendance", "students", "timetable", "termStats", "grading", "courses"}' NOT NULL;
+
+-- Safe column additions for teachers table
+CREATE TABLE IF NOT EXISTS public.teachers (
+  id TEXT PRIMARY KEY,
+  username TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  assigned_grades JSONB DEFAULT '[]'::jsonb NOT NULL,
+  assigned_courses JSONB DEFAULT '[]'::jsonb NOT NULL,
+  can_create_students BOOLEAN DEFAULT TRUE NOT NULL,
+  allowed_pages JSONB DEFAULT '["overview","students","attendance","timetable","parentMessages","grading","courses"]'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+ALTER TABLE public.teachers ADD COLUMN IF NOT EXISTS assigned_grades JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.teachers ADD COLUMN IF NOT EXISTS assigned_courses JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.teachers ADD COLUMN IF NOT EXISTS can_create_students BOOLEAN DEFAULT TRUE;
+ALTER TABLE public.teachers ADD COLUMN IF NOT EXISTS allowed_pages JSONB DEFAULT '["overview","students","attendance","timetable","parentMessages","grading","courses"]'::jsonb;
 
 ALTER TABLE public.timetables ADD COLUMN IF NOT EXISTS notes TEXT;
 ALTER TABLE public.timetables ADD COLUMN IF NOT EXISTS updated_by TEXT DEFAULT 'Teacher';
@@ -557,15 +577,33 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL ROUTINES IN SCHEMA public TO anon, authenticated, service_role;
 
-DROP POLICY IF EXISTS "Anyone can read student records" ON public.students;
-CREATE POLICY "Anyone can read student records" ON public.students FOR SELECT USING (true);
-DROP POLICY IF EXISTS "Allow student registration and admin updates" ON public.students;
-CREATE POLICY "Allow student registration and admin updates" ON public.students FOR ALL USING (true) WITH CHECK (true);
+-- Cleanly drop any existing conflicting policies on all public tables before re-creating them
+DO $$
+DECLARE
+  pol record;
+BEGIN
+  FOR pol IN 
+    SELECT schemaname, tablename, policyname 
+    FROM pg_policies 
+    WHERE schemaname = 'public'
+  LOOP
+    EXECUTE format('DROP POLICY IF EXISTS %I ON %I.%I', pol.policyname, pol.schemaname, pol.tablename);
+  END LOOP;
+END $$;
 
+DROP POLICY IF EXISTS "Public read students" ON public.students;
+DROP POLICY IF EXISTS "Manage students" ON public.students;
+DROP POLICY IF EXISTS "Anyone can read student records" ON public.students;
+DROP POLICY IF EXISTS "Allow student registration and admin updates" ON public.students;
+CREATE POLICY "Public read students" ON public.students FOR SELECT USING (true);
+CREATE POLICY "Manage students" ON public.students FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public read parents" ON public.parents;
+DROP POLICY IF EXISTS "Manage parents" ON public.parents;
 DROP POLICY IF EXISTS "Anyone can read parent profiles" ON public.parents;
-CREATE POLICY "Anyone can read parent profiles" ON public.parents FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Parents can register and manage profile" ON public.parents;
-CREATE POLICY "Parents can register and manage profile" ON public.parents FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public read parents" ON public.parents FOR SELECT USING (true);
+CREATE POLICY "Manage parents" ON public.parents FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Anyone can read active parent-student links" ON public.parent_student_links;
 CREATE POLICY "Anyone can read active parent-student links" ON public.parent_student_links FOR SELECT USING (true);
@@ -2033,7 +2071,10 @@ CREATE TABLE IF NOT EXISTS public.teachers (
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-ALTER TABLE public.teachers ADD COLUMN IF NOT EXISTS can_create_students BOOLEAN DEFAULT TRUE NOT NULL;
+ALTER TABLE public.teachers ADD COLUMN IF NOT EXISTS assigned_grades JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.teachers ADD COLUMN IF NOT EXISTS assigned_courses JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.teachers ADD COLUMN IF NOT EXISTS can_create_students BOOLEAN DEFAULT TRUE;
+ALTER TABLE public.teachers ADD COLUMN IF NOT EXISTS allowed_pages JSONB DEFAULT '["overview","students","attendance","timetable","parentMessages","grading","courses"]'::jsonb;
 
 -- 4. PARENT-STUDENT FAMILY LINKS TABLE (Relational Mapping)
 CREATE TABLE IF NOT EXISTS public.parent_student_links (
@@ -2327,6 +2368,403 @@ export const downloadRestrictedAccountCreationSql = (): void => {
     'application/sql;charset=utf-8;'
   );
 };
+
+// ==============================================================================
+// STANDALONE ASSIGNMENT & HOMEWORK SYSTEM (BASIC 5 TO SS 3)
+// ==============================================================================
+export const SUPABASE_ASSIGNMENTS_SQL = `-- ==============================================================================
+-- GOD'S HAND INTERNATIONAL MODEL SCHOOL
+-- STANDALONE ASSIGNMENT & HOMEWORK SYSTEM (BASIC 5 TO SS 3)
+-- Run this directly in Supabase SQL Editor: https://supabase.com/dashboard/project/_/sql
+-- ==============================================================================
+-- 🔒 FEATURES:
+--  - Supports Written questions, Document attachments (PDF/Word), and Picture/Photo exercises.
+--  - Specifically built for Basic 5, JSS 1, JSS 2, JSS 3, SSS 1, SSS 2, and SSS 3.
+--  - Includes automatic table creation, RLS security policies, realtime publication, and seed records.
+--  - 100% Isolated: Contains NO previous tables or duplicate codes!
+-- ==============================================================================
+
+-- 1. ASSIGNMENTS TABLE
+CREATE TABLE IF NOT EXISTS public.assignments (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  grade TEXT NOT NULL,
+  description TEXT NOT NULL,
+  assignment_type TEXT NOT NULL CHECK (assignment_type IN ('written', 'document', 'picture', 'hybrid')),
+  attachment_url TEXT,
+  attachment_name TEXT,
+  attachment_type TEXT,
+  attachment_size_bytes BIGINT,
+  additional_attachments JSONB DEFAULT '[]'::jsonb,
+  due_date TIMESTAMPTZ NOT NULL,
+  total_points INT DEFAULT 100 NOT NULL,
+  term TEXT DEFAULT 'First Term' NOT NULL,
+  academic_year TEXT DEFAULT '2024/2025' NOT NULL,
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'closed', 'draft', 'archived')),
+  created_by TEXT DEFAULT 'School Administrator' NOT NULL,
+  created_by_role TEXT DEFAULT 'admin' NOT NULL CHECK (created_by_role IN ('admin', 'teacher')),
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Safe Column Migrations for public.assignments
+ALTER TABLE public.assignments ADD COLUMN IF NOT EXISTS assignment_type TEXT DEFAULT 'written';
+ALTER TABLE public.assignments ADD COLUMN IF NOT EXISTS attachment_url TEXT;
+ALTER TABLE public.assignments ADD COLUMN IF NOT EXISTS attachment_name TEXT;
+ALTER TABLE public.assignments ADD COLUMN IF NOT EXISTS attachment_type TEXT;
+ALTER TABLE public.assignments ADD COLUMN IF NOT EXISTS attachment_size_bytes BIGINT;
+ALTER TABLE public.assignments ADD COLUMN IF NOT EXISTS additional_attachments JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.assignments ADD COLUMN IF NOT EXISTS total_points INT DEFAULT 100;
+ALTER TABLE public.assignments ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
+ALTER TABLE public.assignments ADD COLUMN IF NOT EXISTS created_by_role TEXT DEFAULT 'admin';
+
+-- 2. ASSIGNMENT SUBMISSIONS TABLE (Pupil Answers & Worksheets)
+CREATE TABLE IF NOT EXISTS public.assignment_submissions (
+  id TEXT PRIMARY KEY,
+  assignment_id TEXT NOT NULL REFERENCES public.assignments(id) ON DELETE CASCADE,
+  student_id TEXT NOT NULL,
+  student_name TEXT NOT NULL,
+  grade TEXT NOT NULL,
+  written_answer TEXT,
+  attachment_url TEXT,
+  attachment_name TEXT,
+  attachment_type TEXT,
+  submitted_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  status TEXT DEFAULT 'submitted' CHECK (status IN ('submitted', 'graded', 'late')),
+  score NUMERIC(5, 2),
+  feedback TEXT,
+  graded_by TEXT,
+  graded_at TIMESTAMPTZ,
+  CONSTRAINT uq_student_assignment UNIQUE (assignment_id, student_id)
+);
+
+-- 3. PERFORMANCE INDEXES
+CREATE INDEX IF NOT EXISTS idx_assignments_grade ON public.assignments(grade);
+CREATE INDEX IF NOT EXISTS idx_assignments_subject ON public.assignments(subject);
+CREATE INDEX IF NOT EXISTS idx_assignments_due_date ON public.assignments(due_date);
+CREATE INDEX IF NOT EXISTS idx_submissions_assignment_id ON public.assignment_submissions(assignment_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_student_id ON public.assignment_submissions(student_id);
+
+-- 4. ROW LEVEL SECURITY & POLICIES (With Pre-Drop to Guarantee NO ERROR 42710)
+ALTER TABLE public.assignments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.assignment_submissions ENABLE ROW LEVEL SECURITY;
+
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.assignments TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.assignment_submissions TO anon, authenticated, service_role;
+
+DROP POLICY IF EXISTS "Public read assignments" ON public.assignments;
+CREATE POLICY "Public read assignments" ON public.assignments 
+  FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Admins and teachers manage assignments" ON public.assignments;
+CREATE POLICY "Admins and teachers manage assignments" ON public.assignments 
+  FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public read submissions" ON public.assignment_submissions;
+CREATE POLICY "Public read submissions" ON public.assignment_submissions 
+  FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Manage submissions" ON public.assignment_submissions;
+CREATE POLICY "Manage submissions" ON public.assignment_submissions 
+  FOR ALL USING (true) WITH CHECK (true);
+
+-- 5. REALTIME REPLICATION (Instant Multi-Device Sync)
+ALTER TABLE public.assignments REPLICA IDENTITY FULL;
+ALTER TABLE public.assignment_submissions REPLICA IDENTITY FULL;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'assignments'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.assignments;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'assignment_submissions'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.assignment_submissions;
+  END IF;
+END $$;
+
+-- 6. STORAGE BUCKET FOR ASSIGNMENT DOCUMENTS & PICTURES
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'storage') THEN
+    INSERT INTO storage.buckets (id, name, public)
+    VALUES ('assignments', 'assignments', true)
+    ON CONFLICT (id) DO NOTHING;
+
+    DROP POLICY IF EXISTS "Public can view assignment files" ON storage.objects;
+    CREATE POLICY "Public can view assignment files"
+      ON storage.objects FOR SELECT
+      USING (bucket_id = 'assignments');
+
+    DROP POLICY IF EXISTS "Authorized upload assignment files" ON storage.objects;
+    CREATE POLICY "Authorized upload assignment files"
+      ON storage.objects FOR INSERT
+      WITH CHECK (bucket_id = 'assignments');
+  END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+-- 7. INITIAL CURRICULUM SEED ASSIGNMENTS (BASIC 5 TO SS 3)
+INSERT INTO public.assignments (
+  id, title, subject, grade, description, assignment_type,
+  attachment_name, attachment_type, due_date, total_points, term, created_by, created_by_role
+)
+VALUES
+  (
+    'ASN-B5-001',
+    'Basic 5 Fractions, Decimals & Word Problems Practice',
+    'Mathematics',
+    'Basic 5',
+    'Answer all questions clearly in your homework notebooks:' || E'\\n' ||
+    '1. Simplify: 3/4 + 5/8 - 1/2.' || E'\\n' ||
+    '2. Convert 0.75 and 0.325 into common fractions in their lowest terms.' || E'\\n' ||
+    '3. A farmer harvested 240 bags of maize. He sold 3/5 of them in the Apata market and shared 1/4 of the remaining bags among his workers. How many bags are left?' || E'\\n' ||
+    '4. Calculate the perimeter and area of a rectangular school garden measuring 18.5m by 12.4m.',
+    'written',
+    NULL,
+    NULL,
+    timezone('utc'::text, now()) + interval '7 days',
+    50,
+    'First Term',
+    'School Administrator',
+    'admin'
+  ),
+  (
+    'ASN-JSS2-001',
+    'JSS 2 Narrative Essay: "The Importance of Hard Work & Faith in God"',
+    'English Language',
+    'JSS 2',
+    'Write an inspiring narrative essay of not less than 250 words on the topic: "The Importance of Hard Work & Faith in God".' || E'\\n\\n' ||
+    'Guidelines:' || E'\\n' ||
+    '- Introduce your setting and main character.' || E'\\n' ||
+    '- Describe a challenge faced and how perseverance, faith, and discipline brought success.' || E'\\n' ||
+    '- Ensure correct use of punctuation, paragraphing, and rich vocabulary.' || E'\\n' ||
+    '- Underline 5 modal verbs and 5 adjectives used in your story.',
+    'written',
+    NULL,
+    NULL,
+    timezone('utc'::text, now()) + interval '7 days',
+    50,
+    'First Term',
+    'School Administrator',
+    'admin'
+  ),
+  (
+    'ASN-JSS3-001',
+    'JSS 3 Basic Technology: Workshop Machine Tools & Safety Protocols (Diagram)',
+    'Basic Technology',
+    'JSS 3',
+    'Study the workshop machine and hand tools diagram. Identify all numbered items (1 to 10), state their primary safety rules, and describe proper care and storage techniques when working in the school wood and metal workshops.',
+    'picture',
+    'JSS3_Workshop_Tools_Diagram.png',
+    'picture',
+    timezone('utc'::text, now()) + interval '6 days',
+    40,
+    'First Term',
+    'School Administrator',
+    'admin'
+  ),
+  (
+    'ASN-SS1-001',
+    'SS 1 Physics: Linear Motion & Newton''s Laws Problem Worksheet',
+    'Physics',
+    'SSS 1',
+    'Download the attached worksheet. Solve the 8 numerical problems on Newton''s second law, impulse, and conservation of linear momentum. Show full step-by-step mathematical working with appropriate S.I. units for force, velocity, and acceleration.',
+    'document',
+    'SS1_Physics_Worksheet_Newton_Laws.pdf',
+    'document',
+    timezone('utc'::text, now()) + interval '8 days',
+    100,
+    'First Term',
+    'School Administrator',
+    'admin'
+  ),
+  (
+    'ASN-SS3-001',
+    'SS 3 Terminal Examination Preparatory Mock Revision Assessment',
+    'Mathematics',
+    'SSS 3',
+    'Comprehensive WAEC/NECO Standard Revision:' || E'\\n' ||
+    '- Section A: Solve the 10 theory problems on Quadratic Equations, Matrices, and Trigonometry.' || E'\\n' ||
+    '- Section B: Refer to the attached graph sheet diagram for question 7 (Circle Geometry theorem proof).' || E'\\n' ||
+    'Ensure all calculations are neat and legible.',
+    'hybrid',
+    'SS3_Circle_Geometry_Reference_Graph.png',
+    'picture',
+    timezone('utc'::text, now()) + interval '10 days',
+    100,
+    'First Term',
+    'School Administrator',
+    'admin'
+  )
+ON CONFLICT (id) DO UPDATE SET
+  title = EXCLUDED.title,
+  description = EXCLUDED.description,
+  due_date = EXCLUDED.due_date,
+  total_points = EXCLUDED.total_points;
+`;
+
+export const copyAssignmentsSql = async (): Promise<boolean> => {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(SUPABASE_ASSIGNMENTS_SQL);
+      return true;
+    }
+    const textArea = document.createElement('textarea');
+    textArea.value = SUPABASE_ASSIGNMENTS_SQL;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    return successful;
+  } catch (err) {
+    console.error('Failed to copy Assignments SQL to clipboard:', err);
+    return false;
+  }
+};
+
+export const downloadAssignmentsSql = (): void => {
+  triggerDownload(
+    'gods_hand_school_assignments_schema.sql',
+    SUPABASE_ASSIGNMENTS_SQL,
+    'application/sql;charset=utf-8;'
+  );
+};
+
+export const SUPABASE_COURSES_REALTIME_SQL = `-- ==============================================================================
+-- GOD'S HAND INTERNATIONAL MODEL SCHOOL
+-- STANDALONE COURSES & CURRICULUM REALTIME SYNC SQL
+-- Run this directly in Supabase SQL Editor: https://supabase.com/dashboard/project/_/sql
+-- ==============================================================================
+-- 🔒 FEATURES:
+--  - Real-time live synchronization across Admin, Teachers, and Student portals.
+--  - Adds public.courses to supabase_realtime publication.
+--  - Configures REPLICA IDENTITY FULL so edits & deletions sync instantly.
+--  - Pre-drops conflicting policies to guarantee NO ERROR 42710.
+-- ==============================================================================
+
+-- 1. COURSES / SUBJECTS TABLE
+CREATE TABLE IF NOT EXISTS public.courses (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  grade TEXT NOT NULL,
+  description TEXT,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Safe Column Migrations for Existing Tables
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS grade TEXT;
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now());
+
+-- 2. PERFORMANCE INDEXES
+CREATE INDEX IF NOT EXISTS idx_courses_grade ON public.courses(grade);
+CREATE INDEX IF NOT EXISTS idx_courses_name ON public.courses(name);
+
+-- 3. ROW LEVEL SECURITY (Pre-Drop to Avoid Error 42710)
+ALTER TABLE public.courses ENABLE ROW LEVEL SECURITY;
+
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.courses TO anon, authenticated, service_role;
+
+DROP POLICY IF EXISTS "Public read courses" ON public.courses;
+CREATE POLICY "Public read courses" ON public.courses 
+  FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Admins and teachers manage courses" ON public.courses;
+CREATE POLICY "Admins and teachers manage courses" ON public.courses 
+  FOR ALL USING (true) WITH CHECK (true);
+
+-- 4. ENABLE REALTIME BROADCASTING
+ALTER TABLE public.courses REPLICA IDENTITY FULL;
+
+DO $$
+BEGIN
+  -- Create supabase_realtime publication if not present
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
+
+  -- Add public.courses to realtime publication if not already added
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'courses'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.courses;
+  END IF;
+END $$;
+
+-- 5. INITIAL CURRICULUM SEED SUBJECTS (Basic to SS 3)
+INSERT INTO public.courses (id, name, grade, description)
+VALUES
+  ('crs-mth-p1', 'Mathematics', 'Primary 1', 'Basic arithmetic, counting, and simple shapes.'),
+  ('crs-eng-p1', 'English Language', 'Primary 1', 'Grammar, vocabulary, and basic phonetics.'),
+  ('crs-sci-p1', 'Basic Science', 'Primary 1', 'Introductory environmental and natural science.'),
+  ('crs-mth-b5', 'Mathematics', 'Basic 5', 'Fractions, decimals, word problems, and basic geometry.'),
+  ('crs-eng-b5', 'English Language', 'Basic 5', 'Comprehension, essay writing, and grammar.'),
+  ('crs-sci-b5', 'Basic Science & Technology', 'Basic 5', 'Living things, physical processes, and energy.'),
+  ('crs-mth-j1', 'Mathematics', 'JSS 1', 'Algebraic processes, geometry, and number bases.'),
+  ('crs-eng-j1', 'English Language', 'JSS 1', 'Grammar, oral English, and composition.'),
+  ('crs-btech-j1', 'Basic Technology', 'JSS 1', 'Woodwork, technical drawing, and materials.'),
+  ('crs-phy-s1', 'Physics', 'SSS 1', 'Mechanics, heat, and measurements in science.'),
+  ('crs-chm-s1', 'Chemistry', 'SSS 1', 'Atomic structure, chemical equations, and states of matter.'),
+  ('crs-bio-s1', 'Biology', 'SSS 1', 'Cell biology, taxonomy, and plant physiology.'),
+  ('crs-mth-s3', 'General Mathematics', 'SSS 3', 'Trigonometry, calculus, and WAEC/NECO revision.'),
+  ('crs-eng-s3', 'English Language', 'SSS 3', 'Lexis and structure, summary writing, and comprehension.')
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name,
+  grade = EXCLUDED.grade,
+  description = EXCLUDED.description;
+`;
+
+export const copyCoursesRealtimeSql = async (): Promise<boolean> => {
+  try {
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(SUPABASE_COURSES_REALTIME_SQL);
+      return true;
+    }
+    const textArea = document.createElement('textarea');
+    textArea.value = SUPABASE_COURSES_REALTIME_SQL;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    return successful;
+  } catch (err) {
+    console.error('Failed to copy Courses Realtime SQL to clipboard:', err);
+    return false;
+  }
+};
+
+export const downloadCoursesRealtimeSql = (): void => {
+  triggerDownload(
+    'gods_hand_school_courses_realtime.sql',
+    SUPABASE_COURSES_REALTIME_SQL,
+    'application/sql;charset=utf-8;'
+  );
+};
+
 
 
 

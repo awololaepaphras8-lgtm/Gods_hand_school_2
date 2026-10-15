@@ -28,7 +28,9 @@ import {
   CallSession,
   AdminRealtimeEvent,
   SchoolBankAccountConfig,
-  CallRecording
+  CallRecording,
+  Assignment,
+  AssignmentSubmission
 } from './types';
 import { stateService } from './services/stateService';
 import { setupRealtimeSync, fetchSupabaseState, realtimeService, isSupabaseConfigured } from './services/supabaseService';
@@ -51,6 +53,7 @@ import { AboutUs } from './components/AboutUs';
 import { WhatsAppChatWidget } from './components/WhatsAppChatWidget';
 import { PWADownloadPrompt } from './components/PWADownloadPrompt';
 import { StudentTimetableCard } from './components/StudentTimetableCard';
+import { StudentAssignmentsViewer } from './components/StudentAssignmentsViewer';
 import { ParentStaffMessaging } from './components/ParentStaffMessaging';
 import { SchoolCommunityHub } from './components/SchoolCommunityHub';
 import { RealtimeSqlViewerModal } from './components/RealtimeSqlViewerModal';
@@ -814,6 +817,55 @@ const App: React.FC = () => {
       };
     });
     realtimeService.registerParent(newParent);
+  };
+
+  const handleAddAssignment = (newAssignment: Assignment) => {
+    setState(prev => {
+      const next = {
+        ...prev,
+        assignments: [newAssignment, ...(prev.assignments || [])]
+      };
+      stateService.saveState(next);
+      return next;
+    });
+  };
+
+  const handleUpdateAssignment = (updated: Assignment) => {
+    setState(prev => {
+      const next = {
+        ...prev,
+        assignments: (prev.assignments || []).map(a => a.id === updated.id ? updated : a)
+      };
+      stateService.saveState(next);
+      return next;
+    });
+  };
+
+  const handleDeleteAssignment = (id: string) => {
+    setState(prev => {
+      const next = {
+        ...prev,
+        assignments: (prev.assignments || []).filter(a => a.id !== id)
+      };
+      stateService.saveState(next);
+      return next;
+    });
+  };
+
+  const handleSubmitAssignment = (submission: AssignmentSubmission) => {
+    setState(prev => {
+      const existing = prev.assignmentSubmissions || [];
+      const updated = [
+        submission,
+        ...existing.filter(s => s.id !== submission.id && !(s.assignmentId === submission.assignmentId && s.studentId === submission.studentId))
+      ];
+      const next = {
+        ...prev,
+        assignmentSubmissions: updated
+      };
+      stateService.saveState(next);
+      return next;
+    });
   };
 
   const handleStudentLogin = (emailOrId: string, pass: string): boolean => {
@@ -1639,42 +1691,52 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
                     <button 
                       onClick={() => setShowQRModal(true)}
-                      className="p-6 sm:p-8 bg-yellow-400 text-blue-900 rounded-[2rem] hover:bg-yellow-500 transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1"
+                      className="p-5 sm:p-6 bg-yellow-400 text-blue-900 rounded-[2rem] hover:bg-yellow-500 transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1"
                     >
-                        <span className="block text-4xl sm:text-5xl mb-2 group-hover:scale-110 transition-transform">🆔</span>
-                        <span className="font-black uppercase text-xs tracking-wider">Attendance QR</span>
+                        <span className="block text-3xl sm:text-4xl mb-2 group-hover:scale-110 transition-transform">🆔</span>
+                        <span className="font-black uppercase text-[11px] tracking-wider">Attendance QR</span>
                     </button>
                     <button 
                       onClick={() => {
                         const el = document.getElementById('student-timetable-section');
                         if (el) el.scrollIntoView({ behavior: 'smooth' });
                       }}
-                      className="p-6 sm:p-8 bg-blue-900 text-white rounded-[2rem] hover:bg-blue-800 transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1 border-2 border-yellow-400/40"
+                      className="p-5 sm:p-6 bg-blue-900 text-white rounded-[2rem] hover:bg-blue-800 transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1 border-2 border-yellow-400/40"
                     >
-                        <span className="block text-4xl sm:text-5xl mb-2 text-yellow-400 group-hover:scale-110 transition-transform">🗓️</span>
-                        <span className="font-black uppercase text-xs tracking-wider">Class Timetable</span>
+                        <span className="block text-3xl sm:text-4xl mb-2 text-yellow-400 group-hover:scale-110 transition-transform">🗓️</span>
+                        <span className="font-black uppercase text-[11px] tracking-wider">Timetable</span>
+                    </button>
+                    <button 
+                      onClick={() => {
+                        const el = document.getElementById('student-assignments-section');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="p-5 sm:p-6 bg-amber-500 text-blue-950 rounded-[2rem] hover:bg-amber-400 transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1 border-2 border-amber-600/30"
+                    >
+                        <span className="block text-3xl sm:text-4xl mb-2 group-hover:scale-110 transition-transform">📝</span>
+                        <span className="font-black uppercase text-[11px] tracking-wider">Assignments</span>
                     </button>
                     <button 
                       onClick={() => {
                         const el = document.getElementById('student-timetable-section');
                         if (el) el.scrollIntoView({ behavior: 'smooth' });
                       }}
-                      className="p-6 sm:p-8 bg-slate-800 text-white rounded-[2rem] hover:bg-slate-700 transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1"
+                      className="p-5 sm:p-6 bg-slate-800 text-white rounded-[2rem] hover:bg-slate-700 transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1"
                     >
-                        <span className="block text-4xl sm:text-5xl mb-2 text-yellow-400 group-hover:scale-110 transition-transform">📚</span>
-                        <span className="font-black uppercase text-xs tracking-wider">Subjects</span>
+                        <span className="block text-3xl sm:text-4xl mb-2 text-yellow-400 group-hover:scale-110 transition-transform">📚</span>
+                        <span className="font-black uppercase text-[11px] tracking-wider">Subjects</span>
                     </button>
                     <button 
                         onClick={() => setView('apply')}
-                        className={`p-6 sm:p-8 rounded-[2rem] transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1 ${paymentProgress < 100 ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-green-50 text-green-700 border-2 border-green-200 cursor-default'}`}
+                        className={`p-5 sm:p-6 rounded-[2rem] transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1 ${paymentProgress < 100 ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-green-50 text-green-700 border-2 border-green-200 cursor-default'}`}
                     >
-                        <span className="block text-4xl sm:text-5xl mb-2 group-hover:scale-110 transition-transform">
+                        <span className="block text-3xl sm:text-4xl mb-2 group-hover:scale-110 transition-transform">
                           {paymentProgress < 100 ? '₦' : '✅'}
                         </span>
-                        <span className="font-black uppercase text-xs tracking-wider">
+                        <span className="font-black uppercase text-[11px] tracking-wider">
                           {paymentProgress < 100 ? 'Pay Fees' : 'Fees Settled'}
                         </span>
                     </button>
@@ -1855,6 +1917,16 @@ const App: React.FC = () => {
                     grade={currentStudentObj.grade}
                     activeTerm={currentStudentObj.activeTerm || 'First Term'}
                     timetables={state.timetables || []}
+                  />
+                </div>
+
+                {/* Class Homework & Assignments (Basic 5 to SS 3) */}
+                <div id="student-assignments-section" className="mt-8 text-left">
+                  <StudentAssignmentsViewer
+                    student={currentStudentObj}
+                    assignments={state.assignments || []}
+                    submissions={state.assignmentSubmissions || []}
+                    onSubmitAnswer={handleSubmitAssignment}
                   />
                 </div>
 
@@ -2189,6 +2261,10 @@ const App: React.FC = () => {
                 onUpdateStudentBalance={handleUpdateStudentBalance}
                 onAddStudent={handleAddStudentAccount}
                 onAddParent={handleAddParentAccount}
+                assignments={state.assignments || []}
+                onAddAssignment={handleAddAssignment}
+                onUpdateAssignment={handleUpdateAssignment}
+                onDeleteAssignment={handleDeleteAssignment}
               />
             </div>
           ) : (role === UserRole.TEACHER && activeTeacherDelegation) ? (
@@ -2239,6 +2315,10 @@ const App: React.FC = () => {
                 onUpdateStudentBalance={handleUpdateStudentBalance}
                 onAddStudent={handleAddStudentAccount}
                 onAddParent={handleAddParentAccount}
+                assignments={state.assignments || []}
+                onAddAssignment={handleAddAssignment}
+                onUpdateAssignment={handleUpdateAssignment}
+                onDeleteAssignment={handleDeleteAssignment}
                 onExitDelegation={() => {
                   setView('teacher');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2306,6 +2386,10 @@ const App: React.FC = () => {
                 onUpdateStudentBalance={handleUpdateStudentBalance}
                 onAddStudent={handleAddStudentAccount}
                 onAddParent={handleAddParentAccount}
+                assignments={state.assignments || []}
+                onAddAssignment={handleAddAssignment}
+                onUpdateAssignment={handleUpdateAssignment}
+                onDeleteAssignment={handleDeleteAssignment}
                 initialTab="attendanceScanning"
               />
             </div>
