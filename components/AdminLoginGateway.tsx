@@ -8,6 +8,7 @@ import {
   resetFailedAttempts 
 } from '../utils/securityGuard';
 import { verifyAdminSecurityKey, setAdminSecurityKeyHash } from '../utils/adminSecurity';
+import { DedicatedAppInstallModal } from './DedicatedAppInstallModal';
 
 interface AdminLoginGatewayProps {
   onLogin: (email: string, password: string) => void;
@@ -25,6 +26,7 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showAdminAppModal, setShowAdminAppModal] = useState(false);
   const [securityAlert, setSecurityAlert] = useState<string | null>(null);
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
   
@@ -296,6 +298,15 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
                 </svg>
               </button>
 
+              <button
+                type="button"
+                onClick={() => setShowAdminAppModal(true)}
+                className="w-full py-3 bg-yellow-50 hover:bg-yellow-100 text-blue-950 font-black text-xs uppercase tracking-wider rounded-2xl border-2 border-yellow-400 transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 cursor-pointer"
+              >
+                <span>📲</span>
+                <span>Download Admin App (Direct Access Next Time)</span>
+              </button>
+
               <button 
                 type="button"
                 onClick={onBack}
@@ -456,6 +467,12 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
           </div>
         </div>
       )}
+      {/* Dedicated Proprietor Admin App Download Modal */}
+      <DedicatedAppInstallModal
+        isOpen={showAdminAppModal}
+        onClose={() => setShowAdminAppModal(false)}
+        role="admin"
+      />
     </div>
   );
 };

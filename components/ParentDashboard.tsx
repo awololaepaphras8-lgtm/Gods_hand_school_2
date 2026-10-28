@@ -16,6 +16,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { StandardReportCard } from './StandardReportCard';
 import { StudentPhotoUploadModal } from './StudentPhotoUploadModal';
 import { downloadQrCodeImage } from '../utils/exportService';
+import { generateSecureTempPassword } from '../utils/authSecurity';
 
 interface ParentDashboardProps {
   parent: ParentAccount;
@@ -83,7 +84,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   const [newChildName, setNewChildName] = useState('');
   const [newChildGrade, setNewChildGrade] = useState<GradeLevel>('Primary 1');
   const [newChildEmail, setNewChildEmail] = useState('');
-  const [newChildPassword, setNewChildPassword] = useState('student123');
+  const [newChildPassword, setNewChildPassword] = useState('');
 
   // Fee Payment Form
   const [paymentType, setPaymentType] = useState<PaymentType>('full');
@@ -177,7 +178,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
       name: newChildName.trim(),
       grade: newChildGrade,
       email: emailToUse,
-      password: newChildPassword || 'student123'
+      password: newChildPassword.trim() || generateSecureTempPassword()
     });
 
     setShowAddChildModal(false);

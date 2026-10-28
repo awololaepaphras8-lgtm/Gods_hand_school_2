@@ -6,6 +6,7 @@ import {
   checkRateLimit 
 } from '../utils/securityGuard';
 import { verifyAdminSecurityKey } from '../utils/adminSecurity';
+import { DedicatedAppInstallModal } from './DedicatedAppInstallModal';
 
 interface TeacherLoginGatewayProps {
   onLogin: (username: string, password: string) => void;
@@ -23,6 +24,7 @@ export const TeacherLoginGateway: React.FC<TeacherLoginGatewayProps> = ({
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showStaffAppModal, setShowStaffAppModal] = useState(false);
   const [securityAlert, setSecurityAlert] = useState<string | null>(null);
   
   // Rate limiting lockout state
@@ -258,6 +260,15 @@ export const TeacherLoginGateway: React.FC<TeacherLoginGatewayProps> = ({
                 Login to Staff Dashboard
               </button>
 
+              <button
+                type="button"
+                onClick={() => setShowStaffAppModal(true)}
+                className="w-full py-3 bg-yellow-50 hover:bg-yellow-100 text-blue-950 font-black text-xs uppercase tracking-wider rounded-2xl border-2 border-yellow-400 transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 cursor-pointer"
+              >
+                <span>📲</span>
+                <span>Download Staff App (Go Straight Here Next Time)</span>
+              </button>
+
               <button 
                 type="button"
                 onClick={onBack}
@@ -405,6 +416,12 @@ export const TeacherLoginGateway: React.FC<TeacherLoginGatewayProps> = ({
           </div>
         </div>
       )}
+      {/* Dedicated Staff App Download Modal */}
+      <DedicatedAppInstallModal
+        isOpen={showStaffAppModal}
+        onClose={() => setShowStaffAppModal(false)}
+        role="staff"
+      />
     </div>
   );
 };

@@ -15,20 +15,31 @@ import {
   SUPABASE_ASSIGNMENTS_SQL,
   downloadAssignmentsSql,
   SUPABASE_COURSES_REALTIME_SQL,
-  downloadCoursesRealtimeSql
+  downloadCoursesRealtimeSql,
+  SUPABASE_STAFF_ASSIGNMENT_SQL,
+  copyStaffAssignmentSql,
+  downloadStaffAssignmentSql
 } from '../utils/supabaseSqlExport';
 
 interface RealtimeSqlViewerModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: string;
 }
 
 export const RealtimeSqlViewerModal: React.FC<RealtimeSqlViewerModalProps> = ({
   isOpen,
-  onClose
+  onClose,
+  initialTab
 }) => {
-  const [activeTab, setActiveTab] = useState<'all' | 'coursesRealtime' | 'assignments' | 'accountCreation' | 'timetableQr' | 'staffAdmin' | 'bankAccount' | 'attendance' | 'videoRecordings' | 'adminRealtime' | 'chatCalls'>('coursesRealtime');
+  const [activeTab, setActiveTab] = useState<'all' | 'staffAssignments' | 'coursesRealtime' | 'assignments' | 'accountCreation' | 'timetableQr' | 'staffAdmin' | 'bankAccount' | 'attendance' | 'videoRecordings' | 'adminRealtime' | 'chatCalls'>((initialTab as any) || 'staffAssignments');
   const [copySuccess, setCopySuccess] = useState(false);
+
+  React.useEffect(() => {
+    if (initialTab && isOpen) {
+      setActiveTab(initialTab as any);
+    }
+  }, [initialTab, isOpen]);
 
   if (!isOpen) return null;
 
@@ -537,6 +548,7 @@ ON CONFLICT (id) DO NOTHING;
 `;
 
   const activeSqlToDisplay = 
+    activeTab === 'staffAssignments' ? SUPABASE_STAFF_ASSIGNMENT_SQL :
     activeTab === 'coursesRealtime' ? SUPABASE_COURSES_REALTIME_SQL :
     activeTab === 'assignments' ? SUPABASE_ASSIGNMENTS_SQL :
     activeTab === 'all' ? SUPABASE_MASTER_SQL_SCHEMA :
@@ -597,6 +609,18 @@ ON CONFLICT (id) DO NOTHING;
 
         {/* Tab Selection */}
         <div className="flex items-center gap-2 pt-4 pb-3 overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => setActiveTab('staffAssignments')}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+              activeTab === 'staffAssignments'
+                ? 'bg-blue-900 text-yellow-400 shadow-sm'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            👨‍🏫 Staff Class / Subject Assignment SQL
+          </button>
+
           <button
             type="button"
             onClick={() => setActiveTab('all')}

@@ -54,6 +54,22 @@ export default defineConfig(({ mode }) => {
                 type: "image/png",
                 purpose: "maskable"
               }
+            ],
+            shortcuts: [
+              {
+                name: "Proprietor Admin Panel",
+                short_name: "Admin App",
+                description: "Direct entry to Proprietor Admin Panel",
+                url: "/?app_entry=admin",
+                icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }]
+              },
+              {
+                name: "Staff Faculty Desk",
+                short_name: "Staff App",
+                description: "Direct entry to Staff & Teacher Portal",
+                url: "/?app_entry=staff",
+                icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }]
+              }
             ]
           },
           workbox: {

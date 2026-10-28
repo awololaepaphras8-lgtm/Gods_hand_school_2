@@ -2,6 +2,7 @@
 import { AppState, UserPagesAccessState, SchoolBankAccountConfig, CallRecording } from '../types';
 import { INITIAL_FEES, APP_STORAGE_KEY, DEFAULT_BANK_ACCOUNT_CONFIG } from '../constants';
 import { INITIAL_DEFAULT_TIMETABLES } from '../constants/timetableDefaults';
+import { INITIAL_STUDENT_HASH, INITIAL_PARENT_HASH } from '../utils/authSecurity';
 
 const DEFAULT_STATE: AppState = {
   fees: INITIAL_FEES,
@@ -21,7 +22,7 @@ const DEFAULT_STATE: AppState = {
       id: 'GHS20268001',
       name: 'Samuel Adebayo',
       email: 'samuel@Godshand.sch.ng',
-      password: 'student123',
+      password: INITIAL_STUDENT_HASH,
       grade: 'Primary 4',
       createdAt: new Date().toISOString(),
       entryAllowed: true,
@@ -32,7 +33,7 @@ const DEFAULT_STATE: AppState = {
       id: 'GHS202611001',
       name: 'Grace Adebayo',
       email: 'grace@Godshand.sch.ng',
-      password: 'student123',
+      password: INITIAL_STUDENT_HASH,
       grade: 'JSS 2',
       createdAt: new Date().toISOString(),
       entryAllowed: true,
@@ -46,7 +47,7 @@ const DEFAULT_STATE: AppState = {
       fullName: 'Mrs. Folashade Adebayo',
       email: 'parent@Godshand.sch.ng',
       phone: '08034567890',
-      password: 'parent123',
+      password: INITIAL_PARENT_HASH,
       relationship: 'Mother',
       address: 'Oluwatedo Area, Wire & Cable, Apata, Ibadan',
       childrenStudentIds: ['GHS20268001', 'GHS202611001', 'STU-1', 'STU-2'],

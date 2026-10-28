@@ -28,6 +28,7 @@ interface SchoolCommunityHubProps {
   onSendChatMessage: (msg: Omit<ChatChannelMessage, 'id' | 'timestamp'>) => void;
   onEditChatMessage?: (messageId: string, newMessage: string) => void;
   onDeleteChatMessage?: (messageId: string) => void;
+  onDeleteMultipleChatMessages?: (messageIds: string[]) => void;
   onCreateMeeting: (meeting: Omit<MeetingSession, 'id' | 'createdAt'>) => void;
   onInitiateCall: (receiverId: string, receiverName: string, receiverRole: UserRole, type: 'voice' | 'video') => void;
   onUpdateCallStatus?: (callId: string, status: CallSession['status']) => void;
@@ -51,6 +52,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
   onSendChatMessage,
   onEditChatMessage,
   onDeleteChatMessage,
+  onDeleteMultipleChatMessages,
   onCreateMeeting,
   onInitiateCall,
   onUpdateCallStatus,
@@ -241,6 +243,42 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingMessageText, setEditingMessageText] = useState<string>('');
   const longPressTimerRef = useRef<any>(null);
+
+  // Message selection state for bulk deleting selected chat messages
+  const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
+  const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
+
+  const handleToggleSelectMessage = (msgId: string) => {
+    setSelectedMessageIds(prev => 
+      prev.includes(msgId) ? prev.filter(id => id !== msgId) : [...prev, msgId]
+    );
+  };
+
+  const handleSelectAllMyMessages = () => {
+    const myMsgIds = (chatMessages || [])
+      .filter(m => m.channelId === (activeChannel?.id || 'general'))
+      .filter(m => m.senderName === currentUserName || m.senderId === currentUserId || currentUserRole === UserRole.ADMIN)
+      .map(m => m.id);
+    setSelectedMessageIds(myMsgIds);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedMessageIds([]);
+    setIsSelectionMode(false);
+  };
+
+  const handleDeleteSelectedMessages = () => {
+    if (selectedMessageIds.length === 0) return;
+    if (window.confirm(`Delete ${selectedMessageIds.length} selected message(s)? This will remove them for everyone in the school community.`)) {
+      if (onDeleteMultipleChatMessages) {
+        onDeleteMultipleChatMessages(selectedMessageIds);
+      } else if (onDeleteChatMessage) {
+        selectedMessageIds.forEach(id => onDeleteChatMessage(id));
+      }
+      setSelectedMessageIds([]);
+      setIsSelectionMode(false);
+    }
+  };
 
   // Close context menu on outside click
   useEffect(() => {
@@ -1024,17 +1062,79 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                 </div>
               </div>
 
-              {/* Message Search in Channel */}
-              <div className="w-full sm:w-56">
-                <input
-                  type="text"
-                  value={searchChat}
-                  onChange={e => setSearchChat(e.target.value)}
-                  placeholder="Search messages..."
-                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                />
+              {/* Message Search & Select Actions */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="w-full sm:w-48">
+                  <input
+                    type="text"
+                    value={searchChat}
+                    onChange={e => setSearchChat(e.target.value)}
+                    placeholder="Search messages..."
+                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isSelectionMode) {
+                      handleClearSelection();
+                    } else {
+                      setIsSelectionMode(true);
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all border flex items-center gap-1 cursor-pointer ${
+                    isSelectionMode
+                      ? 'bg-amber-400 text-blue-950 border-amber-500 shadow-sm'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                  }`}
+                  title={isSelectionMode ? "Exit message selection" : "Select messages to delete"}
+                >
+                  <span>{isSelectionMode ? '✕ Cancel' : '☑️ Select'}</span>
+                </button>
               </div>
             </div>
+
+            {/* Floating Selection Bar for Multi-Delete */}
+            {isSelectionMode && (
+              <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-md animate-in fade-in">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-amber-950 uppercase tracking-wide">
+                    📌 {selectedMessageIds.length} message(s) selected
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleSelectAllMyMessages}
+                    className="text-[11px] font-bold text-blue-900 underline hover:text-blue-700 cursor-pointer ml-1"
+                  >
+                    Select All Mine
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={selectedMessageIds.length === 0}
+                    onClick={handleDeleteSelectedMessages}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5 ${
+                      selectedMessageIds.length > 0
+                        ? 'bg-red-600 hover:bg-red-700 text-white cursor-pointer active:scale-95'
+                        : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    }`}
+                  >
+                    <span>🗑️</span>
+                    <span>Delete Selected ({selectedMessageIds.length})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClearSelection}
+                    className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 cursor-pointer"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Chat Stream Window */}
             <div className="bg-slate-50 rounded-3xl p-5 sm:p-6 border-2 border-slate-200/80 shadow-inner min-h-[420px] max-h-[500px] overflow-y-auto space-y-4">
@@ -1050,6 +1150,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                 channelMessages.map(msg => {
                   const isSentByMe = msg.senderName === currentUserName || (currentUserRole === msg.senderRole && msg.senderId === currentUserId);
                   const canManage = isSentByMe || currentUserRole === UserRole.ADMIN;
+                  const isSelected = selectedMessageIds.includes(msg.id);
                   const roleBadgeColor = 
                     msg.senderRole === UserRole.ADMIN ? 'bg-amber-100 text-amber-900 border-amber-300' :
                     msg.senderRole === UserRole.TEACHER ? 'bg-blue-100 text-blue-900 border-blue-200' :
@@ -1070,6 +1171,15 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                       className={`flex flex-col ${isSentByMe ? 'items-end' : 'items-start'} space-y-1 relative group`}
                     >
                       <div className="flex items-center gap-2 mb-0.5 text-[10px] font-bold text-slate-400">
+                        {isSelectionMode && canManage && (
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleToggleSelectMessage(msg.id)}
+                            className="w-4 h-4 rounded text-blue-900 accent-blue-900 cursor-pointer"
+                            title="Select message"
+                          />
+                        )}
                         <span className={`px-1.5 py-0.2 rounded-md font-black uppercase text-[8px] border ${roleBadgeColor}`}>
                           {msg.senderRole}
                         </span>
@@ -1162,6 +1272,11 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
 
                       {/* Message Bubble Container with Long-Press & Right-Click events */}
                       <div 
+                        onClick={() => {
+                          if (isSelectionMode && canManage) {
+                            handleToggleSelectMessage(msg.id);
+                          }
+                        }}
                         onContextMenu={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -1182,8 +1297,8 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                           isSentByMe
                             ? 'bg-blue-900 text-white rounded-tr-xs'
                             : 'bg-white text-slate-800 border border-slate-200 rounded-tl-xs'
-                        } ${isContextMenuOpen ? 'ring-2 ring-yellow-400' : ''}`}
-                        title="Right-click or Long-press to react or edit/delete"
+                        } ${isContextMenuOpen ? 'ring-2 ring-yellow-400' : ''} ${isSelected ? 'ring-4 ring-amber-400 bg-amber-900/90 text-white' : ''}`}
+                        title={isSelectionMode ? "Click to toggle selection" : "Hover or tap for Edit/Delete"}
                       >
                         {isEditing ? (
                           <div className="space-y-2 select-text cursor-auto" onClick={e => e.stopPropagation()}>
@@ -1221,18 +1336,52 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                             <p className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed font-medium">
                               {msg.message}
                             </p>
-                            {/* Desktop hover action trigger */}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveContextMenuMsgId(isContextMenuOpen ? null : msg.id);
-                              }}
-                              className={`absolute top-2 ${isSentByMe ? 'left-2' : 'right-2'} opacity-0 group-hover:opacity-100 transition-opacity p-1 text-slate-400 hover:text-yellow-400 text-xs`}
-                              title="Reaction / Options"
-                            >
-                              •••
-                            </button>
+                            {/* Desktop hover action trigger with direct Edit and Delete */}
+                            {!isSelectionMode && (
+                              <div className={`absolute top-2 ${isSentByMe ? 'left-2' : 'right-2'} opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-black/60 backdrop-blur-xs rounded-xl px-1.5 py-0.5 shadow-md`}>
+                                {canManage && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingMessageId(msg.id);
+                                        setEditingMessageText(msg.message);
+                                        setActiveContextMenuMsgId(null);
+                                      }}
+                                      className="p-1 text-yellow-300 hover:text-yellow-100 text-xs transition-transform hover:scale-110"
+                                      title="Edit message"
+                                    >
+                                      ✏️
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (window.confirm('Delete this message for everyone?')) {
+                                          if (onDeleteChatMessage) onDeleteChatMessage(msg.id);
+                                        }
+                                      }}
+                                      className="p-1 text-red-300 hover:text-red-100 text-xs transition-transform hover:scale-110"
+                                      title="Delete message"
+                                    >
+                                      🗑️
+                                    </button>
+                                  </>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveContextMenuMsgId(isContextMenuOpen ? null : msg.id);
+                                  }}
+                                  className="p-1 text-slate-200 hover:text-yellow-400 text-xs transition-transform hover:scale-110"
+                                  title="Reaction / Options"
+                                >
+                                  •••
+                                </button>
+                              </div>
+                            )}
                           </>
                         )}
                       </div>

@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { FeeStructure, StudentApplication, Announcement, TeacherAccount, StudentResult, Course, GradeLevel, AttendanceRecord, StudentAccount, FeePayment, StaffPagePermission, ALL_STAFF_PAGES, AppState, ParentAccount, ResultPublishRequest, TimedStaffDelegation, AdminSectionKey, UserPagesAccessState, Assignment } from '../types';
+import { FeeStructure, StudentApplication, Announcement, TeacherAccount, TeacherAssignmentRole, StudentResult, Course, GradeLevel, AttendanceRecord, StudentAccount, FeePayment, StaffPagePermission, ALL_STAFF_PAGES, AppState, ParentAccount, ResultPublishRequest, TimedStaffDelegation, AdminSectionKey, UserPagesAccessState, Assignment } from '../types';
 import { AdminAssignmentsManager } from './AdminAssignmentsManager';
-import { GRADE_GROUPS, GRADE_ORDER } from '../constants';
+import { GRADE_GROUPS, GRADE_ORDER, STANDARD_SUBJECTS } from '../constants';
 import { PaymentReviewDashboard } from './PaymentReviewDashboard';
 import { AdminStaffDelegationManager } from './AdminStaffDelegationManager';
 import { UserPageAccessManager } from './UserPageAccessManager';
@@ -27,7 +27,10 @@ import {
 import {
   downloadSupabaseSchemaSql,
   copySupabaseSchemaSql,
-  SUPABASE_MASTER_SQL_SCHEMA
+  SUPABASE_MASTER_SQL_SCHEMA,
+  SUPABASE_STAFF_ASSIGNMENT_SQL,
+  copyStaffAssignmentSql,
+  downloadStaffAssignmentSql
 } from '../utils/supabaseSqlExport';
 import { RealtimeSqlViewerModal } from './RealtimeSqlViewerModal';
 import { ProphDatabaseAuditorModal } from './ProphDatabaseAuditorModal';
@@ -36,6 +39,8 @@ import { RecommendedCoursesLibrary } from './RecommendedCoursesLibrary';
 import { AdminBankAccountManager } from './AdminBankAccountManager';
 import { AttendanceCameraScanner } from './AttendanceCameraScanner';
 import { SchoolBankAccountConfig } from '../types';
+import { DedicatedAppInstallModal } from './DedicatedAppInstallModal';
+import { generateSecureTempPassword } from '../utils/authSecurity';
 
 interface AdminPanelProps {
   fees: FeeStructure;
@@ -79,6 +84,7 @@ interface AdminPanelProps {
   onUpdateCalendar: (content: string) => void;
   onToggleStudentEntry: (studentId: string, allowed: boolean) => void;
   onUpdateTeacherPermissions?: (teacherId: string, allowedPages: StaffPagePermission[]) => void;
+  onUpdateTeacher?: (teacherId: string, updates: Partial<TeacherAccount>) => void;
   onDeleteTeacher?: (teacherId: string) => void;
   onAdminUnlinkChild?: (parentId: string, studentId: string) => void;
   onConfirmPayment?: (paymentId: string, adminNote?: string) => void;
@@ -122,6 +128,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onUpdateAnnouncement,
   onDeleteAnnouncement,
   onCreateTeacher,
+  onUpdateTeacher,
   onAddCourse,
   onDuplicateCourse,
   onUpdateCalendar,
@@ -188,16 +195,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const initials = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '');
     const studentId = `GHS-${adminPupilGrade.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
     const studentEmail = `${initials}.${Math.floor(100 + Math.random() * 900)}@godshand.edu.ng`;
+    const tempStudentPass = generateSecureTempPassword();
 
     let parentObj: ParentAccount | undefined = undefined;
     if (adminPupilCreateParent && (adminPupilParentName.trim() || adminPupilParentPhone.trim() || adminPupilParentEmail.trim())) {
       const parentId = `PAR-${Math.floor(1000 + Math.random() * 9000)}`;
+      const tempParentPass = generateSecureTempPassword();
       parentObj = {
         id: parentId,
         fullName: adminPupilParentName.trim() || `${cleanName}'s Parent`,
         email: adminPupilParentEmail.trim() || `${initials}.parent@godshand.edu.ng`,
         phone: adminPupilParentPhone.trim() || '08000000000',
-        password: 'parent123',
+        password: tempParentPass,
         relationship: adminPupilParentRel,
         childrenStudentIds: [studentId],
         createdAt: new Date().toISOString()
@@ -210,7 +219,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       name: cleanName,
       grade: adminPupilGrade,
       email: studentEmail,
-      password: 'student123',
+      password: tempStudentPass,
       entryAllowed: true,
       activeTerm: activeTerm,
       qrCodeVersion: 1,
@@ -222,7 +231,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     };
 
     onAddStudent?.(newStudent);
-    alert(`✓ Pupil Account Successfully Provisioned by Admin!\n\nName: ${cleanName}\nClass: ${adminPupilGrade}\nStudent ID: ${studentId}\nDefault Password: student123\n\nSynchronized to database in real-time.`);
+    alert(`✓ Pupil Account Successfully Provisioned by Admin!\n\nName: ${cleanName}\nClass: ${adminPupilGrade}\nStudent ID: ${studentId}\nTemporary Password: ${tempStudentPass}\n\nSynchronized to database in real-time.`);
     setAdminPupilName('');
     setAdminPupilParentEmail('');
     setAdminPupilParentPhone('');
@@ -238,19 +247,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       return;
     }
     const parentId = `PAR-${Math.floor(1000 + Math.random() * 9000)}`;
+    const tempParentPass = generateSecureTempPassword();
     const newParent: ParentAccount = {
       id: parentId,
       fullName: adminParentName.trim(),
       email: adminParentEmail.trim().toLowerCase(),
       phone: adminParentPhone.trim() || '08000000000',
-      password: 'parent123',
+      password: tempParentPass,
       relationship: adminParentRel,
       address: adminParentAddress.trim(),
       childrenStudentIds: adminParentSelectedPupils,
       createdAt: new Date().toISOString()
     };
     onAddParent?.(newParent);
-    alert(`✓ Parent Account Successfully Provisioned by Admin!\n\nName: ${newParent.fullName}\nParent ID: ${parentId}\nLogin Email: ${newParent.email}\nPhone: ${newParent.phone}\nPassword: parent123\n\nLinked to ${adminParentSelectedPupils.length} pupil(s). Synchronized in real-time.`);
+    alert(`✓ Parent Account Successfully Provisioned by Admin!\n\nName: ${newParent.fullName}\nParent ID: ${parentId}\nLogin Email: ${newParent.email}\nPhone: ${newParent.phone}\nTemporary Password: ${tempParentPass}\n\nLinked to ${adminParentSelectedPupils.length} pupil(s). Synchronized in real-time.`);
     setAdminParentName('');
     setAdminParentEmail('');
     setAdminParentPhone('');
@@ -259,6 +269,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setShowAdminAddParentModal(false);
   };
 
+  const [showAdminAppDownloadModal, setShowAdminAppDownloadModal] = useState(false);
   const [editingBalanceStudentId, setEditingBalanceStudentId] = useState<string | null>(null);
   const [inputBalanceValue, setInputBalanceValue] = useState<string>('');
   const [balanceSaveSuccessId, setBalanceSaveSuccessId] = useState<string | null>(null);
@@ -291,11 +302,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [annSaveMsg, setAnnSaveMsg] = useState('');
   const [teacherUser, setTeacherUser] = useState('');
   const [teacherPass, setTeacherPass] = useState('');
+  const [staffAssignmentRole, setStaffAssignmentRole] = useState<TeacherAssignmentRole>('class_teacher');
   const [assignedGrades, setAssignedGrades] = useState<GradeLevel[]>([]);
+  const [assignedSubjects, setAssignedSubjects] = useState<string[]>([]);
+  const [customSubjectInput, setCustomSubjectInput] = useState<string>('');
   const [assignedCourses, setAssignedCourses] = useState<string[]>([]);
   const [canCreateStudents, setCanCreateStudents] = useState<boolean>(false);
   const [selectedNewPermissions, setSelectedNewPermissions] = useState<StaffPagePermission[]>(ALL_STAFF_PAGES.map(p => p.id));
   const [editingTeacherId, setEditingTeacherId] = useState<string | null>(null);
+
+  // Edit Teacher Assignment Modal State
+  const [editingTeacherForAssignment, setEditingTeacherForAssignment] = useState<TeacherAccount | null>(null);
+  const [editAssignmentRole, setEditAssignmentRole] = useState<TeacherAssignmentRole>('class_teacher');
+  const [editAssignedGrades, setEditAssignedGrades] = useState<GradeLevel[]>([]);
+  const [editAssignedSubjects, setEditAssignedSubjects] = useState<string[]>([]);
+  const [editCustomSubject, setEditCustomSubject] = useState<string>('');
+  const [editCanCreateStudents, setEditCanCreateStudents] = useState<boolean>(false);
+
+  // Staff Assignment SQL quick viewer
+  const [sqlModalTab, setSqlModalTab] = useState<string>('staffAssignments');
+  const [staffSqlCopied, setStaffSqlCopied] = useState(false);
+  const [showInlineStaffSql, setShowInlineStaffSql] = useState(false);
+
   const [courseName, setCourseName] = useState('');
   const [courseGrade, setCourseGrade] = useState<GradeLevel>('Primary 1');
   const [courseDesc, setCourseDesc] = useState('');
@@ -309,6 +337,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     if (ok) {
       setSqlCopied(true);
       setTimeout(() => setSqlCopied(false), 3000);
+    }
+  };
+
+  const handleCopyStaffAssignmentSql = async () => {
+    const ok = await copyStaffAssignmentSql();
+    if (ok) {
+      setStaffSqlCopied(true);
+      setTimeout(() => setStaffSqlCopied(false), 3000);
     }
   };
 
@@ -452,6 +488,62 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setAssignedGrades(prev => prev.includes(g) ? prev.filter(item => item !== g) : [...prev, g]);
   };
 
+  const toggleSubject = (s: string) => {
+    setAssignedSubjects(prev => prev.includes(s) ? prev.filter(item => item !== s) : [...prev, s]);
+  };
+
+  const handleAddCustomSubject = () => {
+    const trimmed = customSubjectInput.trim();
+    if (trimmed && !assignedSubjects.includes(trimmed)) {
+      setAssignedSubjects(prev => [...prev, trimmed]);
+      setCustomSubjectInput('');
+    }
+  };
+
+  const toggleEditGrade = (g: GradeLevel) => {
+    setEditAssignedGrades(prev => prev.includes(g) ? prev.filter(item => item !== g) : [...prev, g]);
+  };
+
+  const toggleEditSubject = (s: string) => {
+    setEditAssignedSubjects(prev => prev.includes(s) ? prev.filter(item => item !== s) : [...prev, s]);
+  };
+
+  const handleAddEditCustomSubject = () => {
+    const trimmed = editCustomSubject.trim();
+    if (trimmed && !editAssignedSubjects.includes(trimmed)) {
+      setEditAssignedSubjects(prev => [...prev, trimmed]);
+      setEditCustomSubject('');
+    }
+  };
+
+  const openEditTeacherAssignmentModal = (teacher: TeacherAccount) => {
+    const initialRole: TeacherAssignmentRole = teacher.assignmentRole || 
+      (teacher.assignedSubjects && teacher.assignedSubjects.length > 0 && teacher.assignedGrades && teacher.assignedGrades.length > 0 ? 'both' :
+       teacher.assignedSubjects && teacher.assignedSubjects.length > 0 ? 'subject_teacher' : 'class_teacher');
+    setEditingTeacherForAssignment(teacher);
+    setEditAssignmentRole(initialRole);
+    setEditAssignedGrades(teacher.assignedGrades || []);
+    setEditAssignedSubjects(teacher.assignedSubjects || []);
+    setEditCanCreateStudents(!!teacher.canCreateStudents);
+    setEditCustomSubject('');
+  };
+
+  const handleSaveTeacherAssignment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTeacherForAssignment) return;
+
+    if (onUpdateTeacher) {
+      onUpdateTeacher(editingTeacherForAssignment.id, {
+        assignmentRole: editAssignmentRole,
+        assignedGrades: editAssignmentRole === 'subject_teacher' ? [] : editAssignedGrades,
+        assignedSubjects: editAssignmentRole === 'class_teacher' ? [] : editAssignedSubjects,
+        canCreateStudents: editCanCreateStudents
+      });
+      alert(`✓ Staff assignment updated for ${editingTeacherForAssignment.username}!\nRole: ${editAssignmentRole === 'both' ? 'Class & Subject Teacher' : editAssignmentRole === 'subject_teacher' ? 'Subject Teacher' : 'Class Teacher'}`);
+    }
+    setEditingTeacherForAssignment(null);
+  };
+
   const toggleNewPermission = (pageId: StaffPagePermission) => {
     setSelectedNewPermissions(prev => 
       prev.includes(pageId) ? prev.filter(p => p !== pageId) : [...prev, pageId]
@@ -468,18 +560,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       onCreateTeacher({ 
         username: teacherUser.trim(), 
         password: teacherPass.trim(),
-        assignedGrades: assignedGrades,
+        assignmentRole: staffAssignmentRole,
+        assignedGrades: staffAssignmentRole === 'subject_teacher' ? [] : assignedGrades,
+        assignedSubjects: staffAssignmentRole === 'class_teacher' ? [] : assignedSubjects,
         assignedCourses,
         allowedPages: selectedNewPermissions,
         canCreateStudents
       });
       setTeacherUser('');
       setTeacherPass('');
+      setStaffAssignmentRole('class_teacher');
       setAssignedGrades([]);
+      setAssignedSubjects([]);
+      setCustomSubjectInput('');
       setAssignedCourses([]);
       setCanCreateStudents(false);
       setSelectedNewPermissions(ALL_STAFF_PAGES.map(p => p.id));
-      alert("Staff account created with assigned class(es) & permissions!");
+      alert("Staff account created with assigned role, classes, subjects & permissions!");
     }
   };
 
@@ -680,6 +777,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <span>Live Hub & Calls</span>
                 </button>
               )}
+
+              <button
+                type="button"
+                onClick={() => setShowAdminAppDownloadModal(true)}
+                className="flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-blue-900 to-indigo-900 text-yellow-400 rounded-2xl font-black text-xs uppercase tracking-widest hover:brightness-110 transition-all shadow-lg hover:scale-105 active:scale-95 border-2 border-yellow-400 cursor-pointer"
+                title="Download Admin App to open straight to Admin Panel next time"
+              >
+                <span>📲</span>
+                <span>Download Admin App</span>
+              </button>
 
               <button
                 onClick={() => {
@@ -1417,280 +1524,549 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         )}
 
         {activeTab === 'teachers' && (
-          <div className="grid lg:grid-cols-12 gap-10">
-            {/* Staff Registration & Initial Permissions */}
-            <div className="lg:col-span-5 space-y-8">
+          <div className="space-y-8">
+            {/* Top Bar for Staff Management with Realtime SQL Action */}
+            <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-950 p-6 rounded-3xl text-white shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
-                <h3 className="text-2xl font-black text-blue-900 font-serif">Staff Management</h3>
-                <p className="text-xs text-slate-500 font-bold mt-1">Register new academic staff and configure their page permissions</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">👔</span>
+                  <h3 className="text-2xl font-black font-serif text-yellow-400">Faculty & Staff Assignment Management</h3>
+                </div>
+                <p className="text-xs text-blue-200 mt-1 max-w-2xl">
+                  Assign faculty as <strong>Class Teachers</strong> (attendance, broadsheets, conduct & pupil enrolment), <strong>Subject Teachers</strong> (specialist subject curricula across levels), or <strong>Both</strong>.
+                </p>
               </div>
-
-              <form onSubmit={handleTeacherSubmit} className="space-y-6 bg-slate-50 p-8 rounded-[2.5rem] border-2 border-slate-200">
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Staff Username</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={teacherUser} 
-                      onChange={(e) => setTeacherUser(e.target.value)} 
-                      placeholder="e.g. Mr. Benson"
-                      className="w-full px-5 py-3.5 bg-white border-2 border-slate-200 rounded-2xl font-bold text-blue-900 outline-none focus:border-blue-900 shadow-sm" 
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Pass-key</label>
-                    <input 
-                      type="password" 
-                      required 
-                      value={teacherPass} 
-                      onChange={(e) => setTeacherPass(e.target.value)} 
-                      placeholder="••••••••"
-                      className="w-full px-5 py-3.5 bg-white border-2 border-slate-200 rounded-2xl font-bold text-blue-900 outline-none focus:border-blue-900 shadow-sm" 
-                    />
-                  </div>
-                </div>
-
-                {/* Assigned Grades Selection */}
-                <div className="space-y-2 pt-2 border-t border-slate-200">
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest block">
-                    Assigned Classes ({assignedGrades.length} selected)
-                  </label>
-                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 bg-white rounded-2xl border border-slate-200">
-                    {GRADE_GROUPS.flatMap(g => g.levels).map(lvl => {
-                      const isSelected = assignedGrades.includes(lvl as GradeLevel);
-                      return (
-                        <button
-                          type="button"
-                          key={lvl}
-                          onClick={() => toggleGrade(lvl as GradeLevel)}
-                          className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase transition-all ${
-                            isSelected 
-                              ? 'bg-blue-900 text-yellow-400 border border-blue-900' 
-                              : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100'
-                          }`}
-                        >
-                          {isSelected ? '✓ ' : ''}{lvl}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Page Access Control Section */}
-                <div className="space-y-3 pt-2 border-t border-slate-200">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <label className="text-xs font-black text-blue-900 uppercase tracking-widest block">
-                        Page & Module Access Control
-                      </label>
-                      <p className="text-[10px] text-slate-500 font-medium">Select pages this staff can access</p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedNewPermissions(ALL_STAFF_PAGES.map(p => p.id))}
-                        className="text-[10px] font-black text-blue-900 hover:text-blue-700 uppercase underline"
-                      >
-                        All
-                      </button>
-                      <span className="text-slate-300">|</span>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedNewPermissions([])}
-                        className="text-[10px] font-black text-red-600 hover:text-red-700 uppercase underline"
-                      >
-                        None
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    {ALL_STAFF_PAGES.map(page => {
-                      const isChecked = selectedNewPermissions.includes(page.id);
-                      return (
-                        <button
-                          type="button"
-                          key={page.id}
-                          onClick={() => toggleNewPermission(page.id)}
-                          className={`p-2.5 rounded-xl border text-left transition-all flex items-start space-x-2 ${
-                            isChecked 
-                              ? 'bg-blue-900 text-white border-blue-900 shadow-sm' 
-                              : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'
-                          }`}
-                        >
-                          <span className="text-base">{page.icon}</span>
-                          <div className="overflow-hidden">
-                            <p className="text-[11px] font-black leading-tight truncate">{page.label}</p>
-                            <span className={`text-[9px] font-bold ${isChecked ? 'text-yellow-400' : 'text-slate-400'}`}>
-                              {isChecked ? '✓ Granted' : '✗ Denied'}
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Class Teacher Student Registration Permission Toggle */}
-                <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 space-y-2">
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={canCreateStudents}
-                      onChange={(e) => setCanCreateStudents(e.target.checked)}
-                      className="mt-1 w-4 h-4 rounded text-blue-900 border-slate-300 focus:ring-blue-900"
-                    />
-                    <div>
-                      <span className="text-xs font-black text-blue-950 uppercase tracking-wider block">
-                        Allow Class Teacher to Open Student Accounts
-                      </span>
-                      <p className="text-[11px] text-amber-900 leading-snug mt-0.5">
-                        Permits this staff member to register pupils strictly for their assigned class(es). Unassigned classes remain blocked.
-                      </p>
-                    </div>
-                  </label>
-                </div>
-
-                <button 
-                  type="submit" 
-                  className="w-full py-4 bg-blue-900 text-yellow-400 font-black text-sm uppercase tracking-widest rounded-2xl shadow-xl hover:bg-blue-800 transition-all active:scale-[0.99]"
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSqlModalTab('staffAssignments');
+                    setShowSqlModal(true);
+                  }}
+                  className="px-4 py-2.5 bg-yellow-400 text-blue-950 hover:bg-yellow-300 font-black text-xs uppercase tracking-wider rounded-xl shadow transition-all flex items-center gap-2 active:scale-95"
                 >
-                  Register Staff with Permissions →
+                  <span>⚡</span>
+                  <span>View Staff Assignment SQL</span>
                 </button>
-              </form>
+                <button
+                  type="button"
+                  onClick={handleCopyStaffAssignmentSql}
+                  className="px-4 py-2.5 bg-blue-800/80 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider rounded-xl border border-blue-600 transition-all flex items-center gap-2"
+                >
+                  <span>{staffSqlCopied ? '✓' : '📋'}</span>
+                  <span>{staffSqlCopied ? 'SQL Copied!' : 'Copy SQL Code'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowInlineStaffSql(prev => !prev)}
+                  className="px-3 py-2.5 bg-blue-900/60 hover:bg-blue-800 text-blue-200 hover:text-white text-xs font-bold rounded-xl border border-blue-700/60"
+                  title="Toggle Quick SQL Snippet"
+                >
+                  {showInlineStaffSql ? 'Hide SQL Code ▲' : 'Show SQL Code ▼'}
+                </button>
+              </div>
             </div>
 
-            {/* Staff Directory & Interactive Page Access Controller */}
-            <div className="lg:col-span-7 space-y-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="text-2xl font-black text-blue-900 font-serif">Staff Directory & Page Permissions</h3>
-                  <p className="text-xs text-slate-500 font-bold">Admin can grant or revoke module access for any staff member in real time</p>
+            {/* Inline SQL Code Viewer dropdown */}
+            {showInlineStaffSql && (
+              <div className="p-5 bg-slate-900 rounded-3xl text-slate-100 border-2 border-yellow-400/30 shadow-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-yellow-400 font-mono text-xs font-bold">SQL SCRIPT • Staff Role & Subject Assignments</span>
+                    <span className="text-[10px] bg-blue-800 text-blue-200 px-2 py-0.5 rounded-full font-bold">Supabase / PostgreSQL</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleCopyStaffAssignmentSql}
+                      className="px-3 py-1 bg-yellow-400 text-blue-950 font-black text-xs rounded-lg hover:bg-yellow-300 transition-all"
+                    >
+                      {staffSqlCopied ? '✓ Copied' : 'Copy Script'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={downloadStaffAssignmentSql}
+                      className="px-3 py-1 bg-slate-800 text-slate-300 border border-slate-700 font-bold text-xs rounded-lg hover:bg-slate-700 transition-all"
+                    >
+                      Download .sql
+                    </button>
+                  </div>
                 </div>
-                <span className="px-3 py-1 bg-blue-100 text-blue-900 rounded-full text-xs font-black uppercase tracking-widest">
-                  {teachers.length} Staff Member(s)
-                </span>
+                <pre className="font-mono text-xs bg-black/60 p-4 rounded-2xl overflow-x-auto text-green-400 max-h-56 leading-relaxed select-all">
+                  {SUPABASE_STAFF_ASSIGNMENT_SQL}
+                </pre>
+                <p className="text-[11px] text-slate-400">
+                  Run this SQL in your Supabase SQL Editor. It adds <code className="text-yellow-400 font-mono">assignment_role</code> and <code className="text-yellow-400 font-mono">assigned_subjects</code> columns with zero downtime.
+                </p>
+              </div>
+            )}
+
+            <div className="grid lg:grid-cols-12 gap-10">
+              {/* Staff Registration & Initial Permissions */}
+              <div className="lg:col-span-5 space-y-8">
+                <div>
+                  <h3 className="text-2xl font-black text-blue-900 font-serif">Staff Registration & Assignment</h3>
+                  <p className="text-xs text-slate-500 font-bold mt-1">Register new academic staff as Class Teachers, Subject Teachers, or Both</p>
+                </div>
+
+                <form onSubmit={handleTeacherSubmit} className="space-y-6 bg-slate-50 p-8 rounded-[2.5rem] border-2 border-slate-200">
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Staff Username</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={teacherUser} 
+                        onChange={(e) => setTeacherUser(e.target.value)} 
+                        placeholder="e.g. Mr. Benson"
+                        className="w-full px-5 py-3.5 bg-white border-2 border-slate-200 rounded-2xl font-bold text-blue-900 outline-none focus:border-blue-900 shadow-sm" 
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Pass-key</label>
+                      <input 
+                        type="password" 
+                        required 
+                        value={teacherPass} 
+                        onChange={(e) => setTeacherPass(e.target.value)} 
+                        placeholder="••••••••"
+                        className="w-full px-5 py-3.5 bg-white border-2 border-slate-200 rounded-2xl font-bold text-blue-900 outline-none focus:border-blue-900 shadow-sm" 
+                      />
+                    </div>
+                  </div>
+
+                  {/* 1. Choose Assignment Role: Class Teacher, Subject Teacher, or Both */}
+                  <div className="space-y-2 pt-2 border-t border-slate-200">
+                    <label className="text-xs font-black text-blue-900 uppercase tracking-widest block">
+                      Choose Assignment Role
+                    </label>
+                    <p className="text-[11px] text-slate-500 font-medium">Select whether to assign this teacher to a Class, a Subject, or Both:</p>
+                    
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setStaffAssignmentRole('class_teacher')}
+                        className={`p-3 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                          staffAssignmentRole === 'class_teacher'
+                            ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md scale-[1.02]'
+                            : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-100/50'
+                        }`}
+                      >
+                        <span className="text-lg">🏫</span>
+                        <span className="text-xs font-black uppercase tracking-tight">Class Teacher</span>
+                        <span className={`text-[9px] font-bold ${staffAssignmentRole === 'class_teacher' ? 'text-yellow-200' : 'text-slate-400'}`}>Assign Class</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setStaffAssignmentRole('subject_teacher')}
+                        className={`p-3 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                          staffAssignmentRole === 'subject_teacher'
+                            ? 'bg-indigo-900 text-yellow-400 border-indigo-900 shadow-md scale-[1.02]'
+                            : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-100/50'
+                        }`}
+                      >
+                        <span className="text-lg">📚</span>
+                        <span className="text-xs font-black uppercase tracking-tight">Subject Teacher</span>
+                        <span className={`text-[9px] font-bold ${staffAssignmentRole === 'subject_teacher' ? 'text-yellow-200' : 'text-slate-400'}`}>Assign Subject</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setStaffAssignmentRole('both')}
+                        className={`p-3 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                          staffAssignmentRole === 'both'
+                            ? 'bg-purple-900 text-yellow-400 border-purple-900 shadow-md scale-[1.02]'
+                            : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-100/50'
+                        }`}
+                      >
+                        <span className="text-lg">🌟</span>
+                        <span className="text-xs font-black uppercase tracking-tight">Both (Class & Subj)</span>
+                        <span className={`text-[9px] font-bold ${staffAssignmentRole === 'both' ? 'text-yellow-200' : 'text-slate-400'}`}>Dual Role</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 2. Assigned Classes (Shown if class_teacher or both) */}
+                  {(staffAssignmentRole === 'class_teacher' || staffAssignmentRole === 'both') && (
+                    <div className="space-y-2 pt-2 border-t border-slate-200">
+                      <div className="flex justify-between items-center">
+                        <label className="text-xs font-black text-slate-500 uppercase tracking-widest block">
+                          Assigned Classes ({assignedGrades.length} selected)
+                        </label>
+                        <div className="flex space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => setAssignedGrades(GRADE_GROUPS.flatMap(g => g.levels) as GradeLevel[])}
+                            className="text-[10px] font-black text-blue-900 hover:underline uppercase"
+                          >
+                            All Classes
+                          </button>
+                          <span className="text-slate-300">|</span>
+                          <button
+                            type="button"
+                            onClick={() => setAssignedGrades([])}
+                            className="text-[10px] font-black text-red-600 hover:underline uppercase"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 bg-white rounded-2xl border border-slate-200">
+                        {GRADE_GROUPS.flatMap(g => g.levels).map(lvl => {
+                          const isSelected = assignedGrades.includes(lvl as GradeLevel);
+                          return (
+                            <button
+                              type="button"
+                              key={lvl}
+                              onClick={() => toggleGrade(lvl as GradeLevel)}
+                              className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase transition-all ${
+                                isSelected 
+                                  ? 'bg-blue-900 text-yellow-400 border border-blue-900' 
+                                  : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              {isSelected ? '✓ ' : ''}{lvl}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 3. Assigned Subjects (Shown if subject_teacher or both) */}
+                  {(staffAssignmentRole === 'subject_teacher' || staffAssignmentRole === 'both') && (
+                    <div className="space-y-2 pt-2 border-t border-slate-200">
+                      <div className="flex justify-between items-center">
+                        <label className="text-xs font-black text-indigo-950 uppercase tracking-widest block">
+                          Assigned Subjects ({assignedSubjects.length} selected)
+                        </label>
+                        <div className="flex space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => setAssignedSubjects([...STANDARD_SUBJECTS])}
+                            className="text-[10px] font-black text-indigo-900 hover:underline uppercase"
+                          >
+                            All Standard
+                          </button>
+                          <span className="text-slate-300">|</span>
+                          <button
+                            type="button"
+                            onClick={() => setAssignedSubjects([])}
+                            className="text-[10px] font-black text-red-600 hover:underline uppercase"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Standard Subject Pills */}
+                      <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-2.5 bg-white rounded-2xl border border-slate-200">
+                        {STANDARD_SUBJECTS.map(subj => {
+                          const isSelected = assignedSubjects.includes(subj);
+                          return (
+                            <button
+                              type="button"
+                              key={subj}
+                              onClick={() => toggleSubject(subj)}
+                              className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase transition-all ${
+                                isSelected
+                                  ? 'bg-indigo-900 text-yellow-400 border border-indigo-900 shadow-sm'
+                                  : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              {isSelected ? '✓ ' : ''}{subj}
+                            </button>
+                          );
+                        })}
+                        {/* Custom subjects added */}
+                        {assignedSubjects.filter(s => !STANDARD_SUBJECTS.includes(s)).map(customSubj => (
+                          <button
+                            type="button"
+                            key={customSubj}
+                            onClick={() => toggleSubject(customSubj)}
+                            className="px-2.5 py-1 rounded-xl text-[10px] font-black uppercase bg-purple-900 text-yellow-300 border border-purple-900 shadow-sm"
+                          >
+                            ✓ {customSubj} ✕
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Add Custom Subject field */}
+                      <div className="flex items-center gap-2 pt-1">
+                        <input
+                          type="text"
+                          value={customSubjectInput}
+                          onChange={(e) => setCustomSubjectInput(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomSubject(); } }}
+                          placeholder="Add custom subject (e.g. French, Phonics)..."
+                          className="flex-1 px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl font-medium outline-none focus:border-indigo-900"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddCustomSubject}
+                          className="px-3 py-2 bg-indigo-900 text-yellow-400 text-xs font-black rounded-xl hover:bg-indigo-800"
+                        >
+                          + Add Subject
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Page Access Control Section */}
+                  <div className="space-y-3 pt-2 border-t border-slate-200">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <label className="text-xs font-black text-blue-900 uppercase tracking-widest block">
+                          Page & Module Access Control
+                        </label>
+                        <p className="text-[10px] text-slate-500 font-medium">Select pages this staff can access</p>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedNewPermissions(ALL_STAFF_PAGES.map(p => p.id))}
+                          className="text-[10px] font-black text-blue-900 hover:text-blue-700 uppercase underline"
+                        >
+                          All
+                        </button>
+                        <span className="text-slate-300">|</span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedNewPermissions([])}
+                          className="text-[10px] font-black text-red-600 hover:text-red-700 uppercase underline"
+                        >
+                          None
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      {ALL_STAFF_PAGES.map(page => {
+                        const isChecked = selectedNewPermissions.includes(page.id);
+                        return (
+                          <button
+                            type="button"
+                            key={page.id}
+                            onClick={() => toggleNewPermission(page.id)}
+                            className={`p-2.5 rounded-xl border text-left transition-all flex items-start space-x-2 ${
+                              isChecked 
+                                ? 'bg-blue-900 text-white border-blue-900 shadow-sm' 
+                                : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'
+                            }`}
+                          >
+                            <span className="text-base">{page.icon}</span>
+                            <div className="overflow-hidden">
+                              <p className="text-[11px] font-black leading-tight truncate">{page.label}</p>
+                              <span className={`text-[9px] font-bold ${isChecked ? 'text-yellow-400' : 'text-slate-400'}`}>
+                                {isChecked ? '✓ Granted' : '✗ Denied'}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Class Teacher Student Registration Permission Toggle */}
+                  <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 space-y-2">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={canCreateStudents}
+                        onChange={(e) => setCanCreateStudents(e.target.checked)}
+                        className="mt-1 w-4 h-4 rounded text-blue-900 border-slate-300 focus:ring-blue-900"
+                      />
+                      <div>
+                        <span className="text-xs font-black text-blue-950 uppercase tracking-wider block">
+                          Allow Class Teacher to Open Student Accounts
+                        </span>
+                        <p className="text-[11px] text-amber-900 leading-snug mt-0.5">
+                          Permits this staff member to register pupils strictly for their assigned class(es). Unassigned classes remain blocked.
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    className="w-full py-4 bg-blue-900 text-yellow-400 font-black text-sm uppercase tracking-widest rounded-2xl shadow-xl hover:bg-blue-800 transition-all active:scale-[0.99]"
+                  >
+                    Register Staff as {staffAssignmentRole === 'both' ? 'Class & Subject Teacher' : staffAssignmentRole === 'subject_teacher' ? 'Subject Teacher' : 'Class Teacher'} →
+                  </button>
+                </form>
               </div>
 
-              {teachers.length === 0 ? (
-                <div className="p-12 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
-                  <span className="text-4xl block mb-3">👔</span>
-                  <p className="font-black text-blue-900">No staff members registered yet</p>
-                  <p className="text-xs text-slate-400 mt-1 font-medium">Use the form on the left to create staff accounts and assign page permissions.</p>
+              {/* Staff Directory & Interactive Page Access Controller */}
+              <div className="lg:col-span-7 space-y-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-2xl font-black text-blue-900 font-serif">Staff Directory & Page Permissions</h3>
+                    <p className="text-xs text-slate-500 font-bold">Assign classes or subjects, edit assignments, and grant/revoke access in real time</p>
+                  </div>
+                  <span className="px-3 py-1 bg-blue-100 text-blue-900 rounded-full text-xs font-black uppercase tracking-widest">
+                    {teachers.length} Staff Member(s)
+                  </span>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {teachers.map(teacher => {
-                    const currentPermissions = teacher.allowedPages !== undefined 
-                      ? teacher.allowedPages 
-                      : ALL_STAFF_PAGES.map(p => p.id); // Default to all if not explicitly restricted
-                    const isAllGranted = currentPermissions.length === ALL_STAFF_PAGES.length;
-                    const isBlocked = currentPermissions.length === 0;
 
-                    const togglePageForTeacher = (pageId: StaffPagePermission) => {
-                      const updated = currentPermissions.includes(pageId)
-                        ? currentPermissions.filter(p => p !== pageId)
-                        : [...currentPermissions, pageId];
-                      onUpdateTeacherPermissions?.(teacher.id, updated);
-                    };
+                {teachers.length === 0 ? (
+                  <div className="p-12 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                    <span className="text-4xl block mb-3">👔</span>
+                    <p className="font-black text-blue-900">No staff members registered yet</p>
+                    <p className="text-xs text-slate-400 mt-1 font-medium">Use the form on the left to create staff accounts and assign classes or subjects.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {teachers.map(teacher => {
+                      const currentPermissions = teacher.allowedPages !== undefined 
+                        ? teacher.allowedPages 
+                        : ALL_STAFF_PAGES.map(p => p.id); // Default to all if not explicitly restricted
+                      const isAllGranted = currentPermissions.length === ALL_STAFF_PAGES.length;
+                      const isBlocked = currentPermissions.length === 0;
+                      const role: TeacherAssignmentRole = teacher.assignmentRole || 
+                        (teacher.assignedSubjects && teacher.assignedSubjects.length > 0 && teacher.assignedGrades && teacher.assignedGrades.length > 0 ? 'both' :
+                         teacher.assignedSubjects && teacher.assignedSubjects.length > 0 ? 'subject_teacher' : 'class_teacher');
 
-                    const grantAllForTeacher = () => {
-                      onUpdateTeacherPermissions?.(teacher.id, ALL_STAFF_PAGES.map(p => p.id));
-                    };
+                      const togglePageForTeacher = (pageId: StaffPagePermission) => {
+                        const updated = currentPermissions.includes(pageId)
+                          ? currentPermissions.filter(p => p !== pageId)
+                          : [...currentPermissions, pageId];
+                        onUpdateTeacherPermissions?.(teacher.id, updated);
+                      };
 
-                    const revokeAllForTeacher = () => {
-                      onUpdateTeacherPermissions?.(teacher.id, []);
-                    };
+                      const grantAllForTeacher = () => {
+                        onUpdateTeacherPermissions?.(teacher.id, ALL_STAFF_PAGES.map(p => p.id));
+                      };
 
-                    return (
-                      <div key={teacher.id} className="p-6 bg-white rounded-3xl border-2 border-slate-100 shadow-sm hover:border-blue-200 transition-colors">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-12 h-12 bg-blue-900 text-yellow-400 rounded-2xl flex items-center justify-center font-black text-lg shadow-md uppercase">
-                              {teacher.username.charAt(0)}
-                            </div>
-                            <div>
-                              <div className="flex items-center space-x-2">
-                                <h4 className="font-black text-blue-900 text-base">{teacher.username}</h4>
-                                {isAllGranted ? (
-                                  <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded-full text-[9px] font-black uppercase">
-                                    Full Access
-                                  </span>
-                                ) : isBlocked ? (
-                                  <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded-full text-[9px] font-black uppercase">
-                                    Blocked (0 Pages)
-                                  </span>
-                                ) : (
-                                  <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-[9px] font-black uppercase">
-                                    {currentPermissions.length} of {ALL_STAFF_PAGES.length} Pages
-                                  </span>
-                                )}
+                      const revokeAllForTeacher = () => {
+                        onUpdateTeacherPermissions?.(teacher.id, []);
+                      };
+
+                      return (
+                        <div key={teacher.id} className="p-6 bg-white rounded-3xl border-2 border-slate-100 shadow-sm hover:border-blue-200 transition-colors">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-12 h-12 bg-blue-900 text-yellow-400 rounded-2xl flex items-center justify-center font-black text-lg shadow-md uppercase">
+                                {teacher.username.charAt(0)}
                               </div>
-                              <p className="text-[11px] text-slate-500 font-bold mt-0.5 flex items-center gap-2 flex-wrap">
-                                <span>Assigned Classes: <strong className="text-blue-900">{teacher.assignedGrades && teacher.assignedGrades.length > 0 ? teacher.assignedGrades.join(', ') : 'None (Admin unassigned)'}</strong></span>
-                                {teacher.canCreateStudents && (
-                                  <span className="px-2 py-0.5 bg-amber-100 text-amber-900 rounded-full text-[9px] font-black uppercase">
-                                    ✓ Class Student Account Creator
-                                  </span>
-                                )}
-                              </p>
-                            </div>
-                          </div>
+                              <div>
+                                <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+                                  <h4 className="font-black text-blue-900 text-base">{teacher.username}</h4>
+                                  {role === 'subject_teacher' ? (
+                                    <span className="px-2.5 py-0.5 bg-indigo-100 text-indigo-900 border border-indigo-200 rounded-full text-[10px] font-black uppercase tracking-wider">
+                                      📚 Subject Teacher
+                                    </span>
+                                  ) : role === 'both' ? (
+                                    <span className="px-2.5 py-0.5 bg-purple-100 text-purple-900 border border-purple-200 rounded-full text-[10px] font-black uppercase tracking-wider">
+                                      🌟 Class & Subject Teacher
+                                    </span>
+                                  ) : (
+                                    <span className="px-2.5 py-0.5 bg-blue-100 text-blue-900 border border-blue-200 rounded-full text-[10px] font-black uppercase tracking-wider">
+                                      🏫 Class Teacher
+                                    </span>
+                                  )}
 
-                          <div className="flex items-center space-x-2 self-end sm:self-auto">
-                            <button
-                              type="button"
-                              onClick={grantAllForTeacher}
-                              title="Grant access to all staff pages"
-                              className="px-2.5 py-1 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg text-[10px] font-black uppercase border border-green-200 transition-colors"
-                            >
-                              Grant All
-                            </button>
-                            <button
-                              type="button"
-                              onClick={revokeAllForTeacher}
-                              title="Revoke access to all staff pages"
-                              className="px-2.5 py-1 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-[10px] font-black uppercase border border-red-200 transition-colors"
-                            >
-                              Revoke All
-                            </button>
-                            {onDeleteTeacher && (
+                                  {isAllGranted ? (
+                                    <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded-full text-[9px] font-black uppercase">
+                                      Full Access
+                                    </span>
+                                  ) : isBlocked ? (
+                                    <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded-full text-[9px] font-black uppercase">
+                                      Blocked (0 Pages)
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-[9px] font-black uppercase">
+                                      {currentPermissions.length} of {ALL_STAFF_PAGES.length} Pages
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-[11px] text-slate-500 font-bold mt-1 space-y-1">
+                                  <p className="flex items-center gap-2 flex-wrap">
+                                    <span>Assigned Classes: <strong className="text-blue-900">{teacher.assignedGrades && teacher.assignedGrades.length > 0 ? teacher.assignedGrades.join(', ') : (role === 'subject_teacher' ? 'None (Subject Specialist)' : 'None (Admin unassigned)')}</strong></span>
+                                    {teacher.canCreateStudents && (
+                                      <span className="px-2 py-0.5 bg-amber-100 text-amber-900 rounded-full text-[9px] font-black uppercase">
+                                        ✓ Pupil Creator
+                                      </span>
+                                    )}
+                                  </p>
+                                  {teacher.assignedSubjects && teacher.assignedSubjects.length > 0 && (
+                                    <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                                      <span className="text-indigo-900">Assigned Subjects:</span>
+                                      {teacher.assignedSubjects.map(subj => (
+                                        <span key={subj} className="px-2 py-0.5 bg-indigo-50 text-indigo-800 rounded-md text-[10px] font-bold border border-indigo-200">
+                                          {subj}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center space-x-2 self-end sm:self-auto flex-wrap gap-y-2">
+                              {/* Edit Assignment Button */}
                               <button
                                 type="button"
-                                onClick={() => {
-                                  if (confirm(`Remove staff account ${teacher.username}?`)) {
-                                    onDeleteTeacher(teacher.id);
-                                  }
-                                }}
-                                className="p-1 text-slate-300 hover:text-red-500 transition-colors"
-                                title="Delete staff account"
+                                onClick={() => openEditTeacherAssignmentModal(teacher)}
+                                title="Change role or reassign classes and subjects"
+                                className="px-3 py-1.5 bg-blue-900 text-yellow-400 hover:bg-blue-800 rounded-xl text-[10px] font-black uppercase shadow-sm transition-all flex items-center gap-1 active:scale-95"
                               >
-                                ✕
+                                <span>✏️</span>
+                                <span>Assign Class / Subject</span>
                               </button>
-                            )}
-                          </div>
-                        </div>
 
-                        {/* Interactive Page Permission Pills for this Teacher */}
-                        <div className="mt-4">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
-                            Toggle Accessible Pages (Click to Grant / Revoke):
-                          </p>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                            {ALL_STAFF_PAGES.map(page => {
-                              const hasAccess = currentPermissions.includes(page.id);
-                              return (
+                              <button
+                                type="button"
+                                onClick={grantAllForTeacher}
+                                title="Grant access to all staff pages"
+                                className="px-2.5 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg text-[10px] font-black uppercase border border-green-200 transition-colors"
+                              >
+                                Grant All
+                              </button>
+                              <button
+                                type="button"
+                                onClick={revokeAllForTeacher}
+                                title="Revoke access to all staff pages"
+                                className="px-2.5 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-[10px] font-black uppercase border border-red-200 transition-colors"
+                              >
+                                Revoke All
+                              </button>
+                              {onDeleteTeacher && (
                                 <button
-                                  key={page.id}
                                   type="button"
-                                  onClick={() => togglePageForTeacher(page.id)}
-                                  className={`px-3 py-2 rounded-xl text-left transition-all border flex items-center justify-between group ${
-                                    hasAccess 
-                                      ? 'bg-blue-50 border-blue-200 text-blue-900 hover:bg-red-50 hover:border-red-200' 
-                                      : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-green-50 hover:border-green-200'
-                                  }`}
-                                  title={hasAccess ? `Revoke access to ${page.label}` : `Grant access to ${page.label}`}
+                                  onClick={() => {
+                                    if (confirm(`Remove staff account ${teacher.username}?`)) {
+                                      onDeleteTeacher(teacher.id);
+                                    }
+                                  }}
+                                  className="p-1.5 text-slate-300 hover:text-red-500 transition-colors"
+                                  title="Delete staff account"
+                                >
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Interactive Page Permission Pills for this Teacher */}
+                          <div className="mt-4">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                              Toggle Accessible Pages (Click to Grant / Revoke):
+                            </p>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                              {ALL_STAFF_PAGES.map(page => {
+                                const hasAccess = currentPermissions.includes(page.id);
+                                return (
+                                  <button
+                                    key={page.id}
+                                    type="button"
+                                    onClick={() => togglePageForTeacher(page.id)}
+                                    className={`px-3 py-2 rounded-xl text-left transition-all border flex items-center justify-between group ${
+                                      hasAccess 
+                                        ? 'bg-blue-50 border-blue-200 text-blue-900 hover:bg-red-50 hover:border-red-200' 
+                                        : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-green-50 hover:border-green-200'
+                                    }`}
+                                    title={hasAccess ? `Revoke access to ${page.label}` : `Grant access to ${page.label}`}
                                 >
                                   <div className="flex items-center space-x-1.5 truncate mr-1">
                                     <span className="text-xs">{page.icon}</span>
@@ -1715,7 +2091,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               )}
             </div>
           </div>
-        )}
+        </div>
+      )}
 
         {activeTab === 'courses' && (
           <div className="space-y-12">
@@ -2344,7 +2721,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </div>
 
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-950">
-                      ⚡ Default credentials created: Pupil Password: <strong>student123</strong> • Parent Password: <strong>parent123</strong>. Both accounts can change passwords on login.
+                      ⚡ Accounts generated with secure temporary credentials. Users can update their passwords upon login.
                     </div>
 
                     <div className="flex justify-end gap-3 pt-2">
@@ -2675,7 +3052,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </div>
 
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-950">
-                      ⚡ Default credentials created: Parent Password: <strong>parent123</strong>. The parent can sign in using their email or phone number.
+                      ⚡ Parent account provisioned with secure temporary credentials. The parent can sign in using their email or phone number.
                     </div>
 
                     <div className="flex justify-end gap-3 pt-2">
@@ -3374,10 +3751,250 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         )}
       </div>
 
+      {/* Edit Staff Role & Subject/Class Assignment Modal */}
+      {editingTeacherForAssignment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-[2.5rem] max-w-2xl w-full p-8 shadow-2xl border-2 border-blue-900/20 max-h-[90vh] overflow-y-auto space-y-6">
+            <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">✏️</span>
+                  <h3 className="text-2xl font-black text-blue-900 font-serif">
+                    Modify Staff Assignment
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500 font-bold mt-1">
+                  Editing assignment for <strong className="text-blue-900">{editingTeacherForAssignment.username}</strong>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingTeacherForAssignment(null)}
+                className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-black transition-all"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveTeacherAssignment} className="space-y-6">
+              {/* Assignment Role Choice */}
+              <div className="space-y-2">
+                <label className="text-xs font-black text-blue-900 uppercase tracking-widest block">
+                  Select Assignment Type
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditAssignmentRole('class_teacher')}
+                    className={`p-3 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                      editAssignmentRole === 'class_teacher'
+                        ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md scale-[1.02]'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className="text-lg">🏫</span>
+                    <span className="text-xs font-black uppercase">Class Teacher</span>
+                    <span className={`text-[9px] font-bold ${editAssignmentRole === 'class_teacher' ? 'text-yellow-200' : 'text-slate-400'}`}>Assign Class</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEditAssignmentRole('subject_teacher')}
+                    className={`p-3 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                      editAssignmentRole === 'subject_teacher'
+                        ? 'bg-indigo-900 text-yellow-400 border-indigo-900 shadow-md scale-[1.02]'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className="text-lg">📚</span>
+                    <span className="text-xs font-black uppercase">Subject Teacher</span>
+                    <span className={`text-[9px] font-bold ${editAssignmentRole === 'subject_teacher' ? 'text-yellow-200' : 'text-slate-400'}`}>Assign Subject</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEditAssignmentRole('both')}
+                    className={`p-3 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                      editAssignmentRole === 'both'
+                        ? 'bg-purple-900 text-yellow-400 border-purple-900 shadow-md scale-[1.02]'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className="text-lg">🌟</span>
+                    <span className="text-xs font-black uppercase">Both (Dual)</span>
+                    <span className={`text-[9px] font-bold ${editAssignmentRole === 'both' ? 'text-yellow-200' : 'text-slate-400'}`}>Class & Subj</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Assigned Classes (if class_teacher or both) */}
+              {(editAssignmentRole === 'class_teacher' || editAssignmentRole === 'both') && (
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-black text-slate-600 uppercase tracking-widest block">
+                      Assigned Classes ({editAssignedGrades.length} selected)
+                    </label>
+                    <div className="flex space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditAssignedGrades(GRADE_GROUPS.flatMap(g => g.levels) as GradeLevel[])}
+                        className="text-[10px] font-black text-blue-900 hover:underline uppercase"
+                      >
+                        All Classes
+                      </button>
+                      <span className="text-slate-300">|</span>
+                      <button
+                        type="button"
+                        onClick={() => setEditAssignedGrades([])}
+                        className="text-[10px] font-black text-red-600 hover:underline uppercase"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                    {GRADE_GROUPS.flatMap(g => g.levels).map(lvl => {
+                      const isSelected = editAssignedGrades.includes(lvl as GradeLevel);
+                      return (
+                        <button
+                          type="button"
+                          key={lvl}
+                          onClick={() => toggleEditGrade(lvl as GradeLevel)}
+                          className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase transition-all ${
+                            isSelected 
+                              ? 'bg-blue-900 text-yellow-400 border border-blue-900 shadow-sm' 
+                              : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {isSelected ? '✓ ' : ''}{lvl}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Assigned Subjects (if subject_teacher or both) */}
+              {(editAssignmentRole === 'subject_teacher' || editAssignmentRole === 'both') && (
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-black text-indigo-950 uppercase tracking-widest block">
+                      Assigned Subjects ({editAssignedSubjects.length} selected)
+                    </label>
+                    <div className="flex space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditAssignedSubjects([...STANDARD_SUBJECTS])}
+                        className="text-[10px] font-black text-indigo-900 hover:underline uppercase"
+                      >
+                        All Standard
+                      </button>
+                      <span className="text-slate-300">|</span>
+                      <button
+                        type="button"
+                        onClick={() => setEditAssignedSubjects([])}
+                        className="text-[10px] font-black text-red-600 hover:underline uppercase"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                    {STANDARD_SUBJECTS.map(subj => {
+                      const isSelected = editAssignedSubjects.includes(subj);
+                      return (
+                        <button
+                          type="button"
+                          key={subj}
+                          onClick={() => toggleEditSubject(subj)}
+                          className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase transition-all ${
+                            isSelected
+                              ? 'bg-indigo-900 text-yellow-400 border border-indigo-900 shadow-sm'
+                              : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {isSelected ? '✓ ' : ''}{subj}
+                        </button>
+                      );
+                    })}
+                    {editAssignedSubjects.filter(s => !STANDARD_SUBJECTS.includes(s)).map(customSubj => (
+                      <button
+                        type="button"
+                        key={customSubj}
+                        onClick={() => toggleEditSubject(customSubj)}
+                        className="px-2.5 py-1 rounded-xl text-[10px] font-black uppercase bg-purple-900 text-yellow-300 border border-purple-900 shadow-sm"
+                      >
+                        ✓ {customSubj} ✕
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      type="text"
+                      value={editCustomSubject}
+                      onChange={(e) => setEditCustomSubject(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddEditCustomSubject(); } }}
+                      placeholder="Add custom subject (e.g. French, Phonics)..."
+                      className="flex-1 px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl font-medium outline-none focus:border-indigo-900"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddEditCustomSubject}
+                      className="px-3 py-2 bg-indigo-900 text-yellow-400 text-xs font-black rounded-xl hover:bg-indigo-800"
+                    >
+                      + Add Subject
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Student Creation Permission */}
+              <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editCanCreateStudents}
+                    onChange={(e) => setEditCanCreateStudents(e.target.checked)}
+                    className="mt-1 w-4 h-4 rounded text-blue-900 border-slate-300 focus:ring-blue-900"
+                  />
+                  <div>
+                    <span className="text-xs font-black text-blue-950 uppercase tracking-wider block">
+                      Allow Teacher to Open Pupil Accounts
+                    </span>
+                    <p className="text-[11px] text-amber-900 leading-snug mt-0.5">
+                      Teacher will be permitted to register new pupils strictly for their assigned class(es).
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingTeacherForAssignment(null)}
+                  className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs uppercase tracking-wider rounded-xl transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all active:scale-95"
+                >
+                  Save Assignment Changes →
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Supabase Master SQL & Realtime Configuration Viewer Modal */}
       <RealtimeSqlViewerModal
         isOpen={showSqlModal}
         onClose={() => setShowSqlModal(false)}
+        initialTab={sqlModalTab}
       />
 
       {/* Proph External App Database Audit Modal (Admin Unique ID: pro01) */}
@@ -3400,6 +4017,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           timedStaffDelegations,
           userPagesAccess
         }}
+      />
+
+      {/* Dedicated Proprietor Admin App Download Modal */}
+      <DedicatedAppInstallModal
+        isOpen={showAdminAppDownloadModal}
+        onClose={() => setShowAdminAppDownloadModal(false)}
+        role="admin"
       />
     </div>
   );

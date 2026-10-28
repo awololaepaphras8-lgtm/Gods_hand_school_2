@@ -188,15 +188,6 @@ export const Footer: React.FC<FooterProps> = ({ isAdmin = false, onCheckFees, on
                   <span className="group-hover:translate-x-1 transition-transform">Academic Calendar</span>
                 </button>
               </li>
-              <li>
-                <button 
-                  onClick={() => onNavigate?.('admin')} 
-                  className="hover:text-yellow-400 transition-colors flex items-center group text-left"
-                >
-                  <span className="mr-2 text-yellow-400">»</span> 
-                  <span className="group-hover:translate-x-1 transition-transform">Proprietor Access</span>
-                </button>
-              </li>
             </ul>
           </div>
 

@@ -95,7 +95,7 @@ export const AboutUs: React.FC<AboutUsProps> = ({ onApply, onCheckFees, onBack }
         </section>
 
         {/* Quality & Affordability Key Highlights */}
-        <section className="bg-gradient-to-r from-blue-900 to-blue-950 text-white rounded-3xl p-8 sm:p-10 shadow-xl border-2 border-blue-800 grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
+        <section className="bg-gradient-to-r from-blue-900 to-blue-950 text-white rounded-3xl p-8 sm:p-10 shadow-xl border-2 border-blue-800 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
           <div className="space-y-1">
             <p className="text-3xl sm:text-4xl font-serif font-black text-yellow-400">Top Rated</p>
             <p className="text-xs sm:text-sm font-black uppercase tracking-wider">Private Primary & Secondary</p>
@@ -110,11 +110,6 @@ export const AboutUs: React.FC<AboutUsProps> = ({ onApply, onCheckFees, onBack }
             <p className="text-3xl sm:text-4xl font-serif font-black text-yellow-400">Flexible</p>
             <p className="text-xs sm:text-sm font-black uppercase tracking-wider">Termly Payment Plans</p>
             <p className="text-[11px] text-blue-200/70 font-medium">Convenient installment options for parents</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-3xl sm:text-4xl font-serif font-black text-yellow-400">1:15</p>
-            <p className="text-xs sm:text-sm font-black uppercase tracking-wider">Pupil to Teacher Ratio</p>
-            <p className="text-[11px] text-blue-200/70 font-medium">Individualized care and mentoring</p>
           </div>
         </section>
 

@@ -175,7 +175,9 @@ CREATE TABLE IF NOT EXISTS public.teacher_accounts (
   full_name TEXT,
   email TEXT,
   phone TEXT,
+  assignment_role TEXT DEFAULT 'class_teacher' CHECK (assignment_role IN ('class_teacher', 'subject_teacher', 'both')),
   assigned_grades TEXT[] DEFAULT '{}' NOT NULL,
+  assigned_subjects TEXT[] DEFAULT '{}' NOT NULL,
   assigned_courses TEXT[] DEFAULT '{}' NOT NULL,
   allowed_pages TEXT[] DEFAULT '{"overview", "parentMessages", "attendanceScanning", "attendance", "students", "timetable", "termStats", "grading", "courses"}' NOT NULL,
   can_create_students BOOLEAN DEFAULT FALSE NOT NULL,
@@ -413,6 +415,51 @@ CREATE TABLE IF NOT EXISTS public.call_signals (
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- 27. Homework & Class Assignments (matches Assignment)
+CREATE TABLE IF NOT EXISTS public.assignments (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  grade TEXT NOT NULL,
+  description TEXT NOT NULL,
+  assignment_type TEXT NOT NULL CHECK (assignment_type IN ('written', 'document', 'picture', 'hybrid')),
+  attachment_url TEXT,
+  attachment_name TEXT,
+  attachment_type TEXT CHECK (attachment_type IN ('document', 'picture')),
+  attachment_size_bytes BIGINT DEFAULT 0,
+  additional_attachments JSONB DEFAULT '[]'::jsonb,
+  due_date TEXT NOT NULL,
+  total_points INT DEFAULT 20,
+  term TEXT DEFAULT 'First Term',
+  academic_year TEXT DEFAULT '2024/2025',
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'closed', 'draft', 'archived')),
+  created_by TEXT NOT NULL,
+  created_by_role TEXT NOT NULL DEFAULT 'admin',
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  submissions_count INT DEFAULT 0
+);
+
+-- 28. Assignment Submissions (matches AssignmentSubmission)
+CREATE TABLE IF NOT EXISTS public.assignment_submissions (
+  id TEXT PRIMARY KEY,
+  assignment_id TEXT NOT NULL REFERENCES public.assignments(id) ON DELETE CASCADE,
+  student_id TEXT NOT NULL,
+  student_name TEXT NOT NULL,
+  grade TEXT NOT NULL,
+  written_answer TEXT,
+  attachment_url TEXT,
+  attachment_name TEXT,
+  attachment_type TEXT CHECK (attachment_type IN ('document', 'picture')),
+  submitted_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  status TEXT DEFAULT 'submitted' CHECK (status IN ('submitted', 'graded', 'late')),
+  score NUMERIC(5, 2),
+  feedback TEXT,
+  graded_by TEXT,
+  graded_at TIMESTAMPTZ,
+  CONSTRAINT uq_assignment_student UNIQUE (assignment_id, student_id)
+);
+
 -- ==============================================================================
 -- PHASE 3: SAFE COLUMN UPGRADES & CONSTRAINT MIGRATIONS (IDEMPOTENT)
 -- (Ensures scripts succeed when pasted into an already-existing database)
@@ -435,6 +482,8 @@ ALTER TABLE public.students ADD COLUMN IF NOT EXISTS parent_id TEXT;
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS balance NUMERIC(12, 2) DEFAULT NULL;
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS photo TEXT;
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS created_by TEXT DEFAULT 'admin';
+ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS assignment_role TEXT DEFAULT 'class_teacher';
+ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS assigned_subjects TEXT[] DEFAULT '{}';
 ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS can_create_students BOOLEAN DEFAULT FALSE;
 
 -- Update attendance_records method check to include batch_checklist and roll call
@@ -1081,8 +1130,34 @@ CREATE POLICY "Anyone can exchange call signals"
   USING (true)
   WITH CHECK (true);
 
+-- 27. Assignments Policies
+ALTER TABLE public.assignments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can view assignments" ON public.assignments;
+CREATE POLICY "Anyone can view assignments"
+  ON public.assignments FOR SELECT
+  USING (true);
+
+DROP POLICY IF EXISTS "Staff and Admin can manage assignments" ON public.assignments;
+CREATE POLICY "Staff and Admin can manage assignments"
+  ON public.assignments FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- 28. Assignment Submissions Policies
+ALTER TABLE public.assignment_submissions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can view assignment submissions" ON public.assignment_submissions;
+CREATE POLICY "Anyone can view assignment submissions"
+  ON public.assignment_submissions FOR SELECT
+  USING (true);
+
+DROP POLICY IF EXISTS "Students and staff can manage submissions" ON public.assignment_submissions;
+CREATE POLICY "Students and staff can manage submissions"
+  ON public.assignment_submissions FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
 -- ==============================================================================
--- PHASE 7: SUPABASE REALTIME CONFIGURATION (ALL 26 TABLES)
+-- PHASE 7: SUPABASE REALTIME CONFIGURATION (ALL 28 TABLES)
 -- ==============================================================================
 ALTER TABLE public.profiles REPLICA IDENTITY FULL;
 ALTER TABLE public.students REPLICA IDENTITY FULL;
@@ -1110,6 +1185,8 @@ ALTER TABLE public.admin_realtime_events REPLICA IDENTITY FULL;
 ALTER TABLE public.call_recordings REPLICA IDENTITY FULL;
 ALTER TABLE public.school_bank_account_config REPLICA IDENTITY FULL;
 ALTER TABLE public.call_signals REPLICA IDENTITY FULL;
+ALTER TABLE public.assignments REPLICA IDENTITY FULL;
+ALTER TABLE public.assignment_submissions REPLICA IDENTITY FULL;
 
 DO $$
 DECLARE
@@ -1140,7 +1217,9 @@ DECLARE
     'admin_realtime_events',
     'call_recordings',
     'school_bank_account_config',
-    'call_signals'
+    'call_signals',
+    'assignments',
+    'assignment_submissions'
   ];
 BEGIN
   -- 1. Ensure supabase_realtime publication exists

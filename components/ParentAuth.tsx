@@ -97,7 +97,6 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
 
   const handleFillDemo = () => {
     setLoginIdentifier('parent@Godshand.sch.ng');
-    setLoginPassword('parent123');
     setLocalError('');
     setSecurityAlert(null);
   };

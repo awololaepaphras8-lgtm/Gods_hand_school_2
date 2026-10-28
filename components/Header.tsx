@@ -84,9 +84,7 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
     { label: 'About School & Results', view: 'about', icon: '🏛️' },
     { label: 'Check School Fees', view: 'feeChecker', icon: '💳' },
     { label: 'Admission & Fees', view: 'apply', icon: '🎓' },
-    { label: 'Students & Pupils Hub', view: 'portal', icon: '💻' },
-    { label: 'Staff Entry', view: 'teacherLogin', icon: '👔' },
-    { label: role === UserRole.ADMIN ? 'Proprietor Admin Panel' : 'Proprietor / Admin Login', view: 'admin', icon: '⚙️' },
+    { label: 'Students & Pupils Hub', view: 'portal', icon: '💻' }
   ];
 
   return (
@@ -191,13 +189,13 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
                 <span className="hidden md:inline">{currentTheme === 'dark' ? 'Light' : 'Dark'}</span>
               </button>
 
-              {/* Download App Shortcut Button - completely removed once installed/downloaded */}
-              {!isAppInstalled && onOpenDownloadModal && (
+              {/* Download App Shortcut Button: Allows user to choose PWA or Native App (Windows, Android, iOS) */}
+              {onOpenDownloadModal && (
                 <button
                   type="button"
                   onClick={onOpenDownloadModal}
-                  className="flex items-center space-x-1 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 bg-yellow-400 hover:bg-yellow-300 text-blue-950 border-yellow-500 shadow-sm active:scale-95"
-                  title="Download God's Hand School App to your phone or computer"
+                  className="flex items-center space-x-1 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 bg-yellow-400 hover:bg-yellow-300 text-blue-950 border-yellow-500 shadow-sm active:scale-95 cursor-pointer"
+                  title="Download God's Hand School App (PWA or Native App for Windows, Android, iOS)"
                 >
                   <span className="text-xs sm:text-sm">📲</span>
                   <span className="hidden sm:inline">Download App</span>
@@ -341,17 +339,6 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
                     className="px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider text-white bg-blue-900 rounded-xl hover:bg-blue-800 transition-all shadow-xs active:scale-95 whitespace-nowrap shrink-0"
                   >
                     Login
-                  </button>
-
-                  {/* Proprietor / Admin Lock Shortcut */}
-                  <button 
-                    onClick={() => navigateTo('admin')}
-                    className="hidden xs:flex p-1.5 sm:p-2 text-blue-900 bg-yellow-400 rounded-full hover:shadow-md transition-all shrink-0 items-center justify-center"
-                    title="Proprietor Login"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
                   </button>
                 </div>
               ) : (

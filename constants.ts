@@ -166,3 +166,33 @@ export const POPULAR_NIGERIAN_BANKS = [
   'Jaiz Bank',
   'Taj Bank'
 ];
+
+export const STANDARD_SUBJECTS = [
+  'Mathematics',
+  'English Language',
+  'Basic Science & Technology',
+  'Social Studies',
+  'Civic Education',
+  'Christian Religious Studies (CRS)',
+  'Islamic Religious Studies (IRS)',
+  'Agricultural Science',
+  'Physical & Health Education (PHE)',
+  'Computer Studies / ICT',
+  'Cultural & Creative Arts (CCA)',
+  'Business Studies',
+  'Home Economics',
+  'French',
+  'Yoruba Language',
+  'Physics',
+  'Chemistry',
+  'Biology',
+  'Economics',
+  'Government',
+  'Literature-in-English',
+  'Financial Accounting',
+  'Commerce',
+  'Further Mathematics',
+  'Geography',
+  'Technical Drawing'
+];
+

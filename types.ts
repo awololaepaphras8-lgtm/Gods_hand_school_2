@@ -93,12 +93,16 @@ export interface ClassTimetable {
   updatedBy?: string;
 }
 
+export type TeacherAssignmentRole = 'class_teacher' | 'subject_teacher' | 'both';
+
 export interface TeacherAccount {
   id: string;
   username: string;
   password: string;
   createdAt: string;
+  assignmentRole?: TeacherAssignmentRole;
   assignedGrades: GradeLevel[];
+  assignedSubjects?: string[]; // Array of subject names, e.g. ['Mathematics', 'English Language']
   assignedCourses: string[]; // Array of Course IDs
   allowedPages?: StaffPagePermission[];
   canCreateStudents?: boolean;

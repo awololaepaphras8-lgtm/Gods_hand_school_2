@@ -63,6 +63,40 @@ import { QRCodeSVG } from 'qrcode.react';
 import { generateStudentId } from './utils/studentIdGenerator';
 import { downloadQrCodeImage } from './utils/exportService';
 import { getInitialTheme, applyThemeToDocument } from './utils/themeManager';
+import { verifyCredential, generateSecureTempPassword } from './utils/authSecurity';
+
+// Secret URL route checker and cleaner
+const checkSecretPath = (keyword: string): boolean => {
+  if (typeof window === 'undefined') return false;
+  const full = (
+    window.location.pathname + 
+    window.location.hash + 
+    window.location.search
+  ).toLowerCase();
+  return full.includes(keyword.toLowerCase());
+};
+
+// Immediately masks the URL so /jumoke and /toloruniose are NEVER visible in the address bar
+const maskAndCleanSecretUrl = () => {
+  if (typeof window === 'undefined' || !window.history?.replaceState) return;
+  try {
+    const origin = window.location.origin || '';
+    window.history.replaceState(null, '', origin + '/');
+  } catch (e) {
+    // ignore
+  }
+};
+
+// Checks if the user launched via a dedicated installed Admin or Staff App
+const getDedicatedAppMode = (): 'admin' | 'staff' | null => {
+  if (typeof window === 'undefined') return null;
+  const stored = localStorage.getItem('ghs_dedicated_app_role');
+  if (stored === 'admin' || stored === 'staff') return stored;
+  const search = window.location.search.toLowerCase();
+  if (search.includes('app_entry=admin')) return 'admin';
+  if (search.includes('app_entry=staff')) return 'staff';
+  return null;
+};
 
 const App: React.FC = () => {
   const [showSplashScreen, setShowSplashScreen] = useState<boolean>(true);
@@ -81,8 +115,59 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<string | null>(() => savedSession?.currentUser || null);
   const [currentParentId, setCurrentParentId] = useState<string | null>(() => savedSession?.currentParentId || null);
   const [state, setState] = useState<AppState>(stateService.getState());
+
+  const activeTeacherDelegation = (role === UserRole.TEACHER && currentUser)
+    ? (state.timedStaffDelegations || []).find(
+        d => d.teacherUsername === currentUser && d.status === 'active' && new Date(d.expiresAt) > new Date()
+      )
+    : null;
+
+  const [isSecretAdminUnlocked, setIsSecretAdminUnlocked] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    if (checkSecretPath('toloruniose')) return true;
+    if (getDedicatedAppMode() === 'admin') return true;
+    return sessionStorage.getItem('ghs_secret_admin_unlocked') === 'true';
+  });
+
+  const [isSecretStaffUnlocked, setIsSecretStaffUnlocked] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    if (checkSecretPath('jumoke')) return true;
+    if (getDedicatedAppMode() === 'staff') return true;
+    return sessionStorage.getItem('ghs_secret_staff_unlocked') === 'true';
+  });
+
   const [view, setView] = useState<'home' | 'portal' | 'apply' | 'admin' | 'teacherLogin' | 'teacher' | 'studentAuth' | 'feeChecker' | 'resultChecker' | 'about' | 'parentAuth' | 'parentPortal' | 'studentReceipts' | 'parentStaffChat' | 'communityHub' | 'attendanceScanning'>(
-    () => savedSession?.view || 'home'
+    () => {
+      // 1. Secret URLs take highest priority
+      if (checkSecretPath('toloruniose')) {
+        return 'admin';
+      }
+      if (checkSecretPath('jumoke')) {
+        return 'teacherLogin';
+      }
+      // 2. Dedicated installed app mode (goes straight to login/portal)
+      const dedicatedMode = getDedicatedAppMode();
+      if (dedicatedMode === 'admin') {
+        return savedSession?.role === UserRole.ADMIN ? (savedSession?.view || 'admin') : 'admin';
+      }
+      if (dedicatedMode === 'staff') {
+        return savedSession?.role === UserRole.TEACHER ? (savedSession?.view || 'teacher') : 'teacherLogin';
+      }
+      // 3. Saved browser session
+      if (savedSession?.view === 'admin' && savedSession?.role !== UserRole.ADMIN) {
+        return 'home';
+      }
+      if (savedSession?.view === 'portal' && savedSession?.role !== UserRole.STUDENT) {
+        return 'home';
+      }
+      if (savedSession?.view === 'teacher' && savedSession?.role !== UserRole.TEACHER) {
+        return 'home';
+      }
+      if (savedSession?.view === 'parentPortal' && savedSession?.role !== UserRole.PARENT) {
+        return 'home';
+      }
+      return savedSession?.view || 'home';
+    }
   );
 
   const saveAuthSession = (r: UserRole, user: string | null, parentId: string | null, v: string) => {
@@ -108,6 +193,7 @@ const App: React.FC = () => {
     setRole(UserRole.GUEST);
     setCurrentUser(null);
     setCurrentParentId(null);
+    maskAndCleanSecretUrl();
     setView('home');
     clearAuthSession();
   };
@@ -156,6 +242,51 @@ const App: React.FC = () => {
     applyThemeToDocument(initialTheme);
   }, []);
 
+  // Secret URL route watcher & immediate URL masking
+  // Strips secret keywords immediately so /toloruniose and /jumoke are NEVER visible
+  useEffect(() => {
+    const checkAndMaskSecretRoutes = () => {
+      let shouldMask = false;
+
+      if (checkSecretPath('toloruniose')) {
+        setIsSecretAdminUnlocked(true);
+        sessionStorage.setItem('ghs_secret_admin_unlocked', 'true');
+        setView('admin');
+        shouldMask = true;
+      }
+
+      if (checkSecretPath('jumoke')) {
+        setIsSecretStaffUnlocked(true);
+        sessionStorage.setItem('ghs_secret_staff_unlocked', 'true');
+        setView('teacherLogin');
+        shouldMask = true;
+      }
+
+      const dedicated = getDedicatedAppMode();
+      if (dedicated === 'admin') {
+        setIsSecretAdminUnlocked(true);
+        if (window.location.search.toLowerCase().includes('app_entry')) shouldMask = true;
+      } else if (dedicated === 'staff') {
+        setIsSecretStaffUnlocked(true);
+        if (window.location.search.toLowerCase().includes('app_entry')) shouldMask = true;
+      }
+
+      // Hide /toloruniose, /jumoke and query parameters from URL bar immediately
+      if (shouldMask) {
+        maskAndCleanSecretUrl();
+      }
+    };
+
+    checkAndMaskSecretRoutes();
+    window.addEventListener('popstate', checkAndMaskSecretRoutes);
+    window.addEventListener('hashchange', checkAndMaskSecretRoutes);
+
+    return () => {
+      window.removeEventListener('popstate', checkAndMaskSecretRoutes);
+      window.removeEventListener('hashchange', checkAndMaskSecretRoutes);
+    };
+  }, []);
+
   // Real-time synchronization & initial Supabase database hydration
   useEffect(() => {
     // 1. Listen for real-time changes across PostgreSQL tables and broadcast tabs
@@ -186,7 +317,9 @@ const App: React.FC = () => {
             chatMessages: (dbState.chatMessages && dbState.chatMessages.length > 0) ? dbState.chatMessages : prev.chatMessages,
             meetings: (dbState.meetings && dbState.meetings.length > 0) ? dbState.meetings : prev.meetings,
             callSessions: (dbState.callSessions && dbState.callSessions.length > 0) ? dbState.callSessions : prev.callSessions,
-            adminEvents: (dbState.adminEvents && dbState.adminEvents.length > 0) ? dbState.adminEvents : prev.adminEvents
+            adminEvents: (dbState.adminEvents && dbState.adminEvents.length > 0) ? dbState.adminEvents : prev.adminEvents,
+            assignments: (dbState.assignments && dbState.assignments.length > 0) ? dbState.assignments : prev.assignments,
+            assignmentSubmissions: (dbState.assignmentSubmissions && dbState.assignmentSubmissions.length > 0) ? dbState.assignmentSubmissions : prev.assignmentSubmissions
           }));
         }
       });
@@ -716,6 +849,17 @@ const App: React.FC = () => {
     }
   };
 
+  const handleUpdateTeacher = (teacherId: string, updates: Partial<TeacherAccount>) => {
+    setState(prev => ({
+      ...prev,
+      teachers: prev.teachers.map(t => t.id === teacherId ? { ...t, ...updates } : t)
+    }));
+    const teacher = state.teachers.find(t => t.id === teacherId);
+    if (teacher) {
+      realtimeService.addTeacher({ ...teacher, ...updates });
+    }
+  };
+
   const deleteTeacherAccount = (teacherId: string) => {
     setState(prev => ({
       ...prev,
@@ -828,6 +972,7 @@ const App: React.FC = () => {
       stateService.saveState(next);
       return next;
     });
+    realtimeService.createAssignment(newAssignment);
   };
 
   const handleUpdateAssignment = (updated: Assignment) => {
@@ -839,6 +984,7 @@ const App: React.FC = () => {
       stateService.saveState(next);
       return next;
     });
+    realtimeService.updateAssignment(updated);
   };
 
   const handleDeleteAssignment = (id: string) => {
@@ -850,6 +996,7 @@ const App: React.FC = () => {
       stateService.saveState(next);
       return next;
     });
+    realtimeService.deleteAssignment(id);
   };
 
   const handleSubmitAssignment = (submission: AssignmentSubmission) => {
@@ -866,12 +1013,13 @@ const App: React.FC = () => {
       stateService.saveState(next);
       return next;
     });
+    realtimeService.submitAssignment(submission);
   };
 
   const handleStudentLogin = (emailOrId: string, pass: string): boolean => {
     const query = emailOrId.trim().toLowerCase();
     const student = state.studentAccounts.find(s => 
-      (s.email.toLowerCase() === query || s.id.toLowerCase() === query) && s.password === pass
+      (s.email.toLowerCase() === query || s.id.toLowerCase() === query) && verifyCredential(pass, s.password)
     );
     if (student) {
       setRole(UserRole.STUDENT);
@@ -949,7 +1097,10 @@ const App: React.FC = () => {
   };
 
   const handleTeacherLoginAttempt = (username: string, password: string) => {
-    const teacher = state.teachers.find(t => t.username === username && t.password === password);
+    const cleanUser = username.trim().toLowerCase();
+    const teacher = state.teachers.find(t => 
+      t.username.toLowerCase() === cleanUser && verifyCredential(password, t.password)
+    );
     if (teacher) {
       setRole(UserRole.TEACHER);
       setCurrentUser(teacher.username);
@@ -964,7 +1115,7 @@ const App: React.FC = () => {
   const handleParentLogin = (emailOrPhone: string, pass: string): boolean => {
     const query = emailOrPhone.trim().toLowerCase();
     const parent = (state.parents || []).find(p => 
-      (p.email.toLowerCase() === query || p.phone.trim() === emailOrPhone.trim() || p.id.toLowerCase() === query) && p.password === pass
+      (p.email.toLowerCase() === query || p.phone.trim() === emailOrPhone.trim() || p.id.toLowerCase() === query) && verifyCredential(pass, p.password)
     );
     if (parent) {
       setRole(UserRole.PARENT);
@@ -1049,7 +1200,7 @@ const App: React.FC = () => {
       name: childData.name,
       grade: childData.grade,
       email: childData.email || `${childData.name.toLowerCase().replace(/\s+/g, '.')}.${Date.now().toString().slice(-4)}@Godshand.sch.ng`,
-      password: childData.password || 'student123',
+      password: childData.password || generateSecureTempPassword(),
       createdAt: new Date().toISOString(),
       entryAllowed: true,
       activeTerm: state.activeTerm || 'First Term',
@@ -1294,6 +1445,15 @@ const App: React.FC = () => {
     realtimeService.deleteParentStaffMessage(messageId);
   };
 
+  const handleDeleteMultipleParentMessages = (messageIds: string[]) => {
+    if (!messageIds || messageIds.length === 0) return;
+    setState(prev => ({
+      ...prev,
+      parentStaffMessages: (prev.parentStaffMessages || []).filter(m => !messageIds.includes(m.id))
+    }));
+    realtimeService.deleteParentStaffMessages(messageIds);
+  };
+
   const handleReactParentMessage = (messageId: string, emoji: string) => {
     const userId = currentUser || (role === UserRole.PARENT ? (currentParentObj?.id || 'Parent') : 'User');
     const msg = (state.parentStaffMessages || []).find(m => m.id === messageId);
@@ -1363,6 +1523,17 @@ const App: React.FC = () => {
     realtimeService.deleteChatMessage(messageId);
   };
 
+  const handleDeleteMultipleChatMessages = (messageIds: string[]) => {
+    if (!messageIds || messageIds.length === 0) return;
+    setState(prev => {
+      const updatedMessages = (prev.chatMessages || []).filter(m => !messageIds.includes(m.id));
+      const updated = { ...prev, chatMessages: updatedMessages };
+      stateService.saveState(updated);
+      return updated;
+    });
+    realtimeService.deleteChatMessages(messageIds);
+  };
+
   const handleCreateMeeting = (meetingData: Omit<MeetingSession, 'id' | 'createdAt'>) => {
     const meeting: MeetingSession = {
       ...meetingData,
@@ -1406,6 +1577,18 @@ const App: React.FC = () => {
   };
 
   const handleNav = (v: any) => {
+    if (v === 'admin' && role !== UserRole.ADMIN && !activeTeacherDelegation) {
+      if (!isSecretAdminUnlocked && getDedicatedAppMode() !== 'admin') {
+        setView('home');
+        return;
+      }
+    }
+    if (v === 'teacherLogin' && role !== UserRole.TEACHER) {
+      if (!isSecretStaffUnlocked && getDedicatedAppMode() !== 'staff') {
+        setView('home');
+        return;
+      }
+    }
     if ((v === 'apply' || v === 'portal') && role === UserRole.GUEST) {
         setLoginError("You must log in to access admission forms and school fees.");
         setView('studentAuth');
@@ -1427,21 +1610,27 @@ const App: React.FC = () => {
     }
   };
 
-  const currentStudentObj = role === UserRole.STUDENT ? state.studentAccounts.find(s => s.name === currentUser) : null;
-  const currentTeacherObj = role === UserRole.TEACHER ? state.teachers.find(t => t.username === currentUser) : null;
+  const currentStudentObj = (role === UserRole.STUDENT && currentUser)
+    ? (state.studentAccounts.find(s => 
+        (s.name && s.name.trim().toLowerCase() === currentUser.trim().toLowerCase()) || 
+        (s.id && s.id.trim().toLowerCase() === currentUser.trim().toLowerCase()) || 
+        (s.email && s.email.trim().toLowerCase() === currentUser.trim().toLowerCase())
+      ) || null)
+    : null;
+  const currentTeacherObj = role === UserRole.TEACHER ? state.teachers.find(t => t.username.toLowerCase() === currentUser?.toLowerCase()) : null;
   const currentParentObj = (role === UserRole.PARENT && (currentParentId || currentUser))
-    ? (state.parents || []).find(p => p.id === currentParentId || p.fullName === currentUser || p.email.toLowerCase() === currentUser?.toLowerCase())
+    ? (state.parents || []).find(p => p.id === currentParentId || (p.fullName && p.fullName.trim().toLowerCase() === currentUser?.trim().toLowerCase()) || (p.email && p.email.trim().toLowerCase() === currentUser?.trim().toLowerCase()))
     : null;
 
-  const activeTeacherDelegation = (role === UserRole.TEACHER && currentUser)
-    ? (state.timedStaffDelegations || []).find(
-        d => d.teacherUsername === currentUser && d.status === 'active' && new Date(d.expiresAt) > new Date()
+  const studentPayments = (currentStudentObj || currentUser)
+    ? state.payments.filter(p => 
+        (currentStudentObj && p.studentId === currentStudentObj.id) ||
+        (currentStudentObj && p.studentName && p.studentName.trim().toLowerCase() === currentStudentObj.name.trim().toLowerCase()) ||
+        (currentUser && p.studentName && p.studentName.trim().toLowerCase() === currentUser.trim().toLowerCase())
       )
-    : null;
-
-  const studentPayments = state.payments.filter(p => p.studentName === currentUser);
+    : [];
   const totalPaid = studentPayments.reduce((acc, p) => acc + p.amount, 0);
-  const targetFee = currentStudentObj ? state.fees[currentStudentObj.grade] : 0;
+  const targetFee = (currentStudentObj && currentStudentObj.grade && state.fees[currentStudentObj.grade]) ? state.fees[currentStudentObj.grade] : 0;
   const paymentProgress = targetFee > 0 ? Math.min(100, Math.round((totalPaid / targetFee) * 100)) : 0;
 
   const getPageClosedStatus = (pageView: string): { isClosed: boolean; pageName: string; notice: string } => {
@@ -1662,15 +1851,16 @@ const App: React.FC = () => {
         )}
 
         {view === 'portal' && (
-          <div className="max-w-4xl mx-auto py-12 px-4 text-center">
-            <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl border-2 border-slate-50 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-2 bg-yellow-400"></div>
-                
-                <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-10 text-left">
-                  <div>
-                    <h2 className="text-4xl font-black text-blue-900 mb-1 font-serif">Welcome, {currentUser}</h2>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Grade: {currentStudentObj?.grade} • Student ID: {currentStudentObj?.id}</p>
-                  </div>
+          (role === UserRole.STUDENT && currentStudentObj) ? (
+            <div className="max-w-4xl mx-auto py-12 px-4 text-center">
+              <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl border-2 border-slate-50 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-2 bg-yellow-400"></div>
+                  
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-10 text-left">
+                    <div>
+                      <h2 className="text-4xl font-black text-blue-900 mb-1 font-serif">Welcome, {currentStudentObj.name || currentUser}</h2>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Grade: {currentStudentObj.grade || 'N/A'} • Student ID: {currentStudentObj.id || 'N/A'}</p>
+                    </div>
                   <div className="mt-6 md:mt-0 bg-blue-50 p-4 rounded-2xl border border-blue-100 min-w-[220px]">
                     <div className="flex justify-between text-[10px] font-black text-blue-900 uppercase tracking-widest mb-2">
                       <span>Payment Status</span>
@@ -1912,23 +2102,27 @@ const App: React.FC = () => {
                 })()}
 
                 {/* Class Timetable for Student & Pupils */}
-                <div id="student-timetable-section" className="mt-12 text-left">
-                  <StudentTimetableCard
-                    grade={currentStudentObj.grade}
-                    activeTerm={currentStudentObj.activeTerm || 'First Term'}
-                    timetables={state.timetables || []}
-                  />
-                </div>
+                {currentStudentObj && currentStudentObj.grade && (
+                  <div id="student-timetable-section" className="mt-12 text-left">
+                    <StudentTimetableCard
+                      grade={currentStudentObj.grade}
+                      activeTerm={currentStudentObj.activeTerm || 'First Term'}
+                      timetables={state.timetables || []}
+                    />
+                  </div>
+                )}
 
                 {/* Class Homework & Assignments (Basic 5 to SS 3) */}
-                <div id="student-assignments-section" className="mt-8 text-left">
-                  <StudentAssignmentsViewer
-                    student={currentStudentObj}
-                    assignments={state.assignments || []}
-                    submissions={state.assignmentSubmissions || []}
-                    onSubmitAnswer={handleSubmitAssignment}
-                  />
-                </div>
+                {currentStudentObj && (
+                  <div id="student-assignments-section" className="mt-8 text-left">
+                    <StudentAssignmentsViewer
+                      student={currentStudentObj}
+                      assignments={state.assignments || []}
+                      submissions={state.assignmentSubmissions || []}
+                      onSubmitAnswer={handleSubmitAssignment}
+                    />
+                  </div>
+                )}
 
                 <div className="mt-16 grid md:grid-cols-2 gap-10 text-left">
                    <div>
@@ -2081,60 +2275,107 @@ const App: React.FC = () => {
                     )}
                   </div>
                 </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <StudentAuth 
+              onLogin={handleStudentLogin}
+              onRegister={createStudentAccount}
+              onBack={() => setView('home')}
+              error={loginError || 'Please log in with your Student ID or Registered Email to access your student portal.'}
+              onResetPassword={handleResetStudentPassword}
+            />
+          )
         )}
 
         {view === 'teacherLogin' && (
-          <TeacherLoginGateway 
-            onLogin={handleTeacherLoginAttempt} 
-            onBack={() => setView('home')} 
-            error={loginError} 
-            onResetPassword={handleResetTeacherPassword}
-          />
+          (isSecretStaffUnlocked || role === UserRole.TEACHER || getDedicatedAppMode() === 'staff') ? (
+            <TeacherLoginGateway 
+              onLogin={handleTeacherLoginAttempt} 
+              onBack={() => {
+                maskAndCleanSecretUrl();
+                setView('home');
+              }} 
+              error={loginError} 
+              onResetPassword={handleResetTeacherPassword}
+            />
+          ) : (
+            <div className="max-w-md mx-auto py-20 px-4 text-center">
+              <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-200">
+                <span className="text-4xl block mb-3">🔒</span>
+                <h3 className="text-xl font-black text-blue-900 mb-2 font-serif">Staff Portal Restricted</h3>
+                <p className="text-xs text-slate-500 mb-6 font-medium leading-relaxed">
+                  The staff and faculty portal gateway is strictly restricted to authorized school teachers.
+                </p>
+                <button
+                  onClick={() => {
+                    setView('home');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black rounded-xl text-xs uppercase tracking-wider shadow-md cursor-pointer"
+                >
+                  Return to School Home
+                </button>
+              </div>
+            </div>
+          )
         )}
 
-        {view === 'teacher' && role === UserRole.TEACHER && (
-           <div className="max-w-6xl mx-auto py-12 px-4">
-             <TeacherDashboard 
-               username={currentUser || 'Staff'} 
-               assignedGrades={currentTeacherObj?.assignedGrades || []}
-               allStudents={state.studentAccounts}
-               courses={state.courses}
-               results={state.results}
-               attendance={state.attendance}
-               calendar={state.academicCalendar}
-               announcements={state.announcements}
-               allowedPages={currentTeacherObj?.allowedPages}
-               resultPublishRequests={state.resultPublishRequests || []}
-               timedStaffDelegations={state.timedStaffDelegations || []}
-               onOpenAdminDelegation={() => {
-                 setView('admin');
-                 window.scrollTo({ top: 0, behavior: 'smooth' });
-               }}
-               onAddCourse={addCourse}
-               onDuplicateCourse={duplicateCourse}
-               onAddResult={addResult}
-               onMarkAttendance={markAttendance}
-               onBatchMarkAttendance={handleBatchMarkAttendance}
-               onShiftStudent={shiftStudentToNextClass}
-               onBatchShiftStudents={shiftMultipleStudentsToNextClass}
-               timetables={state.timetables || []}
-               onSaveTimetable={handleSaveClassTimetable}
-               parentMessages={state.parentStaffMessages || []}
-               parents={state.parents || []}
-               onSendParentMessage={handleSendParentMessage}
-               onOpenParentMessaging={() => {
-                 setView('parentStaffChat');
-                 window.scrollTo({ top: 0, behavior: 'smooth' });
-               }}
-               onRequestPublishResults={handleRequestPublishResults}
-               onSendResultsToPupils={handleSendResultsToPupils}
-               canCreateStudents={currentTeacherObj?.canCreateStudents}
-               onAddStudent={handleAddStudentAccount}
-               onAddParentAccount={handleAddParentAccount}
-             />
-           </div>
+        {view === 'teacher' && (
+          role === UserRole.TEACHER ? (
+            <div className="max-w-6xl mx-auto py-12 px-4">
+              <TeacherDashboard 
+                username={currentUser || 'Staff'} 
+                assignedGrades={currentTeacherObj?.assignedGrades || []}
+                assignmentRole={currentTeacherObj?.assignmentRole || 'class_teacher'}
+                assignedSubjects={currentTeacherObj?.assignedSubjects || []}
+                allStudents={state.studentAccounts}
+                courses={state.courses}
+                results={state.results}
+                attendance={state.attendance}
+                calendar={state.academicCalendar}
+                announcements={state.announcements}
+                allowedPages={currentTeacherObj?.allowedPages}
+                resultPublishRequests={state.resultPublishRequests || []}
+                timedStaffDelegations={state.timedStaffDelegations || []}
+                onOpenAdminDelegation={() => {
+                  setView('admin');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onAddCourse={addCourse}
+                onDuplicateCourse={duplicateCourse}
+                onAddResult={addResult}
+                onMarkAttendance={markAttendance}
+                onBatchMarkAttendance={handleBatchMarkAttendance}
+                onShiftStudent={shiftStudentToNextClass}
+                onBatchShiftStudents={shiftMultipleStudentsToNextClass}
+                timetables={state.timetables || []}
+                onSaveTimetable={handleSaveClassTimetable}
+                parentMessages={state.parentStaffMessages || []}
+                parents={state.parents || []}
+                onSendParentMessage={handleSendParentMessage}
+                onOpenParentMessaging={() => {
+                  setView('parentStaffChat');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onRequestPublishResults={handleRequestPublishResults}
+                onSendResultsToPupils={handleSendResultsToPupils}
+                canCreateStudents={currentTeacherObj?.canCreateStudents}
+                onAddStudent={handleAddStudentAccount}
+                onAddParentAccount={handleAddParentAccount}
+              />
+            </div>
+          ) : (
+            <TeacherLoginGateway 
+              onLogin={handleTeacherLoginAttempt} 
+              onBack={() => {
+                maskAndCleanSecretUrl();
+                setView('home');
+              }} 
+              error={loginError} 
+              onResetPassword={handleResetTeacherPassword}
+            />
+          )
         )}
 
         {view === 'feeChecker' && (
@@ -2233,6 +2474,7 @@ const App: React.FC = () => {
                 onUpdateAnnouncement={updateAnnouncement}
                 onDeleteAnnouncement={deleteAnnouncement}
                 onCreateTeacher={createTeacherAccount}
+                onUpdateTeacher={handleUpdateTeacher}
                 onUpdateTeacherPermissions={updateTeacherPermissions}
                 onDeleteTeacher={deleteTeacherAccount}
                 onAddCourse={addCourse}
@@ -2288,6 +2530,7 @@ const App: React.FC = () => {
                 onUpdateAnnouncement={updateAnnouncement}
                 onDeleteAnnouncement={deleteAnnouncement}
                 onCreateTeacher={createTeacherAccount}
+                onUpdateTeacher={handleUpdateTeacher}
                 onUpdateTeacherPermissions={updateTeacherPermissions}
                 onDeleteTeacher={deleteTeacherAccount}
                 onAddCourse={addCourse}
@@ -2325,13 +2568,35 @@ const App: React.FC = () => {
                 }}
               />
             </div>
-          ) : (
+          ) : (isSecretAdminUnlocked || activeTeacherDelegation || getDedicatedAppMode() === 'admin') ? (
             <AdminLoginGateway 
               onLogin={handleAdminLoginAttempt}
-              onBack={() => setView('home')}
+              onBack={() => {
+                maskAndCleanSecretUrl();
+                setView('home');
+              }}
               error={loginError}
               onResetKey={handleResetAdminKey}
             />
+          ) : (
+            <div className="max-w-md mx-auto py-20 px-4 text-center">
+              <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-200">
+                <span className="text-4xl block mb-3">🔒</span>
+                <h3 className="text-xl font-black text-blue-900 mb-2 font-serif">Proprietor Access Restricted</h3>
+                <p className="text-xs text-slate-500 mb-6 font-medium leading-relaxed">
+                  The proprietor portal gateway is restricted and can only be accessed through designated administrative authorization.
+                </p>
+                <button
+                  onClick={() => {
+                    setView('home');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black rounded-xl text-xs uppercase tracking-wider shadow-md cursor-pointer"
+                >
+                  Return to School Home
+                </button>
+              </div>
+            </div>
           )
         )}
 
@@ -2500,6 +2765,7 @@ const App: React.FC = () => {
                 onSendMessage={handleSendParentMessage}
                 onEditMessage={handleEditParentMessage}
                 onDeleteMessage={handleDeleteParentMessage}
+                onDeleteMultipleMessages={handleDeleteMultipleParentMessages}
                 onReactMessage={handleReactParentMessage}
                 onMarkAsRead={handleMarkParentMessagesRead}
                 onInitiateCall={handleInitiateCall}
@@ -2563,6 +2829,7 @@ const App: React.FC = () => {
               onSendChatMessage={handleSendChatMessage}
               onEditChatMessage={handleEditChatMessage}
               onDeleteChatMessage={handleDeleteChatMessage}
+              onDeleteMultipleChatMessages={handleDeleteMultipleChatMessages}
               onCreateMeeting={handleCreateMeeting}
               onInitiateCall={handleInitiateCall}
               onUpdateCallStatus={handleUpdateCallStatus}

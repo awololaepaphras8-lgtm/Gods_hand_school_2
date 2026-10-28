@@ -165,9 +165,12 @@ CREATE TABLE IF NOT EXISTS public.teacher_accounts (
   full_name TEXT,
   email TEXT,
   phone TEXT,
+  assignment_role TEXT DEFAULT 'class_teacher' CHECK (assignment_role IN ('class_teacher', 'subject_teacher', 'both')),
   assigned_grades TEXT[] DEFAULT '{}' NOT NULL,
+  assigned_subjects TEXT[] DEFAULT '{}' NOT NULL,
   assigned_courses TEXT[] DEFAULT '{}' NOT NULL,
   allowed_pages TEXT[] DEFAULT '{"overview", "parentMessages", "attendanceScanning", "attendance", "students", "timetable", "termStats", "grading", "courses"}' NOT NULL,
+  can_create_students BOOLEAN DEFAULT FALSE NOT NULL,
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -848,17 +851,17 @@ ON CONFLICT (id) DO UPDATE SET
 
 INSERT INTO public.students (id, name, grade, email, password_hash, entry_allowed, active_term, admission_year)
 VALUES
-  ('GHS20268001', 'Samuel Adebayo', 'Primary 4', 'samuel@Godshand.sch.ng', 'student123', TRUE, 'First Term', 2026),
-  ('GHS202611001', 'Grace Adebayo', 'JSS 2', 'grace@Godshand.sch.ng', 'student123', TRUE, 'First Term', 2026),
-  ('STU-1', 'Samuel Adebayo', 'Primary 4', 'samuel.old@Godshand.sch.ng', 'student123', TRUE, 'First Term', 2022),
-  ('STU-2', 'Grace Adebayo', 'JSS 2', 'grace.old@Godshand.sch.ng', 'student123', TRUE, 'First Term', 2021),
-  ('STU-3', 'Boluwatife Adeleke', 'Primary 1', 'bolu.adeleke@Godshand.sch.ng', 'student123', TRUE, 'First Term', 2024),
-  ('STU-4', 'Zainab Danjuma', 'SSS 1', 'zainab.d@Godshand.sch.ng', 'student123', TRUE, 'First Term', 2023)
+  ('GHS20268001', 'Samuel Adebayo', 'Primary 4', 'samuel@Godshand.sch.ng', '703b0a3d6ad75b649a28adde7d83c6251da457549263bc7ff45ec709b0a8448b', TRUE, 'First Term', 2026),
+  ('GHS202611001', 'Grace Adebayo', 'JSS 2', 'grace@Godshand.sch.ng', '703b0a3d6ad75b649a28adde7d83c6251da457549263bc7ff45ec709b0a8448b', TRUE, 'First Term', 2026),
+  ('STU-1', 'Samuel Adebayo', 'Primary 4', 'samuel.old@Godshand.sch.ng', '703b0a3d6ad75b649a28adde7d83c6251da457549263bc7ff45ec709b0a8448b', TRUE, 'First Term', 2022),
+  ('STU-2', 'Grace Adebayo', 'JSS 2', 'grace.old@Godshand.sch.ng', '703b0a3d6ad75b649a28adde7d83c6251da457549263bc7ff45ec709b0a8448b', TRUE, 'First Term', 2021),
+  ('STU-3', 'Boluwatife Adeleke', 'Primary 1', 'bolu.adeleke@Godshand.sch.ng', '703b0a3d6ad75b649a28adde7d83c6251da457549263bc7ff45ec709b0a8448b', TRUE, 'First Term', 2024),
+  ('STU-4', 'Zainab Danjuma', 'SSS 1', 'zainab.d@Godshand.sch.ng', '703b0a3d6ad75b649a28adde7d83c6251da457549263bc7ff45ec709b0a8448b', TRUE, 'First Term', 2023)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.parents (id, full_name, email, phone, password_hash, relationship, address)
 VALUES
-  ('PAR-1', 'Mrs. Folashade Adebayo', 'parent@Godshand.sch.ng', '08034567890', 'parent123', 'Mother', 'Oluwatedo Area, Wire & Cable, Apata, Ibadan')
+  ('PAR-1', 'Mrs. Folashade Adebayo', 'parent@Godshand.sch.ng', '08034567890', '82e3edf5f5f3a46b5f94579b61817fd9a1f356adcef5ee22da3b96ef775c4860', 'Mother', 'Oluwatedo Area, Wire & Cable, Apata, Ibadan')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.parent_student_links (parent_id, student_id, linked_by, is_active)
@@ -871,7 +874,7 @@ ON CONFLICT (parent_id, student_id) DO NOTHING;
 
 INSERT INTO public.teacher_accounts (id, username, password_hash, assigned_grades, allowed_pages)
 VALUES
-  ('TCH-1', 'staff', 'staff123', ARRAY['Primary 1', 'Primary 2', 'Primary 3', 'Primary 4', 'Primary 5', 'Primary 6'], ARRAY['overview', 'parentMessages', 'attendanceScanning', 'attendance', 'students', 'timetable', 'termStats', 'grading', 'courses'])
+  ('TCH-1', 'staff', '10176e7b7b24d317acfcf8d2064cfd2f24e154f7b5a96603077d5ef813d6a6b6', ARRAY['Primary 1', 'Primary 2', 'Primary 3', 'Primary 4', 'Primary 5', 'Primary 6'], ARRAY['overview', 'parentMessages', 'attendanceScanning', 'attendance', 'students', 'timetable', 'termStats', 'grading', 'courses'])
 ON CONFLICT (username) DO NOTHING;
 
 INSERT INTO public.courses (id, name, grade, description)
@@ -1342,6 +1345,8 @@ ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS updated_at TIMESTAM
 ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS full_name TEXT;
 ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS email TEXT;
 ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS assignment_role TEXT DEFAULT 'class_teacher';
+ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS assigned_subjects TEXT[] DEFAULT '{}';
 ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS can_create_students BOOLEAN DEFAULT FALSE;
 ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS allowed_pages TEXT[] DEFAULT '{"overview", "parentMessages", "attendanceScanning", "attendance", "students", "timetable", "termStats", "grading", "courses"}' NOT NULL;
 
@@ -1616,11 +1621,11 @@ END $$;
 -- (Notice: Each staff only gets their specific assigned class, NOT blanket Primary 1!)
 INSERT INTO public.teacher_accounts (id, username, password_hash, full_name, assigned_grades, can_create_students, allowed_pages)
 VALUES
-  ('TCH-P1', 'teacher_p1', 'staff123', 'Mrs. Folashade Adeyemi', ARRAY['Primary 1'], true, ARRAY['overview', 'parentMessages', 'attendanceScanning', 'attendance', 'students', 'timetable', 'termStats', 'grading', 'courses']),
-  ('TCH-P2', 'teacher_p2', 'staff123', 'Mr. Emmanuel Okafor', ARRAY['Primary 2'], false, ARRAY['overview', 'parentMessages', 'attendanceScanning', 'attendance', 'students', 'timetable', 'termStats', 'grading', 'courses']),
-  ('TCH-P3', 'teacher_p3', 'staff123', 'Mrs. Blessing Alabi', ARRAY['Primary 3'], false, ARRAY['overview', 'parentMessages', 'attendanceScanning', 'attendance', 'students', 'timetable', 'termStats', 'grading', 'courses']),
-  ('TCH-J1', 'teacher_jss1', 'staff123', 'Mr. Babatunde Balogun', ARRAY['JSS 1'], true, ARRAY['overview', 'parentMessages', 'attendanceScanning', 'attendance', 'students', 'timetable', 'termStats', 'grading', 'courses']),
-  ('TCH-1', 'staff', 'staff123', 'Staff Faculty', ARRAY[]::TEXT[], false, ARRAY['overview', 'parentMessages', 'attendanceScanning', 'attendance', 'students', 'timetable', 'termStats', 'grading', 'courses'])
+  ('TCH-P1', 'teacher_p1', '10176e7b7b24d317acfcf8d2064cfd2f24e154f7b5a96603077d5ef813d6a6b6', 'Mrs. Folashade Adeyemi', ARRAY['Primary 1'], true, ARRAY['overview', 'parentMessages', 'attendanceScanning', 'attendance', 'students', 'timetable', 'termStats', 'grading', 'courses']),
+  ('TCH-P2', 'teacher_p2', '10176e7b7b24d317acfcf8d2064cfd2f24e154f7b5a96603077d5ef813d6a6b6', 'Mr. Emmanuel Okafor', ARRAY['Primary 2'], false, ARRAY['overview', 'parentMessages', 'attendanceScanning', 'attendance', 'students', 'timetable', 'termStats', 'grading', 'courses']),
+  ('TCH-P3', 'teacher_p3', '10176e7b7b24d317acfcf8d2064cfd2f24e154f7b5a96603077d5ef813d6a6b6', 'Mrs. Blessing Alabi', ARRAY['Primary 3'], false, ARRAY['overview', 'parentMessages', 'attendanceScanning', 'attendance', 'students', 'timetable', 'termStats', 'grading', 'courses']),
+  ('TCH-J1', 'teacher_jss1', '10176e7b7b24d317acfcf8d2064cfd2f24e154f7b5a96603077d5ef813d6a6b6', 'Mr. Babatunde Balogun', ARRAY['JSS 1'], true, ARRAY['overview', 'parentMessages', 'attendanceScanning', 'attendance', 'students', 'timetable', 'termStats', 'grading', 'courses']),
+  ('TCH-1', 'staff', '10176e7b7b24d317acfcf8d2064cfd2f24e154f7b5a96603077d5ef813d6a6b6', 'Staff Faculty', ARRAY[]::TEXT[], false, ARRAY['overview', 'parentMessages', 'attendanceScanning', 'attendance', 'students', 'timetable', 'termStats', 'grading', 'courses'])
 ON CONFLICT (username) DO UPDATE SET
   assigned_grades = EXCLUDED.assigned_grades,
   can_create_students = EXCLUDED.can_create_students,
@@ -2009,7 +2014,7 @@ CREATE TABLE IF NOT EXISTS public.students (
   name TEXT NOT NULL,
   grade TEXT NOT NULL,
   email TEXT UNIQUE,
-  password_hash TEXT DEFAULT 'student123',
+  password_hash TEXT DEFAULT '703b0a3d6ad75b649a28adde7d83c6251da457549263bc7ff45ec709b0a8448b',
   entry_allowed BOOLEAN DEFAULT TRUE NOT NULL,
   active_term TEXT DEFAULT 'First Term' NOT NULL,
   qr_code_version INT DEFAULT 1 NOT NULL,
@@ -2043,7 +2048,7 @@ CREATE TABLE IF NOT EXISTS public.parents (
   full_name TEXT NOT NULL,
   email TEXT UNIQUE NOT NULL,
   phone TEXT NOT NULL,
-  password_hash TEXT DEFAULT 'parent123',
+  password_hash TEXT DEFAULT '82e3edf5f5f3a46b5f94579b61817fd9a1f356adcef5ee22da3b96ef775c4860',
   relationship TEXT DEFAULT 'Parent / Guardian' NOT NULL,
   address TEXT,
   children_student_ids JSONB DEFAULT '[]'::jsonb,
@@ -2245,7 +2250,7 @@ BEGIN
       COALESCE(p_parent_name, p_student_name || '''s Parent'),
       COALESCE(p_parent_email, lower(regexp_replace(p_student_name, '[^a-zA-Z0-9]', '', 'g')) || '.parent@godshand.edu.ng'),
       COALESCE(p_parent_phone, '08000000000'),
-      'parent123',
+      '82e3edf5f5f3a46b5f94579b61817fd9a1f356adcef5ee22da3b96ef775c4860',
       COALESCE(p_parent_relationship, 'Mother'),
       jsonb_build_array(p_student_id),
       p_teacher_username,
@@ -2267,7 +2272,7 @@ BEGIN
     p_student_name,
     p_student_grade,
     p_student_email,
-    'student123',
+    '703b0a3d6ad75b649a28adde7d83c6251da457549263bc7ff45ec709b0a8448b',
     TRUE,
     'First Term',
     1,
@@ -2764,6 +2769,167 @@ export const downloadCoursesRealtimeSql = (): void => {
     'application/sql;charset=utf-8;'
   );
 };
+
+// ==============================================================================
+// GOD'S HAND MODEL SCHOOL - STAFF CLASS & SUBJECT ASSIGNMENT SQL
+// ==============================================================================
+export const SUPABASE_STAFF_ASSIGNMENT_SQL = `-- ==============================================================================
+-- GOD'S HAND INTERNATIONAL MODEL SCHOOL - STAFF CLASS & SUBJECT ASSIGNMENT SQL
+-- Wire & Cable, Apata, Ibadan, Oyo State, Nigeria
+-- Motto: Have Faith In God
+-- ==============================================================================
+-- PURPOSE:
+-- Allows School Administrator to choose either to:
+--   1. Assign Class(es) to a Class Teacher (Attendance, class broadsheet, conduct)
+--   2. Assign Subject(s) to a Subject Teacher (Continuous Assessment CA 40% & Exam 60%)
+--   3. Assign Both Class and Subject(s) to Class & Subject Teachers
+-- ==============================================================================
+
+-- 1. SAFE SCHEMA UPGRADES FOR TEACHER ACCOUNTS TABLE
+ALTER TABLE public.teacher_accounts 
+  ADD COLUMN IF NOT EXISTS assignment_role TEXT DEFAULT 'class_teacher' 
+  CHECK (assignment_role IN ('class_teacher', 'subject_teacher', 'both'));
+
+ALTER TABLE public.teacher_accounts 
+  ADD COLUMN IF NOT EXISTS assigned_subjects TEXT[] DEFAULT '{}';
+
+ALTER TABLE public.teacher_accounts 
+  ADD COLUMN IF NOT EXISTS assigned_grades TEXT[] DEFAULT '{}';
+
+ALTER TABLE public.teacher_accounts 
+  ADD COLUMN IF NOT EXISTS assigned_courses TEXT[] DEFAULT '{}';
+
+ALTER TABLE public.teacher_accounts 
+  ADD COLUMN IF NOT EXISTS can_create_students BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE public.teacher_accounts 
+  ADD COLUMN IF NOT EXISTS allowed_pages TEXT[] DEFAULT '{"overview", "parentMessages", "attendanceScanning", "attendance", "students", "timetable", "termStats", "grading", "courses"}';
+
+-- 2. PERFORMANCE INDEXES FOR FASTER LOOKUPS
+CREATE INDEX IF NOT EXISTS idx_teacher_assignment_role ON public.teacher_accounts(assignment_role);
+CREATE INDEX IF NOT EXISTS idx_teacher_assigned_grades ON public.teacher_accounts USING GIN(assigned_grades);
+CREATE INDEX IF NOT EXISTS idx_teacher_assigned_subjects ON public.teacher_accounts USING GIN(assigned_subjects);
+
+-- 3. STORED PROCEDURE: ATOMIC TEACHER ASSIGNMENT CONFIGURATION
+CREATE OR REPLACE FUNCTION public.assign_teacher_role_and_curriculum(
+  p_teacher_id TEXT,
+  p_assignment_role TEXT,
+  p_assigned_classes TEXT[] DEFAULT '{}',
+  p_assigned_subjects TEXT[] DEFAULT '{}'
+)
+RETURNS JSONB AS $$
+DECLARE
+  v_updated RECORD;
+BEGIN
+  -- Validate assignment role
+  IF p_assignment_role NOT IN ('class_teacher', 'subject_teacher', 'both') THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'error', 'Invalid assignment role. Must be: class_teacher, subject_teacher, or both.'
+    );
+  END IF;
+
+  UPDATE public.teacher_accounts
+  SET
+    assignment_role = p_assignment_role,
+    assigned_grades = p_assigned_classes,
+    assigned_subjects = p_assigned_subjects,
+    updated_at = timezone('utc'::text, now())
+  WHERE id = p_teacher_id OR username = p_teacher_id
+  RETURNING * INTO v_updated;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'error', 'Teacher account not found with ID/Username: ' || p_teacher_id
+    );
+  END IF;
+
+  -- Audit log into admin realtime stream
+  INSERT INTO public.admin_realtime_events (
+    action, details, performed_by, grade, payload, timestamp
+  ) VALUES (
+    'TEACHER_ASSIGNMENT_UPDATED',
+    'Assigned ' || v_updated.username || ' as ' || REPLACE(p_assignment_role, '_', ' ') || 
+    ' (Classes: ' || array_to_string(p_assigned_classes, ', ') || 
+    ' | Subjects: ' || array_to_string(p_assigned_subjects, ', ') || ')',
+    'School Administrator',
+    CASE WHEN array_length(p_assigned_classes, 1) > 0 THEN p_assigned_classes[1] ELSE 'All Classes' END,
+    jsonb_build_object(
+      'teacher_id', v_updated.id,
+      'username', v_updated.username,
+      'assignment_role', p_assignment_role,
+      'assigned_classes', p_assigned_classes,
+      'assigned_subjects', p_assigned_subjects
+    ),
+    timezone('utc'::text, now())
+  );
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'message', 'Teacher assignment updated successfully',
+    'teacher_id', v_updated.id,
+    'username', v_updated.username,
+    'assignment_role', v_updated.assignment_role,
+    'assigned_grades', v_updated.assigned_grades,
+    'assigned_subjects', v_updated.assigned_subjects
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 4. REALTIME REPLICATION CONFIGURATION
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'teacher_accounts'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.teacher_accounts;
+  END IF;
+END $$;
+
+-- 5. SAMPLE QUERIES FOR SCHOOL ADMINISTRATIVE AUDIT
+-- Query A: Get all Class Teachers and their assigned classes
+-- SELECT username, assigned_grades FROM public.teacher_accounts WHERE assignment_role IN ('class_teacher', 'both');
+
+-- Query B: Get all Subject Teachers and their assigned subjects
+-- SELECT username, assigned_subjects, assigned_grades FROM public.teacher_accounts WHERE assignment_role IN ('subject_teacher', 'both');
+
+-- Query C: Find the Mathematics Teacher(s)
+-- SELECT username, assignment_role, assigned_grades FROM public.teacher_accounts WHERE assigned_subjects @> ARRAY['Mathematics'];
+`;
+
+export const copyStaffAssignmentSql = async (): Promise<boolean> => {
+  try {
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(SUPABASE_STAFF_ASSIGNMENT_SQL);
+      return true;
+    }
+    const textArea = document.createElement('textarea');
+    textArea.value = SUPABASE_STAFF_ASSIGNMENT_SQL;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    return successful;
+  } catch (err) {
+    console.error('Failed to copy Staff Assignment SQL to clipboard:', err);
+    return false;
+  }
+};
+
+export const downloadStaffAssignmentSql = (): void => {
+  triggerDownload(
+    'gods_hand_school_staff_assignment.sql',
+    SUPABASE_STAFF_ASSIGNMENT_SQL,
+    'application/sql;charset=utf-8;'
+  );
+};
+
 
 
 

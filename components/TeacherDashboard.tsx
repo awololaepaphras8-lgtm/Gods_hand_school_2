@@ -1,16 +1,20 @@
 
 import React, { useState, useEffect } from 'react';
-import { Course, StudentResult, GradeLevel, StudentAccount, AttendanceRecord, StaffPagePermission, ALL_STAFF_PAGES, Announcement, ResultPublishRequest, TimedStaffDelegation, AdminSectionKey, ALL_ADMIN_SECTIONS, ClassTimetable, ParentStaffMessage, ParentAccount } from '../types';
+import { Course, StudentResult, GradeLevel, StudentAccount, AttendanceRecord, StaffPagePermission, ALL_STAFF_PAGES, Announcement, ResultPublishRequest, TimedStaffDelegation, AdminSectionKey, ALL_ADMIN_SECTIONS, ClassTimetable, ParentStaffMessage, ParentAccount, TeacherAssignmentRole } from '../types';
 import { GRADE_GROUPS, getNextGradeLevel } from '../constants';
 import { AttendanceCameraScanner } from './AttendanceCameraScanner';
 import { StandardReportCard } from './StandardReportCard';
 import { computeClassRankings, computeSubjectRankings, formatOrdinal } from '../utils/ranking';
 import { ClassTimetableManager } from './ClassTimetableManager';
 import { AcademicTrendsWidget } from './AcademicTrendsWidget';
+import { DedicatedAppInstallModal } from './DedicatedAppInstallModal';
+import { generateSecureTempPassword } from '../utils/authSecurity';
 
 interface TeacherDashboardProps {
   username: string;
   assignedGrades: GradeLevel[];
+  assignmentRole?: TeacherAssignmentRole;
+  assignedSubjects?: string[];
   allStudents: StudentAccount[];
   courses: Course[];
   results: StudentResult[];
@@ -46,6 +50,8 @@ interface TeacherDashboardProps {
 export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   username,
   assignedGrades = [],
+  assignmentRole = 'class_teacher',
+  assignedSubjects = [],
   allStudents,
   courses,
   results,
@@ -102,15 +108,18 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     }
   }, [allowedPages, availableTabs.length]);
 
-  // Staff class assignment restriction: Staff can ONLY mark attendance, grade, and write timetable for their assigned class(es)
+  // Staff assignment & role calculation
+  const isPureSubjectTeacher = assignmentRole === 'subject_teacher';
   const hasAssignedGrades = Boolean(assignedGrades && assignedGrades.length > 0);
+  
+  // Pure Subject teachers without explicit class limit can grade across all classes
   const authorizedGrades: GradeLevel[] = hasAssignedGrades 
     ? assignedGrades 
-    : [];
+    : (isPureSubjectTeacher ? (GRADE_GROUPS.flatMap(g => g.levels) as GradeLevel[]) : []);
   
-  // Only students belonging to the staff's assigned classes
-  const staffStudents = hasAssignedGrades
-    ? allStudents.filter(s => assignedGrades.includes(s.grade))
+  // Only students belonging to the staff's authorized classes
+  const staffStudents = (hasAssignedGrades || isPureSubjectTeacher)
+    ? (hasAssignedGrades ? allStudents.filter(s => assignedGrades.includes(s.grade)) : allStudents)
     : [];
   
   // Course form state
@@ -175,9 +184,12 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const [newPupilGender, setNewPupilGender] = useState<'Male' | 'Female' | 'Other'>('Male');
   const [newPupilAdmissionYear, setNewPupilAdmissionYear] = useState<number>(new Date().getFullYear());
   const [createParentWithPupil, setCreateParentWithPupil] = useState(true);
+  const [showStaffAppDownloadModal, setShowStaffAppDownloadModal] = useState(false);
   const [lastEnrollmentSuccess, setLastEnrollmentSuccess] = useState<{
     student: StudentAccount;
     parent?: ParentAccount;
+    tempStudentPass?: string;
+    tempParentPass?: string;
   } | null>(null);
 
   const handleTeacherCreateStudent = (e: React.FormEvent) => {
@@ -195,17 +207,20 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     const initials = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '');
     const studentId = `GHS-${newPupilGrade.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
     const studentEmail = `${initials}.${Math.floor(100 + Math.random() * 900)}@godshand.edu.ng`;
+    const tempStudentPass = generateSecureTempPassword();
 
+    let tempParentPass: string | undefined = undefined;
     let parentAccount: ParentAccount | undefined = undefined;
     if (createParentWithPupil && (newPupilParentName.trim() || newPupilParentPhone.trim() || newPupilParentEmail.trim())) {
       const parentId = `PAR-${Math.floor(1000 + Math.random() * 9000)}`;
       const pEmail = newPupilParentEmail.trim() || `${initials}.parent@godshand.edu.ng`;
+      tempParentPass = generateSecureTempPassword();
       parentAccount = {
         id: parentId,
         fullName: newPupilParentName.trim() || `${cleanName}'s Parent`,
         email: pEmail,
         phone: newPupilParentPhone.trim() || '08000000000',
-        password: 'parent123',
+        password: tempParentPass,
         relationship: newPupilParentRelationship,
         childrenStudentIds: [studentId],
         createdAt: new Date().toISOString()
@@ -218,7 +233,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
       name: cleanName,
       grade: newPupilGrade,
       email: studentEmail,
-      password: 'student123',
+      password: tempStudentPass,
       entryAllowed: true,
       activeTerm: currentTerm,
       qrCodeVersion: 1,
@@ -230,7 +245,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     };
 
     onAddStudent?.(newStudent);
-    setLastEnrollmentSuccess({ student: newStudent, parent: parentAccount });
+    setLastEnrollmentSuccess({ student: newStudent, parent: parentAccount, tempStudentPass, tempParentPass });
     setNewPupilName('');
     setNewPupilParentEmail('');
     setNewPupilParentPhone('');
@@ -430,17 +445,50 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
   return (
     <div className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-4 border-yellow-400">
-      <div className="bg-blue-900 px-10 py-12 text-white relative">
-        <div className="relative z-10">
-          <h2 className="text-4xl font-black mb-2 font-serif">Welcome, {username}</h2>
-          <div className="flex flex-wrap gap-2 mt-4">
-            {assignedGrades.map(g => (
-              <span key={g} className="px-3 py-1 bg-yellow-400 text-blue-900 rounded-lg text-[10px] font-black uppercase tracking-tighter shadow-md">
-                Class: {g}
-              </span>
-            ))}
+      <div className="bg-blue-900 px-8 sm:px-10 py-10 sm:py-12 text-white relative">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h2 className="text-3xl sm:text-4xl font-black font-serif">Welcome, {username}</h2>
+              {assignmentRole === 'subject_teacher' ? (
+                <span className="px-3.5 py-1 bg-indigo-500 text-yellow-300 border border-indigo-400 rounded-full text-[11px] font-black uppercase tracking-wider shadow-sm">
+                  📚 Subject Teacher
+                </span>
+              ) : assignmentRole === 'both' ? (
+                <span className="px-3.5 py-1 bg-purple-600 text-yellow-300 border border-purple-400 rounded-full text-[11px] font-black uppercase tracking-wider shadow-sm">
+                  🌟 Class & Subject Teacher
+                </span>
+              ) : (
+                <span className="px-3.5 py-1 bg-blue-700 text-yellow-300 border border-blue-500 rounded-full text-[11px] font-black uppercase tracking-wider shadow-sm">
+                  🏫 Class Teacher
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-2 mt-3 items-center">
+              {assignedGrades.length > 0 && assignedGrades.map(g => (
+                <span key={g} className="px-3 py-1 bg-yellow-400 text-blue-900 rounded-lg text-[10px] font-black uppercase tracking-tighter shadow-md">
+                  Class: {g}
+                </span>
+              ))}
+              {assignedSubjects && assignedSubjects.length > 0 && assignedSubjects.map(subj => (
+                <span key={subj} className="px-3 py-1 bg-indigo-800 text-yellow-300 border border-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-tighter shadow-md">
+                  ★ Subject: {subj}
+                </span>
+              ))}
+            </div>
+            <p className="text-blue-200 font-bold uppercase text-xs tracking-[0.2em] mt-3">Academic Staff Portal • God's Hand International Model School</p>
           </div>
-          <p className="text-blue-200 font-bold uppercase text-xs tracking-[0.2em] mt-4">Academic Staff Portal • God's Hand International Model School</p>
+
+          <button
+            type="button"
+            onClick={() => setShowStaffAppDownloadModal(true)}
+            className="inline-flex items-center gap-2 px-5 py-3 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-xl hover:scale-105 active:scale-95 cursor-pointer border-2 border-yellow-500 self-start md:self-center shrink-0"
+            title="Download Staff App to launch straight to Staff Desk next time"
+          >
+            <span>📲</span>
+            <span>Download Staff App</span>
+          </button>
         </div>
       </div>
 
@@ -1235,7 +1283,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
                   <div className="sm:col-span-2 lg:col-span-4 flex items-center justify-between gap-3 pt-2">
                     <p className="text-[11px] text-amber-900 font-medium">
-                      ⚡ Default credentials created: Pupil Password: <code className="bg-white px-1.5 py-0.5 rounded font-bold text-blue-900">student123</code> • Parent Password: <code className="bg-white px-1.5 py-0.5 rounded font-bold text-blue-900">parent123</code>
+                      ⚡ Accounts will be created with secure temporary credentials. Users can update their passwords on login.
                     </p>
                     <div className="flex items-center gap-2">
                       <button
@@ -1299,8 +1347,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                           <span className="font-bold text-slate-700">{lastEnrollmentSuccess.student.email}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 text-[10px] uppercase font-bold block">Default Password</span>
-                          <span className="font-mono font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">student123</span>
+                          <span className="text-slate-400 text-[10px] uppercase font-bold block">Temporary Password</span>
+                          <span className="font-mono font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">{lastEnrollmentSuccess.tempStudentPass || 'Generated & Secured'}</span>
                         </div>
                       </div>
                     </div>
@@ -1326,8 +1374,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                             <span className="font-bold text-slate-700">{lastEnrollmentSuccess.parent.phone} / {lastEnrollmentSuccess.parent.email}</span>
                           </div>
                           <div>
-                            <span className="text-slate-400 text-[10px] uppercase font-bold block">Default Password</span>
-                            <span className="font-mono font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">parent123</span>
+                            <span className="text-slate-400 text-[10px] uppercase font-bold block">Temporary Password</span>
+                            <span className="font-mono font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">{lastEnrollmentSuccess.tempParentPass || 'Generated & Secured'}</span>
                           </div>
                         </div>
                       </div>
@@ -1780,7 +1828,41 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                     
                     {/* Subject Selection */}
                     <div className="space-y-2">
-                      <label className="text-xs font-black text-blue-900 uppercase tracking-widest">Subject</label>
+                      <div className="flex justify-between items-center">
+                        <label className="text-xs font-black text-blue-900 uppercase tracking-widest">
+                          Subject
+                        </label>
+                        {assignedSubjects && assignedSubjects.length > 0 && (
+                          <span className="text-[10px] font-black text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200">
+                            ★ {assignedSubjects.length} Assigned Subject(s)
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Quick chips for assigned subjects */}
+                      {assignedSubjects && assignedSubjects.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 p-2 bg-indigo-50/60 rounded-xl border border-indigo-100">
+                          <span className="text-[10px] font-bold text-indigo-900 self-center mr-1">Your Subjects:</span>
+                          {assignedSubjects.map(subj => (
+                            <button
+                              type="button"
+                              key={subj}
+                              onClick={() => {
+                                setSelectedSubject(subj);
+                                setCustomSubject('');
+                              }}
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-all ${
+                                selectedSubject === subj
+                                  ? 'bg-indigo-900 text-yellow-300 shadow-sm'
+                                  : 'bg-white text-indigo-900 border border-indigo-200 hover:bg-indigo-100'
+                              }`}
+                            >
+                              ★ {subj}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
                       <select 
                         required
                         value={selectedSubject}
@@ -1788,9 +1870,18 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                         className="w-full px-4 py-3.5 bg-white border-2 border-blue-100 rounded-2xl font-bold outline-none text-xs text-blue-950"
                       >
                         <option value="">-- Choose Subject --</option>
-                        {courses.map(c => (
-                          <option key={c.id} value={c.name}>{c.name} ({c.grade})</option>
-                        ))}
+                        {assignedSubjects && assignedSubjects.length > 0 && (
+                          <optgroup label="★ My Assigned Subjects">
+                            {assignedSubjects.map(subj => (
+                              <option key={`my-subj-${subj}`} value={subj}>★ {subj} (Assigned to You)</option>
+                            ))}
+                          </optgroup>
+                        )}
+                        <optgroup label="School Curriculum & Courses">
+                          {courses.map(c => (
+                            <option key={c.id} value={c.name}>{c.name} ({c.grade})</option>
+                          ))}
+                        </optgroup>
                         <option value="__custom__">➕ Type Custom Subject...</option>
                       </select>
                       {selectedSubject === '__custom__' && (
@@ -2328,6 +2419,12 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
           </div>
         </div>
       )}
+      {/* Dedicated Staff App Download Modal */}
+      <DedicatedAppInstallModal
+        isOpen={showStaffAppDownloadModal}
+        onClose={() => setShowStaffAppDownloadModal(false)}
+        role="staff"
+      />
     </div>
   );
 };

@@ -21,8 +21,11 @@ import {
   CallSession,
   AdminRealtimeEvent,
   CallRecording,
-  SchoolBankAccountConfig
+  SchoolBankAccountConfig,
+  Assignment,
+  AssignmentSubmission
 } from '../types';
+import { INITIAL_STUDENT_HASH, INITIAL_PARENT_HASH, INITIAL_STAFF_HASH } from '../utils/authSecurity';
 
 const SUPABASE_URL = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://jzuifdntpxjrmmrpvqfc.supabase.co';
 const SUPABASE_ANON_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || 'sb_publishable_aBlhb0SIKKE-uWUx_hL-dw_dfgeCZ1B';
@@ -100,7 +103,9 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
       meetingsRes,
       callSessionsRes,
       adminEventsRes,
-      bankAccountRes
+      bankAccountRes,
+      assignmentsRes,
+      submissionsRes
     ] = await Promise.all([
       supabase.from('students').select('*'),
       supabase.from('parents').select('*'),
@@ -123,7 +128,9 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
       supabase.from('meetings').select('*').order('created_at', { ascending: false }),
       supabase.from('call_sessions').select('*').order('started_at', { ascending: false }),
       supabase.from('admin_realtime_events').select('*').order('timestamp', { ascending: false }).limit(50),
-      supabase.from('school_bank_account_config').select('*').limit(1).maybeSingle()
+      supabase.from('school_bank_account_config').select('*').limit(1).maybeSingle(),
+      supabase.from('assignments').select('*').order('created_at', { ascending: false }),
+      supabase.from('assignment_submissions').select('*').order('submitted_at', { ascending: false })
     ]);
 
     const partial: Partial<AppState> = {
@@ -144,7 +151,9 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
       chatMessages: [],
       meetings: [],
       callSessions: [],
-      adminEvents: []
+      adminEvents: [],
+      assignments: [],
+      assignmentSubmissions: []
     };
 
     // 1. Students
@@ -153,7 +162,7 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
         id: s.id,
         name: s.name,
         email: s.email || '',
-        password: s.password_hash || 'student123',
+        password: s.password_hash || INITIAL_STUDENT_HASH,
         grade: s.grade,
         createdAt: s.created_at,
         entryAllowed: s.entry_allowed ?? true,
@@ -181,7 +190,7 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
           fullName: p.full_name,
           email: p.email,
           phone: p.phone,
-          password: p.password_hash || 'parent123',
+          password: p.password_hash || INITIAL_PARENT_HASH,
           relationship: p.relationship || 'Parent',
           address: p.address || '',
           childrenStudentIds: childIds,
@@ -258,9 +267,11 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
       partial.teachers = teachersRes.data.map((t: any): TeacherAccount => ({
         id: t.id,
         username: t.username,
-        password: t.password_hash || 'staff123',
+        password: t.password_hash || INITIAL_STAFF_HASH,
         createdAt: t.created_at,
+        assignmentRole: t.assignment_role || (t.assigned_subjects && t.assigned_subjects.length > 0 && (!t.assigned_grades || t.assigned_grades.length === 0) ? 'subject_teacher' : (t.assigned_subjects && t.assigned_subjects.length > 0 && t.assigned_grades && t.assigned_grades.length > 0 ? 'both' : 'class_teacher')),
         assignedGrades: t.assigned_grades || [],
+        assignedSubjects: t.assigned_subjects || [],
         assignedCourses: t.assigned_courses || [],
         allowedPages: t.allowed_pages,
         canCreateStudents: t.can_create_students ?? false
@@ -463,6 +474,54 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
         updatedAt: b.updated_at,
         updatedBy: b.updated_by
       };
+    }
+
+    // 22. Class Homework & Assignments
+    if (assignmentsRes && assignmentsRes.data && assignmentsRes.data.length > 0) {
+      partial.assignments = assignmentsRes.data.map((a: any): Assignment => ({
+        id: a.id,
+        title: a.title,
+        subject: a.subject,
+        grade: a.grade,
+        description: a.description || '',
+        assignmentType: a.assignment_type || 'written',
+        attachmentUrl: a.attachment_url || undefined,
+        attachmentName: a.attachment_name || undefined,
+        attachmentType: a.attachment_type || undefined,
+        attachmentSizeBytes: a.attachment_size_bytes ? Number(a.attachment_size_bytes) : undefined,
+        additionalAttachments: Array.isArray(a.additional_attachments) ? a.additional_attachments : [],
+        dueDate: a.due_date,
+        totalPoints: Number(a.total_points || 20),
+        term: a.term || 'First Term',
+        academicYear: a.academic_year || '2024/2025',
+        status: a.status || 'active',
+        createdBy: a.created_by,
+        createdByRole: a.created_by_role || 'teacher',
+        createdAt: a.created_at || new Date().toISOString(),
+        updatedAt: a.updated_at,
+        submissionsCount: Number(a.submissions_count || 0)
+      }));
+    }
+
+    // 23. Assignment Submissions
+    if (submissionsRes && submissionsRes.data && submissionsRes.data.length > 0) {
+      partial.assignmentSubmissions = submissionsRes.data.map((s: any): AssignmentSubmission => ({
+        id: s.id,
+        assignmentId: s.assignment_id,
+        studentId: s.student_id,
+        studentName: s.student_name,
+        grade: s.grade,
+        writtenAnswer: s.written_answer || undefined,
+        attachmentUrl: s.attachment_url || undefined,
+        attachmentName: s.attachment_name || undefined,
+        attachmentType: s.attachment_type || undefined,
+        submittedAt: s.submitted_at || new Date().toISOString(),
+        status: s.status || 'submitted',
+        score: s.score != null ? Number(s.score) : undefined,
+        feedback: s.feedback || undefined,
+        gradedBy: s.graded_by || undefined,
+        gradedAt: s.graded_at || undefined
+      }));
     }
 
     return partial;
@@ -824,6 +883,36 @@ export const setupRealtimeSync = (
         });
         break;
 
+      case 'CHAT_MESSAGE_EDITED':
+        onStateUpdate(prev => ({
+          ...prev,
+          chatMessages: (prev.chatMessages || []).map(m =>
+            m.id === data.messageId ? { ...m, message: data.message } : m
+          )
+        }));
+        break;
+
+      case 'CHAT_MESSAGE_DELETED':
+        onStateUpdate(prev => ({
+          ...prev,
+          chatMessages: (prev.chatMessages || []).filter(m => m.id !== data.messageId)
+        }));
+        break;
+
+      case 'CHAT_MESSAGES_DELETED':
+        onStateUpdate(prev => ({
+          ...prev,
+          chatMessages: (prev.chatMessages || []).filter(m => !(data.ids || []).includes(m.id))
+        }));
+        break;
+
+      case 'PARENT_STAFF_MESSAGES_DELETED':
+        onStateUpdate(prev => ({
+          ...prev,
+          parentStaffMessages: (prev.parentStaffMessages || []).filter(m => !(data.ids || []).includes(m.id))
+        }));
+        break;
+
       case 'MEETING_CREATED':
       case 'MEETING_UPDATED':
         onStateUpdate(prev => {
@@ -890,6 +979,41 @@ export const setupRealtimeSync = (
             )
           }));
         }
+        break;
+
+      case 'ASSIGNMENT_ADDED':
+        onStateUpdate(prev => ({
+          ...prev,
+          assignments: [data, ...(prev.assignments || []).filter(a => a.id !== data.id)]
+        }));
+        break;
+
+      case 'ASSIGNMENT_UPDATED':
+        onStateUpdate(prev => ({
+          ...prev,
+          assignments: (prev.assignments || []).map(a => a.id === data.id ? { ...a, ...data } : a)
+        }));
+        break;
+
+      case 'ASSIGNMENT_DELETED':
+        onStateUpdate(prev => ({
+          ...prev,
+          assignments: (prev.assignments || []).filter(a => a.id !== data.id)
+        }));
+        break;
+
+      case 'ASSIGNMENT_SUBMISSION_ADDED':
+        onStateUpdate(prev => {
+          const list = prev.assignmentSubmissions || [];
+          const exists = list.some(s => s.id === data.id || (s.assignmentId === data.assignmentId && s.studentId === data.studentId));
+          const updated = exists
+            ? list.map(s => (s.id === data.id || (s.assignmentId === data.assignmentId && s.studentId === data.studentId)) ? { ...s, ...data } : s)
+            : [data, ...list];
+          return {
+            ...prev,
+            assignmentSubmissions: updated
+          };
+        });
         break;
 
       case 'FULL_STATE_REFRESH':
@@ -991,7 +1115,7 @@ export const setupRealtimeSync = (
                 name: newRecord.name,
                 grade: newRecord.grade,
                 email: newRecord.email || '',
-                password: newRecord.password_hash || 'student123',
+                password: newRecord.password_hash || INITIAL_STUDENT_HASH,
                 createdAt: newRecord.created_at || new Date().toISOString(),
                 entryAllowed: newRecord.entry_allowed ?? true,
                 activeTerm: newRecord.active_term || 'First Term',
@@ -1029,7 +1153,7 @@ export const setupRealtimeSync = (
                   fullName: newRecord.full_name,
                   email: newRecord.email,
                   phone: newRecord.phone,
-                  password: newRecord.password_hash || 'parent123',
+                  password: newRecord.password_hash || INITIAL_PARENT_HASH,
                   relationship: newRecord.relationship || 'Parent / Guardian',
                   address: newRecord.address || '',
                   childrenStudentIds: existing?.childrenStudentIds || [],
@@ -1134,11 +1258,14 @@ export const setupRealtimeSync = (
               const mapped: TeacherAccount = {
                 id: newRecord.id,
                 username: newRecord.username,
-                password: newRecord.password_hash || 'staff123',
+                password: newRecord.password_hash || INITIAL_STAFF_HASH,
                 createdAt: newRecord.created_at || new Date().toISOString(),
+                assignmentRole: newRecord.assignment_role || (newRecord.assigned_subjects && newRecord.assigned_subjects.length > 0 && (!newRecord.assigned_grades || newRecord.assigned_grades.length === 0) ? 'subject_teacher' : (newRecord.assigned_subjects && newRecord.assigned_subjects.length > 0 && newRecord.assigned_grades && newRecord.assigned_grades.length > 0 ? 'both' : 'class_teacher')),
                 assignedGrades: newRecord.assigned_grades || [],
+                assignedSubjects: newRecord.assigned_subjects || [],
                 assignedCourses: newRecord.assigned_courses || [],
-                allowedPages: newRecord.allowed_pages
+                allowedPages: newRecord.allowed_pages,
+                canCreateStudents: newRecord.can_create_students ?? false
               };
               onStateUpdate(prev => {
                 const exists = prev.teachers.some(t => t.id === mapped.id);
@@ -1563,6 +1690,86 @@ export const setupRealtimeSync = (
                   updatedAt: newRecord.updated_at,
                   updatedBy: newRecord.updated_by
                 }
+              }));
+            }
+            break;
+
+          case 'assignments':
+            if (eventType === 'INSERT' || eventType === 'UPDATE') {
+              const mappedAssignment: Assignment = {
+                id: newRecord.id,
+                title: newRecord.title,
+                subject: newRecord.subject,
+                grade: newRecord.grade,
+                description: newRecord.description || '',
+                assignmentType: newRecord.assignment_type || 'written',
+                attachmentUrl: newRecord.attachment_url || undefined,
+                attachmentName: newRecord.attachment_name || undefined,
+                attachmentType: newRecord.attachment_type || undefined,
+                attachmentSizeBytes: newRecord.attachment_size_bytes ? Number(newRecord.attachment_size_bytes) : undefined,
+                additionalAttachments: Array.isArray(newRecord.additional_attachments) ? newRecord.additional_attachments : [],
+                dueDate: newRecord.due_date,
+                totalPoints: Number(newRecord.total_points || 20),
+                term: newRecord.term || 'First Term',
+                academicYear: newRecord.academic_year || '2024/2025',
+                status: newRecord.status || 'active',
+                createdBy: newRecord.created_by,
+                createdByRole: newRecord.created_by_role || 'teacher',
+                createdAt: newRecord.created_at || new Date().toISOString(),
+                updatedAt: newRecord.updated_at,
+                submissionsCount: Number(newRecord.submissions_count || 0)
+              };
+              onStateUpdate(prev => {
+                const list = prev.assignments || [];
+                const exists = list.some(a => a.id === mappedAssignment.id);
+                return {
+                  ...prev,
+                  assignments: exists
+                    ? list.map(a => a.id === mappedAssignment.id ? mappedAssignment : a)
+                    : [mappedAssignment, ...list]
+                };
+              });
+            } else if (eventType === 'DELETE' && oldRecord.id) {
+              onStateUpdate(prev => ({
+                ...prev,
+                assignments: (prev.assignments || []).filter(a => a.id !== oldRecord.id)
+              }));
+            }
+            break;
+
+          case 'assignment_submissions':
+            if (eventType === 'INSERT' || eventType === 'UPDATE') {
+              const mappedSub: AssignmentSubmission = {
+                id: newRecord.id,
+                assignmentId: newRecord.assignment_id,
+                studentId: newRecord.student_id,
+                studentName: newRecord.student_name,
+                grade: newRecord.grade,
+                writtenAnswer: newRecord.written_answer || undefined,
+                attachmentUrl: newRecord.attachment_url || undefined,
+                attachmentName: newRecord.attachment_name || undefined,
+                attachmentType: newRecord.attachment_type || undefined,
+                submittedAt: newRecord.submitted_at || new Date().toISOString(),
+                status: newRecord.status || 'submitted',
+                score: newRecord.score != null ? Number(newRecord.score) : undefined,
+                feedback: newRecord.feedback || undefined,
+                gradedBy: newRecord.graded_by || undefined,
+                gradedAt: newRecord.graded_at || undefined
+              };
+              onStateUpdate(prev => {
+                const list = prev.assignmentSubmissions || [];
+                const exists = list.some(s => s.id === mappedSub.id || (s.assignmentId === mappedSub.assignmentId && s.studentId === mappedSub.studentId));
+                return {
+                  ...prev,
+                  assignmentSubmissions: exists
+                    ? list.map(s => (s.id === mappedSub.id || (s.assignmentId === mappedSub.assignmentId && s.studentId === mappedSub.studentId)) ? mappedSub : s)
+                    : [mappedSub, ...list]
+                };
+              });
+            } else if (eventType === 'DELETE' && oldRecord.id) {
+              onStateUpdate(prev => ({
+                ...prev,
+                assignmentSubmissions: (prev.assignmentSubmissions || []).filter(s => s.id !== oldRecord.id)
               }));
             }
             break;
@@ -2111,8 +2318,10 @@ export const realtimeService = {
           id: teacher.id,
           username: teacher.username,
           password_hash: teacher.password,
-          assigned_grades: teacher.assignedGrades,
-          assigned_courses: teacher.assignedCourses,
+          assignment_role: teacher.assignmentRole || (teacher.assignedSubjects && teacher.assignedSubjects.length > 0 && (!teacher.assignedGrades || teacher.assignedGrades.length === 0) ? 'subject_teacher' : (teacher.assignedSubjects && teacher.assignedSubjects.length > 0 && teacher.assignedGrades && teacher.assignedGrades.length > 0 ? 'both' : 'class_teacher')),
+          assigned_grades: teacher.assignedGrades || [],
+          assigned_subjects: teacher.assignedSubjects || [],
+          assigned_courses: teacher.assignedCourses || [],
           allowed_pages: teacher.allowedPages || ['overview', 'students', 'termStats', 'grading', 'attendance', 'courses'],
           can_create_students: teacher.canCreateStudents ?? false,
           updated_at: new Date().toISOString()
@@ -2378,6 +2587,23 @@ export const realtimeService = {
     }
   },
 
+  // Delete multiple selected Parent-Staff Messages
+  deleteParentStaffMessages: async (messageIds: string[]) => {
+    if (!messageIds || messageIds.length === 0) return;
+    broadcastLocalChange({
+      type: 'PARENT_STAFF_MESSAGES_DELETED',
+      data: { ids: messageIds }
+    });
+
+    if (supabase) {
+      try {
+        await supabase.from('parent_staff_messages').delete().in('id', messageIds);
+      } catch (err) {
+        console.error('Supabase deleteParentStaffMessages failed:', err);
+      }
+    }
+  },
+
   // React to Parent-Staff Message with Emoji
   reactParentStaffMessage: async (messageId: string, emoji: string, userId: string, currentReactions: { [emoji: string]: string[] } = {}) => {
     const updatedReactions = { ...currentReactions };
@@ -2473,6 +2699,20 @@ export const realtimeService = {
         await supabase.from('chat_messages').delete().eq('id', messageId);
       } catch (err) {
         console.error('Supabase deleteChatMessage failed:', err);
+      }
+    }
+  },
+
+  // Delete multiple selected Community Chat Channel Messages
+  deleteChatMessages: async (messageIds: string[]) => {
+    if (!messageIds || messageIds.length === 0) return;
+    broadcastLocalChange({ type: 'CHAT_MESSAGES_DELETED', data: { ids: messageIds } });
+
+    if (supabase) {
+      try {
+        await supabase.from('chat_messages').delete().in('id', messageIds);
+      } catch (err) {
+        console.error('Supabase deleteChatMessages failed:', err);
       }
     }
   },
@@ -2621,6 +2861,124 @@ export const realtimeService = {
         await supabase.from('call_recordings').delete().eq('id', recordingId);
       } catch (err) {
         console.error('Supabase deleteCallRecording failed:', err);
+      }
+    }
+  },
+
+  // Create or publish homework/assignment
+  createAssignment: async (assignment: Assignment) => {
+    broadcastLocalChange({ type: 'ASSIGNMENT_ADDED', data: assignment });
+
+    if (supabase) {
+      try {
+        await supabase.from('assignments').upsert({
+          id: assignment.id,
+          title: assignment.title,
+          subject: assignment.subject,
+          grade: assignment.grade,
+          description: assignment.description,
+          assignment_type: assignment.assignmentType,
+          attachment_url: assignment.attachmentUrl,
+          attachment_name: assignment.attachmentName,
+          attachment_type: assignment.attachmentType,
+          attachment_size_bytes: assignment.attachmentSizeBytes || 0,
+          additional_attachments: assignment.additionalAttachments || [],
+          due_date: assignment.dueDate,
+          total_points: assignment.totalPoints,
+          term: assignment.term,
+          academic_year: assignment.academicYear,
+          status: assignment.status,
+          created_by: assignment.createdBy,
+          created_by_role: assignment.createdByRole,
+          created_at: assignment.createdAt,
+          updated_at: assignment.updatedAt || new Date().toISOString(),
+          submissions_count: assignment.submissionsCount || 0
+        });
+      } catch (err) {
+        console.error('Supabase createAssignment failed:', err);
+      }
+    }
+  },
+
+  // Update existing homework/assignment
+  updateAssignment: async (assignment: Assignment) => {
+    broadcastLocalChange({ type: 'ASSIGNMENT_UPDATED', data: assignment });
+
+    if (supabase) {
+      try {
+        await supabase.from('assignments').update({
+          title: assignment.title,
+          subject: assignment.subject,
+          grade: assignment.grade,
+          description: assignment.description,
+          assignment_type: assignment.assignmentType,
+          attachment_url: assignment.attachmentUrl,
+          attachment_name: assignment.attachmentName,
+          attachment_type: assignment.attachmentType,
+          attachment_size_bytes: assignment.attachmentSizeBytes || 0,
+          additional_attachments: assignment.additionalAttachments || [],
+          due_date: assignment.dueDate,
+          total_points: assignment.totalPoints,
+          term: assignment.term,
+          academic_year: assignment.academicYear,
+          status: assignment.status,
+          updated_at: new Date().toISOString(),
+          submissions_count: assignment.submissionsCount || 0
+        }).eq('id', assignment.id);
+      } catch (err) {
+        console.error('Supabase updateAssignment failed:', err);
+      }
+    }
+  },
+
+  // Delete homework/assignment
+  deleteAssignment: async (id: string) => {
+    broadcastLocalChange({ type: 'ASSIGNMENT_DELETED', data: { id } });
+
+    if (supabase) {
+      try {
+        await supabase.from('assignments').delete().eq('id', id);
+      } catch (err) {
+        console.error('Supabase deleteAssignment failed:', err);
+      }
+    }
+  },
+
+  // Submit student homework solution or grade submission
+  submitAssignment: async (submission: AssignmentSubmission) => {
+    broadcastLocalChange({ type: 'ASSIGNMENT_SUBMISSION_ADDED', data: submission });
+
+    if (supabase) {
+      try {
+        await supabase.from('assignment_submissions').upsert({
+          id: submission.id,
+          assignment_id: submission.assignmentId,
+          student_id: submission.studentId,
+          student_name: submission.studentName,
+          grade: submission.grade,
+          written_answer: submission.writtenAnswer,
+          attachment_url: submission.attachmentUrl,
+          attachment_name: submission.attachmentName,
+          attachment_type: submission.attachmentType,
+          submitted_at: submission.submittedAt,
+          status: submission.status,
+          score: submission.score,
+          feedback: submission.feedback,
+          graded_by: submission.gradedBy,
+          graded_at: submission.gradedAt
+        });
+
+        // Refresh submission count
+        const { count } = await supabase
+          .from('assignment_submissions')
+          .select('*', { count: 'exact', head: true })
+          .eq('assignment_id', submission.assignmentId);
+
+        if (count !== null) {
+          await supabase.from('assignments').update({ submissions_count: count }).eq('id', submission.assignmentId);
+        }
+      } catch (err) {
+        console.error('Supabase submitAssignment failed:', err);
       }
     }
   }

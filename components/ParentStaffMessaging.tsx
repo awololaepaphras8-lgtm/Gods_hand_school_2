@@ -19,6 +19,7 @@ interface ParentStaffMessagingProps {
   onSendMessage: (msg: Omit<ParentStaffMessage, 'id' | 'timestamp'>) => void;
   onEditMessage?: (messageId: string, newMessage: string) => void;
   onDeleteMessage?: (messageId: string) => void;
+  onDeleteMultipleMessages?: (messageIds: string[]) => void;
   onReactMessage?: (messageId: string, emoji: string) => void;
   onMarkAsRead?: (messageIds: string[]) => void;
   onInitiateCall?: (targetId: string, targetName: string, targetRole: UserRole, type: 'voice' | 'video') => void;
@@ -38,6 +39,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
   onSendMessage,
   onEditMessage,
   onDeleteMessage,
+  onDeleteMultipleMessages,
   onReactMessage,
   onMarkAsRead,
   onInitiateCall,
@@ -143,6 +145,10 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingMessageText, setEditingMessageText] = useState('');
   const [infoMessageId, setInfoMessageId] = useState<string | null>(null);
+
+  // Multi-message selection mode for batch deletion
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
 
   const longPressTimerRef = useRef<any>(null);
   const chatMessagesEndRef = useRef<HTMLDivElement>(null);
@@ -366,6 +372,53 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
         showToast('🗑️ Message deleted');
       }
       setActiveContextMenuMsgId(null);
+    }
+  };
+
+  // Batch selection handlers
+  const handleToggleSelectMessage = (msgId: string) => {
+    setSelectedMessageIds(prev => 
+      prev.includes(msgId) ? prev.filter(id => id !== msgId) : [...prev, msgId]
+    );
+  };
+
+  const handleSelectAllMine = () => {
+    const myMsgIds = threadMessages.filter(isMessageTransmitter).map(m => m.id);
+    setSelectedMessageIds(myMsgIds);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedMessageIds([]);
+    setIsSelectionMode(false);
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedMessageIds.length === 0) return;
+    
+    // Filter to transmitter's messages only
+    const allowedIds = selectedMessageIds.filter(id => {
+      const msg = threadMessages.find(m => m.id === id);
+      return msg && isMessageTransmitter(msg);
+    });
+
+    if (allowedIds.length === 0) {
+      alert("Permission Denied: You can only delete messages sent by yourself. None of the selected messages belong to you.");
+      return;
+    }
+
+    if (allowedIds.length < selectedMessageIds.length) {
+      alert(`Note: Only ${allowedIds.length} message(s) sent by you will be deleted. Messages from other users cannot be deleted.`);
+    }
+
+    if (window.confirm(`Permanently delete ${allowedIds.length} message(s) for everyone? This cannot be undone.`)) {
+      if (onDeleteMultipleMessages) {
+        onDeleteMultipleMessages(allowedIds);
+      } else if (onDeleteMessage) {
+        allowedIds.forEach(id => onDeleteMessage(id));
+      }
+      showToast(`🗑️ ${allowedIds.length} message(s) deleted`);
+      setSelectedMessageIds([]);
+      setIsSelectionMode(false);
     }
   };
 
@@ -729,6 +782,22 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
               >
                 🔍
               </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSelectionMode(!isSelectionMode);
+                  if (isSelectionMode) setSelectedMessageIds([]);
+                }}
+                className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
+                  isSelectionMode 
+                    ? 'bg-rose-600 text-white shadow-sm ring-2 ring-rose-400' 
+                    : 'bg-slate-200 dark:bg-[#2a3942] hover:bg-slate-300 dark:hover:bg-[#32424b] text-slate-700 dark:text-slate-200'
+                }`}
+                title="Select multiple messages to delete"
+              >
+                <span>{isSelectionMode ? '✕ Cancel' : '☑️ Select'}</span>
+              </button>
             </div>
           </div>
 
@@ -753,6 +822,52 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                   ✕
                 </button>
               )}
+            </div>
+          )}
+
+          {/* Multi-Message Selection Action Bar */}
+          {isSelectionMode && (
+            <div className="px-4 py-2.5 bg-blue-950 text-white border-b-2 border-yellow-400 flex flex-wrap items-center justify-between gap-2 shadow-lg sticky top-0 z-20 animate-in slide-in-from-top-2 duration-150">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <span className="font-serif font-black text-xs sm:text-sm text-yellow-300">
+                  {selectedMessageIds.length} message(s) selected
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSelectAllMine}
+                  className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold transition-all"
+                >
+                  Select All Mine ({threadMessages.filter(isMessageTransmitter).length})
+                </button>
+                {selectedMessageIds.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedMessageIds([])}
+                    className="px-2 py-1 text-slate-300 hover:text-white text-xs underline"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleDeleteSelected}
+                  disabled={selectedMessageIds.length === 0}
+                  className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:hover:bg-rose-600 text-white rounded-xl text-xs font-black shadow-md flex items-center gap-1.5 transition-all"
+                >
+                  <span>🗑️</span>
+                  <span>Delete Selected ({selectedMessageIds.length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClearSelection}
+                  className="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all"
+                >
+                  Done
+                </button>
+              </div>
             </div>
           )}
 
@@ -793,12 +908,28 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
 
                 // Reaction badges count
                 const appliedReactions = Object.entries(msg.reactions || {}).filter(([_, users]) => (users || []).length > 0);
+                const isSelected = selectedMessageIds.includes(msg.id);
 
                 return (
                   <div
                     key={msg.id}
-                    className={`flex flex-col relative group ${isSentByMe ? 'items-end' : 'items-start'}`}
+                    className={`flex items-start gap-2 relative group w-full ${isSentByMe ? 'justify-end' : 'justify-start'}`}
                   >
+                    {/* Checkbox when in selection mode */}
+                    {isSelectionMode && (
+                      <div className={`pt-2 shrink-0 ${isSentByMe ? 'order-last' : 'order-first'}`}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleSelectMessage(msg.id)}
+                          disabled={!isSentByMe}
+                          className="w-4 h-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                          title={isSentByMe ? "Select message to delete" : "Only transmitter can delete their own message"}
+                        />
+                      </div>
+                    )}
+
+                    <div className={`flex flex-col relative ${isSentByMe ? 'items-end' : 'items-start'} max-w-[85%] sm:max-w-[70%]`}>
                     {/* Floating Action Menu for Long-Press / Click */}
                     {isContextMenuOpen && (
                       <div 
@@ -991,18 +1122,48 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                         </div>
                       )}
 
-                      {/* Desktop hover chevron trigger */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveContextMenuMsgId(isContextMenuOpen ? null : msg.id);
-                        }}
-                        className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 text-slate-400 hover:text-slate-700 dark:hover:text-white text-xs font-bold"
-                        title="Options / Reactions"
-                      >
-                        •••
-                      </button>
+                      {/* Desktop hover direct action triggers */}
+                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 bg-white/95 dark:bg-[#111b21]/95 rounded-lg p-0.5 shadow-sm border border-slate-200 dark:border-slate-700">
+                        {canEdit && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingMessageId(msg.id);
+                              setEditingMessageText(msg.message);
+                              setActiveContextMenuMsgId(null);
+                            }}
+                            className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 text-xs rounded"
+                            title="Edit message"
+                          >
+                            ✏️
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteMessage(msg);
+                            }}
+                            className="p-1 hover:bg-rose-100 dark:hover:bg-rose-950 text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 text-xs rounded"
+                            title="Delete message"
+                          >
+                            🗑️
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveContextMenuMsgId(isContextMenuOpen ? null : msg.id);
+                          }}
+                          className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white text-xs font-bold rounded"
+                          title="Options / Reactions"
+                        >
+                          •••
+                        </button>
+                      </div>
                     </div>
 
                     {/* Applied Emoji Reactions Pill */}
@@ -1049,6 +1210,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                         </div>
                       </div>
                     )}
+                    </div>
                   </div>
                 );
               })

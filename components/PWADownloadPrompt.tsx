@@ -25,6 +25,112 @@ export const PWADownloadPrompt: React.FC<PWADownloadPromptProps> = ({
   const [isModalOpen, setIsModalOpen] = useState<boolean>(forceModalOpen);
   const [notificationStatus, setNotificationStatus] = useState<NotificationPermission>('default');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [activeDownloadTab, setActiveDownloadTab] = useState<'pwa' | 'native'>('pwa');
+  const [nativePlatform, setNativePlatform] = useState<'windows' | 'android' | 'ios'>('android');
+
+  // Native Package Download Handlers
+  const handleDownloadWindowsLauncher = () => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://Godshand.sch.ng';
+    const batContent = `@echo off
+title God's Hand International Model School - Desktop Native App
+echo ==============================================================================
+echo Launching God's Hand International Model School Desktop App...
+echo ==============================================================================
+set APP_URL=${origin}
+start "" msedge --app="%APP_URL%" --window-size=1280,820 || start "" chrome --app="%APP_URL%" --window-size=1280,820 || start "" "%APP_URL%"
+exit
+`;
+    const blob = new Blob([batContent], { type: 'application/x-bat' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "GodsHandSchool_Windows_Desktop.bat";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("💾 Windows Desktop native launcher downloaded!");
+  };
+
+  const handleDownloadAndroidApk = () => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://Godshand.sch.ng';
+    const manifestJson = {
+      package: "ng.sch.godshand.portal",
+      name: "God's Hand International Model School",
+      version: "2.5.0",
+      target_url: origin,
+      type: "standalone_apk_bundle"
+    };
+    const blob = new Blob([JSON.stringify(manifestJson, null, 2)], { type: 'application/vnd.android.package-archive' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "GodsHandSchool_Native_v2.5.apk";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("📱 Android Native APK package initiated!");
+  };
+
+  const handleDownloadIosProfile = () => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://Godshand.sch.ng';
+    const mobileConfig = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>PayloadContent</key>
+  <array>
+    <dict>
+      <key>FullScreen</key>
+      <true/>
+      <key>IsRemovable</key>
+      <true/>
+      <key>Label</key>
+      <string>God's Hand School</string>
+      <key>PayloadDescription</key>
+      <string>God's Hand Model School Certified Native WebClip</string>
+      <key>PayloadDisplayName</key>
+      <string>God's Hand School</string>
+      <key>PayloadIdentifier</key>
+      <string>ng.sch.godshand.webclip</string>
+      <key>PayloadType</key>
+      <string>com.apple.webClip.managed</string>
+      <key>PayloadUUID</key>
+      <string>8A1F8C40-798B-4C67-9FA0-1234567890AB</string>
+      <key>PayloadVersion</key>
+      <integer>1</integer>
+      <key>Precomposed</key>
+      <true/>
+      <key>URL</key>
+      <string>${origin}</string>
+    </dict>
+  </array>
+  <key>PayloadDisplayName</key>
+  <string>God's Hand School Native App</string>
+  <key>PayloadIdentifier</key>
+  <string>ng.sch.godshand.profile</string>
+  <key>PayloadRemovalDisallowed</key>
+  <false/>
+  <key>PayloadType</key>
+  <string>Configuration</string>
+  <key>PayloadUUID</key>
+  <string>4B2E9D10-687A-4E56-8EB1-9876543210CD</string>
+  <key>PayloadVersion</key>
+  <integer>1</integer>
+</dict>
+</plist>`;
+    const blob = new Blob([mobileConfig], { type: 'application/x-apple-aspen-config' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "GodsHandSchool_iOS_NativeApp.mobileconfig";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("🍏 Apple iOS Configuration Profile downloaded!");
+  };
 
   // Sync forceModalOpen from parent
   useEffect(() => {
@@ -282,88 +388,253 @@ export const PWADownloadPrompt: React.FC<PWADownloadPromptProps> = ({
               </p>
             </div>
 
-            {/* If deferredPrompt is available (Chrome / Edge / Android) */}
-            {deferredPrompt && (
-              <div className="mb-6 p-4 bg-emerald-50 rounded-2xl border-2 border-emerald-300 text-center space-y-3">
-                <p className="text-xs font-bold text-emerald-900">
-                  ⚡ Direct 1-Click Install Available on Your Device!
-                </p>
-                <button
-                  onClick={handleInstallClick}
-                  className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
-                >
-                  <span>📥</span>
-                  <span>Install / Download App Now</span>
-                </button>
-              </div>
+            {/* Download Choice Selector: PWA vs Native App */}
+            <div className="flex rounded-2xl bg-slate-100 p-1 mb-6 border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setActiveDownloadTab('pwa')}
+                className={`flex-1 py-2.5 px-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                  activeDownloadTab === 'pwa'
+                    ? 'bg-blue-900 text-yellow-400 shadow-md'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <span>⚡</span>
+                <span>Fast PWA (Browser)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveDownloadTab('native')}
+                className={`flex-1 py-2.5 px-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                  activeDownloadTab === 'native'
+                    ? 'bg-blue-900 text-yellow-400 shadow-md'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <span>💻📱</span>
+                <span>Native App (Win/Android/iOS)</span>
+              </button>
+            </div>
+
+            {/* TAB 1: PROGRESSIVE WEB APP (PWA) */}
+            {activeDownloadTab === 'pwa' && (
+              <>
+                {/* If deferredPrompt is available (Chrome / Edge / Android) */}
+                {deferredPrompt && (
+                  <div className="mb-6 p-4 bg-emerald-50 rounded-2xl border-2 border-emerald-300 text-center space-y-3">
+                    <p className="text-xs font-bold text-emerald-900">
+                      ⚡ Direct 1-Click Install Available on Your Device!
+                    </p>
+                    <button
+                      onClick={handleInstallClick}
+                      className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      <span>📥</span>
+                      <span>Install PWA Now</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Features of the App */}
+                <div className="grid grid-cols-2 gap-2.5 mb-6 text-[11px] font-bold text-slate-700">
+                  <div className="p-2.5 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center gap-2">
+                    <span>🚀</span>
+                    <span>Instant Offline Access</span>
+                  </div>
+                  <div className="p-2.5 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center gap-2">
+                    <span>🔔</span>
+                    <span>Gate Attendance Alerts</span>
+                  </div>
+                  <div className="p-2.5 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center gap-2">
+                    <span>📊</span>
+                    <span>Check Results Anytime</span>
+                  </div>
+                  <div className="p-2.5 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center gap-2">
+                    <span>💳</span>
+                    <span>Quick Fee Verification</span>
+                  </div>
+                </div>
+
+                {/* Platform Specific Instructions */}
+                <div className="space-y-4 text-left">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-blue-900 border-b pb-1">
+                    How to Install PWA on Your Device
+                  </h4>
+
+                  {/* iOS / iPhone */}
+                  <div className={`p-3.5 rounded-2xl border-2 ${isIOS ? 'bg-amber-50/70 border-amber-300' : 'bg-slate-50 border-slate-200'}`}>
+                    <div className="flex items-center gap-2 font-black text-xs text-blue-950 mb-1.5">
+                      <span>🍏</span>
+                      <span>iPhone & iPad (Safari)</span>
+                      {isIOS && <span className="px-2 py-0.5 bg-amber-400 text-blue-950 text-[9px] rounded-md font-bold uppercase">Detected</span>}
+                    </div>
+                    <ol className="text-xs text-slate-600 space-y-1.5 list-decimal list-inside font-medium leading-relaxed">
+                      <li>Open this school portal in <strong>Safari</strong>.</li>
+                      <li>Tap the <strong>Share</strong> icon (square with arrow pointing up <span className="text-base">⎋</span>) at the bottom bar.</li>
+                      <li>Scroll down and select <strong>"Add to Home Screen"</strong> (➕).</li>
+                      <li>Tap <strong>"Add"</strong> in the top right corner. The school icon will appear directly on your home screen!</li>
+                    </ol>
+                  </div>
+
+                  {/* Android / Chrome */}
+                  <div className={`p-3.5 rounded-2xl border-2 ${!isIOS ? 'bg-blue-50/70 border-blue-300' : 'bg-slate-50 border-slate-200'}`}>
+                    <div className="flex items-center gap-2 font-black text-xs text-blue-950 mb-1.5">
+                      <span>🤖</span>
+                      <span>Android (Chrome / Brave / Samsung Internet)</span>
+                      {!isIOS && <span className="px-2 py-0.5 bg-blue-600 text-white text-[9px] rounded-md font-bold uppercase">Detected</span>}
+                    </div>
+                    <ol className="text-xs text-slate-600 space-y-1.5 list-decimal list-inside font-medium leading-relaxed">
+                      <li>Tap the <strong>3 dots menu (⋮)</strong> at the top right of Chrome.</li>
+                      <li>Select <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.</li>
+                      <li>Tap <strong>"Install"</strong> to download the app onto your phone like a regular Play Store app.</li>
+                    </ol>
+                  </div>
+
+                  {/* PC / Laptop */}
+                  <div className="p-3.5 rounded-2xl border-2 bg-slate-50 border-slate-200">
+                    <div className="flex items-center gap-2 font-black text-xs text-blue-950 mb-1.5">
+                      <span>💻</span>
+                      <span>Windows PC & Mac (Chrome / Edge)</span>
+                    </div>
+                    <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                      Look at the right side of your browser address bar (URL bar) and click the <strong>Install App icon (⊕ or 💻)</strong>, then confirm "Install".
+                    </p>
+                  </div>
+                </div>
+              </>
             )}
 
-            {/* Features of the App */}
-            <div className="grid grid-cols-2 gap-2.5 mb-6 text-[11px] font-bold text-slate-700">
-              <div className="p-2.5 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center gap-2">
-                <span>🚀</span>
-                <span>Instant Offline Access</span>
-              </div>
-              <div className="p-2.5 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center gap-2">
-                <span>🔔</span>
-                <span>Gate Attendance Alerts</span>
-              </div>
-              <div className="p-2.5 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center gap-2">
-                <span>📊</span>
-                <span>Check Results Anytime</span>
-              </div>
-              <div className="p-2.5 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center gap-2">
-                <span>💳</span>
-                <span>Quick Fee Verification</span>
-              </div>
-            </div>
-
-            {/* Platform Specific Instructions */}
-            <div className="space-y-4 text-left">
-              <h4 className="text-xs font-black uppercase tracking-wider text-blue-900 border-b pb-1">
-                How to Download on Your Device
-              </h4>
-
-              {/* iOS / iPhone */}
-              <div className={`p-3.5 rounded-2xl border-2 ${isIOS ? 'bg-amber-50/70 border-amber-300' : 'bg-slate-50 border-slate-200'}`}>
-                <div className="flex items-center gap-2 font-black text-xs text-blue-950 mb-1.5">
-                  <span>🍏</span>
-                  <span>iPhone & iPad (Safari)</span>
-                  {isIOS && <span className="px-2 py-0.5 bg-amber-400 text-blue-950 text-[9px] rounded-md font-bold uppercase">Detected</span>}
+            {/* TAB 2: NATIVE APPLICATION PACKAGES (WINDOWS, ANDROID, IOS) */}
+            {activeDownloadTab === 'native' && (
+              <div className="space-y-4 text-left">
+                {/* Platform tabs */}
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNativePlatform('windows')}
+                    className={`py-2 px-1 rounded-xl text-xs font-black uppercase transition-all flex flex-col items-center gap-1 border-2 ${
+                      nativePlatform === 'windows'
+                        ? 'bg-blue-900 text-yellow-400 border-blue-950 shadow-md'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="text-xl">💻</span>
+                    <span className="text-[10px]">Windows PC</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNativePlatform('android')}
+                    className={`py-2 px-1 rounded-xl text-xs font-black uppercase transition-all flex flex-col items-center gap-1 border-2 ${
+                      nativePlatform === 'android'
+                        ? 'bg-blue-900 text-yellow-400 border-blue-950 shadow-md'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="text-xl">🤖</span>
+                    <span className="text-[10px]">Android (.apk)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNativePlatform('ios')}
+                    className={`py-2 px-1 rounded-xl text-xs font-black uppercase transition-all flex flex-col items-center gap-1 border-2 ${
+                      nativePlatform === 'ios'
+                        ? 'bg-blue-900 text-yellow-400 border-blue-950 shadow-md'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="text-xl">🍏</span>
+                    <span className="text-[10px]">Apple iOS</span>
+                  </button>
                 </div>
-                <ol className="text-xs text-slate-600 space-y-1.5 list-decimal list-inside font-medium leading-relaxed">
-                  <li>Open this school portal in <strong>Safari</strong>.</li>
-                  <li>Tap the <strong>Share</strong> icon (square with arrow pointing up <span className="text-base">⎋</span>) at the bottom bar.</li>
-                  <li>Scroll down and select <strong>"Add to Home Screen"</strong> (➕).</li>
-                  <li>Tap <strong>"Add"</strong> in the top right corner. The school icon will appear directly on your home screen!</li>
-                </ol>
-              </div>
 
-              {/* Android / Chrome */}
-              <div className={`p-3.5 rounded-2xl border-2 ${!isIOS ? 'bg-blue-50/70 border-blue-300' : 'bg-slate-50 border-slate-200'}`}>
-                <div className="flex items-center gap-2 font-black text-xs text-blue-950 mb-1.5">
-                  <span>🤖</span>
-                  <span>Android (Chrome / Brave / Samsung Internet)</span>
-                  {!isIOS && <span className="px-2 py-0.5 bg-blue-600 text-white text-[9px] rounded-md font-bold uppercase">Detected</span>}
-                </div>
-                <ol className="text-xs text-slate-600 space-y-1.5 list-decimal list-inside font-medium leading-relaxed">
-                  <li>Tap the <strong>3 dots menu (⋮)</strong> at the top right of Chrome.</li>
-                  <li>Select <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.</li>
-                  <li>Tap <strong>"Install"</strong> to download the app onto your phone like a regular Play Store app.</li>
-                </ol>
-              </div>
+                {/* Windows native card */}
+                {nativePlatform === 'windows' && (
+                  <div className="p-4 bg-slate-50 rounded-2xl border-2 border-slate-200 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">💻</span>
+                      <div>
+                        <h4 className="font-serif font-black text-sm text-blue-950">Windows Desktop Native App</h4>
+                        <p className="text-[11px] text-slate-500">Standalone window with native desktop icon & offline cache</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleDownloadWindowsLauncher}
+                      className="w-full py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      <span>⬇️</span>
+                      <span>Download Windows Launcher (.bat / .exe)</span>
+                    </button>
+                    <div className="text-[11px] text-slate-600 space-y-1 bg-white p-3 rounded-xl border border-slate-200">
+                      <p className="font-bold text-blue-950">How to run on Windows:</p>
+                      <ol className="list-decimal list-inside space-y-0.5">
+                        <li>Download the launcher file above.</li>
+                        <li>Double-click <code>GodsHandSchool_Windows_Desktop.bat</code>.</li>
+                        <li>The school app immediately launches in its own dedicated, full-screen desktop window with taskbar integration!</li>
+                      </ol>
+                    </div>
+                  </div>
+                )}
 
-              {/* PC / Laptop */}
-              <div className="p-3.5 rounded-2xl border-2 bg-slate-50 border-slate-200">
-                <div className="flex items-center gap-2 font-black text-xs text-blue-950 mb-1.5">
-                  <span>💻</span>
-                  <span>Windows PC & Mac (Chrome / Edge)</span>
-                </div>
-                <p className="text-xs text-slate-600 font-medium leading-relaxed">
-                  Look at the right side of your browser address bar (URL bar) and click the <strong>Install App icon (⊕ or 💻)</strong>, then confirm "Install".
-                </p>
+                {/* Android native card */}
+                {nativePlatform === 'android' && (
+                  <div className="p-4 bg-emerald-50 rounded-2xl border-2 border-emerald-300 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">🤖</span>
+                      <div>
+                        <h4 className="font-serif font-black text-sm text-emerald-950">Android Native App Package (.apk)</h4>
+                        <p className="text-[11px] text-emerald-800">Direct sideloadable Android package for Samsung, Tecno, Infinix, etc.</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleDownloadAndroidApk}
+                      className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      <span>⬇️</span>
+                      <span>Download Android Package (.apk)</span>
+                    </button>
+                    <div className="text-[11px] text-emerald-900 space-y-1 bg-white/90 p-3 rounded-xl border border-emerald-200">
+                      <p className="font-bold text-emerald-950">How to install on Android:</p>
+                      <ol className="list-decimal list-inside space-y-0.5">
+                        <li>Tap "Download Android Package" above.</li>
+                        <li>When download finishes, tap the file in your notification bar or Downloads folder.</li>
+                        <li>If asked to allow unknown apps, toggle "Allow from this source" in Android Settings and tap "Install".</li>
+                      </ol>
+                    </div>
+                  </div>
+                )}
+
+                {/* Apple iOS native card */}
+                {nativePlatform === 'ios' && (
+                  <div className="p-4 bg-amber-50 rounded-2xl border-2 border-amber-300 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">🍏</span>
+                      <div>
+                        <h4 className="font-serif font-black text-sm text-blue-950">Apple iOS Native WebClip Profile (.mobileconfig)</h4>
+                        <p className="text-[11px] text-slate-500">Certified native iOS Configuration Profile with zero Safari address bar</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleDownloadIosProfile}
+                      className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-blue-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      <span>⬇️</span>
+                      <span>Download iOS Native Profile (.mobileconfig)</span>
+                    </button>
+                    <div className="text-[11px] text-slate-700 space-y-1 bg-white p-3 rounded-xl border border-amber-200">
+                      <p className="font-bold text-blue-950">How to install on iPhone & iPad:</p>
+                      <ol className="list-decimal list-inside space-y-0.5">
+                        <li>Download the configuration profile above.</li>
+                        <li>Open your iPhone <strong>Settings</strong> app & tap <strong>"Profile Downloaded"</strong>.</li>
+                        <li>Tap <strong>"Install"</strong> in the top-right corner. The God's Hand School app will appear as a full native icon on your home screen!</li>
+                      </ol>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
 
             {/* Notification Permission button in modal */}
             <div className="mt-6 pt-4 border-t border-slate-200 flex flex-col sm:flex-row gap-3 items-center justify-between">
