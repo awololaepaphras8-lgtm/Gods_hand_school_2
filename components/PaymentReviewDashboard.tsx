@@ -5,10 +5,12 @@ import { exportSinglePaymentReceiptPDF } from '../utils/exportService';
 interface PaymentReviewDashboardProps {
   payments: FeePayment[];
   students: StudentAccount[];
-  onConfirmPayment: (paymentId: string, adminNote?: string) => void;
+  onConfirmPayment: (paymentId: string, adminNote?: string, amountPaid?: number, amountRemaining?: number) => void;
   onDeclinePayment: (paymentId: string, reason: string) => void;
   onConfirmAllPending: () => void;
   onAddChatMessage: (paymentId: string, message: string, sender: 'admin' | 'student') => void;
+  onRecordDirectPayment?: (payment: FeePayment) => void;
+  fees?: { [grade: string]: number };
 }
 
 export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
@@ -17,7 +19,9 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
   onConfirmPayment,
   onDeclinePayment,
   onConfirmAllPending,
-  onAddChatMessage
+  onAddChatMessage,
+  onRecordDirectPayment,
+  fees = {}
 }) => {
   const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'confirmed' | 'declined'>('pending');
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,6 +30,24 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
   const [declinePromptId, setDeclinePromptId] = useState<string | null>(null);
   const [declineReason, setDeclineReason] = useState('');
   const [actionSuccessMsg, setActionSuccessMsg] = useState('');
+
+  // Admin Direct Payment Entry Modal State
+  const [showDirectModal, setShowDirectModal] = useState(false);
+  const [selectedStudentId, setSelectedStudentId] = useState(students[0]?.id || '');
+  const [inputTotalExpected, setInputTotalExpected] = useState<number>(30000);
+  const [inputAmountPaid, setInputAmountPaid] = useState<number>(30000);
+  const [inputAmountRemaining, setInputAmountRemaining] = useState<number>(0);
+  const [inputPaymentType, setInputPaymentType] = useState<'full' | 'installment_1' | 'installment_2' | 'result_fee'>('full');
+  const [inputTerm, setInputTerm] = useState('First Term');
+  const [inputPaymentMethod, setInputPaymentMethod] = useState('Cash at Bursary Desk');
+  const [inputTransactionRef, setInputTransactionRef] = useState('');
+  const [inputAdminNote, setInputAdminNote] = useState('');
+
+  // Pending Review Confirmation Modal with Amount Adjustments
+  const [inspectConfirmPayment, setInspectConfirmPayment] = useState<FeePayment | null>(null);
+  const [reviewPaidInput, setReviewPaidInput] = useState<number>(0);
+  const [reviewRemainingInput, setReviewRemainingInput] = useState<number>(0);
+  const [reviewNoteInput, setReviewNoteInput] = useState<string>('');
 
   // Quick stats
   const pendingPayments = payments.filter(p => p.status === 'pending');
@@ -63,9 +85,116 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
     showNotification('Message sent to student chat!');
   };
 
-  const handleConfirmSingle = (paymentId: string, note?: string) => {
-    onConfirmPayment(paymentId, note);
-    showNotification('Payment verified & confirmed! Student account credited.');
+  const handleConfirmSingle = (paymentId: string, note?: string, paid?: number, remaining?: number) => {
+    onConfirmPayment(paymentId, note, paid, remaining);
+    showNotification('Payment verified & confirmed! Student account credited & receipt issued.');
+  };
+
+  const handleOpenDirectModal = () => {
+    const firstStudent = students[0];
+    const initialExpected = firstStudent ? (fees[firstStudent.grade] || 30000) : 30000;
+    setSelectedStudentId(firstStudent?.id || '');
+    setInputTotalExpected(initialExpected);
+    setInputAmountPaid(initialExpected);
+    setInputAmountRemaining(0);
+    setInputPaymentType('full');
+    setInputTerm('First Term');
+    setInputPaymentMethod('Cash at Bursary Desk');
+    setInputTransactionRef(`BUR-${Date.now().toString().slice(-5)}`);
+    setInputAdminNote('');
+    setShowDirectModal(true);
+  };
+
+  const handleSelectStudent = (sId: string) => {
+    setSelectedStudentId(sId);
+    const stu = students.find(s => s.id === sId);
+    if (stu) {
+      const exp = fees[stu.grade] || 30000;
+      setInputTotalExpected(exp);
+      setInputAmountPaid(exp);
+      setInputAmountRemaining(0);
+    }
+  };
+
+  const handleAmountPaidChange = (val: number) => {
+    setInputAmountPaid(val);
+    const rem = Math.max(0, inputTotalExpected - val);
+    setInputAmountRemaining(rem);
+  };
+
+  const handleSubmitDirectPayment = (e: React.FormEvent) => {
+    e.preventDefault();
+    const stu = students.find(s => s.id === selectedStudentId);
+    if (!stu) {
+      alert('Please select a student.');
+      return;
+    }
+
+    const receiptId = `GHS-REC-${Date.now().toString().slice(-6)}`;
+    const newPayment: FeePayment = {
+      id: receiptId,
+      studentId: stu.id,
+      studentName: stu.name,
+      grade: stu.grade,
+      amount: Number(inputAmountPaid),
+      amountPaid: Number(inputAmountPaid),
+      amountRemaining: Number(inputAmountRemaining),
+      totalExpected: Number(inputTotalExpected),
+      term: inputTerm,
+      session: '2025/2026',
+      receiptNumber: receiptId,
+      type: inputPaymentType,
+      date: new Date().toISOString(),
+      status: 'confirmed',
+      payerName: stu.name,
+      bankName: inputPaymentMethod,
+      transactionRef: inputTransactionRef || `DIR-PAY-${Date.now().toString().slice(-4)}`,
+      adminNote: inputAdminNote || `Official Bursary Confirmed Receipt • Amount Paid: ₦${inputAmountPaid.toLocaleString()} • Balance Remaining: ₦${inputAmountRemaining.toLocaleString()}`,
+      reviewedBy: 'School Administrator / Bursar',
+      reviewedAt: new Date().toISOString()
+    };
+
+    if (onRecordDirectPayment) {
+      onRecordDirectPayment(newPayment);
+    }
+
+    // Automatically generate and download the official receipt PDF immediately
+    exportSinglePaymentReceiptPDF(newPayment, stu);
+
+    setShowDirectModal(false);
+    showNotification(`Payment confirmed for ${stu.name}! Official receipt (${receiptId}) automatically generated.`);
+  };
+
+  const handleOpenInspectConfirm = (payment: FeePayment) => {
+    setInspectConfirmPayment(payment);
+    const expected = payment.totalExpected || (fees[payment.grade] || payment.amount);
+    setReviewPaidInput(payment.amount);
+    setReviewRemainingInput(payment.amountRemaining !== undefined ? payment.amountRemaining : Math.max(0, expected - payment.amount));
+    setReviewNoteInput(payment.adminNote || 'Payment confirmed and verified by school administration.');
+  };
+
+  const handleConfirmInspectSubmit = () => {
+    if (!inspectConfirmPayment) return;
+    handleConfirmSingle(
+      inspectConfirmPayment.id,
+      reviewNoteInput,
+      Number(reviewPaidInput),
+      Number(reviewRemainingInput)
+    );
+
+    // Auto-download receipt
+    const matchStudent = students.find(s => s.id === inspectConfirmPayment.studentId || s.name.toLowerCase() === inspectConfirmPayment.studentName.toLowerCase());
+    const updatedPayment: FeePayment = {
+      ...inspectConfirmPayment,
+      amount: Number(reviewPaidInput),
+      amountPaid: Number(reviewPaidInput),
+      amountRemaining: Number(reviewRemainingInput),
+      status: 'confirmed',
+      reviewedAt: new Date().toISOString()
+    };
+    exportSinglePaymentReceiptPDF(updatedPayment, matchStudent);
+
+    setInspectConfirmPayment(null);
   };
 
   const handleDeclineSubmit = (paymentId: string) => {
@@ -126,11 +255,20 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
 
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
             <button
+              type="button"
+              onClick={handleOpenDirectModal}
+              className="px-6 py-4 bg-yellow-400 text-blue-950 hover:bg-yellow-300 rounded-2xl font-black text-xs uppercase tracking-wider shadow-xl transition-all flex items-center justify-center gap-2 border-2 border-yellow-200 hover:scale-105 active:scale-95 shrink-0"
+            >
+              <span>💳</span>
+              <span>Input Payment & Issue Receipt</span>
+            </button>
+
+            <button
               onClick={handleConfirmAll}
               disabled={pendingPayments.length === 0}
               className={`px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-wider shadow-xl transition-all flex items-center justify-center gap-2 ${
                 pendingPayments.length > 0
-                  ? 'bg-yellow-400 text-blue-900 hover:bg-yellow-300 hover:scale-105 active:scale-95'
+                  ? 'bg-white/10 text-white hover:bg-white/20 border border-white/20 hover:scale-105 active:scale-95'
                   : 'bg-slate-700 text-slate-400 cursor-not-allowed'
               }`}
             >
@@ -437,15 +575,24 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                       {isPending && (
                         <>
                           <button
+                            type="button"
+                            onClick={() => handleOpenInspectConfirm(payment)}
+                            className="w-full py-3 bg-yellow-400 hover:bg-yellow-300 text-blue-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 border border-yellow-500"
+                            title="Verify amount paid and remaining balance before approving"
+                          >
+                            <span>✍️</span>
+                            <span>Input Amount Paid & Remaining →</span>
+                          </button>
+                          <button
                             onClick={() => handleConfirmSingle(payment.id)}
-                            className="w-full py-3.5 bg-green-600 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg hover:bg-green-700 transition-all flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
+                            className="w-full py-2.5 bg-green-600 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-sm hover:bg-green-700 transition-all flex items-center justify-center gap-1.5"
                           >
                             <span>✓</span>
-                            <span>Confirm & Approve Payment</span>
+                            <span>Quick Confirm (As Submitted)</span>
                           </button>
                           <button
                             onClick={() => setDeclinePromptId(payment.id)}
-                            className="w-full py-2.5 bg-red-50 text-red-600 hover:bg-red-100 font-black text-xs uppercase tracking-wider rounded-xl transition-all border border-red-200"
+                            className="w-full py-2 bg-red-50 text-red-600 hover:bg-red-100 font-black text-xs uppercase tracking-wider rounded-xl transition-all border border-red-200"
                           >
                             ✕ Decline / Return
                           </button>
@@ -662,6 +809,297 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                   className="px-6 py-2 bg-blue-900 text-yellow-400 font-black text-xs uppercase rounded-xl hover:bg-blue-800 transition-all shadow-md"
                 >
                   Done
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 1: ADMIN DIRECT PAYMENT ENTRY & INSTANT RECEIPT GENERATION */}
+      {showDirectModal && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-blue-950/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-white rounded-[2.5rem] p-6 sm:p-8 max-w-2xl w-full shadow-2xl space-y-5 border-4 border-yellow-400 my-6">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="w-10 h-10 rounded-xl bg-yellow-400 text-blue-950 flex items-center justify-center text-xl font-black">
+                  💳
+                </span>
+                <div>
+                  <h3 className="font-black text-blue-950 text-xl font-serif">
+                    Record Payment & Generate Official Receipt
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+                    Instant Bursary Stamping & Automatic Receipt Download
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDirectModal(false)}
+                className="w-9 h-9 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 font-black flex items-center justify-center"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitDirectPayment} className="space-y-4 text-xs font-bold text-left">
+              {/* Student Dropdown */}
+              <div>
+                <label className="block text-slate-500 uppercase tracking-wider text-[10px] mb-1">
+                  Select Student / Pupil *
+                </label>
+                <select
+                  value={selectedStudentId}
+                  onChange={(e) => handleSelectStudent(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-blue-950 outline-none focus:border-blue-900 focus:bg-white"
+                >
+                  {students.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.grade}) — ID: {s.id}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Financial Inputs: Total Assessment, Amount Paid, Amount Remaining */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                <div>
+                  <label className="block text-slate-500 uppercase tracking-wider text-[10px] mb-1">
+                    Total Term Fee (₦) *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={inputTotalExpected}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setInputTotalExpected(val);
+                      setInputAmountRemaining(Math.max(0, val - inputAmountPaid));
+                    }}
+                    className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-mono text-sm font-black text-blue-950 outline-none focus:border-blue-900"
+                  />
+                  <span className="text-[9px] text-slate-400 mt-0.5 block">Standard Term Fee</span>
+                </div>
+
+                <div>
+                  <label className="block text-emerald-800 uppercase tracking-wider text-[10px] mb-1">
+                    Amount Paid (₦) *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={inputAmountPaid}
+                    onChange={(e) => handleAmountPaidChange(Number(e.target.value))}
+                    className="w-full p-2.5 bg-emerald-50 border-2 border-emerald-400 rounded-xl font-mono text-sm font-black text-emerald-950 outline-none focus:border-emerald-600"
+                  />
+                  <span className="text-[9px] text-emerald-700 mt-0.5 block font-bold">Received by Bursar</span>
+                </div>
+
+                <div>
+                  <label className="block text-amber-800 uppercase tracking-wider text-[10px] mb-1">
+                    Amount Remain (₦) *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={inputAmountRemaining}
+                    onChange={(e) => setInputAmountRemaining(Number(e.target.value))}
+                    className="w-full p-2.5 bg-amber-50 border-2 border-amber-400 rounded-xl font-mono text-sm font-black text-amber-950 outline-none focus:border-amber-600"
+                  />
+                  <span className="text-[9px] text-amber-700 mt-0.5 block font-bold">
+                    {inputAmountRemaining === 0 ? '✓ Fully Cleared (₦0)' : 'Outstanding Balance'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Payment Details: Term, Purpose, Payment Method */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-slate-500 uppercase tracking-wider text-[10px] mb-1">
+                    Academic Term
+                  </label>
+                  <select
+                    value={inputTerm}
+                    onChange={(e) => setInputTerm(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-blue-950"
+                  >
+                    <option value="First Term">First Term</option>
+                    <option value="Second Term">Second Term</option>
+                    <option value="Third Term">Third Term</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-500 uppercase tracking-wider text-[10px] mb-1">
+                    Payment Purpose
+                  </label>
+                  <select
+                    value={inputPaymentType}
+                    onChange={(e) => setInputPaymentType(e.target.value as any)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-blue-950"
+                  >
+                    <option value="full">Full Session / Term Fee</option>
+                    <option value="installment_1">1st Installment (50%)</option>
+                    <option value="installment_2">Final Installment (50%)</option>
+                    <option value="result_fee">Terminal Result Clearance (₦1,000)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-500 uppercase tracking-wider text-[10px] mb-1">
+                    Payment Method
+                  </label>
+                  <select
+                    value={inputPaymentMethod}
+                    onChange={(e) => setInputPaymentMethod(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-blue-950"
+                  >
+                    <option value="Cash at Bursary Desk">Cash at Bursary Desk</option>
+                    <option value="Direct Bank Transfer">Direct Bank Transfer</option>
+                    <option value="First Bank of Nigeria Teller">First Bank Teller / Deposit</option>
+                    <option value="POS Terminal">POS Card Terminal</option>
+                    <option value="Online Gateway">Online Gateway</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-500 uppercase tracking-wider text-[10px] mb-1">
+                  Bank Reference / Teller Number
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. FBN-TRX-84920 or Teller No. 104829"
+                  value={inputTransactionRef}
+                  onChange={(e) => setInputTransactionRef(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-500 uppercase tracking-wider text-[10px] mb-1">
+                  Bursary Notes / Remarks
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Verified and approved at school cash office"
+                  value={inputAdminNote}
+                  onChange={(e) => setInputAdminNote(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowDirectModal(false)}
+                  className="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase rounded-xl transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-3.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-xl transition-all flex items-center gap-2 border-2 border-yellow-400"
+                >
+                  <span>✓</span>
+                  <span>Confirm Payment & Issue Official Receipt</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: INSPECT & VERIFY AMOUNTS FOR PENDING RECEIPTS */}
+      {inspectConfirmPayment && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-blue-950/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-white rounded-[2.5rem] p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-4 border-4 border-emerald-500 my-6 text-left">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div>
+                <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-black text-[9px] uppercase tracking-wider">
+                  Bursary Verification
+                </span>
+                <h3 className="font-black text-blue-950 text-lg font-serif mt-1">
+                  Verify & Confirm Payment Receipt
+                </h3>
+                <p className="text-xs text-slate-500 font-bold">
+                  {inspectConfirmPayment.studentName} ({inspectConfirmPayment.grade})
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setInspectConfirmPayment(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 font-black flex items-center justify-center"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs font-bold">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center">
+                <span className="text-slate-500">Receipt Ref:</span>
+                <span className="font-mono text-blue-900 font-black">{inspectConfirmPayment.id}</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-emerald-800 uppercase tracking-wider text-[10px] mb-1">
+                    Amount Paid (₦) *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={reviewPaidInput}
+                    onChange={(e) => setReviewPaidInput(Number(e.target.value))}
+                    className="w-full p-2.5 bg-emerald-50 border-2 border-emerald-400 rounded-xl font-mono text-sm font-black text-emerald-950"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-amber-800 uppercase tracking-wider text-[10px] mb-1">
+                    Amount Remain (₦) *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={reviewRemainingInput}
+                    onChange={(e) => setReviewRemainingInput(Number(e.target.value))}
+                    className="w-full p-2.5 bg-amber-50 border-2 border-amber-400 rounded-xl font-mono text-sm font-black text-amber-950"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-500 uppercase tracking-wider text-[10px] mb-1">
+                  Admin Verification Note
+                </label>
+                <input
+                  type="text"
+                  value={reviewNoteInput}
+                  onChange={(e) => setReviewNoteInput(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setInspectConfirmPayment(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmInspectSubmit}
+                  className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center gap-1.5"
+                >
+                  <span>✓</span>
+                  <span>Confirm & Issue Official Receipt</span>
                 </button>
               </div>
             </div>

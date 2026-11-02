@@ -1,12 +1,49 @@
 
-import { AppState, UserPagesAccessState, SchoolBankAccountConfig, CallRecording } from '../types';
-import { INITIAL_FEES, APP_STORAGE_KEY, DEFAULT_BANK_ACCOUNT_CONFIG } from '../constants';
+import { AppState, UserPagesAccessState, SchoolBankAccountConfig, CallRecording, GradingCriterion, ResultCheckerFeeRecord } from '../types';
+import { INITIAL_FEES, APP_STORAGE_KEY, DEFAULT_BANK_ACCOUNT_CONFIG, DEFAULT_GRADING_CRITERIA } from '../constants';
 import { INITIAL_DEFAULT_TIMETABLES } from '../constants/timetableDefaults';
 import { INITIAL_STUDENT_HASH, INITIAL_PARENT_HASH } from '../utils/authSecurity';
+
+export const DEFAULT_RESULT_CHECKER_FEES: ResultCheckerFeeRecord[] = [
+  {
+    id: 'rcf-first-term-2025-2026',
+    term: 'First Term',
+    session: '2025/2026 Academic Session',
+    feeAmount: 1000,
+    feeKobo: 100000,
+    description: 'First Term Terminal Report Card Clearance Pass',
+    isActive: true,
+    updatedAt: new Date().toISOString(),
+    updatedBy: 'School Administrator'
+  },
+  {
+    id: 'rcf-second-term-2025-2026',
+    term: 'Second Term',
+    session: '2025/2026 Academic Session',
+    feeAmount: 1000,
+    feeKobo: 100000,
+    description: 'Second Term Terminal Report Card Clearance Pass',
+    isActive: true,
+    updatedAt: new Date().toISOString(),
+    updatedBy: 'School Administrator'
+  },
+  {
+    id: 'rcf-third-term-2025-2026',
+    term: 'Third Term',
+    session: '2025/2026 Academic Session',
+    feeAmount: 1000,
+    feeKobo: 100000,
+    description: 'Third Term Terminal Report Card Clearance Pass',
+    isActive: true,
+    updatedAt: new Date().toISOString(),
+    updatedBy: 'School Administrator'
+  }
+];
 
 const DEFAULT_STATE: AppState = {
   fees: INITIAL_FEES,
   activeTerm: 'First Term',
+  resultCheckerFees: DEFAULT_RESULT_CHECKER_FEES,
   announcements: [
     {
       id: '1',
@@ -517,7 +554,8 @@ const DEFAULT_STATE: AppState = {
       createdByRole: 'admin',
       createdAt: new Date().toISOString()
     }
-  ]
+  ],
+  gradingCriteria: DEFAULT_GRADING_CRITERIA
 };
 
 export const stateService = {
@@ -529,6 +567,7 @@ export const stateService = {
         return {
           ...DEFAULT_STATE,
           ...parsed,
+          gradingCriteria: (parsed.gradingCriteria && parsed.gradingCriteria.length > 0) ? parsed.gradingCriteria : DEFAULT_GRADING_CRITERIA,
           fees: {
             ...INITIAL_FEES,
             ...(parsed.fees || {})
@@ -554,6 +593,7 @@ export const stateService = {
           meetings: (parsed.meetings && parsed.meetings.length > 0) ? parsed.meetings : DEFAULT_STATE.meetings,
           callSessions: parsed.callSessions || [],
           adminEvents: parsed.adminEvents || DEFAULT_STATE.adminEvents,
+          resultCheckerFees: (parsed.resultCheckerFees && parsed.resultCheckerFees.length > 0) ? parsed.resultCheckerFees : DEFAULT_STATE.resultCheckerFees,
           userPagesAccess: {
             ...DEFAULT_STATE.userPagesAccess,
             ...(parsed.userPagesAccess || {}),
@@ -591,6 +631,21 @@ export const stateService = {
       stateService.saveState(updated);
     } catch (e) {
       console.error("Failed to update bank account config", e);
+    }
+  },
+
+  updateResultCheckerFee: (feeRecord: ResultCheckerFeeRecord): void => {
+    try {
+      const current = stateService.getState();
+      const list = current.resultCheckerFees || DEFAULT_RESULT_CHECKER_FEES;
+      const exists = list.some(f => f.id === feeRecord.id || (f.term === feeRecord.term && f.session === feeRecord.session));
+      const updatedList = exists
+        ? list.map(f => (f.id === feeRecord.id || (f.term === feeRecord.term && f.session === feeRecord.session)) ? { ...f, ...feeRecord } : f)
+        : [...list, feeRecord];
+      const updated = { ...current, resultCheckerFees: updatedList };
+      stateService.saveState(updated);
+    } catch (e) {
+      console.error("Failed to update result checker fee in local state", e);
     }
   },
 

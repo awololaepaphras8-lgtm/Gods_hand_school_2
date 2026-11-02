@@ -1,7 +1,44 @@
 import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+
+function sitemapXmlPlugin(): Plugin {
+  const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+  <url>
+    <loc>https://www.godshandmodelschool.com</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://www.godshandmodelschool.com/about</loc>
+    <lastmod>2026-10-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>`.trim();
+
+  return {
+    name: 'sitemap-xml-route',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const url = req.url ? req.url.split('?')[0] : '';
+        if (url === '/sitemap.xml' || url === '/sitemap') {
+          res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+          res.setHeader('Cache-Control', 'public, max-age=86400');
+          res.statusCode = 200;
+          res.end(sitemapXml);
+          return;
+        }
+        next();
+      });
+    }
+  };
+}
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
@@ -11,6 +48,7 @@ export default defineConfig(({ mode }) => {
         host: '0.0.0.0',
       },
       plugins: [
+        sitemapXmlPlugin(),
         react(),
         VitePWA({
           registerType: 'autoUpdate',
@@ -27,8 +65,9 @@ export default defineConfig(({ mode }) => {
             'pwa-maskable-512x512.png'
           ],
           manifest: {
+            id: "/",
             name: "God's Hand International Model School",
-            short_name: "God's Hand School",
+            short_name: "God's Hand",
             description: "Official portal for God's Hand International Model School. Monitor attendance, student results, and pay fees.",
             theme_color: "#1e3a8a",
             background_color: "#0f172a",
@@ -106,6 +145,10 @@ export default defineConfig(({ mode }) => {
                 }
               }
             ]
+          },
+          devOptions: {
+            enabled: true,
+            type: 'module'
           }
         })
       ],

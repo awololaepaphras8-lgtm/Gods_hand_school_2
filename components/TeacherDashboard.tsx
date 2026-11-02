@@ -9,6 +9,7 @@ import { ClassTimetableManager } from './ClassTimetableManager';
 import { AcademicTrendsWidget } from './AcademicTrendsWidget';
 import { DedicatedAppInstallModal } from './DedicatedAppInstallModal';
 import { generateSecureTempPassword } from '../utils/authSecurity';
+import { StaffBatchMarksheet } from './StaffBatchMarksheet';
 
 interface TeacherDashboardProps {
   username: string;
@@ -32,6 +33,7 @@ interface TeacherDashboardProps {
   onAddCourse: (name: string, grade: GradeLevel, description: string) => void;
   onDuplicateCourse?: (courseId: string, targetGrades: GradeLevel[]) => void;
   onAddResult: (result: Omit<StudentResult, 'id' | 'date' | 'teacherName'>) => void;
+  onBatchSaveResults?: (results: StudentResult[]) => void;
   onMarkAttendance: (studentId: string, term?: string) => boolean;
   onBatchMarkAttendance?: (records: { studentId: string; date: string; term: string; markedBy: string }[]) => void;
   onShiftStudent: (studentId: string) => void;
@@ -44,6 +46,7 @@ interface TeacherDashboardProps {
   canCreateStudents?: boolean;
   onAddStudent?: (student: StudentAccount) => void;
   onAddParentAccount?: (parent: ParentAccount) => void;
+  onUpdateStudent?: (studentId: string, updates: Partial<StudentAccount>) => void;
   initialTab?: string;
 }
 
@@ -68,10 +71,12 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   canCreateStudents = false,
   onAddStudent,
   onAddParentAccount,
+  onUpdateStudent,
   onOpenAdminDelegation,
   onAddCourse,
   onDuplicateCourse,
   onAddResult,
+  onBatchSaveResults,
   onMarkAttendance,
   onBatchMarkAttendance,
   onShiftStudent,
@@ -131,8 +136,12 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const [duplicateCourseId, setDuplicateCourseId] = useState<string | null>(null);
   const [targetDuplicateGrades, setTargetDuplicateGrades] = useState<GradeLevel[]>([]);
 
+  // Grading Layout Mode: 'batch_sheet' (Class Sheet Grid with Phone Resume) vs 'single_entry' (Single Pupil)
+  const [gradingLayoutMode, setGradingLayoutMode] = useState<'batch_sheet' | 'single_entry'>('batch_sheet');
+
   // Grading form state with CA (40%), Exam (60%), and Total (100%)
   const [gradeClassFilter, setGradeClassFilter] = useState<string>(authorizedGrades[0] || 'all');
+  const [staffGradingMode, setStaffGradingMode] = useState<'both' | 'test_only' | 'exam_only'>('both');
   const [selectedStudent, setSelectedStudent] = useState<string>('');
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [customSubject, setCustomSubject] = useState<string>('');
@@ -183,6 +192,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const [newPupilParentRelationship, setNewPupilParentRelationship] = useState<'Father' | 'Mother' | 'Guardian' | 'Other'>('Mother');
   const [newPupilGender, setNewPupilGender] = useState<'Male' | 'Female' | 'Other'>('Male');
   const [newPupilAdmissionYear, setNewPupilAdmissionYear] = useState<number>(new Date().getFullYear());
+  const [newPupilPassword, setNewPupilPassword] = useState('');
+  const [showNewPupilPassword, setShowNewPupilPassword] = useState(false);
   const [createParentWithPupil, setCreateParentWithPupil] = useState(true);
   const [showStaffAppDownloadModal, setShowStaffAppDownloadModal] = useState(false);
   const [lastEnrollmentSuccess, setLastEnrollmentSuccess] = useState<{
@@ -207,7 +218,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     const initials = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '');
     const studentId = `GHS-${newPupilGrade.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
     const studentEmail = `${initials}.${Math.floor(100 + Math.random() * 900)}@godshand.edu.ng`;
-    const tempStudentPass = generateSecureTempPassword();
+    // Explicit alphanumeric password entered by teacher or securely generated if blank
+    const studentPassword = newPupilPassword.trim() || generateSecureTempPassword();
 
     let tempParentPass: string | undefined = undefined;
     let parentAccount: ParentAccount | undefined = undefined;
@@ -233,7 +245,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
       name: cleanName,
       grade: newPupilGrade,
       email: studentEmail,
-      password: tempStudentPass,
+      password: studentPassword,
       entryAllowed: true,
       activeTerm: currentTerm,
       qrCodeVersion: 1,
@@ -245,11 +257,12 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     };
 
     onAddStudent?.(newStudent);
-    setLastEnrollmentSuccess({ student: newStudent, parent: parentAccount, tempStudentPass, tempParentPass });
+    setLastEnrollmentSuccess({ student: newStudent, parent: parentAccount, tempStudentPass: studentPassword, tempParentPass });
     setNewPupilName('');
     setNewPupilParentEmail('');
     setNewPupilParentPhone('');
     setNewPupilParentName('');
+    setNewPupilPassword('');
     setShowAddStudentForm(false);
   };
 
@@ -352,13 +365,21 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const handleCaChange = (val: number) => {
     const num = isNaN(val) ? 0 : Math.max(0, Math.min(40, val));
     setCaScore(num);
-    setTotalScore(Math.min(100, Math.round((num + examScore) * 10) / 10));
+    if (staffGradingMode === 'test_only') {
+      setTotalScore(num);
+    } else {
+      setTotalScore(Math.min(100, Math.round((num + examScore) * 10) / 10));
+    }
   };
 
   const handleExamChange = (val: number) => {
     const num = isNaN(val) ? 0 : Math.max(0, Math.min(60, val));
     setExamScore(num);
-    setTotalScore(Math.min(100, Math.round((caScore + num) * 10) / 10));
+    if (staffGradingMode === 'exam_only') {
+      setTotalScore(num);
+    } else {
+      setTotalScore(Math.min(100, Math.round((caScore + num) * 10) / 10));
+    }
   };
 
   const handleTotalChange = (val: number) => {
@@ -387,7 +408,20 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
       return;
     }
 
-    const calculatedTotal = parseFloat(totalScore.toString()) || (caScore + examScore);
+    let effectiveCa = caScore;
+    let effectiveExam = examScore;
+    let calculatedTotal = parseFloat(totalScore.toString()) || 0;
+
+    if (staffGradingMode === 'test_only') {
+      effectiveExam = 0;
+      calculatedTotal = effectiveCa;
+    } else if (staffGradingMode === 'exam_only') {
+      effectiveCa = 0;
+      calculatedTotal = effectiveExam;
+    } else {
+      calculatedTotal = Math.round((effectiveCa + effectiveExam) * 10) / 10;
+    }
+
     if (calculatedTotal < 0 || calculatedTotal > 100) {
       alert("Total score must be between 0 and 100.");
       return;
@@ -397,8 +431,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
       studentName: student.name,
       grade: student.grade,
       subject: finalSubject,
-      caScore: caScore,
-      examScore: examScore,
+      caScore: effectiveCa,
+      examScore: effectiveExam,
       score: calculatedTotal,
       term: term
     });
@@ -407,7 +441,14 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     setExamScore(0);
     setTotalScore(0);
     setCustomSubject('');
-    alert(`Assessment successfully recorded for ${student.name} (${finalSubject})!\nCA: ${caScore}/40 • Exam: ${examScore}/60 • Total: ${calculatedTotal}%`);
+    
+    if (staffGradingMode === 'test_only') {
+      alert(`✓ Test / Continuous Assessment recorded for ${student.name} (${finalSubject})!\nTest Score: ${effectiveCa}/40 (Exam deferred/pending)`);
+    } else if (staffGradingMode === 'exam_only') {
+      alert(`✓ Examination mark recorded for ${student.name} (${finalSubject})!\nExam Score: ${effectiveExam}/60`);
+    } else {
+      alert(`✓ Full Assessment recorded for ${student.name} (${finalSubject})!\nTest (CA): ${effectiveCa}/40 • Exam: ${effectiveExam}/60 • Total: ${calculatedTotal}%`);
+    }
   };
 
   // Active class for rankings and publication requests
@@ -1206,6 +1247,51 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                     </select>
                   </div>
 
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-black text-blue-950 uppercase tracking-wider block">
+                      Admission Year
+                    </label>
+                    <input
+                      type="number"
+                      value={newPupilAdmissionYear}
+                      onChange={(e) => setNewPupilAdmissionYear(Number(e.target.value))}
+                      className="w-full px-3 py-2.5 bg-white border border-amber-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:ring-2 focus:ring-blue-900"
+                    />
+                  </div>
+
+                  {/* Pupil Password Input with Reveal Toggle */}
+                  <div className="space-y-1 sm:col-span-2 lg:col-span-3">
+                    <div className="flex justify-between items-center">
+                      <label className="text-[11px] font-black text-blue-950 uppercase tracking-wider block">
+                        Pupil Login Password (Letters & Numbers) *
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setNewPupilPassword(generateSecureTempPassword())}
+                        className="text-[10px] font-black text-blue-900 hover:text-blue-700 uppercase underline"
+                      >
+                        ⚡ Suggest Password
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type={showNewPupilPassword ? "text" : "password"}
+                        value={newPupilPassword}
+                        onChange={(e) => setNewPupilPassword(e.target.value)}
+                        placeholder="e.g. Pupil2025Pass (Letters & Numbers accepted)"
+                        className="w-full px-4 py-2.5 pr-20 bg-white border border-amber-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:ring-2 focus:ring-blue-900"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPupilPassword(!showNewPupilPassword)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[10px] font-black uppercase text-slate-500 hover:text-blue-900 bg-slate-100 hover:bg-slate-200 rounded-md border border-slate-200"
+                      >
+                        {showNewPupilPassword ? "Hide" : "Show"}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-amber-900">Accepts numbers and letters. If left empty, an alphanumeric password will be generated automatically.</p>
+                  </div>
+
                   {/* Parent Provisioning Section */}
                   <div className="sm:col-span-2 lg:col-span-4 p-4 bg-white/80 border border-amber-200 rounded-2xl space-y-3">
                     <div className="flex items-center justify-between">
@@ -1444,20 +1530,97 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                           studentsInGrade.map(student => {
                             const nextGrade = getNextGradeLevel(student.grade);
                             return (
-                              <div key={student.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
-                                <div className="flex items-center">
-                                  <div className="w-12 h-12 bg-yellow-100 text-blue-900 rounded-2xl flex items-center justify-center font-black mr-4 border-2 border-yellow-200 shrink-0">
-                                    {student.name.charAt(0)}
+                              <div key={student.id} className="p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
+                                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                                  {/* Pupil Photo with Quick Upload Camera Badge */}
+                                  <div className="relative group shrink-0">
+                                    <div className="w-14 h-14 rounded-2xl bg-yellow-100 text-blue-900 flex items-center justify-center font-black border-2 border-yellow-300 overflow-hidden shadow-xs">
+                                      {student.photo ? (
+                                        <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
+                                      ) : (
+                                        <span className="text-xl font-black">{student.name.charAt(0)}</span>
+                                      )}
+                                    </div>
+                                    <label
+                                      className="absolute -bottom-1 -right-1 w-6 h-6 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-lg flex items-center justify-center text-[10px] shadow cursor-pointer transition-transform hover:scale-110 border border-yellow-500"
+                                      title="Click to take or upload student picture"
+                                    >
+                                      📷
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) {
+                                            const reader = new FileReader();
+                                            reader.onload = () => {
+                                              if (typeof reader.result === 'string') {
+                                                onUpdateStudent?.(student.id, { photo: reader.result });
+                                                alert(`✓ Photo successfully updated for ${student.name}!`);
+                                              }
+                                            };
+                                            reader.readAsDataURL(file);
+                                          }
+                                        }}
+                                      />
+                                    </label>
                                   </div>
-                                  <div>
-                                    <p className="font-black text-blue-900 text-base sm:text-lg">{student.name}</p>
-                                    <p className="text-xs text-slate-500 font-medium">{student.email}</p>
-                                    <span className="inline-block mt-0.5 px-2 py-0.5 bg-slate-200 text-slate-700 text-[10px] font-bold rounded-md uppercase">
-                                      Current Class: {student.grade}
-                                    </span>
+
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-black text-blue-900 text-base sm:text-lg truncate">{student.name}</p>
+                                    <p className="text-xs text-slate-500 font-medium truncate">{student.email} • ID: <span className="font-mono font-bold text-slate-700">{student.id}</span></p>
+                                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                      <span className="px-2 py-0.5 bg-slate-200 text-slate-700 text-[10px] font-bold rounded-md uppercase">
+                                        Class: {student.grade}
+                                      </span>
+                                      {student.gender && (
+                                        <span className="px-2 py-0.5 bg-blue-50 text-blue-800 text-[10px] font-bold rounded-md">
+                                          {student.gender}
+                                        </span>
+                                      )}
+                                      {student.bloodGroup && (
+                                        <span className="px-2 py-0.5 bg-rose-50 text-rose-800 text-[10px] font-bold rounded-md">
+                                          🩸 {student.bloodGroup}
+                                        </span>
+                                      )}
+                                      {student.nin && (
+                                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-800 text-[10px] font-mono font-bold rounded-md">
+                                          NIN: {student.nin}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
-                                <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+
+                                <div className="flex flex-wrap items-center justify-between md:justify-end gap-2 sm:gap-3 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
+                                  {/* Teacher Photo Upload Button */}
+                                  <label
+                                    className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-900 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-2xs border border-blue-200 flex items-center gap-1.5 cursor-pointer active:scale-95"
+                                    title="Upload photo for this student"
+                                  >
+                                    <span>📷</span>
+                                    <span>{student.photo ? 'Change Photo' : 'Add Photo'}</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                          const reader = new FileReader();
+                                          reader.onload = () => {
+                                            if (typeof reader.result === 'string') {
+                                              onUpdateStudent?.(student.id, { photo: reader.result });
+                                              alert(`✓ Photo successfully updated for ${student.name}!`);
+                                            }
+                                          };
+                                          reader.readAsDataURL(file);
+                                        }
+                                      }}
+                                    />
+                                  </label>
+
                                   {/* Today Attendance Quick Checkmark */}
                                   <div className="flex items-center">
                                     {(() => {
@@ -1489,10 +1652,11 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                                     })()}
                                   </div>
 
-                                  <div className="text-left sm:text-right">
+                                  <div className="text-left md:text-right hidden sm:block">
                                     <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">Enrolled</p>
                                     <p className="text-xs font-bold text-blue-900">{new Date(student.createdAt).toLocaleDateString()}</p>
                                   </div>
+
                                   {nextGrade ? (
                                     <button 
                                       type="button"
@@ -1502,15 +1666,15 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                                           alert(`Success! Pupil ${student.name} has been moved to ${nextGrade}.`);
                                         }
                                       }}
-                                      className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5"
+                                      className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1"
                                       title={`Move pupil to ${nextGrade}`}
                                     >
                                       <span>Move to {nextGrade}</span>
                                       <span className="text-yellow-300 font-black">➔</span>
                                     </button>
                                   ) : (
-                                    <span className="px-3.5 py-2 bg-purple-100 text-purple-900 text-[10px] font-black uppercase rounded-xl border border-purple-200">
-                                      🎓 Graduating Class
+                                    <span className="px-3 py-1.5 bg-purple-100 text-purple-900 text-[10px] font-black uppercase rounded-xl border border-purple-200">
+                                      🎓 Graduating
                                     </span>
                                   )}
                                 </div>
@@ -1778,11 +1942,61 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 </div>
               </div>
 
-              {/* Assessment Form & Position Standings */}
-              <div className="grid lg:grid-cols-2 gap-12">
-                <div>
-                  <h3 className="text-2xl font-black text-blue-900 mb-6 font-serif">Record Assessment Marks</h3>
-                  <form onSubmit={handleAddGrade} className="space-y-6 bg-blue-50/70 p-8 rounded-[2rem] border-2 border-blue-100 shadow-sm">
+              {/* Grading Entry Mode Selector: Batch Sheet vs Single Entry */}
+              <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-100 p-2 rounded-2xl border border-slate-200">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setGradingLayoutMode('batch_sheet')}
+                    className={`px-5 py-3 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 ${
+                      gradingLayoutMode === 'batch_sheet'
+                        ? 'bg-blue-900 text-yellow-400 shadow-md'
+                        : 'text-slate-700 hover:text-blue-950 hover:bg-white'
+                    }`}
+                  >
+                    <span>📋</span>
+                    <span>Batch Marksheet (Sheet View with Phone Auto-Resume)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setGradingLayoutMode('single_entry')}
+                    className={`px-5 py-3 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 ${
+                      gradingLayoutMode === 'single_entry'
+                        ? 'bg-blue-900 text-yellow-400 shadow-md'
+                        : 'text-slate-700 hover:text-blue-950 hover:bg-white'
+                    }`}
+                  >
+                    <span>👤</span>
+                    <span>Single Pupil Entry Form</span>
+                  </button>
+                </div>
+
+                <span className="text-[11px] font-bold text-slate-500 pr-2">
+                  {gradingLayoutMode === 'batch_sheet' 
+                    ? '⚡ Record entire class marks at once with autosave' 
+                    : 'Individual score recording'}
+                </span>
+              </div>
+
+              {gradingLayoutMode === 'batch_sheet' ? (
+                <StaffBatchMarksheet
+                  teacherUsername={username}
+                  assignedGrades={authorizedGrades}
+                  assignedSubjects={assignedSubjects}
+                  allStudents={staffStudents}
+                  courses={courses}
+                  results={results}
+                  activeTerm={currentTerm}
+                  onBatchSaveResults={onBatchSaveResults}
+                  onAddResult={onAddResult}
+                />
+              ) : (
+                /* Assessment Form & Position Standings */
+                <div className="grid lg:grid-cols-2 gap-12">
+                  <div>
+                    <h3 className="text-2xl font-black text-blue-900 mb-6 font-serif">Record Assessment Marks</h3>
+                    <form onSubmit={handleAddGrade} className="space-y-6 bg-blue-50/70 p-8 rounded-[2rem] border-2 border-blue-100 shadow-sm">
                     {/* Class Filter - Restricted strictly to staff's assigned classes */}
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
@@ -1910,16 +2124,81 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                       </select>
                     </div>
 
+                    {/* Grading Input Mode Selector: Test Only or Both */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-blue-900 uppercase tracking-widest block">
+                        Mark Entry Scope
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStaffGradingMode('test_only');
+                            setExamScore(0);
+                            setTotalScore(caScore);
+                          }}
+                          className={`py-2 px-3 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1 border-2 ${
+                            staffGradingMode === 'test_only'
+                              ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
+                              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                          }`}
+                        >
+                          <span className="text-sm">🧪</span>
+                          <span>Test Only (CA)</span>
+                          <span className="text-[9px] font-normal opacity-80">Max 40</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStaffGradingMode('both');
+                            setTotalScore(Math.min(100, Math.round((caScore + examScore) * 10) / 10));
+                          }}
+                          className={`py-2 px-3 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1 border-2 ${
+                            staffGradingMode === 'both'
+                              ? 'bg-blue-900 text-yellow-400 border-blue-950 shadow-sm'
+                              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                          }`}
+                        >
+                          <span className="text-sm">📊</span>
+                          <span>Both (Full)</span>
+                          <span className="text-[9px] font-normal opacity-80">CA 40 + Exam 60</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStaffGradingMode('exam_only');
+                            setCaScore(0);
+                            setTotalScore(examScore);
+                          }}
+                          className={`py-2 px-3 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1 border-2 ${
+                            staffGradingMode === 'exam_only'
+                              ? 'bg-indigo-700 text-white border-indigo-800 shadow-sm'
+                              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                          }`}
+                        >
+                          <span className="text-sm">📝</span>
+                          <span>Exam Only</span>
+                          <span className="text-[9px] font-normal opacity-80">Max 60</span>
+                        </button>
+                      </div>
+                    </div>
+
                     {/* CA Test, Examination, and Total Mark Inputs */}
                     <div className="p-5 bg-white rounded-2xl border-2 border-blue-100 space-y-4">
                       <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                        <span className="text-xs font-black text-blue-900 uppercase tracking-wider">Mark Allocation</span>
-                        <span className="text-[10px] font-bold text-slate-400">CA: 40% | Exam: 60%</span>
+                        <span className="text-xs font-black text-blue-900 uppercase tracking-wider">
+                          {staffGradingMode === 'test_only' ? '🧪 Continuous Assessment (Test) Input' : staffGradingMode === 'exam_only' ? '📝 Examination Mark Input' : 'Mark Allocation (CA: 40% | Exam: 60%)'}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-400">
+                          {staffGradingMode === 'test_only' ? 'Exam deferred' : staffGradingMode === 'exam_only' ? 'Test deferred' : 'Full terminal marks'}
+                        </span>
                       </div>
 
                       <div className="grid grid-cols-3 gap-3">
                         {/* Continuous Assessment (CA) */}
-                        <div className="space-y-1.5">
+                        <div className={`space-y-1.5 ${staffGradingMode === 'exam_only' ? 'opacity-40 pointer-events-none' : ''}`}>
                           <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                             CA Test (0-40)
                           </label>
@@ -1928,16 +2207,17 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                             min="0" 
                             max="40" 
                             step="any" 
-                            required
+                            required={staffGradingMode !== 'exam_only'}
+                            disabled={staffGradingMode === 'exam_only'}
                             value={caScore}
                             onChange={(e) => handleCaChange(parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-mono font-black text-center text-blue-950 outline-none focus:bg-white focus:border-blue-900 transition-all text-sm"
+                            className="w-full px-3 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-mono font-black text-center text-blue-950 outline-none focus:bg-white focus:border-blue-900 transition-all text-sm disabled:bg-slate-100"
                           />
                           <span className="text-[9px] text-slate-400 block text-center font-medium">Max 40</span>
                         </div>
 
                         {/* Examination */}
-                        <div className="space-y-1.5">
+                        <div className={`space-y-1.5 ${staffGradingMode === 'test_only' ? 'opacity-40 pointer-events-none' : ''}`}>
                           <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                             Exam (0-60)
                           </label>
@@ -1946,10 +2226,11 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                             min="0" 
                             max="60" 
                             step="any" 
-                            required
+                            required={staffGradingMode !== 'test_only'}
+                            disabled={staffGradingMode === 'test_only'}
                             value={examScore}
                             onChange={(e) => handleExamChange(parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-mono font-black text-center text-blue-950 outline-none focus:bg-white focus:border-blue-900 transition-all text-sm"
+                            className="w-full px-3 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-mono font-black text-center text-blue-950 outline-none focus:bg-white focus:border-blue-900 transition-all text-sm disabled:bg-slate-100"
                           />
                           <span className="text-[9px] text-slate-400 block text-center font-medium">Max 60</span>
                         </div>
@@ -1957,7 +2238,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                         {/* Total Score */}
                         <div className="space-y-1.5">
                           <label className="text-[10px] font-black text-blue-900 uppercase tracking-wider block">
-                            Total (0-100)
+                            {staffGradingMode === 'test_only' ? 'Test Mark' : staffGradingMode === 'exam_only' ? 'Exam Mark' : 'Total (0-100)'}
                           </label>
                           <input 
                             type="number" 
@@ -1970,7 +2251,10 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                             className="w-full px-3 py-3 bg-yellow-50 border-2 border-yellow-400 rounded-xl font-mono font-black text-center text-blue-950 outline-none text-base"
                           />
                           <span className="text-[9px] font-black text-blue-900 block text-center">
-                            {totalScore >= 75 ? 'A (Distinction)' : totalScore >= 65 ? 'B (Very Good)' : totalScore >= 50 ? 'C (Credit)' : totalScore >= 40 ? 'D (Pass)' : 'F (Fail)'}
+                            {staffGradingMode === 'test_only' 
+                              ? `${totalScore}/40 CA`
+                              : totalScore >= 75 ? 'A (Distinction)' : totalScore >= 65 ? 'B (Very Good)' : totalScore >= 50 ? 'C (Credit)' : totalScore >= 40 ? 'D (Pass)' : 'F (Fail)'
+                            }
                           </span>
                         </div>
                       </div>
@@ -2109,6 +2393,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                   </div>
                 </div>
               </div>
+            )}
            </div>
         )}
 

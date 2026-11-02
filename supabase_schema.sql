@@ -516,7 +516,46 @@ ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS updated_at TIMESTAM
 ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS full_name TEXT;
 ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS email TEXT;
 ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS class_teacher_grade TEXT;
 ALTER TABLE public.teacher_accounts ADD COLUMN IF NOT EXISTS allowed_pages TEXT[] DEFAULT '{"overview", "parentMessages", "attendanceScanning", "attendance", "students", "timetable", "termStats", "grading", "courses"}' NOT NULL;
+
+-- 26. Result Checker Term Fees Table (Dynamic fee per term and session)
+CREATE TABLE IF NOT EXISTS public.result_checker_fees (
+  id TEXT PRIMARY KEY,
+  term TEXT NOT NULL,
+  session TEXT NOT NULL,
+  fee_amount NUMERIC(10, 2) NOT NULL DEFAULT 1000.00,
+  fee_kobo BIGINT NOT NULL DEFAULT 100000,
+  description TEXT,
+  is_active BOOLEAN DEFAULT TRUE NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_by TEXT DEFAULT 'School Administrator',
+  CONSTRAINT uq_result_fee_term_session UNIQUE(term, session)
+);
+
+ALTER TABLE public.result_checker_fees ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow read on result_checker_fees for all" ON public.result_checker_fees FOR SELECT USING (true);
+CREATE POLICY "Allow write on result_checker_fees for all" ON public.result_checker_fees FOR ALL USING (true) WITH CHECK (true);
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'result_checker_fees'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.result_checker_fees;
+  END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+INSERT INTO public.result_checker_fees (id, term, session, fee_amount, fee_kobo, description, is_active, updated_by)
+VALUES 
+  ('rcf-first-term-2025-2026', 'First Term', '2025/2026 Academic Session', 1000.00, 100000, 'First Term Terminal Report Card Clearance Pass', TRUE, 'School Administrator'),
+  ('rcf-second-term-2025-2026', 'Second Term', '2025/2026 Academic Session', 1000.00, 100000, 'Second Term Terminal Report Card Clearance Pass', TRUE, 'School Administrator'),
+  ('rcf-third-term-2025-2026', 'Third Term', '2025/2026 Academic Session', 1000.00, 100000, 'Third Term Terminal Report Card Clearance Pass', TRUE, 'School Administrator')
+ON CONFLICT (id) DO NOTHING;
+
 
 -- Add new columns to public.timetables if not present
 ALTER TABLE public.timetables ADD COLUMN IF NOT EXISTS notes TEXT;

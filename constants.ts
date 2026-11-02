@@ -1,5 +1,5 @@
 
-import { FeeStructure, GradeLevel, SchoolBankAccountConfig } from './types';
+import { FeeStructure, GradeLevel, SchoolBankAccountConfig, GradingCriterion } from './types';
 
 export const INITIAL_FEES: FeeStructure = {
   'Crèche': 22000,
@@ -140,6 +140,7 @@ export const DEFAULT_BANK_ACCOUNT_CONFIG: SchoolBankAccountConfig = {
   accountNumber: '2041982731',
   accountName: "God's Hand International Model School",
   paymentInstructions: "Please make transfer or direct bank deposit using the child's full name and student ID in the transfer remarks, then upload the receipt proof document.",
+  resultCheckerFee: 1000,
   updatedAt: new Date().toISOString(),
   updatedBy: 'School Administrator'
 };
@@ -194,5 +195,17 @@ export const STANDARD_SUBJECTS = [
   'Further Mathematics',
   'Geography',
   'Technical Drawing'
+];
+
+export const DEFAULT_GRADING_CRITERIA: GradingCriterion[] = [
+  { id: 'gc-1', gradeLetter: 'A1', minScore: 75, maxScore: 100, remark: 'Excellence', description: 'Exceptional academic distinction and comprehensive subject mastery', color: '#16a34a' },
+  { id: 'gc-2', gradeLetter: 'B2', minScore: 70, maxScore: 74, remark: 'Very Good', description: 'High competence with strong analytical understanding', color: '#2563eb' },
+  { id: 'gc-3', gradeLetter: 'B3', minScore: 65, maxScore: 69, remark: 'Good', description: 'Above average mastery with commendable dedication', color: '#0284c7' },
+  { id: 'gc-4', gradeLetter: 'C4', minScore: 60, maxScore: 64, remark: 'Credit', description: 'Solid understanding and satisfactory performance', color: '#d97706' },
+  { id: 'gc-5', gradeLetter: 'C5', minScore: 55, maxScore: 59, remark: 'Credit', description: 'Good foundational grasp of concepts', color: '#ca8a04' },
+  { id: 'gc-6', gradeLetter: 'C6', minScore: 50, maxScore: 54, remark: 'Credit', description: 'Acceptable pass meeting core criteria', color: '#eab308' },
+  { id: 'gc-7', gradeLetter: 'D7', minScore: 45, maxScore: 49, remark: 'Pass', description: 'Fair performance with room for improvement', color: '#ea580c' },
+  { id: 'gc-8', gradeLetter: 'E8', minScore: 40, maxScore: 44, remark: 'Pass', description: 'Marginal pass requiring closer attention', color: '#dc2626' },
+  { id: 'gc-9', gradeLetter: 'F9', minScore: 0, maxScore: 39, remark: 'Fail / Remedial', description: 'Below minimum requirement, remedial mentoring required', color: '#991b1b' },
 ];
 

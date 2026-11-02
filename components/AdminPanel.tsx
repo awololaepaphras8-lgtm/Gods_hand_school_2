@@ -38,9 +38,12 @@ import { AcademicTrendsWidget } from './AcademicTrendsWidget';
 import { RecommendedCoursesLibrary } from './RecommendedCoursesLibrary';
 import { AdminBankAccountManager } from './AdminBankAccountManager';
 import { AttendanceCameraScanner } from './AttendanceCameraScanner';
-import { SchoolBankAccountConfig } from '../types';
+import { SchoolBankAccountConfig, GradingCriterion } from '../types';
 import { DedicatedAppInstallModal } from './DedicatedAppInstallModal';
 import { generateSecureTempPassword } from '../utils/authSecurity';
+import { AdminGradingCriteriaManager } from './AdminGradingCriteriaManager';
+import { StudentIDCardModal } from './StudentIDCardModal';
+import { AdminDirectGradeEntry } from './AdminDirectGradeEntry';
 
 interface AdminPanelProps {
   fees: FeeStructure;
@@ -104,6 +107,13 @@ interface AdminPanelProps {
   onAddAssignment?: (assignment: Assignment) => void;
   onUpdateAssignment?: (assignment: Assignment) => void;
   onDeleteAssignment?: (id: string) => void;
+  gradingCriteria?: GradingCriterion[];
+  onSaveGradingCriteria?: (criteria: GradingCriterion[]) => void;
+  onRecordDirectPayment?: (payment: FeePayment) => void;
+  onUpdateStudent?: (studentId: string, updates: Partial<StudentAccount>) => void;
+  onSaveResult?: (result: StudentResult) => void;
+  onDeleteResult?: (resultId: string) => void;
+  onBatchSaveResults?: (results: StudentResult[]) => void;
   initialTab?: string;
 }
 
@@ -163,6 +173,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onAddAssignment,
   onUpdateAssignment,
   onDeleteAssignment,
+  gradingCriteria,
+  onSaveGradingCriteria,
+  onRecordDirectPayment,
+  onUpdateStudent,
+  onSaveResult,
+  onDeleteResult,
+  onBatchSaveResults,
   initialTab
 }) => {
   // Admin Provisioning State
@@ -173,6 +190,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [adminPupilAdmissionYear, setAdminPupilAdmissionYear] = useState<number>(new Date().getFullYear());
   const [adminPupilParentEmail, setAdminPupilParentEmail] = useState('');
   const [adminPupilParentPhone, setAdminPupilParentPhone] = useState('');
+  const [adminPupilPassword, setAdminPupilPassword] = useState('');
+  const [showAdminPupilPassword, setShowAdminPupilPassword] = useState(false);
   const [adminPupilCreateParent, setAdminPupilCreateParent] = useState(false);
   const [adminPupilParentName, setAdminPupilParentName] = useState('');
   const [adminPupilParentRel, setAdminPupilParentRel] = useState<'Father' | 'Mother' | 'Guardian' | 'Other'>('Mother');
@@ -195,7 +214,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const initials = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '');
     const studentId = `GHS-${adminPupilGrade.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
     const studentEmail = `${initials}.${Math.floor(100 + Math.random() * 900)}@godshand.edu.ng`;
-    const tempStudentPass = generateSecureTempPassword();
+    // Explicit alphanumeric password entered by admin or securely generated if blank
+    const studentPassword = adminPupilPassword.trim() || generateSecureTempPassword();
 
     let parentObj: ParentAccount | undefined = undefined;
     if (adminPupilCreateParent && (adminPupilParentName.trim() || adminPupilParentPhone.trim() || adminPupilParentEmail.trim())) {
@@ -219,7 +239,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       name: cleanName,
       grade: adminPupilGrade,
       email: studentEmail,
-      password: tempStudentPass,
+      password: studentPassword,
       entryAllowed: true,
       activeTerm: activeTerm,
       qrCodeVersion: 1,
@@ -231,11 +251,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     };
 
     onAddStudent?.(newStudent);
-    alert(`✓ Pupil Account Successfully Provisioned by Admin!\n\nName: ${cleanName}\nClass: ${adminPupilGrade}\nStudent ID: ${studentId}\nTemporary Password: ${tempStudentPass}\n\nSynchronized to database in real-time.`);
+    alert(`✓ Pupil Account Successfully Provisioned by Admin!\n\nName: ${cleanName}\nClass: ${adminPupilGrade}\nStudent ID: ${studentId}\nLogin Password: ${studentPassword}\n\nSynchronized to database in real-time.`);
     setAdminPupilName('');
     setAdminPupilParentEmail('');
     setAdminPupilParentPhone('');
     setAdminPupilParentName('');
+    setAdminPupilPassword('');
     setAdminPupilCreateParent(false);
     setShowAdminAddStudentModal(false);
   };
@@ -273,7 +294,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [editingBalanceStudentId, setEditingBalanceStudentId] = useState<string | null>(null);
   const [inputBalanceValue, setInputBalanceValue] = useState<string>('');
   const [balanceSaveSuccessId, setBalanceSaveSuccessId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'attendance' | 'attendanceScanning' | 'academicTrends' | 'payments' | 'resultPublish' | 'fees' | 'bankAccount' | 'applications' | 'teachers' | 'courses' | 'calendar' | 'announcements' | 'access' | 'parents' | 'export' | 'delegations' | 'pageAccess' | 'assignments'>((initialTab as any) || 'attendance');
+  const [selectedStudentForIDCard, setSelectedStudentForIDCard] = useState<StudentAccount | null>(null);
+  const [activeTab, setActiveTab] = useState<'attendance' | 'attendanceScanning' | 'academicTrends' | 'payments' | 'resultPublish' | 'directGrading' | 'fees' | 'bankAccount' | 'applications' | 'teachers' | 'courses' | 'calendar' | 'announcements' | 'access' | 'parents' | 'export' | 'delegations' | 'pageAccess' | 'assignments' | 'gradingCriteria'>((initialTab as any) || 'attendance');
   const [rejectModalRequestId, setRejectModalRequestId] = useState<string | null>(null);
   const [rejectFeedbackText, setRejectFeedbackText] = useState<string>('');
   const [delegationNow, setDelegationNow] = useState<Date>(new Date());
@@ -303,6 +325,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [teacherUser, setTeacherUser] = useState('');
   const [teacherPass, setTeacherPass] = useState('');
   const [staffAssignmentRole, setStaffAssignmentRole] = useState<TeacherAssignmentRole>('class_teacher');
+  const [classTeacherGrade, setClassTeacherGrade] = useState<GradeLevel | ''>('');
   const [assignedGrades, setAssignedGrades] = useState<GradeLevel[]>([]);
   const [assignedSubjects, setAssignedSubjects] = useState<string[]>([]);
   const [customSubjectInput, setCustomSubjectInput] = useState<string>('');
@@ -314,6 +337,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   // Edit Teacher Assignment Modal State
   const [editingTeacherForAssignment, setEditingTeacherForAssignment] = useState<TeacherAccount | null>(null);
   const [editAssignmentRole, setEditAssignmentRole] = useState<TeacherAssignmentRole>('class_teacher');
+  const [editClassTeacherGrade, setEditClassTeacherGrade] = useState<GradeLevel | ''>('');
   const [editAssignedGrades, setEditAssignedGrades] = useState<GradeLevel[]>([]);
   const [editAssignedSubjects, setEditAssignedSubjects] = useState<string[]>([]);
   const [editCustomSubject, setEditCustomSubject] = useState<string>('');
@@ -522,6 +546,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
        teacher.assignedSubjects && teacher.assignedSubjects.length > 0 ? 'subject_teacher' : 'class_teacher');
     setEditingTeacherForAssignment(teacher);
     setEditAssignmentRole(initialRole);
+    setEditClassTeacherGrade(teacher.classTeacherGrade || '');
     setEditAssignedGrades(teacher.assignedGrades || []);
     setEditAssignedSubjects(teacher.assignedSubjects || []);
     setEditCanCreateStudents(!!teacher.canCreateStudents);
@@ -535,11 +560,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     if (onUpdateTeacher) {
       onUpdateTeacher(editingTeacherForAssignment.id, {
         assignmentRole: editAssignmentRole,
-        assignedGrades: editAssignmentRole === 'subject_teacher' ? [] : editAssignedGrades,
-        assignedSubjects: editAssignmentRole === 'class_teacher' ? [] : editAssignedSubjects,
+        assignedGrades: editAssignedGrades,
+        assignedSubjects: editAssignedSubjects,
+        classTeacherGrade: editClassTeacherGrade ? (editClassTeacherGrade as GradeLevel) : undefined,
         canCreateStudents: editCanCreateStudents
       });
-      alert(`✓ Staff assignment updated for ${editingTeacherForAssignment.username}!\nRole: ${editAssignmentRole === 'both' ? 'Class & Subject Teacher' : editAssignmentRole === 'subject_teacher' ? 'Subject Teacher' : 'Class Teacher'}`);
+      alert(`✓ Staff assignment updated for ${editingTeacherForAssignment.username}!\nRole: ${editAssignmentRole === 'both' ? 'Class & Subject Teacher' : editAssignmentRole === 'subject_teacher' ? 'Subject Teacher' : 'Class Teacher'}${editClassTeacherGrade ? `\nClass Teacher: ${editClassTeacherGrade}` : ''}\nClasses Taught: ${editAssignedGrades.join(', ') || 'None'}\nSubjects: ${editAssignedSubjects.join(', ') || 'None'}`);
     }
     setEditingTeacherForAssignment(null);
   };
@@ -561,8 +587,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         username: teacherUser.trim(), 
         password: teacherPass.trim(),
         assignmentRole: staffAssignmentRole,
-        assignedGrades: staffAssignmentRole === 'subject_teacher' ? [] : assignedGrades,
-        assignedSubjects: staffAssignmentRole === 'class_teacher' ? [] : assignedSubjects,
+        assignedGrades: assignedGrades,
+        assignedSubjects: assignedSubjects,
+        classTeacherGrade: classTeacherGrade ? (classTeacherGrade as GradeLevel) : undefined,
         assignedCourses,
         allowedPages: selectedNewPermissions,
         canCreateStudents
@@ -570,13 +597,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       setTeacherUser('');
       setTeacherPass('');
       setStaffAssignmentRole('class_teacher');
+      setClassTeacherGrade('');
       setAssignedGrades([]);
       setAssignedSubjects([]);
       setCustomSubjectInput('');
       setAssignedCourses([]);
       setCanCreateStudents(false);
       setSelectedNewPermissions(ALL_STAFF_PAGES.map(p => p.id));
-      alert("Staff account created with assigned role, classes, subjects & permissions!");
+      alert("Staff account created with assigned role, designated class teacher grade, classes taught, subjects & permissions!");
     }
   };
 
@@ -636,6 +664,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     { id: 'academicTrends', label: '📊 Academic Trends', adminKey: 'resultPublish' },
     { id: 'payments', label: `💳 Fee Verification (${payments.filter(p => p.status === 'pending').length} Pending)`, adminKey: 'payments' },
     { id: 'resultPublish', label: `📢 Result Releases (${resultPublishRequests.filter(r => r.status === 'pending').length} Pending)`, adminKey: 'resultPublish' },
+    { id: 'directGrading', label: '✍️ Direct Grades Entry', adminKey: 'directGrading' },
     { id: 'fees', label: 'Fees Config', adminKey: 'fees' },
     { id: 'bankAccount', label: '🏛️ Bank & Payment Account', adminKey: 'fees' },
     { id: 'applications', label: 'Admissions', adminKey: 'applications' },
@@ -646,6 +675,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     { id: 'announcements', label: 'Bulletins', adminKey: 'announcements' },
     { id: 'access', label: 'Students & Pupils Access', adminKey: 'applications' },
     { id: 'pageAccess', label: '🔒 User Pages Access Control', adminKey: 'applications' },
+    { id: 'gradingCriteria', label: '🎯 Grading Criteria & Remarks', adminKey: 'gradingCriteria' },
     { id: 'parents', label: '👨‍👩‍👧 Family & Parent Links', adminKey: 'parents' },
     { id: 'export', label: '📥 Data Export / Backup', adminKey: 'export' },
     { id: 'delegations', label: `⏱️ Staff Admin Access (${timedStaffDelegations.filter(d => d.status === 'active' && new Date(d.expiresAt) > delegationNow).length} Active)` }
@@ -1096,10 +1126,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <PaymentReviewDashboard 
               payments={payments}
               students={students}
+              fees={fees}
               onConfirmPayment={onConfirmPayment || ((id, note) => {})}
               onDeclinePayment={onDeclinePayment || ((id, reason) => {})}
               onConfirmAllPending={onConfirmAllPending || (() => {})}
               onAddChatMessage={onAddChatMessage || ((id, msg, sender) => {})}
+              onRecordDirectPayment={onRecordDirectPayment}
             />
           </div>
         )}
@@ -1687,60 +1719,75 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </div>
                   </div>
 
-                  {/* 2. Assigned Classes (Shown if class_teacher or both) */}
-                  {(staffAssignmentRole === 'class_teacher' || staffAssignmentRole === 'both') && (
-                    <div className="space-y-2 pt-2 border-t border-slate-200">
-                      <div className="flex justify-between items-center">
-                        <label className="text-xs font-black text-slate-500 uppercase tracking-widest block">
-                          Assigned Classes ({assignedGrades.length} selected)
-                        </label>
-                        <div className="flex space-x-2">
-                          <button
-                            type="button"
-                            onClick={() => setAssignedGrades(GRADE_GROUPS.flatMap(g => g.levels) as GradeLevel[])}
-                            className="text-[10px] font-black text-blue-900 hover:underline uppercase"
-                          >
-                            All Classes
-                          </button>
-                          <span className="text-slate-300">|</span>
-                          <button
-                            type="button"
-                            onClick={() => setAssignedGrades([])}
-                            className="text-[10px] font-black text-red-600 hover:underline uppercase"
-                          >
-                            Clear
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 bg-white rounded-2xl border border-slate-200">
-                        {GRADE_GROUPS.flatMap(g => g.levels).map(lvl => {
-                          const isSelected = assignedGrades.includes(lvl as GradeLevel);
-                          return (
-                            <button
-                              type="button"
-                              key={lvl}
-                              onClick={() => toggleGrade(lvl as GradeLevel)}
-                              className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase transition-all ${
-                                isSelected 
-                                  ? 'bg-blue-900 text-yellow-400 border border-blue-900' 
-                                  : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100'
-                              }`}
-                            >
-                              {isSelected ? '✓ ' : ''}{lvl}
-                            </button>
-                          );
-                        })}
+                  {/* Designated Class Teacher Dropdown */}
+                  <div className="space-y-1.5 pt-2 border-t border-slate-200">
+                    <label className="text-xs font-black text-blue-950 uppercase tracking-wider block">
+                      Designated Class Teacher (e.g. JSS 1)
+                    </label>
+                    <p className="text-[11px] text-slate-500 font-medium">Designate the specific class where this staff is the primary Class Teacher / Form Tutor:</p>
+                    <select
+                      value={classTeacherGrade}
+                      onChange={(e) => setClassTeacherGrade(e.target.value as GradeLevel | '')}
+                      className="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:border-blue-900"
+                    >
+                      <option value="">-- None / Subject Teacher Only --</option>
+                      {GRADE_GROUPS.flatMap(g => g.levels).map(lvl => (
+                        <option key={`ct-${lvl}`} value={lvl}>{lvl}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 2. All Classes Taught */}
+                  <div className="space-y-2 pt-2 border-t border-slate-200">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-black text-slate-600 uppercase tracking-widest block">
+                        Classes Taught (e.g. JSS 1, JSS 2, JSS 3, SS 1, SS 2) ({assignedGrades.length} selected)
+                      </label>
+                      <div className="flex space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => setAssignedGrades(GRADE_GROUPS.flatMap(g => g.levels) as GradeLevel[])}
+                          className="text-[10px] font-black text-blue-900 hover:underline uppercase"
+                        >
+                          All Classes
+                        </button>
+                        <span className="text-slate-300">|</span>
+                        <button
+                          type="button"
+                          onClick={() => setAssignedGrades([])}
+                          className="text-[10px] font-black text-red-600 hover:underline uppercase"
+                        >
+                          Clear
+                        </button>
                       </div>
                     </div>
-                  )}
+                    <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 bg-white rounded-2xl border border-slate-200">
+                      {GRADE_GROUPS.flatMap(g => g.levels).map(lvl => {
+                        const isSelected = assignedGrades.includes(lvl as GradeLevel);
+                        return (
+                          <button
+                            type="button"
+                            key={lvl}
+                            onClick={() => toggleGrade(lvl as GradeLevel)}
+                            className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase transition-all ${
+                              isSelected 
+                                ? 'bg-blue-900 text-yellow-400 border border-blue-900' 
+                                : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100'
+                            }`}
+                          >
+                            {isSelected ? '✓ ' : ''}{lvl}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-                  {/* 3. Assigned Subjects (Shown if subject_teacher or both) */}
-                  {(staffAssignmentRole === 'subject_teacher' || staffAssignmentRole === 'both') && (
-                    <div className="space-y-2 pt-2 border-t border-slate-200">
-                      <div className="flex justify-between items-center">
-                        <label className="text-xs font-black text-indigo-950 uppercase tracking-widest block">
-                          Assigned Subjects ({assignedSubjects.length} selected)
-                        </label>
+                  {/* 3. Assigned Subjects */}
+                  <div className="space-y-2 pt-2 border-t border-slate-200">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-black text-indigo-950 uppercase tracking-widest block">
+                        Assigned Subjects (e.g. CRS, Yoruba) ({assignedSubjects.length} selected)
+                      </label>
                         <div className="flex space-x-2">
                           <button
                             type="button"
@@ -1811,9 +1858,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         </button>
                       </div>
                     </div>
-                  )}
 
-                  {/* Page Access Control Section */}
+                    {/* Page Access Control Section */}
                   <div className="space-y-3 pt-2 border-t border-slate-200">
                     <div className="flex justify-between items-center">
                       <div>
@@ -1981,8 +2027,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                   )}
                                 </div>
                                 <div className="text-[11px] text-slate-500 font-bold mt-1 space-y-1">
+                                  {teacher.classTeacherGrade && (
+                                    <div className="flex items-center gap-1.5 pb-0.5">
+                                      <span className="px-2.5 py-0.5 bg-yellow-400 text-blue-950 font-black rounded-lg text-[10px] uppercase shadow-xs border border-yellow-500 flex items-center gap-1">
+                                        <span>🏫</span>
+                                        <span>Class Teacher: {teacher.classTeacherGrade}</span>
+                                      </span>
+                                    </div>
+                                  )}
                                   <p className="flex items-center gap-2 flex-wrap">
-                                    <span>Assigned Classes: <strong className="text-blue-900">{teacher.assignedGrades && teacher.assignedGrades.length > 0 ? teacher.assignedGrades.join(', ') : (role === 'subject_teacher' ? 'None (Subject Specialist)' : 'None (Admin unassigned)')}</strong></span>
+                                    <span>Classes Taught: <strong className="text-blue-900">{teacher.assignedGrades && teacher.assignedGrades.length > 0 ? teacher.assignedGrades.join(', ') : (role === 'subject_teacher' ? 'All Classes (Subject Specialist)' : 'None')}</strong></span>
                                     {teacher.canCreateStudents && (
                                       <span className="px-2 py-0.5 bg-amber-100 text-amber-900 rounded-full text-[9px] font-black uppercase">
                                         ✓ Pupil Creator
@@ -2675,6 +2729,41 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       />
                     </div>
 
+                    {/* Alphanumeric Password Input with Toggle */}
+                    <div className="space-y-1 p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl">
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-[11px] font-black text-blue-950 uppercase tracking-wider block">
+                          Pupil Login Password (Accepts Letters & Numbers) *
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setAdminPupilPassword(generateSecureTempPassword())}
+                          className="text-[10px] font-black text-blue-900 hover:text-blue-700 uppercase underline"
+                        >
+                          ⚡ Suggest Alphanumeric Password
+                        </button>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type={showAdminPupilPassword ? "text" : "password"}
+                          value={adminPupilPassword}
+                          onChange={(e) => setAdminPupilPassword(e.target.value)}
+                          placeholder="e.g. Samuel2025 (Letters & Numbers accepted)"
+                          className="w-full px-4 py-2.5 pr-20 bg-white border-2 border-slate-300 rounded-xl font-bold text-xs text-blue-950 outline-none focus:border-blue-900"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowAdminPupilPassword(!showAdminPupilPassword)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[10px] font-black uppercase text-slate-500 hover:text-blue-900 bg-slate-100 hover:bg-slate-200 rounded-md border border-slate-200"
+                        >
+                          {showAdminPupilPassword ? "Hide" : "Show"}
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        Input any password containing numbers and letters. If left blank, a secure alphanumeric password will be generated automatically.
+                      </p>
+                    </div>
+
                     <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-2xl space-y-3">
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input
@@ -2879,12 +2968,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             )}
                           </td>
                           <td className="px-6 py-5 text-right">
-                            <button 
-                              onClick={() => onToggleStudentEntry(student.id, !student.entryAllowed)}
-                              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-md ${student.entryAllowed ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-green-100 text-green-600 hover:bg-green-200'}`}
-                            >
-                              {student.entryAllowed ? 'Revoke Access' : 'Allow Entry'}
-                            </button>
+                            <div className="flex items-center justify-end gap-2">
+                              <button 
+                                type="button"
+                                onClick={() => setSelectedStudentForIDCard(student)}
+                                className="px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm bg-blue-50 text-blue-900 border border-blue-200 hover:bg-blue-900 hover:text-yellow-400 flex items-center gap-1 shrink-0"
+                                title="Generate and Download Official Student ID Card PDF"
+                              >
+                                <span>🪪</span>
+                                <span>ID Card</span>
+                              </button>
+                              <button 
+                                onClick={() => onToggleStudentEntry(student.id, !student.entryAllowed)}
+                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-md shrink-0 ${student.entryAllowed ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-green-100 text-green-600 hover:bg-green-200'}`}
+                              >
+                                {student.entryAllowed ? 'Revoke Access' : 'Allow Entry'}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -3749,6 +3849,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             onUpdateAccessState={onUpdateUserPagesAccess || (() => {})}
           />
         )}
+
+        {activeTab === 'gradingCriteria' && (
+          <AdminGradingCriteriaManager
+            criteria={gradingCriteria || []}
+            onSaveCriteria={onSaveGradingCriteria || (() => {})}
+          />
+        )}
+
+        {activeTab === 'directGrading' && (
+          <AdminDirectGradeEntry
+            students={students}
+            results={results}
+            courses={courses}
+            activeTerm={activeTerm}
+            gradingCriteria={gradingCriteria}
+            onSaveResult={onSaveResult}
+            onDeleteResult={onDeleteResult}
+            onBatchSaveResults={onBatchSaveResults}
+          />
+        )}
       </div>
 
       {/* Edit Staff Role & Subject/Class Assignment Modal */}
@@ -3827,60 +3947,75 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
               </div>
 
-              {/* Assigned Classes (if class_teacher or both) */}
-              {(editAssignmentRole === 'class_teacher' || editAssignmentRole === 'both') && (
-                <div className="space-y-2 pt-2 border-t border-slate-100">
-                  <div className="flex justify-between items-center">
-                    <label className="text-xs font-black text-slate-600 uppercase tracking-widest block">
-                      Assigned Classes ({editAssignedGrades.length} selected)
-                    </label>
-                    <div className="flex space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => setEditAssignedGrades(GRADE_GROUPS.flatMap(g => g.levels) as GradeLevel[])}
-                        className="text-[10px] font-black text-blue-900 hover:underline uppercase"
-                      >
-                        All Classes
-                      </button>
-                      <span className="text-slate-300">|</span>
-                      <button
-                        type="button"
-                        onClick={() => setEditAssignedGrades([])}
-                        className="text-[10px] font-black text-red-600 hover:underline uppercase"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-3 bg-slate-50 rounded-2xl border border-slate-200">
-                    {GRADE_GROUPS.flatMap(g => g.levels).map(lvl => {
-                      const isSelected = editAssignedGrades.includes(lvl as GradeLevel);
-                      return (
-                        <button
-                          type="button"
-                          key={lvl}
-                          onClick={() => toggleEditGrade(lvl as GradeLevel)}
-                          className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase transition-all ${
-                            isSelected 
-                              ? 'bg-blue-900 text-yellow-400 border border-blue-900 shadow-sm' 
-                              : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'
-                          }`}
-                        >
-                          {isSelected ? '✓ ' : ''}{lvl}
-                        </button>
-                      );
-                    })}
+              {/* Designated Class Teacher Dropdown */}
+              <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                <label className="text-xs font-black text-blue-950 uppercase tracking-wider block">
+                  Designated Class Teacher (e.g. JSS 1)
+                </label>
+                <p className="text-[11px] text-slate-500 font-medium">Designate the specific class where this staff is the primary Class Teacher / Form Tutor:</p>
+                <select
+                  value={editClassTeacherGrade}
+                  onChange={(e) => setEditClassTeacherGrade(e.target.value as GradeLevel | '')}
+                  className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:border-blue-900"
+                >
+                  <option value="">-- None / Subject Specialist Only --</option>
+                  {GRADE_GROUPS.flatMap(g => g.levels).map(lvl => (
+                    <option key={`edit-ct-${lvl}`} value={lvl}>{lvl}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* All Classes Taught */}
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-black text-slate-600 uppercase tracking-widest block">
+                    Classes Taught (e.g. JSS 1, JSS 2, JSS 3, SS 1, SS 2) ({editAssignedGrades.length} selected)
+                  </label>
+                  <div className="flex space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditAssignedGrades(GRADE_GROUPS.flatMap(g => g.levels) as GradeLevel[])}
+                      className="text-[10px] font-black text-blue-900 hover:underline uppercase"
+                    >
+                      All Classes
+                    </button>
+                    <span className="text-slate-300">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setEditAssignedGrades([])}
+                      className="text-[10px] font-black text-red-600 hover:underline uppercase"
+                    >
+                      Clear
+                    </button>
                   </div>
                 </div>
-              )}
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                  {GRADE_GROUPS.flatMap(g => g.levels).map(lvl => {
+                    const isSelected = editAssignedGrades.includes(lvl as GradeLevel);
+                    return (
+                      <button
+                        type="button"
+                        key={lvl}
+                        onClick={() => toggleEditGrade(lvl as GradeLevel)}
+                        className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase transition-all ${
+                          isSelected 
+                            ? 'bg-blue-900 text-yellow-400 border border-blue-900 shadow-sm' 
+                            : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {isSelected ? '✓ ' : ''}{lvl}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-              {/* Assigned Subjects (if subject_teacher or both) */}
-              {(editAssignmentRole === 'subject_teacher' || editAssignmentRole === 'both') && (
-                <div className="space-y-2 pt-2 border-t border-slate-100">
-                  <div className="flex justify-between items-center">
-                    <label className="text-xs font-black text-indigo-950 uppercase tracking-widest block">
-                      Assigned Subjects ({editAssignedSubjects.length} selected)
-                    </label>
+              {/* Assigned Subjects */}
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-black text-indigo-950 uppercase tracking-widest block">
+                    Assigned Subjects (e.g. CRS, Yoruba) ({editAssignedSubjects.length} selected)
+                  </label>
                     <div className="flex space-x-2">
                       <button
                         type="button"
@@ -3948,7 +4083,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </button>
                   </div>
                 </div>
-              )}
 
               {/* Student Creation Permission */}
               <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200">
@@ -4025,6 +4159,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         onClose={() => setShowAdminAppDownloadModal(false)}
         role="admin"
       />
+
+      {/* Student ID Card Generation & NIN/Photo Modal */}
+      {selectedStudentForIDCard && (
+        <StudentIDCardModal
+          student={selectedStudentForIDCard}
+          isOpen={!!selectedStudentForIDCard}
+          onClose={() => setSelectedStudentForIDCard(null)}
+          onUpdateStudent={onUpdateStudent}
+          isAdmin={true}
+        />
+      )}
     </div>
   );
 };

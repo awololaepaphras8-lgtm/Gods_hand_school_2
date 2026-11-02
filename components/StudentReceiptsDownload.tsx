@@ -230,28 +230,6 @@ export const StudentReceiptsDownload: React.FC<StudentReceiptsDownloadProps> = (
               View My School Fee Receipts →
             </button>
           </form>
-
-          {/* Quick list of sample students */}
-          <div className="pt-4 border-t border-slate-100 text-left">
-            <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2">
-              Registered Students Quick Selection:
-            </p>
-            <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto">
-              {students.map(s => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedStudentId(s.id);
-                    setSearchQuery(s.id);
-                  }}
-                  className="px-3 py-1.5 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 border border-slate-200 rounded-lg text-xs font-bold text-blue-900 transition-all"
-                >
-                  {s.name} ({s.grade})
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       )}
 
@@ -613,14 +591,35 @@ export const StudentReceiptsDownload: React.FC<StudentReceiptsDownloadProps> = (
                       ₦{selectedReceiptForPrint.amount.toLocaleString()}
                     </td>
                   </tr>
-                  <tr className="bg-yellow-50/60 font-black">
-                    <td colSpan={2} className="p-3 text-right uppercase text-xs tracking-wider text-blue-950">
-                      Total Amount Paid:
+                  <tr className="bg-emerald-50/60 font-black border-t border-slate-200">
+                    <td colSpan={2} className="p-3 text-right uppercase text-xs tracking-wider text-emerald-950">
+                      Amount Paid (Received):
                     </td>
-                    <td className="p-3 text-right text-base text-blue-950 font-serif">
+                    <td className="p-3 text-right text-base text-emerald-900 font-serif font-black">
                       ₦{selectedReceiptForPrint.amount.toLocaleString()}
                     </td>
                   </tr>
+                  <tr className={`${(selectedReceiptForPrint.amountRemaining ?? 0) > 0 ? 'bg-amber-50/70 text-amber-900' : 'bg-slate-50 text-slate-700'} font-bold`}>
+                    <td colSpan={2} className="p-3 text-right uppercase text-xs tracking-wider">
+                      Amount Remaining (Outstanding Balance):
+                    </td>
+                    <td className="p-3 text-right text-sm font-mono font-black">
+                      ₦{(selectedReceiptForPrint.amountRemaining !== undefined ? selectedReceiptForPrint.amountRemaining : Math.max(0, (selectedReceiptForPrint.totalExpected || selectedReceiptForPrint.amount) - selectedReceiptForPrint.amount)).toLocaleString()}
+                      {(selectedReceiptForPrint.amountRemaining === 0) && (
+                        <span className="ml-1 text-[10px] text-emerald-700 font-sans font-black uppercase">✓ Cleared</span>
+                      )}
+                    </td>
+                  </tr>
+                  {selectedReceiptForPrint.totalExpected && (
+                    <tr className="bg-blue-50/50 text-blue-950 font-bold text-xs">
+                      <td colSpan={2} className="p-2.5 text-right uppercase tracking-wider">
+                        Total Term Fee Assessed:
+                      </td>
+                      <td className="p-2.5 text-right font-mono font-black">
+                        ₦{selectedReceiptForPrint.totalExpected.toLocaleString()}
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
 

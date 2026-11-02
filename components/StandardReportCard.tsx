@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { StudentAccount, StudentResult } from '../types';
 import { QRCodeSVG } from 'qrcode.react';
 import { computeClassRankings } from '../utils/ranking';
+import { formatSubjectName } from '../utils/resultFeeService';
 
 interface StandardReportCardProps {
   student: StudentAccount;
@@ -306,7 +307,7 @@ export const StandardReportCard: React.FC<StandardReportCardProps> = ({
                         {idx + 1}
                       </td>
                       <td className="p-2 border border-slate-300 font-black text-blue-950">
-                        {r.subject}
+                        {formatSubjectName(r.subject)}
                       </td>
                       <td className="p-2 border border-slate-300 text-center font-mono font-bold text-slate-700">
                         {caScore}

@@ -1360,3 +1360,263 @@ export async function downloadQrCodeImage(
   });
 }
 
+/**
+ * Generates and downloads a formal, print-ready Student Identity Card as a high-resolution PDF.
+ * Includes student passport photo, ID number, NIN, grade, emergency contact,
+ * official school crest, proprietor signature, and barcode/QR pass.
+ */
+export function exportStudentIDCardPDF(
+  student: StudentAccount,
+  options: {
+    emergencyContact?: string;
+    parentPhone?: string;
+    bloodGroup?: string;
+    academicYear?: string;
+    issueDate?: string;
+    expiryDate?: string;
+  } = {}
+) {
+  // CR80 Standard ID Card dimensions: 85.6mm x 54.0mm
+  const cardWidth = 86;
+  const cardHeight = 54;
+  
+  // Create PDF with landscape CR80 format
+  const doc = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: [cardWidth, cardHeight]
+  });
+
+  const academicYear = options.academicYear || '2025/2026';
+  const issueDate = options.issueDate || new Date().toLocaleDateString('en-GB');
+  const expiryDate = options.expiryDate || '31/07/2026';
+  const emergencyPhone = options.parentPhone || options.emergencyContact || student.emergencyContact || student.phone || '08056507252';
+  const bloodGroup = options.bloodGroup || student.bloodGroup || 'O+';
+  const ninValue = student.nin ? student.nin.trim() : 'NOT RECORDED';
+
+  // ==========================================
+  // PAGE 1: FRONT SIDE OF STUDENT ID CARD
+  // ==========================================
+
+  // Background
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, cardWidth, cardHeight, 'F');
+
+  // Outer safety line
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.3);
+  doc.rect(1.5, 1.5, cardWidth - 3, cardHeight - 3);
+
+  // Top Royal Blue Header Banner
+  doc.setFillColor(30, 58, 138); // blue-900
+  doc.rect(1.5, 1.5, cardWidth - 3, 14, 'F');
+
+  // Gold accent separator bar
+  doc.setFillColor(234, 179, 8); // yellow-500
+  doc.rect(1.5, 15.5, cardWidth - 3, 1.2, 'F');
+
+  // School Header Text
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(6.5);
+  doc.text("GOD'S HAND INT'L MODEL SCHOOL", cardWidth / 2, 5.5, { align: 'center' });
+
+  doc.setFontSize(4.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(253, 224, 71); // yellow-300
+  doc.text("Motto: Have Faith In God • Wire & Cable, Apata, Ibadan", cardWidth / 2, 9, { align: 'center' });
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(5);
+  doc.text("STUDENT IDENTITY CARD", cardWidth / 2, 13, { align: 'center' });
+
+  // Photo Box (Left side: 22mm x 26mm)
+  const photoX = 4;
+  const photoY = 19;
+  const photoW = 20;
+  const photoH = 25;
+
+  doc.setDrawColor(30, 58, 138);
+  doc.setLineWidth(0.6);
+  doc.rect(photoX, photoY, photoW, photoH);
+
+  if (student.photo && student.photo.startsWith('data:image')) {
+    try {
+      doc.addImage(student.photo, 'JPEG', photoX + 0.5, photoY + 0.5, photoW - 1, photoH - 1);
+    } catch (e) {
+      doc.setFillColor(241, 245, 249);
+      doc.rect(photoX + 0.5, photoY + 0.5, photoW - 1, photoH - 1, 'F');
+      doc.setFontSize(5);
+      doc.setTextColor(148, 163, 184);
+      doc.text("PASSPORT", photoX + photoW / 2, photoY + photoH / 2, { align: 'center' });
+    }
+  } else {
+    // Placeholder silhouette avatar
+    doc.setFillColor(241, 245, 249);
+    doc.rect(photoX + 0.5, photoY + 0.5, photoW - 1, photoH - 1, 'F');
+    doc.setFillColor(203, 213, 225);
+    doc.circle(photoX + photoW / 2, photoY + 9, 4, 'F');
+    doc.ellipse(photoX + photoW / 2, photoY + 20, 6, 4, 'F');
+    doc.setFontSize(4);
+    doc.setTextColor(100, 116, 139);
+    doc.text("PHOTO", photoX + photoW / 2, photoY + 23, { align: 'center' });
+  }
+
+  // Right Side: Student Credentials
+  const textX = 27;
+  let currY = 21;
+
+  doc.setTextColor(30, 58, 138);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.text(student.name.toUpperCase(), textX, currY);
+
+  currY += 4.5;
+  doc.setFontSize(5);
+  doc.setTextColor(100, 116, 139);
+  doc.setFont('helvetica', 'normal');
+  doc.text("STUDENT ID:", textX, currY);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(15, 23, 42);
+  doc.text(student.id, textX + 17, currY);
+
+  currY += 3.8;
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 116, 139);
+  doc.text("CLASS / GRADE:", textX, currY);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(30, 58, 138);
+  doc.text(student.grade, textX + 17, currY);
+
+  currY += 3.8;
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 116, 139);
+  doc.text("NATIONAL ID (NIN):", textX, currY);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(15, 23, 42);
+  doc.text(ninValue, textX + 22, currY);
+
+  currY += 3.8;
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 116, 139);
+  doc.text("SESSION:", textX, currY);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(15, 23, 42);
+  doc.text(academicYear, textX + 17, currY);
+
+  currY += 3.8;
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 116, 139);
+  doc.text("BLOOD GRP:", textX, currY);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(185, 28, 28); // red
+  doc.text(bloodGroup, textX + 17, currY);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 116, 139);
+  doc.text("GENDER:", textX + 27, currY);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(15, 23, 42);
+  doc.text(student.gender || 'Pupil', textX + 38, currY);
+
+  // Bottom Gold/Blue Bar
+  doc.setFillColor(30, 58, 138);
+  doc.rect(1.5, cardHeight - 6.5, cardWidth - 3, 5, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(4.5);
+  doc.text(`EXPIRY DATE: ${expiryDate} • VALID FOR CAMPUS ENTRY`, cardWidth / 2, cardHeight - 3.2, { align: 'center' });
+
+  // ==========================================
+  // PAGE 2: BACK SIDE OF STUDENT ID CARD
+  // ==========================================
+  doc.addPage([cardWidth, cardHeight], 'landscape');
+
+  // Background
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, cardWidth, cardHeight, 'F');
+
+  // Outer safety line
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.3);
+  doc.rect(1.5, 1.5, cardWidth - 3, cardHeight - 3);
+
+  // Top Bar
+  doc.setFillColor(30, 58, 138);
+  doc.rect(1.5, 1.5, cardWidth - 3, 6, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(5);
+  doc.text("TERMS & EMERGENCY INFORMATION", cardWidth / 2, 5.5, { align: 'center' });
+
+  // Terms and conditions paragraph
+  doc.setTextColor(71, 85, 105);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(4.2);
+  doc.text(
+    "1. This card certifies that the named bearer is a bona fide pupil/student of God's Hand Model School.",
+    4,
+    11
+  );
+  doc.text(
+    "2. It must be worn within school premises and presented on demand at campus gate checkpoints.",
+    4,
+    14.5
+  );
+  doc.text(
+    "3. Loss of this identity card must be immediately reported to the School Administration/Bursary.",
+    4,
+    18
+  );
+  doc.text(
+    "4. If found, please return to the school address or call the emergency contact lines below.",
+    4,
+    21.5
+  );
+
+  // Emergency Box
+  doc.setFillColor(254, 243, 199); // amber-100
+  doc.setDrawColor(245, 158, 11);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(4, 24, cardWidth - 8, 11, 1.5, 1.5, 'FD');
+
+  doc.setTextColor(180, 83, 9);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(4.8);
+  doc.text("EMERGENCY HOTLINE / PARENT GUARDIAN:", 6, 28);
+  doc.setFontSize(6);
+  doc.setTextColor(30, 58, 138);
+  doc.text(`📞 ${emergencyPhone} / 07085596586`, 6, 32.5);
+
+  // Signatures Section
+  const sigY = 40;
+  doc.setDrawColor(148, 163, 184);
+  doc.line(6, sigY + 5, 32, sigY + 5);
+  doc.setTextColor(30, 58, 138);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(4.5);
+  doc.text("Proprietor / Director", 6, sigY + 8);
+
+  // Official Stamp Box
+  doc.setDrawColor(22, 163, 74);
+  doc.roundedRect(cardWidth - 36, sigY - 2, 32, 10, 1, 1);
+  doc.setTextColor(22, 163, 74);
+  doc.setFontSize(4);
+  doc.setFont('helvetica', 'bold');
+  doc.text("OFFICIAL CREST SEAL", cardWidth - 20, sigY + 2.5, { align: 'center' });
+  doc.setFontSize(3.5);
+  doc.text("GOD'S HAND INT'L", cardWidth - 20, sigY + 6, { align: 'center' });
+
+  // Bottom School Contact Bar
+  doc.setFillColor(15, 23, 42);
+  doc.rect(1.5, cardHeight - 5, cardWidth - 3, 3.5, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(3.8);
+  doc.text("Godshandschool70@gmail.com • Oluwatedo Area, Wire & Cable, Apata, Ibadan", cardWidth / 2, cardHeight - 2.8, { align: 'center' });
+
+  const cleanName = student.name.replace(/[^a-zA-Z0-9]/g, '_');
+  doc.save(`Student_ID_Card_${cleanName}_${student.id}.pdf`);
+}
+

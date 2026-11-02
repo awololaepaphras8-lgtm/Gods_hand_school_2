@@ -1,7 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { UserRole, UserPagesAccessState } from '../types';
+import { UserRole, UserPagesAccessState, StudentAccount, ParentAccount } from '../types';
 import { getInitialTheme, toggleTheme, ThemeMode } from '../utils/themeManager';
+import { QuickQrHubModal } from './QuickQrHubModal';
 
 interface HeaderProps {
   role: UserRole;
@@ -13,11 +14,29 @@ interface HeaderProps {
   hasActiveDelegation?: boolean;
   userPagesAccess?: UserPagesAccessState;
   onLogout?: () => void;
+  currentStudent?: StudentAccount | null;
+  currentParent?: ParentAccount | null;
+  allStudents?: StudentAccount[];
 }
 
-export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeView, onOpenDownloadModal, isAppInstalled = false, hasActiveDelegation = false, userPagesAccess, onLogout }) => {
+export const Header: React.FC<HeaderProps> = ({ 
+  role, 
+  setRole, 
+  setView, 
+  activeView, 
+  onOpenDownloadModal, 
+  isAppInstalled = false, 
+  hasActiveDelegation = false, 
+  userPagesAccess, 
+  onLogout,
+  currentStudent = null,
+  currentParent = null,
+  allStudents = []
+}) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<ThemeMode>(() => getInitialTheme());
+  const [showQrHubModal, setShowQrHubModal] = useState<boolean>(false);
+  const [qrHubInitialTab, setQrHubInitialTab] = useState<'portal' | 'fees' | 'results' | 'gate' | 'install'>('portal');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -203,6 +222,21 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
                 </button>
               )}
 
+              {/* Instant QR Passes & Scanner Hub Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setQrHubInitialTab('portal');
+                  setShowQrHubModal(true);
+                }}
+                className="flex items-center space-x-1 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 bg-indigo-50 hover:bg-indigo-100 text-indigo-950 border-indigo-300 dark:bg-slate-800 dark:text-yellow-400 dark:border-slate-700 shadow-xs active:scale-95 cursor-pointer"
+                title="Instant QR Passes: Portal, Fees, Results & Gate Pass"
+              >
+                <span className="text-xs sm:text-sm">🏁</span>
+                <span className="hidden sm:inline">QR Passes</span>
+                <span className="sm:hidden text-[10px]">QR</span>
+              </button>
+
               {/* Community Live Hub Shortcut: Only appears to logged in users, visible on all logged in devices */}
               {role !== UserRole.GUEST && (
                 <button
@@ -283,6 +317,18 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
                             <span className="ml-auto text-[9px] bg-yellow-400 text-blue-950 px-1.5 py-0.5 rounded font-black uppercase">Install</span>
                           </button>
                         )}
+                        <button 
+                          onClick={() => {
+                            setIsMenuOpen(false);
+                            setQrHubInitialTab('portal');
+                            setShowQrHubModal(true);
+                          }}
+                          className="w-full text-left px-4 py-2.5 text-xs sm:text-sm font-black flex items-center transition-all bg-indigo-50/80 dark:bg-indigo-950/40 text-indigo-950 dark:text-indigo-200 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border-b border-indigo-100 dark:border-indigo-900/40"
+                        >
+                          <span className="mr-3 text-base sm:text-lg">🏁</span>
+                          <span className="truncate">Instant QR Passes & Code Hub</span>
+                          <span className="ml-auto text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded font-black uppercase">Scan / View</span>
+                        </button>
                         {menuItems.map(item => {
                           const closed = isViewClosed(item.view);
                           return (
@@ -410,6 +456,129 @@ export const Header: React.FC<HeaderProps> = ({ role, setRole, setView, activeVi
           </div>
         </div>
       </header>
+
+      {/* Persistent Mobile Bottom Navigation Tab Bar */}
+      <nav 
+        aria-label="Mobile Quick Navigation"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 shadow-[0_-4px_25px_rgba(0,0,0,0.12)] px-1.5 py-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+      >
+        <div className="max-w-md mx-auto grid grid-cols-5 items-center gap-1">
+          {/* Home Tab */}
+          <button
+            type="button"
+            onClick={() => navigateTo('home')}
+            className={`flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all duration-200 ${
+              activeView === 'home'
+                ? 'text-blue-900 dark:text-yellow-400 font-black scale-105'
+                : 'text-slate-500 dark:text-slate-400 font-bold hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <span className="text-lg leading-none mb-0.5">🏠</span>
+            <span className="text-[10px] tracking-tight">Home</span>
+            {activeView === 'home' && (
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-900 dark:bg-yellow-400 mt-0.5"></span>
+            )}
+          </button>
+
+          {/* Portal Tab */}
+          <button
+            type="button"
+            onClick={() => {
+              if (role === UserRole.STUDENT) navigateTo('portal');
+              else if (role === UserRole.PARENT) navigateTo('parentPortal');
+              else if (role === UserRole.TEACHER) navigateTo('teacher');
+              else if (role === UserRole.ADMIN) navigateTo('admin');
+              else navigateTo('portal');
+            }}
+            className={`flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all duration-200 ${
+              ['portal', 'parentPortal', 'parentAuth', 'studentAuth', 'teacher', 'admin'].includes(activeView)
+                ? 'text-blue-900 dark:text-yellow-400 font-black scale-105'
+                : 'text-slate-500 dark:text-slate-400 font-bold hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <span className="text-lg leading-none mb-0.5">🎓</span>
+            <span className="text-[10px] tracking-tight truncate max-w-full">Portal</span>
+            {['portal', 'parentPortal', 'parentAuth', 'studentAuth', 'teacher', 'admin'].includes(activeView) && (
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-900 dark:bg-yellow-400 mt-0.5"></span>
+            )}
+          </button>
+
+          {/* Fee Checker Tab */}
+          <button
+            type="button"
+            onClick={() => navigateTo('feeChecker')}
+            className={`flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all duration-200 ${
+              activeView === 'feeChecker'
+                ? 'text-blue-900 dark:text-yellow-400 font-black scale-105'
+                : 'text-slate-500 dark:text-slate-400 font-bold hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <span className="text-lg leading-none mb-0.5">💳</span>
+            <span className="text-[10px] tracking-tight">Fees</span>
+            {activeView === 'feeChecker' && (
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-900 dark:bg-yellow-400 mt-0.5"></span>
+            )}
+          </button>
+
+          {/* Results Tab */}
+          <button
+            type="button"
+            onClick={() => navigateTo('resultChecker')}
+            className={`flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all duration-200 ${
+              activeView === 'resultChecker'
+                ? 'text-blue-900 dark:text-yellow-400 font-black scale-105'
+                : 'text-slate-500 dark:text-slate-400 font-bold hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <span className="text-lg leading-none mb-0.5">📜</span>
+            <span className="text-[10px] tracking-tight">Results</span>
+            {activeView === 'resultChecker' && (
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-900 dark:bg-yellow-400 mt-0.5"></span>
+            )}
+          </button>
+
+          {/* Instant QR Hub Tab */}
+          <button
+            type="button"
+            onClick={() => {
+              if (activeView === 'feeChecker') setQrHubInitialTab('fees');
+              else if (activeView === 'resultChecker') setQrHubInitialTab('results');
+              else if (role === UserRole.PARENT || role === UserRole.STUDENT) setQrHubInitialTab('gate');
+              else setQrHubInitialTab('portal');
+              setShowQrHubModal(true);
+            }}
+            className={`flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all duration-200 ${
+              showQrHubModal
+                ? 'text-indigo-600 dark:text-indigo-400 font-black scale-105'
+                : 'text-slate-500 dark:text-slate-400 font-bold hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <div className="relative">
+              <span className="text-lg leading-none mb-0.5">🏁</span>
+              <span className="absolute -top-1 -right-2 flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-600"></span>
+              </span>
+            </div>
+            <span className="text-[10px] tracking-tight">QR Pass</span>
+            {showQrHubModal && (
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400 mt-0.5"></span>
+            )}
+          </button>
+        </div>
+      </nav>
+
+      {/* Quick QR Hub Modal (Passes for Portal, Fee Checker, Result Checker, Gate Pass & App Install) */}
+      <QuickQrHubModal
+        isOpen={showQrHubModal}
+        onClose={() => setShowQrHubModal(false)}
+        currentUserRole={role}
+        currentStudent={currentStudent}
+        currentParent={currentParent}
+        allStudents={allStudents}
+        initialTab={qrHubInitialTab}
+        onNavigate={(v) => navigateTo(v)}
+      />
     </div>
   );
 };

@@ -21,13 +21,46 @@ CREATE TABLE IF NOT EXISTS public.school_bank_account_config (
   account_number TEXT NOT NULL,
   account_name TEXT NOT NULL,
   payment_instructions TEXT,
+  result_checker_fee INTEGER DEFAULT 1000,
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_by TEXT DEFAULT 'School Administrator'
 );
 
--- 2. Seed Default Official Account
+-- Ensure column exists if table was created previously
+ALTER TABLE public.school_bank_account_config 
+  ADD COLUMN IF NOT EXISTS result_checker_fee INTEGER DEFAULT 1000;
+
+-- 2. Dedicated Result Checker Fees per Term & Session Table
+CREATE TABLE IF NOT EXISTS public.result_checker_fees (
+  id TEXT PRIMARY KEY,
+  term TEXT NOT NULL,
+  session TEXT NOT NULL,
+  fee_amount NUMERIC(10, 2) NOT NULL DEFAULT 1000.00,
+  fee_kobo BIGINT NOT NULL DEFAULT 100000,
+  description TEXT,
+  is_active BOOLEAN DEFAULT TRUE NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_by TEXT DEFAULT 'School Administrator',
+  CONSTRAINT uq_result_fee_term_session UNIQUE(term, session)
+);
+
+ALTER TABLE public.result_checker_fees ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow read on result_checker_fees for all" ON public.result_checker_fees;
+CREATE POLICY "Allow read on result_checker_fees for all" ON public.result_checker_fees FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow write on result_checker_fees for all" ON public.result_checker_fees;
+CREATE POLICY "Allow write on result_checker_fees for all" ON public.result_checker_fees FOR ALL USING (true) WITH CHECK (true);
+
+INSERT INTO public.result_checker_fees (id, term, session, fee_amount, fee_kobo, description, is_active, updated_by)
+VALUES 
+  ('rcf-first-term-2025-2026', 'First Term', '2025/2026 Academic Session', 1000.00, 100000, 'First Term Terminal Report Card Clearance Pass', TRUE, 'School Administrator'),
+  ('rcf-second-term-2025-2026', 'Second Term', '2025/2026 Academic Session', 1000.00, 100000, 'Second Term Terminal Report Card Clearance Pass', TRUE, 'School Administrator'),
+  ('rcf-third-term-2025-2026', 'Third Term', '2025/2026 Academic Session', 1000.00, 100000, 'Third Term Terminal Report Card Clearance Pass', TRUE, 'School Administrator')
+ON CONFLICT (id) DO NOTHING;
+
+-- 3. Seed Default Official Account
 INSERT INTO public.school_bank_account_config (
-  id, bank_name, account_number, account_name, payment_instructions, updated_at, updated_by
+  id, bank_name, account_number, account_name, payment_instructions, result_checker_fee, updated_at, updated_by
 )
 VALUES (
   'primary_account',
@@ -35,17 +68,20 @@ VALUES (
   '2034891120',
   'God''s Hand International Model School',
   'Pay tuition and fees via mobile bank app, USSD, or branch transfer. Use student name and ID as payment narration.',
+  1000,
   timezone('utc'::text, now()),
   'Initial Setup'
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+  result_checker_fee = COALESCE(public.school_bank_account_config.result_checker_fee, 1000);
 
--- 3. Stored Procedure for Admin to Save & Broadcast Account Number
+-- 3. Stored Procedure for Admin to Save & Broadcast Account Number & Result Fee
 CREATE OR REPLACE FUNCTION public.update_school_bank_account(
   p_bank_name TEXT,
   p_account_number TEXT,
   p_account_name TEXT,
   p_payment_instructions TEXT DEFAULT NULL,
+  p_result_checker_fee INTEGER DEFAULT 1000,
   p_updated_by TEXT DEFAULT 'School Administrator'
 )
 RETURNS JSONB AS $$
@@ -53,13 +89,14 @@ DECLARE
   v_cfg RECORD;
 BEGIN
   INSERT INTO public.school_bank_account_config (
-    id, bank_name, account_number, account_name, payment_instructions, updated_at, updated_by
+    id, bank_name, account_number, account_name, payment_instructions, result_checker_fee, updated_at, updated_by
   ) VALUES (
     'primary_account',
     p_bank_name,
     p_account_number,
     p_account_name,
     p_payment_instructions,
+    COALESCE(p_result_checker_fee, 1000),
     timezone('utc'::text, now()),
     p_updated_by
   )
@@ -68,6 +105,7 @@ BEGIN
     account_number = EXCLUDED.account_number,
     account_name = EXCLUDED.account_name,
     payment_instructions = EXCLUDED.payment_instructions,
+    result_checker_fee = EXCLUDED.result_checker_fee,
     updated_at = EXCLUDED.updated_at,
     updated_by = EXCLUDED.updated_by
   RETURNING * INTO v_cfg;
@@ -76,18 +114,19 @@ BEGIN
   INSERT INTO public.admin_realtime_events (action, details, performed_by, payload, timestamp)
   VALUES (
     'BANK_ACCOUNT_CONFIG_UPDATED',
-    'Official school bank account updated to: ' || v_cfg.bank_name || ' (' || v_cfg.account_number || ')',
+    'Official school bank account & result fee updated to: ' || v_cfg.bank_name || ' (' || v_cfg.account_number || '), Result Fee: ₦' || v_cfg.result_checker_fee,
     p_updated_by,
-    jsonb_build_object('bank_name', v_cfg.bank_name, 'account_number', v_cfg.account_number),
+    jsonb_build_object('bank_name', v_cfg.bank_name, 'account_number', v_cfg.account_number, 'result_checker_fee', v_cfg.result_checker_fee),
     timezone('utc'::text, now())
   );
 
   RETURN jsonb_build_object(
     'success', true,
-    'message', 'School official bank account updated and published in real time to all panels.',
+    'message', 'School official bank account and result checker fee updated and published in real time.',
     'bank_name', v_cfg.bank_name,
     'account_number', v_cfg.account_number,
     'account_name', v_cfg.account_name,
+    'result_checker_fee', v_cfg.result_checker_fee,
     'updated_at', v_cfg.updated_at
   );
 END;
@@ -138,6 +177,9 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
   const [paymentInstructions, setPaymentInstructions] = useState<string>(
     currentConfig.paymentInstructions || DEFAULT_BANK_ACCOUNT_CONFIG.paymentInstructions
   );
+  const [resultCheckerFee, setResultCheckerFee] = useState<number>(
+    currentConfig.resultCheckerFee || DEFAULT_BANK_ACCOUNT_CONFIG.resultCheckerFee || 1000
+  );
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
   const [showSqlModal, setShowSqlModal] = useState<boolean>(false);
@@ -163,11 +205,14 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
       return;
     }
 
+    const cleanFee = Math.max(100, Number(resultCheckerFee) || 1000);
+
     const updated: SchoolBankAccountConfig = {
       bankName: selectedBank,
       accountNumber: cleanAccNo,
       accountName: accountName.trim(),
       paymentInstructions: paymentInstructions.trim(),
+      resultCheckerFee: cleanFee,
       updatedAt: new Date().toISOString(),
       updatedBy: 'School Administrator'
     };
@@ -185,8 +230,10 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
       setAccountNumber(DEFAULT_BANK_ACCOUNT_CONFIG.accountNumber);
       setAccountName(DEFAULT_BANK_ACCOUNT_CONFIG.accountName);
       setPaymentInstructions(DEFAULT_BANK_ACCOUNT_CONFIG.paymentInstructions);
+      setResultCheckerFee(1000);
       onUpdateConfig({
         ...DEFAULT_BANK_ACCOUNT_CONFIG,
+        resultCheckerFee: 1000,
         updatedAt: new Date().toISOString(),
         updatedBy: 'School Administrator (Reset)'
       });
@@ -469,6 +516,58 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
               />
             </div>
 
+            {/* Result Checker Access Fee Configuration */}
+            <div className="space-y-2 p-5 bg-amber-50/80 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-800 rounded-2xl">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-black text-amber-950 dark:text-amber-200 uppercase tracking-widest flex items-center gap-1.5">
+                  <span>💳</span>
+                  <span>Terminal Result Checker Fee (₦) *</span>
+                </label>
+                <span className="text-[10px] font-black uppercase text-amber-800 dark:text-amber-300 bg-amber-200 dark:bg-amber-900 px-2 py-0.5 rounded-md">
+                  Per Term / Pupil
+                </span>
+              </div>
+
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-serif font-black text-blue-950 dark:text-yellow-400 text-lg">
+                  ₦
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  step="100"
+                  required
+                  value={resultCheckerFee}
+                  onChange={(e) => setResultCheckerFee(Math.max(0, parseInt(e.target.value) || 0))}
+                  placeholder="1000"
+                  className="w-full pl-10 pr-4 py-3.5 bg-white dark:bg-slate-800 border-2 border-amber-300 dark:border-amber-700 rounded-xl font-mono font-black text-blue-950 dark:text-yellow-300 text-lg outline-none focus:border-blue-900 dark:focus:border-yellow-400 transition-all"
+                />
+              </div>
+
+              {/* Quick preset chips */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mr-1">Quick Presets:</span>
+                {[500, 1000, 1500, 2000, 2500].map((fee) => (
+                  <button
+                    key={fee}
+                    type="button"
+                    onClick={() => setResultCheckerFee(fee)}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-all ${
+                      resultCheckerFee === fee
+                        ? 'bg-blue-900 text-yellow-400 dark:bg-yellow-400 dark:text-blue-950 shadow-xs'
+                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    ₦{fee.toLocaleString()}
+                  </button>
+                ))}
+              </div>
+
+              <p className="text-[11px] text-amber-900 dark:text-amber-300/90 leading-relaxed font-medium pt-1">
+                Amount charged to students and parents via Paystack to unlock, view, and download the official terminal report card PDF.
+              </p>
+            </div>
+
             {/* Payment Instructions / Narration Advisory */}
             <div className="space-y-2">
               <label className="block text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">
@@ -489,7 +588,7 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
                 type="submit"
                 className="w-full py-4 bg-blue-900 hover:bg-blue-800 dark:bg-yellow-400 dark:hover:bg-yellow-300 text-yellow-400 dark:text-blue-950 font-black text-sm uppercase tracking-widest rounded-2xl shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
               >
-                <span>💾 Save & Broadcast Account Number</span>
+                <span>💾 Save & Broadcast Bank Details & Result Fee</span>
                 <span>➔</span>
               </button>
               <p className="text-[10px] text-center text-slate-400 mt-2 font-medium">
@@ -549,6 +648,17 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
                   <span className="text-[9px] uppercase text-blue-300 font-bold block">Status</span>
                   <span className="text-xs font-black text-emerald-400">● Active Bursary</span>
                 </div>
+              </div>
+
+              {/* Dynamic Result Fee Card in Preview */}
+              <div className="p-3 bg-white/10 rounded-xl flex items-center justify-between border border-yellow-400/30 text-xs">
+                <div>
+                  <span className="text-[9px] uppercase font-black text-yellow-300 block">Report Card Access Pass</span>
+                  <span className="text-slate-200 text-[11px] font-medium">Paystack Result Checker Fee:</span>
+                </div>
+                <span className="font-mono font-black text-sm text-yellow-400 bg-blue-950 px-2.5 py-1 rounded-lg border border-yellow-400/40">
+                  ₦{resultCheckerFee.toLocaleString()}
+                </span>
               </div>
 
               {paymentInstructions && (

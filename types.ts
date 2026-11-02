@@ -102,6 +102,7 @@ export interface TeacherAccount {
   createdAt: string;
   assignmentRole?: TeacherAssignmentRole;
   assignedGrades: GradeLevel[];
+  classTeacherGrade?: GradeLevel; // Designated specific class where staff is the assigned Class Teacher
   assignedSubjects?: string[]; // Array of subject names, e.g. ['Mathematics', 'English Language']
   assignedCourses: string[]; // Array of Course IDs
   allowedPages?: StaffPagePermission[];
@@ -143,6 +144,11 @@ export interface StudentAccount {
   balance?: number;
   photo?: string; // Base64 or image URL profile photo
   gender?: 'Male' | 'Female' | 'Other';
+  nin?: string; // 11-digit National Identification Number
+  dateOfBirth?: string;
+  bloodGroup?: string;
+  emergencyContact?: string;
+  phone?: string;
   createdBy?: string;
 }
 
@@ -155,6 +161,9 @@ export interface StudentResult {
   score: number;
   caScore?: number;
   examScore?: number;
+  gradeLetter?: string;
+  remark?: string;
+  teacherComment?: string;
   position?: string | number;
   term: string;
   teacherName: string;
@@ -178,7 +187,7 @@ export interface ResultPublishRequest {
 }
 
 export type PaymentType = 'full' | 'installment_1' | 'installment_2' | 'result_fee';
-export type PaymentStatus = 'pending' | 'confirmed' | 'declined';
+export type PaymentStatus = 'pending' | 'confirmed' | 'declined' | 'paid';
 
 export interface PaymentChatMessage {
   id: string;
@@ -193,6 +202,12 @@ export interface FeePayment {
   studentId: string;
   studentName: string;
   amount: number;
+  amountPaid?: number; // explicit amount paid (defaults to amount)
+  amountRemaining?: number; // remaining balance after this payment
+  totalExpected?: number; // total assessment / fee expected for term
+  term?: string;
+  session?: string;
+  receiptNumber?: string;
   grade: GradeLevel;
   type: PaymentType;
   date: string;
@@ -221,6 +236,7 @@ export interface AttendanceRecord {
 export type AdminSectionKey = 
   | 'attendance'
   | 'payments'
+  | 'directGrading'
   | 'resultPublish'
   | 'pageAccess'
   | 'fees'
@@ -230,7 +246,18 @@ export type AdminSectionKey =
   | 'calendar'
   | 'announcements'
   | 'parents'
+  | 'gradingCriteria'
   | 'export';
+
+export interface GradingCriterion {
+  id: string;
+  gradeLetter: string; // e.g. 'A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'
+  minScore: number;    // e.g. 75
+  maxScore: number;    // e.g. 100
+  remark: string;      // e.g. 'Excellence', 'Very Good', 'Good', 'Credit', etc.
+  description?: string;
+  color?: string;      // Color hex e.g. '#16a34a'
+}
 
 export interface AdminSectionConfig {
   id: AdminSectionKey;
@@ -241,7 +268,9 @@ export interface AdminSectionConfig {
 
 export const ALL_ADMIN_SECTIONS: AdminSectionConfig[] = [
   { id: 'attendance', label: 'Gate Attendance & Scanner', description: 'Monitor live gate scans, logs & attendance rolls', icon: '📷' },
-  { id: 'payments', label: 'Fee Verification & Receipts', description: 'Verify bank payments, invoices & approve receipts', icon: '💳' },
+  { id: 'payments', label: 'Fee Verification & Receipts', description: 'Verify bank payments, input amount paid/balance & approve receipts', icon: '💳' },
+  { id: 'directGrading', label: 'Direct Student Grades Entry', description: 'Input test, exam, or full grades directly for any pupil in school', icon: '✍️' },
+  { id: 'gradingCriteria', label: 'Grading Criteria & Academic Standards', description: 'Configure score ranges, remarks (Excellence, Good) and GPA weights', icon: '🏆' },
   { id: 'resultPublish', label: 'Terminal Result Releases', description: 'Approve assessment scores and broadcast to pupils', icon: '📜' },
   { id: 'pageAccess', label: 'User Pages Access Control', description: 'Close/open user pages or lock the entire public portal', icon: '🔒' },
   { id: 'fees', label: 'School Fees Schedule', description: 'Configure school fee amounts per grade level', icon: '💰' },
@@ -394,6 +423,20 @@ export interface SchoolBankAccountConfig {
   accountNumber: string;
   accountName: string;
   paymentInstructions?: string;
+  paystackPublicKey?: string; // Optional Paystack public key (pk_test_... or pk_live_...)
+  resultCheckerFee?: number; // Configurable terminal report card access fee in Naira (default 1000)
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
+export interface ResultCheckerFeeRecord {
+  id: string;
+  term: string; // 'First Term' | 'Second Term' | 'Third Term'
+  session: string; // e.g. '2025/2026 Academic Session'
+  feeAmount: number; // in Naira e.g. 1000
+  feeKobo?: number; // feeAmount * 100 e.g. 100000
+  description?: string;
+  isActive?: boolean;
   updatedAt?: string;
   updatedBy?: string;
 }
@@ -493,4 +536,6 @@ export interface AppState {
   callRecordings?: CallRecording[];
   assignments?: Assignment[];
   assignmentSubmissions?: AssignmentSubmission[];
+  gradingCriteria?: GradingCriterion[];
+  resultCheckerFees?: ResultCheckerFeeRecord[];
 }

@@ -23,7 +23,8 @@ import {
   CallRecording,
   SchoolBankAccountConfig,
   Assignment,
-  AssignmentSubmission
+  AssignmentSubmission,
+  ResultCheckerFeeRecord
 } from '../types';
 import { INITIAL_STUDENT_HASH, INITIAL_PARENT_HASH, INITIAL_STAFF_HASH } from '../utils/authSecurity';
 
@@ -105,7 +106,8 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
       adminEventsRes,
       bankAccountRes,
       assignmentsRes,
-      submissionsRes
+      submissionsRes,
+      resultCheckerFeesRes
     ] = await Promise.all([
       supabase.from('students').select('*'),
       supabase.from('parents').select('*'),
@@ -130,7 +132,8 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
       supabase.from('admin_realtime_events').select('*').order('timestamp', { ascending: false }).limit(50),
       supabase.from('school_bank_account_config').select('*').limit(1).maybeSingle(),
       supabase.from('assignments').select('*').order('created_at', { ascending: false }),
-      supabase.from('assignment_submissions').select('*').order('submitted_at', { ascending: false })
+      supabase.from('assignment_submissions').select('*').order('submitted_at', { ascending: false }),
+      supabase.from('result_checker_fees').select('*').order('created_at', { ascending: true })
     ]);
 
     const partial: Partial<AppState> = {
@@ -173,7 +176,14 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
         parentEmail: s.parent_email,
         parentId: s.parent_id,
         balance: s.balance !== null && s.balance !== undefined ? Number(s.balance) : undefined,
-        photo: s.photo || undefined
+        photo: s.photo || undefined,
+        gender: s.gender || undefined,
+        nin: s.nin || undefined,
+        dateOfBirth: s.date_of_birth || undefined,
+        bloodGroup: s.blood_group || undefined,
+        emergencyContact: s.emergency_contact || undefined,
+        phone: s.phone || undefined,
+        createdBy: s.created_by || undefined
       }));
     }
 
@@ -271,6 +281,7 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
         createdAt: t.created_at,
         assignmentRole: t.assignment_role || (t.assigned_subjects && t.assigned_subjects.length > 0 && (!t.assigned_grades || t.assigned_grades.length === 0) ? 'subject_teacher' : (t.assigned_subjects && t.assigned_subjects.length > 0 && t.assigned_grades && t.assigned_grades.length > 0 ? 'both' : 'class_teacher')),
         assignedGrades: t.assigned_grades || [],
+        classTeacherGrade: t.class_teacher_grade || undefined,
         assignedSubjects: t.assigned_subjects || [],
         assignedCourses: t.assigned_courses || [],
         allowedPages: t.allowed_pages,
@@ -521,6 +532,21 @@ export const fetchSupabaseState = async (): Promise<Partial<AppState> | null> =>
         feedback: s.feedback || undefined,
         gradedBy: s.graded_by || undefined,
         gradedAt: s.graded_at || undefined
+      }));
+    }
+
+    // 24. Result Checker Fees
+    if (resultCheckerFeesRes && resultCheckerFeesRes.data && resultCheckerFeesRes.data.length > 0) {
+      partial.resultCheckerFees = resultCheckerFeesRes.data.map((rcf: any): ResultCheckerFeeRecord => ({
+        id: rcf.id,
+        term: rcf.term,
+        session: rcf.session,
+        feeAmount: Number(rcf.fee_amount),
+        feeKobo: rcf.fee_kobo ? Number(rcf.fee_kobo) : Number(rcf.fee_amount) * 100,
+        description: rcf.description || undefined,
+        isActive: rcf.is_active ?? true,
+        updatedAt: rcf.updated_at,
+        updatedBy: rcf.updated_by || 'School Administrator'
       }));
     }
 
@@ -1014,6 +1040,21 @@ export const setupRealtimeSync = (
             assignmentSubmissions: updated
           };
         });
+        break;
+
+      case 'RESULT_CHECKER_FEE_UPDATED':
+        if (data) {
+          onStateUpdate(prev => {
+            const list = prev.resultCheckerFees || [];
+            const exists = list.some(f => f.id === data.id || (f.term === data.term && f.session === data.session));
+            return {
+              ...prev,
+              resultCheckerFees: exists
+                ? list.map(f => (f.id === data.id || (f.term === data.term && f.session === data.session)) ? { ...f, ...data } : f)
+                : [...list, data]
+            };
+          });
+        }
         break;
 
       case 'FULL_STATE_REFRESH':
@@ -1774,6 +1815,37 @@ export const setupRealtimeSync = (
             }
             break;
 
+          case 'result_checker_fees':
+            if (eventType === 'INSERT' || eventType === 'UPDATE') {
+              const mappedFee: ResultCheckerFeeRecord = {
+                id: newRecord.id,
+                term: newRecord.term,
+                session: newRecord.session,
+                feeAmount: Number(newRecord.fee_amount),
+                feeKobo: newRecord.fee_kobo ? Number(newRecord.fee_kobo) : Number(newRecord.fee_amount) * 100,
+                description: newRecord.description || undefined,
+                isActive: newRecord.is_active ?? true,
+                updatedAt: newRecord.updated_at,
+                updatedBy: newRecord.updated_by || 'School Administrator'
+              };
+              onStateUpdate(prev => {
+                const list = prev.resultCheckerFees || [];
+                const exists = list.some(f => f.id === mappedFee.id);
+                return {
+                  ...prev,
+                  resultCheckerFees: exists
+                    ? list.map(f => f.id === mappedFee.id ? mappedFee : f)
+                    : [...list, mappedFee]
+                };
+              });
+            } else if (eventType === 'DELETE' && oldRecord.id) {
+              onStateUpdate(prev => ({
+                ...prev,
+                resultCheckerFees: (prev.resultCheckerFees || []).filter(f => f.id !== oldRecord.id)
+              }));
+            }
+            break;
+
           default:
             break;
         }
@@ -2082,10 +2154,44 @@ export const realtimeService = {
           parent_id: student.parentId,
           balance: student.balance !== undefined ? student.balance : null,
           photo: student.photo || null,
+          gender: student.gender || null,
+          nin: student.nin || null,
+          blood_group: student.bloodGroup || null,
+          emergency_contact: student.emergencyContact || null,
+          phone: student.phone || null,
+          created_by: student.createdBy || null,
           updated_at: new Date().toISOString()
         });
       } catch (err) {
         console.error('Supabase student upsert failed:', err);
+      }
+    }
+  },
+
+  // Update existing student account (profile, photo, NIN, blood group, password, etc.)
+  updateStudent: async (studentUpdate: Partial<StudentAccount> & { id: string }) => {
+    broadcastLocalChange({ type: 'STUDENT_UPDATED', data: studentUpdate });
+
+    if (supabase) {
+      try {
+        const payload: any = { updated_at: new Date().toISOString() };
+        if (studentUpdate.name !== undefined) payload.name = studentUpdate.name;
+        if (studentUpdate.grade !== undefined) payload.grade = studentUpdate.grade;
+        if (studentUpdate.email !== undefined) payload.email = studentUpdate.email;
+        if (studentUpdate.password !== undefined) payload.password_hash = studentUpdate.password;
+        if (studentUpdate.photo !== undefined) payload.photo = studentUpdate.photo;
+        if (studentUpdate.nin !== undefined) payload.nin = studentUpdate.nin;
+        if (studentUpdate.bloodGroup !== undefined) payload.blood_group = studentUpdate.bloodGroup;
+        if (studentUpdate.gender !== undefined) payload.gender = studentUpdate.gender;
+        if (studentUpdate.admissionYear !== undefined) payload.admission_year = studentUpdate.admissionYear;
+        if (studentUpdate.parentEmail !== undefined) payload.parent_email = studentUpdate.parentEmail;
+        if (studentUpdate.phone !== undefined) payload.phone = studentUpdate.phone;
+        if (studentUpdate.emergencyContact !== undefined) payload.emergency_contact = studentUpdate.emergencyContact;
+        if (studentUpdate.balance !== undefined) payload.balance = studentUpdate.balance;
+
+        await supabase.from('students').update(payload).eq('id', studentUpdate.id);
+      } catch (err) {
+        console.error('Supabase student update failed:', err);
       }
     }
   },
@@ -2320,6 +2426,7 @@ export const realtimeService = {
           password_hash: teacher.password,
           assignment_role: teacher.assignmentRole || (teacher.assignedSubjects && teacher.assignedSubjects.length > 0 && (!teacher.assignedGrades || teacher.assignedGrades.length === 0) ? 'subject_teacher' : (teacher.assignedSubjects && teacher.assignedSubjects.length > 0 && teacher.assignedGrades && teacher.assignedGrades.length > 0 ? 'both' : 'class_teacher')),
           assigned_grades: teacher.assignedGrades || [],
+          class_teacher_grade: teacher.classTeacherGrade || null,
           assigned_subjects: teacher.assignedSubjects || [],
           assigned_courses: teacher.assignedCourses || [],
           allowed_pages: teacher.allowedPages || ['overview', 'students', 'termStats', 'grading', 'attendance', 'courses'],
@@ -2328,6 +2435,29 @@ export const realtimeService = {
         });
       } catch (err) {
         console.error('Supabase teacher upsert failed:', err);
+      }
+    }
+  },
+
+  // Update Result Checker Fee for a term/session
+  updateResultCheckerFee: async (feeRecord: ResultCheckerFeeRecord) => {
+    broadcastLocalChange({ type: 'RESULT_CHECKER_FEE_UPDATED', data: feeRecord });
+
+    if (supabase) {
+      try {
+        await supabase.from('result_checker_fees').upsert({
+          id: feeRecord.id,
+          term: feeRecord.term,
+          session: feeRecord.session,
+          fee_amount: feeRecord.feeAmount,
+          fee_kobo: feeRecord.feeKobo || (feeRecord.feeAmount * 100),
+          description: feeRecord.description || null,
+          is_active: feeRecord.isActive ?? true,
+          updated_at: new Date().toISOString(),
+          updated_by: feeRecord.updatedBy || 'School Administrator'
+        });
+      } catch (err) {
+        console.error('Supabase updateResultCheckerFee failed:', err);
       }
     }
   },

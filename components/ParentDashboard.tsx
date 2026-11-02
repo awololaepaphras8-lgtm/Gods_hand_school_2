@@ -9,14 +9,18 @@ import {
   GradeLevel, 
   PaymentType,
   Announcement,
-  SchoolBankAccountConfig
+  SchoolBankAccountConfig,
+  ResultCheckerFeeRecord
 } from '../types';
 import { GRADE_GROUPS, DEFAULT_BANK_ACCOUNT_CONFIG } from '../constants';
 import { QRCodeSVG } from 'qrcode.react';
 import { StandardReportCard } from './StandardReportCard';
 import { StudentPhotoUploadModal } from './StudentPhotoUploadModal';
+import { PaystackResultFeeModal } from './PaystackResultFeeModal';
+import { isTermResultFeePaid, getResultFeeAmount, formatSubjectName, VACATION_HARD_COPY_ASSURANCE_NOTE } from '../utils/resultFeeService';
 import { downloadQrCodeImage } from '../utils/exportService';
 import { generateSecureTempPassword } from '../utils/authSecurity';
+import { computeClassRankings, computeSubjectRankings, formatOrdinal } from '../utils/ranking';
 
 interface ParentDashboardProps {
   parent: ParentAccount;
@@ -38,6 +42,7 @@ interface ParentDashboardProps {
   onGoToCommunity?: () => void;
   onUpdateChildPhoto?: (studentId: string, photoBase64: string) => void;
   bankAccountConfig?: SchoolBankAccountConfig;
+  resultCheckerFees?: ResultCheckerFeeRecord[];
 }
 
 export const ParentDashboard: React.FC<ParentDashboardProps> = ({
@@ -59,7 +64,8 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   onMessageTeacher,
   onGoToCommunity,
   onUpdateChildPhoto,
-  bankAccountConfig = DEFAULT_BANK_ACCOUNT_CONFIG
+  bankAccountConfig = DEFAULT_BANK_ACCOUNT_CONFIG,
+  resultCheckerFees
 }) => {
   const activeBank = bankAccountConfig || DEFAULT_BANK_ACCOUNT_CONFIG;
   const today = new Date().toLocaleDateString();
@@ -98,6 +104,30 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   const [paymentModalStep, setPaymentModalStep] = useState<'details' | 'upload' | 'reviewed'>('details');
   const [paymentSuccessRef, setPaymentSuccessRef] = useState<string | null>(null);
   const [paymentUploadError, setPaymentUploadError] = useState('');
+
+  // Academic Result Check View Mode: 'all' | 'test' | 'exam' | 'total' (Defaults to 'test' so CA test marks are viewable upfront)
+  const [parentResultViewMode, setParentResultViewMode] = useState<'all' | 'test' | 'exam' | 'total'>('test');
+
+  // Paystack ₦1,000 Report Card Access Modal State
+  const [showPaystackModalForChild, setShowPaystackModalForChild] = useState<StudentAccount | null>(null);
+  // Selected Academic Term for Report Card Checking
+  const [selectedReportTerm, setSelectedReportTerm] = useState<string>('First Term');
+  const activeSession = '2025/2026 Academic Session';
+
+  // Check if ₦1,000 result clearance fee has been confirmed for a child with term-based persistence
+  const isReportCardPaid = (child: StudentAccount, term: string = selectedReportTerm): boolean => {
+    return isTermResultFeePaid(payments, child.id, child.name, term, activeSession);
+  };
+
+  const handleOpenReportCard = (child: StudentAccount, term?: string) => {
+    const targetTerm = term || selectedReportTerm || child.activeTerm || 'First Term';
+    setSelectedReportTerm(targetTerm);
+    if (isReportCardPaid(child, targetTerm)) {
+      setSelectedChildForReport(child);
+    } else {
+      setShowPaystackModalForChild(child);
+    }
+  };
 
   // Get list of children linked to this parent
   const linkedChildren: StudentAccount[] = (allStudents || []).filter(s => 
@@ -763,29 +793,125 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 })()}
               </div>
 
-              {/* SECTION 3: ACADEMIC RESULTS FOR THIS CHILD */}
-              <div className="space-y-4 pt-6 border-t border-slate-100">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">📊</span>
-                    <h3 className="text-lg font-serif font-black text-blue-900">
-                      Academic Results & Subject Scores for {activeChild.name}
-                    </h3>
+              {/* SECTION 3: ACADEMIC RESULTS FOR THIS CHILD (Exam, Test, or Total with Position) */}
+              <div className="space-y-5 pt-6 border-t border-slate-100">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">📊</span>
+                      <h3 className="text-lg font-serif font-black text-blue-900">
+                        Academic Assessment & Results for {activeChild.name}
+                      </h3>
+                    </div>
+                    <p className="text-xs text-slate-500 font-medium mt-0.5">
+                      Check your child's Continuous Assessment test marks, terminal examinations, or cumulative totals with class rankings.
+                    </p>
                   </div>
-                  <div className="flex items-center gap-3">
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Term Selector */}
+                    <select
+                      value={selectedReportTerm}
+                      onChange={(e) => setSelectedReportTerm(e.target.value)}
+                      className="px-3 py-2 bg-slate-50 border-2 border-slate-300 rounded-xl font-black text-xs text-blue-950 outline-none cursor-pointer"
+                    >
+                      <option value="First Term">First Term</option>
+                      <option value="Second Term">Second Term</option>
+                      <option value="Third Term">Third Term</option>
+                    </select>
+
+                    {/* Official Report Card Button with Paystack Dynamic Fee Clearance Check */}
                     <button
                       type="button"
-                      onClick={() => setSelectedChildForReport(activeChild)}
-                      className="px-3.5 py-1.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-xs flex items-center gap-1.5 active:scale-95"
-                      title="View and download standard terminal report card with school logo and seal"
+                      onClick={() => handleOpenReportCard(activeChild, selectedReportTerm)}
+                      className={`px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-2 active:scale-95 ${
+                        isReportCardPaid(activeChild, selectedReportTerm)
+                          ? 'bg-yellow-400 hover:bg-yellow-300 text-blue-950 border border-yellow-500'
+                          : 'bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white'
+                      }`}
+                      title={isReportCardPaid(activeChild, selectedReportTerm) ? `View official ${selectedReportTerm} report card PDF` : `Pay ₦${getResultFeeAmount(bankAccountConfig, resultCheckerFees, selectedReportTerm, activeSession).toLocaleString()} via Paystack to unlock ${selectedReportTerm} report card dossier`}
                     >
-                      <span>📄</span>
-                      <span>Official Report Card (PDF)</span>
+                      <span>{isReportCardPaid(activeChild, selectedReportTerm) ? '📄' : '💳'}</span>
+                      <span>
+                        {isReportCardPaid(activeChild, selectedReportTerm) 
+                          ? `${selectedReportTerm} Report Card (Unlocked)` 
+                          : `Pay ₦${getResultFeeAmount(bankAccountConfig, resultCheckerFees, selectedReportTerm, activeSession).toLocaleString()} to Unlock ${selectedReportTerm} (Paystack)`}
+                      </span>
                     </button>
-                    <span className="text-xs text-slate-400 font-bold hidden md:inline">
-                      Oyo State Standards
-                    </span>
                   </div>
+                </div>
+
+                {/* Official Vacation Hard-Copy Assurance Notice to Parents */}
+                <div className="p-4 bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl flex items-start gap-3.5 text-amber-950 shadow-xs">
+                  <span className="text-2xl shrink-0 mt-0.5">📜</span>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-serif font-black text-xs uppercase tracking-wider text-blue-950">
+                        Official Physical Hard-Copy Assurance
+                      </h4>
+                      <span className="px-2 py-0.5 bg-amber-200 text-amber-900 rounded-md text-[9px] font-black uppercase">
+                        Vacation Day Issuance
+                      </span>
+                    </div>
+                    <p className="text-xs text-amber-900 leading-relaxed font-medium">
+                      {VACATION_HARD_COPY_ASSURANCE_NOTE}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Score Filter / View Mode Switcher: All | Test (CA) | Exam | Total & Position */}
+                <div className="bg-slate-100/90 p-1.5 rounded-2xl flex flex-wrap gap-1.5 border border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setParentResultViewMode('all')}
+                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                      parentResultViewMode === 'all'
+                        ? 'bg-blue-900 text-yellow-400 shadow-md'
+                        : 'text-slate-600 hover:text-blue-950 hover:bg-white/60'
+                    }`}
+                  >
+                    <span>📊</span>
+                    <span>All Breakdown (Test + Exam + Total)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setParentResultViewMode('test')}
+                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                      parentResultViewMode === 'test'
+                        ? 'bg-amber-600 text-white shadow-md'
+                        : 'text-slate-600 hover:text-blue-950 hover:bg-white/60'
+                    }`}
+                  >
+                    <span>🧪</span>
+                    <span>Test / CA Only (Max 40)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setParentResultViewMode('exam')}
+                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                      parentResultViewMode === 'exam'
+                        ? 'bg-indigo-700 text-white shadow-md'
+                        : 'text-slate-600 hover:text-blue-950 hover:bg-white/60'
+                    }`}
+                  >
+                    <span>📝</span>
+                    <span>Exam Only (Max 60)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setParentResultViewMode('total')}
+                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                      parentResultViewMode === 'total'
+                        ? 'bg-emerald-700 text-white shadow-md'
+                        : 'text-slate-600 hover:text-blue-950 hover:bg-white/60'
+                    }`}
+                  >
+                    <span>🏆</span>
+                    <span>Total & Position (Standings)</span>
+                  </button>
                 </div>
 
                 {(() => {
@@ -793,31 +919,144 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                     r.studentName.toLowerCase().trim() === activeChild.name.toLowerCase().trim()
                   );
 
-                  return childResults.length === 0 ? (
-                    <div className="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 text-slate-400 text-xs font-bold">
-                      No academic scores published for this term yet. Continuous assessments are underway.
-                    </div>
-                  ) : (
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {childResults.map(res => (
-                        <div key={res.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-                          <div className="flex justify-between items-start">
-                            <h4 className="font-serif font-black text-blue-900 text-sm">{res.subject}</h4>
-                            <span className={`px-2 py-0.5 rounded text-xs font-black ${
-                              res.score >= 70 ? 'bg-emerald-100 text-emerald-800' : res.score >= 50 ? 'bg-yellow-100 text-yellow-800' : 'bg-rose-100 text-rose-800'
-                            }`}>
-                              {res.score}%
-                            </span>
+                  if (childResults.length === 0) {
+                    return (
+                      <div className="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 text-slate-400 text-xs font-bold">
+                        No academic scores recorded for {activeChild.name} yet. Teachers and administrators are actively uploading test and examination marks.
+                      </div>
+                    );
+                  }
+
+                  // Compute overall class position
+                  const classStandingMap = computeClassRankings(results, allStudents, activeChild.grade, childResults[0]?.term || 'First Term');
+                  const myClassStanding = classStandingMap.get(activeChild.id) || classStandingMap.get(activeChild.name.trim().toLowerCase());
+
+                  return (
+                    <div className="space-y-4">
+                      {/* Summary Banner for Position & Average */}
+                      <div className="p-4 bg-gradient-to-r from-blue-950 to-indigo-900 rounded-2xl text-white flex flex-wrap items-center justify-between gap-4 border border-yellow-400/30 shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-yellow-400 text-blue-950 flex items-center justify-center font-black text-lg">
+                            🏆
                           </div>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase">{res.term} • Teacher: {res.teacherName}</p>
-                          <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                            <div 
-                              className={`h-full ${res.score >= 70 ? 'bg-emerald-500' : res.score >= 50 ? 'bg-yellow-500' : 'bg-rose-500'}`}
-                              style={{ width: `${Math.min(100, res.score)}%` }}
-                            ></div>
+                          <div>
+                            <p className="text-[10px] uppercase font-black tracking-widest text-yellow-300">
+                              {activeChild.grade} Class Standing ({childResults[0]?.term || 'First Term'})
+                            </p>
+                            <p className="font-serif font-black text-sm sm:text-base">
+                              Overall Position: <span className="text-yellow-400 text-lg sm:text-xl">{myClassStanding?.positionOrdinal || '1st'}</span> out of {myClassStanding?.totalStudentsInClass || 1} pupils
+                            </p>
                           </div>
                         </div>
-                      ))}
+
+                        <div className="flex items-center gap-4 text-xs">
+                          <div className="text-right">
+                            <span className="text-[10px] text-blue-200 uppercase font-black block">Subjects Taken</span>
+                            <span className="font-mono font-black text-base">{childResults.length}</span>
+                          </div>
+                          <div className="text-right border-l border-white/20 pl-4">
+                            <span className="text-[10px] text-blue-200 uppercase font-black block">Average Score</span>
+                            <span className="font-mono font-black text-base text-yellow-300">
+                              {(childResults.reduce((s, r) => s + r.score, 0) / childResults.length).toFixed(1)}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Subject Cards Grid */}
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {childResults.map(res => {
+                          const ca = res.caScore !== undefined ? res.caScore : Math.round(res.score * 0.4);
+                          const exam = res.examScore !== undefined ? res.examScore : (res.score - ca);
+                          
+                          // Subject ranking
+                          const subjRankMap = computeSubjectRankings(results, res.subject, activeChild.grade, res.term);
+                          const subjStanding = subjRankMap.get(activeChild.name.trim().toLowerCase());
+
+                          return (
+                            <div key={res.id} className="p-5 bg-white rounded-2xl border-2 border-slate-100 hover:border-blue-200 transition-all shadow-xs space-y-3">
+                              <div className="flex justify-between items-start gap-2">
+                                <div>
+                                  <h4 className="font-serif font-black text-blue-950 text-base">{formatSubjectName(res.subject)}</h4>
+                                  <p className="text-[10px] text-slate-400 font-bold uppercase">{res.term}</p>
+                                </div>
+
+                                {parentResultViewMode === 'test' ? (
+                                  <span className="px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-xl text-xs font-black">
+                                    {ca} / 40 (Test)
+                                  </span>
+                                ) : parentResultViewMode === 'exam' ? (
+                                  <span className="px-2.5 py-1 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded-xl text-xs font-black">
+                                    {exam} / 60 (Exam)
+                                  </span>
+                                ) : parentResultViewMode === 'total' ? (
+                                  <span className={`px-2.5 py-1 rounded-xl text-xs font-black ${
+                                    res.score >= 70 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : res.score >= 50 ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' : 'bg-rose-100 text-rose-800 border border-rose-300'
+                                  }`}>
+                                    {res.score}% (Total)
+                                  </span>
+                                ) : (
+                                  <span className={`px-2.5 py-1 rounded-xl text-xs font-black ${
+                                    res.score >= 70 ? 'bg-emerald-100 text-emerald-800' : res.score >= 50 ? 'bg-yellow-100 text-yellow-800' : 'bg-rose-100 text-rose-800'
+                                  }`}>
+                                    {res.score}%
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Breakdown stats for 'all' mode */}
+                              {parentResultViewMode === 'all' && (
+                                <div className="grid grid-cols-3 gap-1.5 text-center p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs">
+                                  <div>
+                                    <span className="text-[9px] uppercase font-bold text-slate-400 block">CA Test</span>
+                                    <span className="font-mono font-black text-blue-950">{ca}/40</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-[9px] uppercase font-bold text-slate-400 block">Exam</span>
+                                    <span className="font-mono font-black text-blue-950">{exam}/60</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-[9px] uppercase font-bold text-slate-400 block">Total</span>
+                                    <span className="font-mono font-black text-emerald-700">{res.score}%</span>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Position standing badge */}
+                              {(parentResultViewMode === 'total' || parentResultViewMode === 'all') && (
+                                <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
+                                  <span className="text-[11px] font-bold text-slate-500">Subject Position:</span>
+                                  <span className="px-2 py-0.5 bg-yellow-100 text-blue-950 font-black rounded-lg text-[11px] border border-yellow-300">
+                                    ★ {subjStanding?.positionOrdinal || '1st'} in Subject
+                                  </span>
+                                </div>
+                              )}
+
+                              {/* Progress meter */}
+                              <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                <div 
+                                  className={`h-full transition-all ${
+                                    parentResultViewMode === 'test'
+                                      ? 'bg-amber-500'
+                                      : parentResultViewMode === 'exam'
+                                        ? 'bg-indigo-600'
+                                        : res.score >= 70 ? 'bg-emerald-500' : res.score >= 50 ? 'bg-yellow-500' : 'bg-rose-500'
+                                  }`}
+                                  style={{ 
+                                    width: `${
+                                      parentResultViewMode === 'test' 
+                                        ? Math.min(100, (ca / 40) * 100)
+                                        : parentResultViewMode === 'exam'
+                                          ? Math.min(100, (exam / 60) * 100)
+                                          : Math.min(100, res.score)
+                                    }%` 
+                                  }}
+                                ></div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   );
                 })()}
@@ -1449,6 +1688,26 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
         </div>
       )}
 
+      {/* Paystack ₦1,000 Report Card Clearance Modal */}
+      {showPaystackModalForChild && (
+        <PaystackResultFeeModal
+          isOpen={!!showPaystackModalForChild}
+          onClose={() => setShowPaystackModalForChild(null)}
+          student={showPaystackModalForChild}
+          term={selectedReportTerm || showPaystackModalForChild.activeTerm || 'First Term'}
+          session={activeSession}
+          payerName={parent.fullName}
+          payerEmail={parent.email}
+          fallbackPublicKey={activeBank.paystackPublicKey}
+          feeAmount={getResultFeeAmount(bankAccountConfig)}
+          onSuccess={(paymentRecord) => {
+            onSubmitFeePayment(paymentRecord);
+            setShowPaystackModalForChild(null);
+            setSelectedChildForReport(showPaystackModalForChild);
+          }}
+        />
+      )}
+
       {/* Official Standard Student/Pupil Report Card Modal */}
       {selectedChildForReport && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto print:p-0 print:bg-white print:static">
@@ -1456,8 +1715,10 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
             <StandardReportCard 
               student={selectedChildForReport}
               results={results.filter(r => r.studentName.toLowerCase().trim() === selectedChildForReport.name.toLowerCase().trim())}
-              term="First Term"
-              session="2025/2026 Academic Session"
+              allResults={allStudents && results ? results : []}
+              allStudents={allStudents}
+              term={selectedReportTerm || selectedChildForReport.activeTerm || 'First Term'}
+              session={activeSession}
               onClose={() => setSelectedChildForReport(null)}
               showControls={true}
             />

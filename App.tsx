@@ -30,10 +30,12 @@ import {
   SchoolBankAccountConfig,
   CallRecording,
   Assignment,
-  AssignmentSubmission
+  AssignmentSubmission,
+  GradingCriterion
 } from './types';
 import { stateService } from './services/stateService';
 import { setupRealtimeSync, fetchSupabaseState, realtimeService, isSupabaseConfigured } from './services/supabaseService';
+import { offlineAcademicService } from './services/offlineAcademicService';
 import { GRADE_ORDER, getNextGradeLevel } from './constants';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
@@ -58,12 +60,15 @@ import { ParentStaffMessaging } from './components/ParentStaffMessaging';
 import { SchoolCommunityHub } from './components/SchoolCommunityHub';
 import { RealtimeSqlViewerModal } from './components/RealtimeSqlViewerModal';
 import { SplashScreen } from './components/SplashScreen';
+import { StudentIDCardModal } from './components/StudentIDCardModal';
+import { OfflineModeBanner } from './components/OfflineModeBanner';
 import { verifyAdminSecurityKey, setAdminSecurityKeyHash } from './utils/adminSecurity';
 import { QRCodeSVG } from 'qrcode.react';
 import { generateStudentId } from './utils/studentIdGenerator';
 import { downloadQrCodeImage } from './utils/exportService';
 import { getInitialTheme, applyThemeToDocument } from './utils/themeManager';
 import { verifyCredential, generateSecureTempPassword } from './utils/authSecurity';
+import { isTermResultFeePaid } from './utils/resultFeeService';
 
 // Secret URL route checker and cleaner
 const checkSecretPath = (keyword: string): boolean => {
@@ -199,6 +204,7 @@ const App: React.FC = () => {
   };
   const [loginError, setLoginError] = useState('');
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showStudentIDCardModal, setShowStudentIDCardModal] = useState(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [showSqlModal, setShowSqlModal] = useState(false);
   const [isAppInstalled, setIsAppInstalled] = useState<boolean>(() => {
@@ -531,6 +537,34 @@ const App: React.FC = () => {
       results: [newResult, ...prev.results]
     }));
     realtimeService.addResult(newResult);
+  };
+
+  const handleSaveAdminResult = (result: StudentResult) => {
+    setState(prev => {
+      const exists = prev.results.some(r => r.id === result.id);
+      const updatedResults = exists
+        ? prev.results.map(r => r.id === result.id ? result : r)
+        : [result, ...prev.results];
+      return { ...prev, results: updatedResults };
+    });
+    realtimeService.addResult(result);
+  };
+
+  const handleDeleteResult = (resultId: string) => {
+    setState(prev => ({
+      ...prev,
+      results: prev.results.filter(r => r.id !== resultId)
+    }));
+    realtimeService.deleteResult(resultId);
+  };
+
+  const handleBatchSaveResults = (resultsToSave: StudentResult[]) => {
+    setState(prev => {
+      const saveIds = new Set(resultsToSave.map(r => r.id));
+      const untouched = prev.results.filter(r => !saveIds.has(r.id));
+      return { ...prev, results: [...resultsToSave, ...untouched] };
+    });
+    resultsToSave.forEach(r => realtimeService.addResult(r));
   };
 
   const handleRequestPublishResults = (grade: GradeLevel, term: string, subject?: string) => {
@@ -946,6 +980,23 @@ const App: React.FC = () => {
     realtimeService.addStudent(newStudent);
   };
 
+  const handleUpdateStudent = (studentId: string, updates: Partial<StudentAccount>) => {
+    setState(prev => {
+      const updated = prev.studentAccounts.map(s =>
+        s.id === studentId ? { ...s, ...updates } : s
+      );
+      const next = { ...prev, studentAccounts: updated };
+      stateService.saveState(next);
+      return next;
+    });
+
+    const current = state.studentAccounts.find(s => s.id === studentId);
+    if (current) {
+      realtimeService.addStudent({ ...current, ...updates });
+    }
+    realtimeService.updateStudent({ id: studentId, ...updates });
+  };
+
   const handleAddParentAccount = (newParent: ParentAccount) => {
     setState(prev => {
       const existing = (prev.parents || []).some(p => p.id === newParent.id || p.email.toLowerCase() === newParent.email.toLowerCase());
@@ -1264,7 +1315,7 @@ const App: React.FC = () => {
       ...paymentData,
       id: `PAY-${Date.now().toString().slice(-6)}`,
       date: new Date().toISOString(),
-      status: 'pending'
+      status: paymentData.status || 'pending'
     };
 
     setState(prev => ({
@@ -1276,30 +1327,96 @@ const App: React.FC = () => {
     return newPayment;
   };
 
-  const handleConfirmPayment = (paymentId: string, adminNote?: string) => {
+  const handleConfirmPayment = (paymentId: string, adminNote?: string, amountPaid?: number, amountRemaining?: number) => {
     const now = new Date().toISOString();
     const reviewer = currentUser || 'School Administrator';
-    setState(prev => ({
-      ...prev,
-      payments: prev.payments.map(p => p.id === paymentId ? {
-        ...p,
-        status: 'confirmed' as PaymentStatus,
-        adminNote: adminNote || p.adminNote,
-        reviewedBy: reviewer,
-        reviewedAt: now
-      } : p)
-    }));
+    let targetStudentId: string | undefined;
+    let targetRemaining: number | undefined;
+
+    setState(prev => {
+      const updatedPayments = prev.payments.map(p => {
+        if (p.id === paymentId) {
+          const finalPaid = amountPaid !== undefined ? amountPaid : (p.amountPaid ?? p.amount);
+          const finalRemaining = amountRemaining !== undefined ? amountRemaining : (p.amountRemaining ?? 0);
+          targetStudentId = p.studentId;
+          targetRemaining = finalRemaining;
+          return {
+            ...p,
+            status: 'confirmed' as PaymentStatus,
+            amount: finalPaid,
+            amountPaid: finalPaid,
+            amountRemaining: finalRemaining,
+            adminNote: adminNote || p.adminNote,
+            reviewedBy: reviewer,
+            reviewedAt: now
+          };
+        }
+        return p;
+      });
+
+      let updatedStudents = prev.studentAccounts;
+      if (targetStudentId && targetRemaining !== undefined) {
+        updatedStudents = prev.studentAccounts.map(s =>
+          s.id === targetStudentId ? { ...s, balance: targetRemaining } : s
+        );
+      }
+
+      const next = { ...prev, payments: updatedPayments, studentAccounts: updatedStudents };
+      stateService.saveState(next);
+      return next;
+    });
 
     const target = state.payments.find(p => p.id === paymentId);
     if (target) {
+      const finalPaid = amountPaid !== undefined ? amountPaid : (target.amountPaid ?? target.amount);
+      const finalRemaining = amountRemaining !== undefined ? amountRemaining : (target.amountRemaining ?? 0);
       realtimeService.recordPayment({
         ...target,
         status: 'confirmed',
+        amount: finalPaid,
+        amountPaid: finalPaid,
+        amountRemaining: finalRemaining,
         adminNote: adminNote || target.adminNote,
         reviewedBy: reviewer,
         reviewedAt: now
       });
+      if (target.studentId && finalRemaining !== undefined) {
+        realtimeService.updateStudentBalance(target.studentId, finalRemaining);
+      }
     }
+  };
+
+  const handleRecordDirectPayment = (payment: FeePayment) => {
+    setState(prev => {
+      const exists = prev.payments.some(p => p.id === payment.id);
+      const updatedPayments = exists
+        ? prev.payments.map(p => p.id === payment.id ? payment : p)
+        : [payment, ...prev.payments];
+
+      let updatedStudents = prev.studentAccounts;
+      if (payment.studentId && payment.amountRemaining !== undefined) {
+        updatedStudents = prev.studentAccounts.map(s =>
+          s.id === payment.studentId ? { ...s, balance: payment.amountRemaining } : s
+        );
+      }
+
+      const next = { ...prev, payments: updatedPayments, studentAccounts: updatedStudents };
+      stateService.saveState(next);
+      return next;
+    });
+
+    realtimeService.recordPayment(payment);
+    if (payment.studentId && payment.amountRemaining !== undefined) {
+      realtimeService.updateStudentBalance(payment.studentId, payment.amountRemaining);
+    }
+  };
+
+  const handleSaveGradingCriteria = (newCriteria: GradingCriterion[]) => {
+    setState(prev => {
+      const next = { ...prev, gradingCriteria: newCriteria };
+      stateService.saveState(next);
+      return next;
+    });
   };
 
   const handleDeclinePayment = (paymentId: string, reason: string) => {
@@ -1633,6 +1750,19 @@ const App: React.FC = () => {
   const targetFee = (currentStudentObj && currentStudentObj.grade && state.fees[currentStudentObj.grade]) ? state.fees[currentStudentObj.grade] : 0;
   const paymentProgress = targetFee > 0 ? Math.min(100, Math.round((totalPaid / targetFee) * 100)) : 0;
 
+  // Offline service worker academic cache strategy: Automatically keep student records offline-ready
+  useEffect(() => {
+    if (currentStudentObj) {
+      offlineAcademicService.cacheForOffline(
+        currentStudentObj,
+        state.results,
+        state.timetables || [],
+        state.courses,
+        state.announcements
+      );
+    }
+  }, [currentStudentObj, state.results, state.timetables, state.courses, state.announcements]);
+
   const getPageClosedStatus = (pageView: string): { isClosed: boolean; pageName: string; notice: string } => {
     if (role === UserRole.ADMIN) {
       return { isClosed: false, pageName: '', notice: '' };
@@ -1695,9 +1825,15 @@ const App: React.FC = () => {
         hasActiveDelegation={!!activeTeacherDelegation}
         userPagesAccess={state.userPagesAccess}
         onLogout={handleLogout}
+        currentStudent={currentStudentObj}
+        currentParent={currentParentObj}
+        allStudents={state.studentAccounts}
       />
 
-      <main className="flex-grow">
+      {/* Offline Service Worker Network Status & Cached Academic Records Bar */}
+      <OfflineModeBanner currentStudentId={currentStudentObj?.id} />
+
+      <main className="flex-grow pb-24 md:pb-0">
         {closedStatus.isClosed ? (
           <div className="max-w-3xl mx-auto py-16 px-4">
             <div className="bg-white rounded-[2.5rem] border-4 border-amber-300 p-8 sm:p-12 shadow-2xl text-center space-y-6">
@@ -1805,6 +1941,7 @@ const App: React.FC = () => {
               }}
               onLogout={handleLogout}
               bankAccountConfig={state.bankAccountConfig}
+              resultCheckerFees={state.resultCheckerFees}
             />
           ) : (
             <ParentAuth 
@@ -1856,39 +1993,93 @@ const App: React.FC = () => {
               <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl border-2 border-slate-50 relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-full h-2 bg-yellow-400"></div>
                   
-                  <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-10 text-left">
-                    <div>
-                      <h2 className="text-4xl font-black text-blue-900 mb-1 font-serif">Welcome, {currentStudentObj.name || currentUser}</h2>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Grade: {currentStudentObj.grade || 'N/A'} • Student ID: {currentStudentObj.id || 'N/A'}</p>
-                    </div>
-                  <div className="mt-6 md:mt-0 bg-blue-50 p-4 rounded-2xl border border-blue-100 min-w-[220px]">
-                    <div className="flex justify-between text-[10px] font-black text-blue-900 uppercase tracking-widest mb-2">
-                      <span>Payment Status</span>
-                      <span>{paymentProgress}%</span>
-                    </div>
-                    <div className="w-full h-3 bg-white rounded-full overflow-hidden border border-blue-100 mb-2">
-                      <div className="h-full bg-blue-900 transition-all duration-1000" style={{ width: `${paymentProgress}%` }}></div>
-                    </div>
-                    <button 
-                      onClick={() => {
-                        setView('feeChecker');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      className="text-[10px] font-black text-blue-800 hover:text-blue-950 uppercase tracking-wider underline flex items-center gap-1"
-                    >
-                      💳 Check Fee Statement →
-                    </button>
-                  </div>
-                </div>
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-10 text-left gap-4">
+                    <div className="flex items-center gap-4">
+                      {/* Student Photo Avatar with Quick Photo Update */}
+                      <div className="relative group shrink-0">
+                        <div className="w-20 h-20 rounded-2xl bg-slate-100 border-2 border-yellow-400 overflow-hidden flex items-center justify-center shadow-md">
+                          {currentStudentObj.photo ? (
+                            <img src={currentStudentObj.photo} alt={currentStudentObj.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-3xl font-black text-blue-900">
+                              {currentStudentObj.name ? currentStudentObj.name.charAt(0).toUpperCase() : '👨‍🎓'}
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowStudentIDCardModal(true)}
+                          className="absolute -bottom-1 -right-1 w-7 h-7 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-lg flex items-center justify-center text-xs font-black shadow-md transition-transform hover:scale-110"
+                          title="Update passport picture or NIN"
+                        >
+                          📷
+                        </button>
+                      </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
+                      <div>
+                        <h2 className="text-3xl sm:text-4xl font-black text-blue-900 mb-1 font-serif">Welcome, {currentStudentObj.name || currentUser}</h2>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                          Grade: {currentStudentObj.grade || 'N/A'} • Student ID: {currentStudentObj.id || 'N/A'}
+                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold flex items-center gap-1 ${
+                            currentStudentObj.nin 
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
+                              : 'bg-amber-100 text-amber-800 border border-amber-300'
+                          }`}>
+                            <span>{currentStudentObj.nin ? '✓' : '⚠️'}</span>
+                            <span>{currentStudentObj.nin ? `NIN: ${currentStudentObj.nin}` : 'NIN Pending'}</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setShowStudentIDCardModal(true)}
+                            className="px-2.5 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-full text-[10px] font-black uppercase tracking-wider transition-colors"
+                          >
+                            {currentStudentObj.nin ? 'Edit NIN' : '+ Add NIN'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 md:mt-0 bg-blue-50 p-4 rounded-2xl border border-blue-100 min-w-[220px]">
+                      <div className="flex justify-between text-[10px] font-black text-blue-900 uppercase tracking-widest mb-2">
+                        <span>Payment Status</span>
+                        <span>{paymentProgress}%</span>
+                      </div>
+                      <div className="w-full h-3 bg-white rounded-full overflow-hidden border border-blue-100 mb-2">
+                        <div className="h-full bg-blue-900 transition-all duration-1000" style={{ width: `${paymentProgress}%` }}></div>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          setView('feeChecker');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="text-[10px] font-black text-blue-800 hover:text-blue-950 uppercase tracking-wider underline flex items-center gap-1"
+                      >
+                        💳 Check Fee Statement →
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 sm:gap-4">
+                    {/* Official Student ID Card PDF Trigger */}
+                    <button 
+                      onClick={() => setShowStudentIDCardModal(true)}
+                      className="p-5 sm:p-6 bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-950 text-white rounded-[2rem] hover:from-blue-900 hover:to-indigo-900 transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1 border-2 border-yellow-400"
+                      title="Download Official Student Identity Card as a high-resolution PDF"
+                    >
+                      <span className="block text-3xl sm:text-4xl mb-2 group-hover:scale-110 transition-transform">🪪</span>
+                      <span className="font-black uppercase text-[11px] tracking-wider text-yellow-300">ID Card (PDF)</span>
+                    </button>
+
                     <button 
                       onClick={() => setShowQRModal(true)}
                       className="p-5 sm:p-6 bg-yellow-400 text-blue-900 rounded-[2rem] hover:bg-yellow-500 transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1"
                     >
-                        <span className="block text-3xl sm:text-4xl mb-2 group-hover:scale-110 transition-transform">🆔</span>
-                        <span className="font-black uppercase text-[11px] tracking-wider">Attendance QR</span>
+                      <span className="block text-3xl sm:text-4xl mb-2 group-hover:scale-110 transition-transform">🆔</span>
+                      <span className="font-black uppercase text-[11px] tracking-wider">Attendance QR</span>
                     </button>
+
                     <button 
                       onClick={() => {
                         const el = document.getElementById('student-timetable-section');
@@ -1896,9 +2087,10 @@ const App: React.FC = () => {
                       }}
                       className="p-5 sm:p-6 bg-blue-900 text-white rounded-[2rem] hover:bg-blue-800 transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1 border-2 border-yellow-400/40"
                     >
-                        <span className="block text-3xl sm:text-4xl mb-2 text-yellow-400 group-hover:scale-110 transition-transform">🗓️</span>
-                        <span className="font-black uppercase text-[11px] tracking-wider">Timetable</span>
+                      <span className="block text-3xl sm:text-4xl mb-2 text-yellow-400 group-hover:scale-110 transition-transform">🗓️</span>
+                      <span className="font-black uppercase text-[11px] tracking-wider">Timetable</span>
                     </button>
+
                     <button 
                       onClick={() => {
                         const el = document.getElementById('student-assignments-section');
@@ -1906,9 +2098,10 @@ const App: React.FC = () => {
                       }}
                       className="p-5 sm:p-6 bg-amber-500 text-blue-950 rounded-[2rem] hover:bg-amber-400 transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1 border-2 border-amber-600/30"
                     >
-                        <span className="block text-3xl sm:text-4xl mb-2 group-hover:scale-110 transition-transform">📝</span>
-                        <span className="font-black uppercase text-[11px] tracking-wider">Assignments</span>
+                      <span className="block text-3xl sm:text-4xl mb-2 group-hover:scale-110 transition-transform">📝</span>
+                      <span className="font-black uppercase text-[11px] tracking-wider">Assignments</span>
                     </button>
+
                     <button 
                       onClick={() => {
                         const el = document.getElementById('student-timetable-section');
@@ -1916,21 +2109,22 @@ const App: React.FC = () => {
                       }}
                       className="p-5 sm:p-6 bg-slate-800 text-white rounded-[2rem] hover:bg-slate-700 transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1"
                     >
-                        <span className="block text-3xl sm:text-4xl mb-2 text-yellow-400 group-hover:scale-110 transition-transform">📚</span>
-                        <span className="font-black uppercase text-[11px] tracking-wider">Subjects</span>
+                      <span className="block text-3xl sm:text-4xl mb-2 text-yellow-400 group-hover:scale-110 transition-transform">📚</span>
+                      <span className="font-black uppercase text-[11px] tracking-wider">Subjects</span>
                     </button>
+
                     <button 
-                        onClick={() => setView('apply')}
-                        className={`p-5 sm:p-6 rounded-[2rem] transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1 ${paymentProgress < 100 ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-green-50 text-green-700 border-2 border-green-200 cursor-default'}`}
+                      onClick={() => setView('apply')}
+                      className={`p-5 sm:p-6 rounded-[2rem] transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1 ${paymentProgress < 100 ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-green-50 text-green-700 border-2 border-green-200 cursor-default'}`}
                     >
-                        <span className="block text-3xl sm:text-4xl mb-2 group-hover:scale-110 transition-transform">
-                          {paymentProgress < 100 ? '₦' : '✅'}
-                        </span>
-                        <span className="font-black uppercase text-[11px] tracking-wider">
-                          {paymentProgress < 100 ? 'Pay Fees' : 'Fees Settled'}
-                        </span>
+                      <span className="block text-3xl sm:text-4xl mb-2 group-hover:scale-110 transition-transform">
+                        {paymentProgress < 100 ? '₦' : '✅'}
+                      </span>
+                      <span className="font-black uppercase text-[11px] tracking-wider">
+                        {paymentProgress < 100 ? 'Pay Fees' : 'Fees Settled'}
+                      </span>
                     </button>
-                </div>
+                  </div>
 
                 {showQRModal && currentStudentObj && (() => {
                   const termInfo = currentStudentObj.qrGenerations?.[selectedTermForQR] || { count: 0, qrCodeValue: '', generatedAt: '' };
@@ -2140,23 +2334,26 @@ const App: React.FC = () => {
                     </div>
 
                     {(() => {
+                      const activeTermForStudent = currentStudentObj?.activeTerm || 'First Term';
+                      const hasTermPaid = currentStudentObj 
+                        ? isTermResultFeePaid(state.payments, currentStudentObj.id, currentStudentObj.name, activeTermForStudent, '2025/2026 Academic Session')
+                        : false;
                       const studentPayments = currentStudentObj 
                         ? state.payments.filter(p => p.studentId === currentStudentObj.id || p.studentName.toLowerCase() === currentStudentObj.name.toLowerCase())
                         : [];
-                      const confirmedResultPayment = studentPayments.find(p => p.type === 'result_fee' && p.status === 'confirmed');
                       const pendingResultPayment = studentPayments.find(p => p.type === 'result_fee' && p.status === 'pending');
 
-                      if (!confirmedResultPayment) {
+                      if (!hasTermPaid) {
                         return (
                           <div className="p-6 bg-amber-50 rounded-2xl border-2 border-amber-200 text-center space-y-3">
                             <div className="text-3xl">🔒</div>
                             <h4 className="font-serif font-black text-blue-900 text-sm">
-                              Result Slip Locked
+                              {activeTermForStudent} Report Card Locked
                             </h4>
                             <p className="text-xs text-amber-900 leading-relaxed font-medium">
                               {pendingResultPayment 
                                 ? "Your proof of payment (₦1,000) has been uploaded and is currently awaiting confirmation from the administrator."
-                                : "To view your termly scores and official report card, a result fee of ₦1,000 is required with transaction receipt confirmation."
+                                : "To view your official report card dossier, pay the one-time result fee of ₦1,000 via Paystack for instant automated unlock."
                               }
                             </p>
                             <button
@@ -2164,9 +2361,9 @@ const App: React.FC = () => {
                                 setView('resultChecker');
                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                               }}
-                              className="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md inline-block"
+                              className="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md inline-block cursor-pointer"
                             >
-                              {pendingResultPayment ? "Check Payment Status" : "Pay ₦1,000 & Upload Receipt →"}
+                              {pendingResultPayment ? "Check Payment Status" : "Pay ₦1,000 with Paystack →"}
                             </button>
                           </div>
                         );
@@ -2275,6 +2472,16 @@ const App: React.FC = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Official Student Identity Card (PDF) & NIN Editor Modal */}
+                {showStudentIDCardModal && currentStudentObj && (
+                  <StudentIDCardModal
+                    student={currentStudentObj}
+                    isOpen={showStudentIDCardModal}
+                    onClose={() => setShowStudentIDCardModal(false)}
+                    onUpdateStudent={handleUpdateStudent}
+                  />
+                )}
               </div>
             </div>
           ) : (
@@ -2360,9 +2567,11 @@ const App: React.FC = () => {
                 }}
                 onRequestPublishResults={handleRequestPublishResults}
                 onSendResultsToPupils={handleSendResultsToPupils}
+                onBatchSaveResults={handleBatchSaveResults}
                 canCreateStudents={currentTeacherObj?.canCreateStudents}
                 onAddStudent={handleAddStudentAccount}
                 onAddParentAccount={handleAddParentAccount}
+                onUpdateStudent={handleUpdateStudent}
               />
             </div>
           ) : (
@@ -2428,6 +2637,8 @@ const App: React.FC = () => {
                 setView('studentAuth');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
+              bankAccountConfig={state.bankAccountConfig}
+              resultCheckerFees={state.resultCheckerFees}
             />
           </div>
         )}
@@ -2507,6 +2718,13 @@ const App: React.FC = () => {
                 onAddAssignment={handleAddAssignment}
                 onUpdateAssignment={handleUpdateAssignment}
                 onDeleteAssignment={handleDeleteAssignment}
+                gradingCriteria={state.gradingCriteria}
+                onSaveGradingCriteria={handleSaveGradingCriteria}
+                onRecordDirectPayment={handleRecordDirectPayment}
+                onUpdateStudent={handleUpdateStudent}
+                onSaveResult={handleSaveAdminResult}
+                onDeleteResult={handleDeleteResult}
+                onBatchSaveResults={handleBatchSaveResults}
               />
             </div>
           ) : (role === UserRole.TEACHER && activeTeacherDelegation) ? (
@@ -2562,6 +2780,13 @@ const App: React.FC = () => {
                 onAddAssignment={handleAddAssignment}
                 onUpdateAssignment={handleUpdateAssignment}
                 onDeleteAssignment={handleDeleteAssignment}
+                gradingCriteria={state.gradingCriteria}
+                onSaveGradingCriteria={handleSaveGradingCriteria}
+                onRecordDirectPayment={handleRecordDirectPayment}
+                onUpdateStudent={handleUpdateStudent}
+                onSaveResult={handleSaveAdminResult}
+                onDeleteResult={handleDeleteResult}
+                onBatchSaveResults={handleBatchSaveResults}
                 onExitDelegation={() => {
                   setView('teacher');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2694,6 +2919,7 @@ const App: React.FC = () => {
                 }}
                 onRequestPublishResults={handleRequestPublishResults}
                 onSendResultsToPupils={handleSendResultsToPupils}
+                onBatchSaveResults={handleBatchSaveResults}
                 canCreateStudents={currentTeacherObj?.canCreateStudents}
                 onAddStudent={handleAddStudentAccount}
                 onAddParentAccount={handleAddParentAccount}

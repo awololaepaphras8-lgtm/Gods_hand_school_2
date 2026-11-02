@@ -1,0 +1,56 @@
+{
+  "id": "/",
+  "name": "God's Hand International Model School",
+  "short_name": "God's Hand",
+  "description": "Official portal for God's Hand International Model School. Monitor attendance, student results, and pay fees.",
+  "theme_color": "#1e3a8a",
+  "background_color": "#0f172a",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "start_url": "/",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Students & Parents Portal",
+      "short_name": "Portal",
+      "description": "Access Student & Parent Hub",
+      "url": "/?view=portal",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Check Terminal Results",
+      "short_name": "Results",
+      "description": "Check student assessment scores & report cards",
+      "url": "/?view=resultChecker",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Check School Fees",
+      "short_name": "Fees",
+      "description": "View fees schedule and pay tuition online",
+      "url": "/?view=feeChecker",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}
