@@ -270,20 +270,20 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
   return (
     <div className="space-y-8">
       {/* Top Banner Header */}
-      <div className="bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-950 rounded-[2.5rem] p-8 text-white shadow-2xl border-4 border-yellow-400 relative overflow-hidden">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-yellow-400 text-blue-950 flex items-center justify-center text-3xl font-black shadow-lg shrink-0">
+      <div className="bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-950 rounded-[2.5rem] p-4 sm:p-8 text-white shadow-2xl border-4 border-yellow-400">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex flex-wrap sm:flex-nowrap items-start sm:items-center gap-4 min-w-0">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-yellow-400 text-blue-950 flex items-center justify-center text-3xl font-black shadow-lg shrink-0">
               🏛️
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <span className="px-3 py-1 bg-yellow-400 text-blue-950 rounded-full text-[10px] font-black uppercase tracking-widest inline-block mb-1">
                 Bursary & Financial Settings
               </span>
-              <h2 className="text-2xl sm:text-3xl font-serif font-black text-white">
+              <h2 className="text-xl sm:text-3xl font-serif font-black text-white break-words whitespace-normal">
                 Official School Bank Account Configuration
               </h2>
-              <p className="text-xs text-blue-200 mt-0.5 max-w-2xl font-medium">
+              <p className="text-xs text-blue-200 mt-1 max-w-2xl font-medium break-words whitespace-normal">
                 Set and update the designated school bank account and payment instructions. Any change made here immediately updates the Student Fee Checker, Parent Dashboard fee payment portal, and Bursary invoice vouchers across the entire school in real-time.
               </p>
             </div>
@@ -293,7 +293,7 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
             <button
               type="button"
               onClick={() => setShowSqlModal(true)}
-              className="px-4 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 active:scale-95 shadow-md"
+              className="min-h-[44px] px-4 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 active:scale-95 shadow-md"
               title="View and copy generated SQL for saving the account number with realtime sync"
             >
               <span>📄 View Realtime SQL</span>
@@ -301,14 +301,14 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
             <button
               type="button"
               onClick={handleCopyDetails}
-              className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-yellow-300 rounded-xl text-xs font-black uppercase tracking-wider transition-all border border-white/20 flex items-center gap-2 active:scale-95"
+              className="min-h-[44px] px-4 py-2.5 bg-white/10 hover:bg-white/20 text-yellow-300 rounded-xl text-xs font-black uppercase tracking-wider transition-all border border-white/20 flex items-center gap-2 active:scale-95"
             >
               <span>{copied ? '✓ Copied' : '📋 Copy Account'}</span>
             </button>
             <button
               type="button"
               onClick={handleResetToDefault}
-              className="px-4 py-2.5 bg-red-600/80 hover:bg-red-600 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md active:scale-95"
+              className="min-h-[44px] px-4 py-2.5 bg-red-600/80 hover:bg-red-600 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md active:scale-95"
             >
               Reset to Default
             </button>
@@ -317,12 +317,12 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
 
         {/* Success Alert Toast */}
         {isSaved && (
-          <div className="mt-6 p-4 bg-emerald-500 text-slate-950 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center justify-between shadow-xl animate-bounce">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">✓</span>
-              <span>Success: School bank account details updated and broadcasted to all parent and student portals!</span>
+          <div className="mt-6 p-4 bg-emerald-500 text-slate-950 rounded-2xl font-black text-xs uppercase tracking-wider flex flex-wrap items-center justify-between gap-2 shadow-xl">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <span className="text-xl shrink-0">✓</span>
+              <span className="break-words whitespace-normal">Success: School bank account details updated and broadcasted to all parent and student portals!</span>
             </div>
-            <span className="text-[10px] bg-slate-950 text-white px-2 py-0.5 rounded-lg">Active Now</span>
+            <span className="text-[10px] bg-slate-950 text-white px-2.5 py-1 rounded-lg shrink-0">Active Now</span>
           </div>
         )}
       </div>
@@ -330,15 +330,15 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
       {/* SQL Viewer Modal */}
       {showSqlModal && (
         <div className="fixed inset-0 z-[120] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border-2 border-yellow-400 rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl relative space-y-4 max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-              <div className="flex items-center gap-2.5">
-                <span className="text-2xl">⚡</span>
-                <div>
-                  <h3 className="font-serif font-black text-blue-950 dark:text-white text-lg">
+          <div className="bg-white dark:bg-slate-900 border-2 border-yellow-400 rounded-3xl max-w-3xl w-full p-4 sm:p-8 shadow-2xl space-y-4 max-h-[92vh] flex flex-col">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="text-2xl shrink-0">⚡</span>
+                <div className="min-w-0">
+                  <h3 className="font-serif font-black text-blue-950 dark:text-white text-base sm:text-lg break-words whitespace-normal">
                     Realtime SQL Schema for Bank Account Sync
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 break-words whitespace-normal">
                     PostgreSQL script to create table, stored procedure, RLS rules and register CDC realtime replication
                   </p>
                 </div>
@@ -346,34 +346,35 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
               <button
                 type="button"
                 onClick={() => setShowSqlModal(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center font-bold"
+                aria-label="Close modal"
+                className="min-w-[44px] min-h-[44px] rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center font-bold shrink-0"
               >
                 ✕
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto min-h-0">
               <pre className="p-4 bg-slate-950 text-emerald-400 rounded-2xl font-mono text-xs overflow-x-auto leading-relaxed border border-slate-800">
                 {BANK_ACCOUNT_REALTIME_SQL}
               </pre>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 break-words whitespace-normal">
                 Run this script in your Supabase SQL Editor to enable automatic real-time propagation across all devices.
               </p>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={handleDownloadSql}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl font-bold text-xs uppercase"
+                  className="min-h-[44px] px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl font-bold text-xs uppercase"
                 >
                   Download .SQL
                 </button>
                 <button
                   type="button"
                   onClick={handleCopySql}
-                  className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-xs uppercase shadow-sm flex items-center gap-1.5"
+                  className="min-h-[44px] px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-xs uppercase shadow-sm flex items-center gap-1.5"
                 >
                   <span>{sqlCopied ? '✓ Copied SQL!' : '📋 Copy Entire SQL'}</span>
                 </button>
@@ -383,19 +384,19 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
         </div>
       )}
 
-      <div className="grid lg:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
         {/* Left Column: Form Editor */}
-        <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border-2 border-slate-100 dark:border-slate-800 shadow-xl space-y-6 transition-colors">
-          <div className="border-b border-slate-100 dark:border-slate-800 pb-4 flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-serif font-black text-blue-950 dark:text-white">
+        <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-[2.5rem] p-4 sm:p-8 border-2 border-slate-100 dark:border-slate-800 shadow-xl space-y-6 transition-colors">
+          <div className="border-b border-slate-100 dark:border-slate-800 pb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="text-lg sm:text-xl font-serif font-black text-blue-950 dark:text-white break-words whitespace-normal">
                 Edit Bank & Remittance Details
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium break-words whitespace-normal">
                 Ensure account number and bank name are 100% accurate before saving.
               </p>
             </div>
-            <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 rounded-full text-[10px] font-black uppercase tracking-wider">
+            <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0">
               Live Gateway
             </span>
           </div>
@@ -418,7 +419,7 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
                         setBankName(e.target.value);
                       }
                     }}
-                    className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl font-bold text-blue-950 dark:text-white outline-none focus:border-blue-900 dark:focus:border-yellow-400 focus:bg-white dark:focus:bg-slate-900 transition-all text-sm"
+                    className="w-full min-h-[48px] px-4 sm:px-5 py-3.5 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl font-bold text-blue-950 dark:text-white outline-none focus:border-blue-900 dark:focus:border-yellow-400 focus:bg-white dark:focus:bg-slate-900 transition-all text-sm"
                   >
                     {POPULAR_NIGERIAN_BANKS.map((b) => (
                       <option key={b} value={b}>
@@ -428,7 +429,7 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
                     <option value="__OTHER__">+ Specify Other / Custom Commercial Bank...</option>
                   </select>
 
-                  <div className="flex flex-wrap gap-1.5 pt-1">
+                  <div className="flex flex-wrap gap-2 pt-1">
                     {['First Bank of Nigeria', 'GTBank', 'Zenith Bank', 'Access Bank', 'UBA', 'OPay'].map((quick) => {
                       const full = POPULAR_NIGERIAN_BANKS.find(p => p.includes(quick)) || quick;
                       return (
@@ -439,7 +440,7 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
                             setBankName(full);
                             setIsCustomBank(false);
                           }}
-                          className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase transition-all ${
+                          className={`min-h-[44px] px-3 py-2 rounded-xl text-[11px] font-black uppercase transition-all ${
                             bankName === full && !isCustomBank
                               ? 'bg-blue-900 text-yellow-400 shadow-sm dark:bg-yellow-400 dark:text-blue-950'
                               : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
@@ -453,19 +454,19 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
                     <input
                       type="text"
                       required
                       value={customBank}
                       onChange={(e) => setCustomBank(e.target.value)}
                       placeholder="Type custom bank name (e.g. Standard Chartered, Jaiz, etc.)"
-                      className="flex-1 px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl font-bold text-blue-950 dark:text-white outline-none focus:border-blue-900 focus:bg-white transition-all text-sm"
+                      className="flex-1 w-full sm:w-auto min-h-[48px] px-4 sm:px-5 py-3.5 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl font-bold text-blue-950 dark:text-white outline-none focus:border-blue-900 focus:bg-white transition-all text-sm"
                     />
                     <button
                       type="button"
                       onClick={() => setIsCustomBank(false)}
-                      className="px-4 py-4 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 font-black text-xs uppercase rounded-2xl"
+                      className="w-full sm:w-auto min-h-[48px] px-4 py-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 font-black text-xs uppercase rounded-2xl shrink-0"
                     >
                       Preset List
                     </button>
@@ -476,13 +477,13 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
 
             {/* Account Number */}
             <div className="space-y-2">
-              <label className="block text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex items-center justify-between">
+              <label className="text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest flex flex-wrap items-center justify-between gap-2">
                 <span>Account Number (NUBAN) *</span>
                 <span className="text-[10px] font-mono text-slate-400">
                   {accountNumber.trim().replace(/\s+/g, '').length} Digits
                 </span>
               </label>
-              <div className="relative">
+              <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-1 focus-within:border-blue-900 dark:focus-within:border-yellow-400 focus-within:bg-white transition-all">
                 <input
                   type="text"
                   required
@@ -490,9 +491,9 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
                   value={accountNumber}
                   onChange={(e) => setAccountNumber(e.target.value)}
                   placeholder="e.g. 2041982731"
-                  className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl font-mono font-black text-blue-950 dark:text-yellow-300 text-xl tracking-widest outline-none focus:border-blue-900 dark:focus:border-yellow-400 focus:bg-white transition-all"
+                  className="w-full min-h-[48px] py-3 bg-transparent font-mono font-black text-blue-950 dark:text-yellow-300 text-lg sm:text-xl tracking-widest outline-none"
                 />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-yellow-400 text-blue-950 font-black text-[10px] uppercase rounded-lg">
+                <span className="px-2.5 py-1 bg-yellow-400 text-blue-950 font-black text-[10px] uppercase rounded-lg shrink-0">
                   NUBAN
                 </span>
               </div>
@@ -512,14 +513,14 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
                 value={accountName}
                 onChange={(e) => setAccountName(e.target.value)}
                 placeholder="e.g. God's Hand International Model School"
-                className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl font-bold text-blue-950 dark:text-white outline-none focus:border-blue-900 dark:focus:border-yellow-400 focus:bg-white transition-all text-sm"
+                className="w-full min-h-[48px] px-4 sm:px-5 py-3.5 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl font-bold text-blue-950 dark:text-white outline-none focus:border-blue-900 dark:focus:border-yellow-400 focus:bg-white transition-all text-sm"
               />
             </div>
 
             {/* Result Checker Access Fee Configuration */}
-            <div className="space-y-2 p-5 bg-amber-50/80 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-800 rounded-2xl">
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-black text-amber-950 dark:text-amber-200 uppercase tracking-widest flex items-center gap-1.5">
+            <div className="space-y-3 p-4 sm:p-5 bg-amber-50/80 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-800 rounded-2xl">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <label className="text-xs font-black text-amber-950 dark:text-amber-200 uppercase tracking-widest flex items-center gap-1.5">
                   <span>💳</span>
                   <span>Terminal Result Checker Fee (₦) *</span>
                 </label>
@@ -528,8 +529,8 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
                 </span>
               </div>
 
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-serif font-black text-blue-950 dark:text-yellow-400 text-lg">
+              <div className="flex items-center gap-2 bg-white dark:bg-slate-800 border-2 border-amber-300 dark:border-amber-700 rounded-xl px-4 focus-within:border-blue-900 dark:focus-within:border-yellow-400 transition-all">
+                <span className="font-serif font-black text-blue-950 dark:text-yellow-400 text-lg shrink-0">
                   ₦
                 </span>
                 <input
@@ -540,19 +541,19 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
                   value={resultCheckerFee}
                   onChange={(e) => setResultCheckerFee(Math.max(0, parseInt(e.target.value) || 0))}
                   placeholder="1000"
-                  className="w-full pl-10 pr-4 py-3.5 bg-white dark:bg-slate-800 border-2 border-amber-300 dark:border-amber-700 rounded-xl font-mono font-black text-blue-950 dark:text-yellow-300 text-lg outline-none focus:border-blue-900 dark:focus:border-yellow-400 transition-all"
+                  className="w-full min-h-[48px] py-3 bg-transparent font-mono font-black text-blue-950 dark:text-yellow-300 text-lg outline-none"
                 />
               </div>
 
               {/* Quick preset chips */}
-              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <div className="flex flex-wrap items-center gap-2 pt-1">
                 <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mr-1">Quick Presets:</span>
                 {[500, 1000, 1500, 2000, 2500].map((fee) => (
                   <button
                     key={fee}
                     type="button"
                     onClick={() => setResultCheckerFee(fee)}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-all ${
+                    className={`min-h-[44px] px-3 py-2 rounded-lg text-xs font-black uppercase transition-all ${
                       resultCheckerFee === fee
                         ? 'bg-blue-900 text-yellow-400 dark:bg-yellow-400 dark:text-blue-950 shadow-xs'
                         : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100'
@@ -563,7 +564,7 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
                 ))}
               </div>
 
-              <p className="text-[11px] text-amber-900 dark:text-amber-300/90 leading-relaxed font-medium pt-1">
+              <p className="text-[11px] text-amber-900 dark:text-amber-300/90 leading-relaxed font-medium pt-1 break-words whitespace-normal">
                 Amount charged to students and parents via Paystack to unlock, view, and download the official terminal report card PDF.
               </p>
             </div>
@@ -578,7 +579,7 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
                 value={paymentInstructions}
                 onChange={(e) => setPaymentInstructions(e.target.value)}
                 placeholder="e.g. Please put student's Full Name and Student ID in the transfer narration..."
-                className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl font-medium text-slate-900 dark:text-slate-100 outline-none focus:border-blue-900 dark:focus:border-yellow-400 focus:bg-white transition-all text-xs"
+                className="w-full px-4 sm:px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl font-medium text-slate-900 dark:text-slate-100 outline-none focus:border-blue-900 dark:focus:border-yellow-400 focus:bg-white transition-all text-xs"
               />
             </div>
 
@@ -586,12 +587,12 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
             <div className="pt-2">
               <button
                 type="submit"
-                className="w-full py-4 bg-blue-900 hover:bg-blue-800 dark:bg-yellow-400 dark:hover:bg-yellow-300 text-yellow-400 dark:text-blue-950 font-black text-sm uppercase tracking-widest rounded-2xl shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                className="w-full min-h-[48px] px-4 py-4 bg-blue-900 hover:bg-blue-800 dark:bg-yellow-400 dark:hover:bg-yellow-300 text-yellow-400 dark:text-blue-950 font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-xl transition-all active:scale-[0.98] flex flex-wrap items-center justify-center gap-2"
               >
                 <span>💾 Save & Broadcast Bank Details & Result Fee</span>
                 <span>➔</span>
               </button>
-              <p className="text-[10px] text-center text-slate-400 mt-2 font-medium">
+              <p className="text-[10px] text-center text-slate-400 mt-2 font-medium break-words whitespace-normal">
                 Changes apply instantly across all open browser tabs and database state.
               </p>
             </div>
@@ -600,30 +601,30 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
 
         {/* Right Column: Live Portal Preview Card */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border-2 border-slate-100 dark:border-slate-800 shadow-xl space-y-5 transition-colors">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h3 className="text-lg font-serif font-black text-blue-950 dark:text-white">
+          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-4 sm:p-8 border-2 border-slate-100 dark:border-slate-800 shadow-xl space-y-5 transition-colors">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-base sm:text-lg font-serif font-black text-blue-950 dark:text-white">
                 Live Public Card Preview
               </h3>
-              <span className="px-2 py-0.5 bg-yellow-400 text-blue-950 rounded-md text-[9px] font-black uppercase">
+              <span className="px-2 py-0.5 bg-yellow-400 text-blue-950 rounded-md text-[9px] font-black uppercase shrink-0">
                 What Parents See
               </span>
             </div>
 
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400 break-words whitespace-normal">
               This is exactly how parents and students will see the official bursary bank transfer card on their portals:
             </p>
 
             {/* Preview Card Component */}
-            <div className="bg-gradient-to-br from-blue-950 to-blue-900 rounded-2xl p-6 border-2 border-yellow-400 shadow-xl space-y-4">
-              <div className="flex items-start justify-between">
-                <div>
+            <div className="bg-gradient-to-br from-blue-950 to-blue-900 rounded-2xl p-4 sm:p-6 border-2 border-yellow-400 shadow-xl space-y-4">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0">
                   <span className="text-[9px] font-black uppercase text-yellow-400 tracking-wider block">
                     Bank Name
                   </span>
-                  <p className="text-base font-black text-white">{effectiveBank}</p>
+                  <p className="text-base font-black text-white break-words whitespace-normal">{effectiveBank}</p>
                 </div>
-                <span className="px-2 py-0.5 bg-yellow-400 text-blue-950 font-black text-[9px] uppercase rounded-md shadow-xs">
+                <span className="px-2 py-0.5 bg-yellow-400 text-blue-950 font-black text-[9px] uppercase rounded-md shadow-xs shrink-0">
                   Official Account
                 </span>
               </div>
@@ -632,26 +633,26 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
                 <span className="text-[9px] font-black uppercase text-yellow-400 tracking-wider block">
                   Account Name
                 </span>
-                <p className="text-xs font-bold text-slate-200">{accountName || "God's Hand International Model School"}</p>
+                <p className="text-xs font-bold text-slate-200 break-words whitespace-normal">{accountName || "God's Hand International Model School"}</p>
               </div>
 
-              <div className="pt-2 border-t border-white/10 flex items-center justify-between">
+              <div className="pt-2 border-t border-white/10 flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <span className="text-[9px] font-black uppercase text-yellow-400 tracking-wider block">
                     Account Number
                   </span>
-                  <p className="text-2xl font-mono font-black text-yellow-300 tracking-wider">
+                  <p className="text-xl sm:text-2xl font-mono font-black text-yellow-300 tracking-wider break-all">
                     {accountNumber || '2041982731'}
                   </p>
                 </div>
-                <div className="text-right">
+                <div className="text-left sm:text-right">
                   <span className="text-[9px] uppercase text-blue-300 font-bold block">Status</span>
                   <span className="text-xs font-black text-emerald-400">● Active Bursary</span>
                 </div>
               </div>
 
               {/* Dynamic Result Fee Card in Preview */}
-              <div className="p-3 bg-white/10 rounded-xl flex items-center justify-between border border-yellow-400/30 text-xs">
+              <div className="p-3 bg-white/10 rounded-xl flex flex-wrap items-center justify-between gap-2 border border-yellow-400/30 text-xs">
                 <div>
                   <span className="text-[9px] uppercase font-black text-yellow-300 block">Report Card Access Pass</span>
                   <span className="text-slate-200 text-[11px] font-medium">Paystack Result Checker Fee:</span>
@@ -662,7 +663,7 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
               </div>
 
               {paymentInstructions && (
-                <div className="p-3 bg-black/40 rounded-xl text-[10px] text-slate-300 italic border border-white/5">
+                <div className="p-3 bg-black/40 rounded-xl text-[10px] text-slate-300 italic border border-white/5 break-words whitespace-normal">
                   <strong>Instructions:</strong> {paymentInstructions}
                 </div>
               )}
@@ -673,13 +674,13 @@ export const AdminBankAccountManager: React.FC<AdminBankAccountManagerProps> = (
               <p className="font-bold text-slate-300">
                 🔒 Security & Audit Compliance
               </p>
-              <ul className="text-[11px] text-slate-400 space-y-1 list-disc list-inside">
+              <ul className="text-[11px] text-slate-400 space-y-1 list-disc list-inside break-words whitespace-normal">
                 <li>Immediate propagation to all student & parent devices.</li>
                 <li>Receipt upload validation matches this official account.</li>
                 <li>Saved locally and synchronized with database state.</li>
               </ul>
               {currentConfig.updatedAt && (
-                <p className="text-[10px] text-slate-500 pt-1 font-mono">
+                <p className="text-[10px] text-slate-500 pt-1 font-mono break-words whitespace-normal">
                   Last updated: {new Date(currentConfig.updatedAt).toLocaleString()} ({currentConfig.updatedBy || 'Admin'})
                 </p>
               )}

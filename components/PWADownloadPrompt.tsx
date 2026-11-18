@@ -290,52 +290,51 @@ exit
     <>
       {/* Toast Notification Alert */}
       {toastMessage && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-5 py-3.5 bg-blue-950 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-2xl border-2 border-yellow-400 flex items-center gap-3 animate-bounce">
-          <span className="text-xl">🔔</span>
-          <span>{toastMessage}</span>
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100vw-24px)] max-w-md px-4 py-3.5 bg-blue-950 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-2xl border-2 border-yellow-400 flex items-center gap-3 animate-bounce">
+          <span className="text-xl shrink-0">🔔</span>
+          <span className="break-words whitespace-normal">{toastMessage}</span>
         </div>
       )}
 
       {/* Floating PWA Download Notification Bar (Bottom / Top) */}
       {isBannerVisible && !isStandalone && (
-        <div className="fixed bottom-3 sm:bottom-5 left-3 sm:left-5 right-3 sm:right-5 max-w-2xl mx-auto z-40 bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-950 text-white p-3.5 sm:p-4 rounded-2xl shadow-2xl border-2 border-yellow-400/80 backdrop-blur-md transition-all transform animate-slide-up">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+        <div className="fixed bottom-20 md:bottom-5 left-3 sm:left-5 right-3 sm:right-5 max-w-2xl mx-auto z-40 bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-950 text-white p-3.5 sm:p-4 rounded-2xl shadow-2xl border-2 border-yellow-400/80 backdrop-blur-md transition-all transform animate-slide-up">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
             
             {/* Left: School Icon & Text */}
-            <div className="flex items-center gap-3 text-left w-full sm:w-auto">
-              <div className="relative shrink-0">
-                <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-md border-2 border-yellow-400 overflow-hidden">
+            <div className="flex items-start sm:items-center gap-3 text-left w-full sm:w-auto min-w-0">
+              <div className="shrink-0">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white flex items-center justify-center shadow-md border-2 border-yellow-400 overflow-hidden">
                   <img 
                     src="/logo.png" 
                     alt="God's Hand School App Icon" 
                     className="w-[80%] h-[80%] object-contain"
                   />
                 </div>
-                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-blue-950 rounded-full animate-ping"></span>
-                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-blue-950 rounded-full"></span>
               </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-xs sm:text-sm font-black text-yellow-400 uppercase tracking-wider font-serif truncate">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h4 className="text-xs sm:text-sm font-black text-yellow-400 uppercase tracking-wider font-serif break-words whitespace-normal">
                     Download School App
                   </h4>
-                  <span className="px-1.5 py-0.5 bg-yellow-400/20 text-yellow-300 text-[9px] font-black rounded-md uppercase">
+                  <span className="px-1.5 py-0.5 bg-yellow-400/20 text-yellow-300 text-[9px] font-black rounded-md uppercase shrink-0">
                     PWA Fast
                   </span>
                 </div>
-                <p className="text-[11px] sm:text-xs text-blue-100/90 leading-tight line-clamp-1 sm:line-clamp-2 mt-0.5">
+                <p className="text-[11px] sm:text-xs text-blue-100/90 leading-snug mt-0.5 break-words whitespace-normal">
                   Install on your phone or PC for 1-tap gate attendance, results & offline portal access!
                 </p>
               </div>
             </div>
 
             {/* Right: Actions */}
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end shrink-0">
               {notificationStatus === 'default' && (
                 <button
+                  type="button"
                   onClick={handleEnableNotifications}
                   title="Enable Push Notifications"
-                  className="px-2.5 py-2 bg-blue-800/80 hover:bg-blue-700 text-yellow-300 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1 border border-blue-600"
+                  className="min-h-[44px] min-w-[44px] px-3 py-2 bg-blue-800/80 hover:bg-blue-700 text-yellow-300 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1 border border-blue-600"
                 >
                   <span>🔔</span>
                   <span className="hidden md:inline">Allow Alerts</span>
@@ -343,17 +342,20 @@ exit
               )}
 
               <button
+                type="button"
                 onClick={handleInstallClick}
-                className="flex-1 sm:flex-initial px-4 py-2.5 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-blue-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all transform active:scale-95 flex items-center justify-center gap-1.5"
+                className="flex-1 sm:flex-initial min-h-[44px] px-4 py-2.5 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-blue-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all transform active:scale-95 flex items-center justify-center gap-1.5"
               >
                 <span>📲</span>
                 <span>Download App</span>
               </button>
 
               <button
+                type="button"
                 onClick={handleDismissBanner}
-                className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
+                className="min-h-[44px] min-w-[44px] p-2 text-slate-300 hover:text-white rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center"
                 title="Dismiss for today"
+                aria-label="Dismiss install banner"
               >
                 ✕
               </button>
@@ -364,36 +366,40 @@ exit
 
       {/* Comprehensive Installation Guide Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-blue-950/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white text-slate-900 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border-4 border-yellow-400 max-h-[90vh] overflow-y-auto relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-blue-950/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white text-slate-900 rounded-3xl max-w-lg w-full p-4 sm:p-8 shadow-2xl border-4 border-yellow-400 max-h-[90vh] overflow-y-auto overflow-x-hidden">
             
-            {/* Close button */}
-            <button
-              onClick={closeModal}
-              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-lg transition-colors"
-            >
-              ✕
-            </button>
+            {/* Close row */}
+            <div className="flex justify-end mb-2">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="min-h-[44px] min-w-[44px] rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-lg transition-colors"
+                aria-label="Close installation guide"
+              >
+                ✕
+              </button>
+            </div>
 
             {/* Header */}
             <div className="text-center mb-6">
               <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-3xl shadow-xl border-4 border-yellow-400 mb-3 overflow-hidden">
                 <img src="/logo.png" alt="God's Hand School Logo" className="w-[80%] h-[80%] object-contain" />
               </div>
-              <h3 className="text-2xl font-black font-serif text-blue-950 leading-tight">
+              <h3 className="text-xl sm:text-2xl font-black font-serif text-blue-950 leading-tight break-words">
                 Install God's Hand School App
               </h3>
-              <p className="text-xs text-slate-500 font-medium mt-1">
+              <p className="text-xs text-slate-500 font-medium mt-1 break-words">
                 Official Progressive Web App (PWA) • Works on Android, iPhone, Windows, Mac & Tablets
               </p>
             </div>
 
             {/* Download Choice Selector: PWA vs Native App */}
-            <div className="flex rounded-2xl bg-slate-100 p-1 mb-6 border border-slate-200">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 rounded-2xl bg-slate-100 p-1.5 mb-6 border border-slate-200">
               <button
                 type="button"
                 onClick={() => setActiveDownloadTab('pwa')}
-                className={`flex-1 py-2.5 px-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                className={`min-h-[44px] py-2.5 px-3 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 break-words whitespace-normal ${
                   activeDownloadTab === 'pwa'
                     ? 'bg-blue-900 text-yellow-400 shadow-md'
                     : 'text-slate-600 hover:text-slate-900'
@@ -405,7 +411,7 @@ exit
               <button
                 type="button"
                 onClick={() => setActiveDownloadTab('native')}
-                className={`flex-1 py-2.5 px-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                className={`min-h-[44px] py-2.5 px-3 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 break-words whitespace-normal ${
                   activeDownloadTab === 'native'
                     ? 'bg-blue-900 text-yellow-400 shadow-md'
                     : 'text-slate-600 hover:text-slate-900'
@@ -422,12 +428,13 @@ exit
                 {/* If deferredPrompt is available (Chrome / Edge / Android) */}
                 {deferredPrompt && (
                   <div className="mb-6 p-4 bg-emerald-50 rounded-2xl border-2 border-emerald-300 text-center space-y-3">
-                    <p className="text-xs font-bold text-emerald-900">
+                    <p className="text-xs font-bold text-emerald-900 break-words">
                       ⚡ Direct 1-Click Install Available on Your Device!
                     </p>
                     <button
+                      type="button"
                       onClick={handleInstallClick}
-                      className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                      className="w-full min-h-[44px] py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
                     >
                       <span>📥</span>
                       <span>Install PWA Now</span>
@@ -436,20 +443,20 @@ exit
                 )}
 
                 {/* Features of the App */}
-                <div className="grid grid-cols-2 gap-2.5 mb-6 text-[11px] font-bold text-slate-700">
-                  <div className="p-2.5 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-6 text-xs font-bold text-slate-700">
+                  <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center gap-2 break-words">
                     <span>🚀</span>
                     <span>Instant Offline Access</span>
                   </div>
-                  <div className="p-2.5 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center gap-2">
+                  <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center gap-2 break-words">
                     <span>🔔</span>
                     <span>Gate Attendance Alerts</span>
                   </div>
-                  <div className="p-2.5 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center gap-2">
+                  <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center gap-2 break-words">
                     <span>📊</span>
                     <span>Check Results Anytime</span>
                   </div>
-                  <div className="p-2.5 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center gap-2">
+                  <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center gap-2 break-words">
                     <span>💳</span>
                     <span>Quick Fee Verification</span>
                   </div>
@@ -463,12 +470,12 @@ exit
 
                   {/* iOS / iPhone */}
                   <div className={`p-3.5 rounded-2xl border-2 ${isIOS ? 'bg-amber-50/70 border-amber-300' : 'bg-slate-50 border-slate-200'}`}>
-                    <div className="flex items-center gap-2 font-black text-xs text-blue-950 mb-1.5">
+                    <div className="flex flex-wrap items-center gap-2 font-black text-xs text-blue-950 mb-1.5">
                       <span>🍏</span>
                       <span>iPhone & iPad (Safari)</span>
                       {isIOS && <span className="px-2 py-0.5 bg-amber-400 text-blue-950 text-[9px] rounded-md font-bold uppercase">Detected</span>}
                     </div>
-                    <ol className="text-xs text-slate-600 space-y-1.5 list-decimal list-inside font-medium leading-relaxed">
+                    <ol className="text-xs text-slate-600 space-y-1.5 list-decimal list-inside font-medium leading-relaxed break-words">
                       <li>Open this school portal in <strong>Safari</strong>.</li>
                       <li>Tap the <strong>Share</strong> icon (square with arrow pointing up <span className="text-base">⎋</span>) at the bottom bar.</li>
                       <li>Scroll down and select <strong>"Add to Home Screen"</strong> (➕).</li>
@@ -478,12 +485,12 @@ exit
 
                   {/* Android / Chrome */}
                   <div className={`p-3.5 rounded-2xl border-2 ${!isIOS ? 'bg-blue-50/70 border-blue-300' : 'bg-slate-50 border-slate-200'}`}>
-                    <div className="flex items-center gap-2 font-black text-xs text-blue-950 mb-1.5">
+                    <div className="flex flex-wrap items-center gap-2 font-black text-xs text-blue-950 mb-1.5">
                       <span>🤖</span>
                       <span>Android (Chrome / Brave / Samsung Internet)</span>
                       {!isIOS && <span className="px-2 py-0.5 bg-blue-600 text-white text-[9px] rounded-md font-bold uppercase">Detected</span>}
                     </div>
-                    <ol className="text-xs text-slate-600 space-y-1.5 list-decimal list-inside font-medium leading-relaxed">
+                    <ol className="text-xs text-slate-600 space-y-1.5 list-decimal list-inside font-medium leading-relaxed break-words">
                       <li>Tap the <strong>3 dots menu (⋮)</strong> at the top right of Chrome.</li>
                       <li>Select <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.</li>
                       <li>Tap <strong>"Install"</strong> to download the app onto your phone like a regular Play Store app.</li>
@@ -496,7 +503,7 @@ exit
                       <span>💻</span>
                       <span>Windows PC & Mac (Chrome / Edge)</span>
                     </div>
-                    <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                    <p className="text-xs text-slate-600 font-medium leading-relaxed break-words">
                       Look at the right side of your browser address bar (URL bar) and click the <strong>Install App icon (⊕ or 💻)</strong>, then confirm "Install".
                     </p>
                   </div>
@@ -508,68 +515,68 @@ exit
             {activeDownloadTab === 'native' && (
               <div className="space-y-4 text-left">
                 {/* Platform tabs */}
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => setNativePlatform('windows')}
-                    className={`py-2 px-1 rounded-xl text-xs font-black uppercase transition-all flex flex-col items-center gap-1 border-2 ${
+                    className={`min-h-[44px] py-2.5 px-1.5 rounded-xl text-xs font-black uppercase transition-all flex flex-col items-center justify-center gap-1 border-2 ${
                       nativePlatform === 'windows'
                         ? 'bg-blue-900 text-yellow-400 border-blue-950 shadow-md'
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
                     <span className="text-xl">💻</span>
-                    <span className="text-[10px]">Windows PC</span>
+                    <span className="text-[10px] break-words">Windows PC</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setNativePlatform('android')}
-                    className={`py-2 px-1 rounded-xl text-xs font-black uppercase transition-all flex flex-col items-center gap-1 border-2 ${
+                    className={`min-h-[44px] py-2.5 px-1.5 rounded-xl text-xs font-black uppercase transition-all flex flex-col items-center justify-center gap-1 border-2 ${
                       nativePlatform === 'android'
                         ? 'bg-blue-900 text-yellow-400 border-blue-950 shadow-md'
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
                     <span className="text-xl">🤖</span>
-                    <span className="text-[10px]">Android (.apk)</span>
+                    <span className="text-[10px] break-words">Android (.apk)</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setNativePlatform('ios')}
-                    className={`py-2 px-1 rounded-xl text-xs font-black uppercase transition-all flex flex-col items-center gap-1 border-2 ${
+                    className={`min-h-[44px] py-2.5 px-1.5 rounded-xl text-xs font-black uppercase transition-all flex flex-col items-center justify-center gap-1 border-2 ${
                       nativePlatform === 'ios'
                         ? 'bg-blue-900 text-yellow-400 border-blue-950 shadow-md'
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
                     <span className="text-xl">🍏</span>
-                    <span className="text-[10px]">Apple iOS</span>
+                    <span className="text-[10px] break-words">Apple iOS</span>
                   </button>
                 </div>
 
                 {/* Windows native card */}
                 {nativePlatform === 'windows' && (
                   <div className="p-4 bg-slate-50 rounded-2xl border-2 border-slate-200 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">💻</span>
-                      <div>
-                        <h4 className="font-serif font-black text-sm text-blue-950">Windows Desktop Native App</h4>
-                        <p className="text-[11px] text-slate-500">Standalone window with native desktop icon & offline cache</p>
+                    <div className="flex items-start gap-2.5">
+                      <span className="text-2xl shrink-0">💻</span>
+                      <div className="min-w-0">
+                        <h4 className="font-serif font-black text-sm text-blue-950 break-words">Windows Desktop Native App</h4>
+                        <p className="text-[11px] text-slate-500 break-words">Standalone window with native desktop icon & offline cache</p>
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={handleDownloadWindowsLauncher}
-                      className="w-full py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                      className="w-full min-h-[44px] py-3 px-4 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 break-words whitespace-normal"
                     >
                       <span>⬇️</span>
                       <span>Download Windows Launcher (.bat / .exe)</span>
                     </button>
-                    <div className="text-[11px] text-slate-600 space-y-1 bg-white p-3 rounded-xl border border-slate-200">
+                    <div className="text-[11px] text-slate-600 space-y-1 bg-white p-3 rounded-xl border border-slate-200 break-words">
                       <p className="font-bold text-blue-950">How to run on Windows:</p>
                       <ol className="list-decimal list-inside space-y-0.5">
                         <li>Download the launcher file above.</li>
-                        <li>Double-click <code>GodsHandSchool_Windows_Desktop.bat</code>.</li>
+                        <li>Double-click <code className="break-all">GodsHandSchool_Windows_Desktop.bat</code>.</li>
                         <li>The school app immediately launches in its own dedicated, full-screen desktop window with taskbar integration!</li>
                       </ol>
                     </div>
@@ -579,22 +586,22 @@ exit
                 {/* Android native card */}
                 {nativePlatform === 'android' && (
                   <div className="p-4 bg-emerald-50 rounded-2xl border-2 border-emerald-300 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">🤖</span>
-                      <div>
-                        <h4 className="font-serif font-black text-sm text-emerald-950">Android Native App Package (.apk)</h4>
-                        <p className="text-[11px] text-emerald-800">Direct sideloadable Android package for Samsung, Tecno, Infinix, etc.</p>
+                    <div className="flex items-start gap-2.5">
+                      <span className="text-2xl shrink-0">🤖</span>
+                      <div className="min-w-0">
+                        <h4 className="font-serif font-black text-sm text-emerald-950 break-words">Android Native App Package (.apk)</h4>
+                        <p className="text-[11px] text-emerald-800 break-words">Direct sideloadable Android package for Samsung, Tecno, Infinix, etc.</p>
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={handleDownloadAndroidApk}
-                      className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                      className="w-full min-h-[44px] py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 break-words whitespace-normal"
                     >
                       <span>⬇️</span>
                       <span>Download Android Package (.apk)</span>
                     </button>
-                    <div className="text-[11px] text-emerald-900 space-y-1 bg-white/90 p-3 rounded-xl border border-emerald-200">
+                    <div className="text-[11px] text-emerald-900 space-y-1 bg-white/90 p-3 rounded-xl border border-emerald-200 break-words">
                       <p className="font-bold text-emerald-950">How to install on Android:</p>
                       <ol className="list-decimal list-inside space-y-0.5">
                         <li>Tap "Download Android Package" above.</li>
@@ -608,22 +615,22 @@ exit
                 {/* Apple iOS native card */}
                 {nativePlatform === 'ios' && (
                   <div className="p-4 bg-amber-50 rounded-2xl border-2 border-amber-300 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">🍏</span>
-                      <div>
-                        <h4 className="font-serif font-black text-sm text-blue-950">Apple iOS Native WebClip Profile (.mobileconfig)</h4>
-                        <p className="text-[11px] text-slate-500">Certified native iOS Configuration Profile with zero Safari address bar</p>
+                    <div className="flex items-start gap-2.5">
+                      <span className="text-2xl shrink-0">🍏</span>
+                      <div className="min-w-0">
+                        <h4 className="font-serif font-black text-sm text-blue-950 break-words">Apple iOS Native WebClip Profile (.mobileconfig)</h4>
+                        <p className="text-[11px] text-slate-500 break-words">Certified native iOS Configuration Profile with zero Safari address bar</p>
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={handleDownloadIosProfile}
-                      className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-blue-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                      className="w-full min-h-[44px] py-3 px-4 bg-amber-500 hover:bg-amber-600 text-blue-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 break-words whitespace-normal"
                     >
                       <span>⬇️</span>
                       <span>Download iOS Native Profile (.mobileconfig)</span>
                     </button>
-                    <div className="text-[11px] text-slate-700 space-y-1 bg-white p-3 rounded-xl border border-amber-200">
+                    <div className="text-[11px] text-slate-700 space-y-1 bg-white p-3 rounded-xl border border-amber-200 break-words">
                       <p className="font-bold text-blue-950">How to install on iPhone & iPad:</p>
                       <ol className="list-decimal list-inside space-y-0.5">
                         <li>Download the configuration profile above.</li>
@@ -637,17 +644,19 @@ exit
             )}
 
             {/* Notification Permission button in modal */}
-            <div className="mt-6 pt-4 border-t border-slate-200 flex flex-col sm:flex-row gap-3 items-center justify-between">
+            <div className="mt-6 pt-4 border-t border-slate-200 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
               <button
+                type="button"
                 onClick={handleEnableNotifications}
-                className="w-full sm:w-auto px-4 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl transition-colors flex items-center justify-center gap-2"
+                className="w-full sm:w-auto min-h-[44px] px-4 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl transition-colors flex items-center justify-center gap-2"
               >
                 <span>🔔</span>
                 <span>{notificationStatus === 'granted' ? 'Notifications Active ✓' : 'Enable School Alerts'}</span>
               </button>
               <button
+                type="button"
                 onClick={closeModal}
-                className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs uppercase tracking-wider rounded-xl transition-colors"
+                className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs uppercase tracking-wider rounded-xl transition-colors"
               >
                 Done / Close
               </button>

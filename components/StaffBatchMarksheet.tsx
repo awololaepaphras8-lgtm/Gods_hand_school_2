@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { GradeLevel, StudentAccount, StudentResult, Course, GradingCriterion } from '../types';
 import { DEFAULT_GRADING_CRITERIA } from '../constants';
 import { formatSubjectName } from '../utils/resultFeeService';
+import { getStaffAssignedCourses, normalizeCourseName } from '../utils/courseUtils';
+import { formatOrdinal } from '../utils/ranking';
 
 interface StaffBatchMarksheetProps {
   teacherUsername: string;
@@ -31,7 +33,7 @@ interface SavedSessionState {
   page: number;
   pageSize: number;
   lastPupilNumber: number;
-  scores: { [studentId: string]: PupilDraftRow };
+  scores: { [key: string]: PupilDraftRow };
   updatedAt: string;
 }
 
@@ -51,30 +53,52 @@ export const StaffBatchMarksheet: React.FC<StaffBatchMarksheetProps> = ({
 
   // Default initial class selection
   const defaultGrade: GradeLevel = assignedGrades[0] || 'Primary 1';
-  const defaultSubject: string = assignedSubjects[0] || courses[0]?.name || 'Mathematics';
+
+  // Courses strictly assigned to this staff member's class(es)
+  const staffClassCourses = useMemo(() => {
+    return getStaffAssignedCourses(courses, {
+      assignedGrades,
+      assignedSubjects
+    });
+  }, [courses, assignedGrades, assignedSubjects]);
+
+  const defaultSubject: string =
+    (assignedSubjects && assignedSubjects[0] ? normalizeCourseName(assignedSubjects[0]) : '') ||
+    staffClassCourses[0]?.name ||
+    'Mathematics';
 
   // State
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel>(defaultGrade);
   const [selectedSubject, setSelectedSubject] = useState<string>(defaultSubject);
   const [customSubject, setCustomSubject] = useState<string>('');
   const [selectedTerm, setSelectedTerm] = useState<string>(activeTerm);
-  const [sheetMode, setSheetMode] = useState<'test_only' | 'full_sheet'>('test_only');
+  const [sheetMode, setSheetMode] = useState<'test_only' | 'full_sheet'>('full_sheet');
 
-  // Pagination for mobile convenience (5 or 10 pupils per page so teachers on phones don't scroll infinitely)
+  // Sheet pagination (default 500 = direct full-class spreadsheet view; user can switch to 5/10/20 on mobile)
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [pageSize, setPageSize] = useState<number>(5);
+  const [pageSize, setPageSize] = useState<number>(500);
   const [lastActivePupilIndex, setLastActivePupilIndex] = useState<number>(0);
 
-  // Draft Scores: { [studentId]: PupilDraftRow }
-  const [draftScores, setDraftScores] = useState<{ [studentId: string]: PupilDraftRow }>({});
+  // Draft Scores keyed by `${grade}::${subjectLower}::${term}::${studentId}`
+  const [draftScores, setDraftScores] = useState<{ [key: string]: PupilDraftRow }>({});
 
   // Mobile Session Resume indicator
   const [resumedMessage, setResumedMessage] = useState<string | null>(null);
   const [saveToast, setSaveToast] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
 
+  // Refs for spreadsheet keyboard navigation (Enter / ArrowUp / ArrowDown)
+  const cellRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+
   // Quick remarks options
   const quickRemarks = ['Excellence', 'Very Good', 'Good Effort', 'Credit', 'Pass', 'Needs Improvement'];
+
+  // Keep selectedGrade aligned with assignedGrades
+  useEffect(() => {
+    if (assignedGrades.length > 0 && !assignedGrades.includes(selectedGrade)) {
+      setSelectedGrade(assignedGrades[0]);
+    }
+  }, [assignedGrades, selectedGrade]);
 
   // 1. Restore previous session from localStorage on mount
   useEffect(() => {
@@ -98,12 +122,12 @@ export const StaffBatchMarksheet: React.FC<StaffBatchMarksheetProps> = ({
 
           const timeStr = parsed.updatedAt ? new Date(parsed.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
           setResumedMessage(
-            `📱 Session Restored: Continued from Page ${parsed.page || 1} (Pupil #${(parsed.lastPupilNumber || 0) + 1}) • Last autosaved at ${timeStr}.`
+            `Session Restored: Continued from Page ${parsed.page || 1} (Pupil #${(parsed.lastPupilNumber || 0) + 1}) • Last autosaved at ${timeStr}.`
           );
         }
       }
     } catch (e) {
-      console.warn("Failed to restore teacher marksheet session", e);
+      console.warn('Failed to restore teacher marksheet session', e);
     }
   }, [storageKey]);
 
@@ -114,67 +138,82 @@ export const StaffBatchMarksheet: React.FC<StaffBatchMarksheetProps> = ({
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [allStudents, selectedGrade]);
 
-  // Deduplicate and sanitize curriculum subjects (removing class suffixes like Primary 1)
-  const cleanCurriculumSubjects = useMemo(() => {
-    const set = new Set<string>();
-    courses.forEach(c => {
-      const clean = formatSubjectName(c.name);
-      if (clean) set.add(clean);
+  // Deduplicated and class-filtered curriculum subjects strictly for selectedGrade
+  const cleanClassCurriculumSubjects = useMemo(() => {
+    const map = new Map<string, string>();
+
+    const gradeSpecific = getStaffAssignedCourses(courses, {
+      assignedGrades: [selectedGrade],
+      assignedSubjects
     });
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [courses]);
+    gradeSpecific.forEach(c => {
+      const clean = normalizeCourseName(c.name);
+      if (clean) map.set(clean.toLowerCase(), clean);
+    });
+
+    if (map.size === 0) {
+      courses
+        .filter(c => c.grade === selectedGrade)
+        .forEach(c => {
+          const clean = normalizeCourseName(c.name);
+          if (clean) map.set(clean.toLowerCase(), clean);
+        });
+    }
+
+    (assignedSubjects || []).forEach(subj => {
+      const clean = normalizeCourseName(subj);
+      if (clean) map.set(clean.toLowerCase(), clean);
+    });
+
+    return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
+  }, [courses, selectedGrade, assignedSubjects]);
 
   const activeSubjectName = formatSubjectName(selectedSubject === '__custom__' ? customSubject.trim() : selectedSubject);
 
-  // Initialize draft scores with existing database records if not already in draft
-  useEffect(() => {
-    if (!activeSubjectName) return;
+  const makeRowKey = (studentId: string) =>
+    `${selectedGrade}::${activeSubjectName.toLowerCase()}::${selectedTerm}::${studentId}`;
 
-    setDraftScores(prev => {
-      let changed = false;
-      const next = { ...prev };
+  // Lookup existing database record for a pupil in current grade/subject/term
+  const getExistingResult = (stu: StudentAccount): StudentResult | undefined => {
+    if (!activeSubjectName) return undefined;
+    return results.find(
+      r =>
+        (r.studentId === stu.id || r.studentName.trim().toLowerCase() === stu.name.trim().toLowerCase()) &&
+        r.grade === selectedGrade &&
+        normalizeCourseName(r.subject).toLowerCase() === normalizeCourseName(activeSubjectName).toLowerCase() &&
+        r.term.toLowerCase() === selectedTerm.toLowerCase()
+    );
+  };
 
-      classStudents.forEach(stu => {
-        if (!next[stu.id]) {
-          // Look for existing saved result
-          const existing = results.find(r => 
-            (r.studentId === stu.id || r.studentName.toLowerCase() === stu.name.toLowerCase()) &&
-            r.grade === selectedGrade &&
-            r.subject.toLowerCase() === activeSubjectName.toLowerCase() &&
-            r.term.toLowerCase() === selectedTerm.toLowerCase()
-          );
-
-          if (existing) {
-            const existingCa = existing.caScore !== undefined 
-              ? String(existing.caScore) 
-              : String(Math.round(existing.score * 0.4));
-            const existingExam = existing.examScore !== undefined 
-              ? String(existing.examScore) 
-              : String(Math.max(0, existing.score - (parseFloat(existingCa) || 0)));
-
-            next[stu.id] = {
-              caScore: existingCa,
-              examScore: existingExam,
-              remark: existing.teacherComment || existing.remark || ''
-            };
-            changed = true;
-          } else {
-            next[stu.id] = {
-              caScore: '',
-              examScore: '',
-              remark: ''
-            };
-            changed = true;
-          }
-        }
-      });
-
-      return changed ? next : prev;
-    });
-  }, [classStudents, selectedGrade, activeSubjectName, selectedTerm, results]);
+  // Resolve row value: unsaved draft first, else database record, else empty
+  const getRowValues = (stu: StudentAccount): PupilDraftRow => {
+    const key = makeRowKey(stu.id);
+    if (draftScores[key]) {
+      return draftScores[key];
+    }
+    const existing = getExistingResult(stu);
+    if (existing) {
+      const existingCa =
+        existing.caScore !== undefined ? String(existing.caScore) : String(Math.round(existing.score * 0.4));
+      const existingExam =
+        existing.examScore !== undefined
+          ? String(existing.examScore)
+          : String(Math.max(0, existing.score - (parseFloat(existingCa) || 0)));
+      return {
+        caScore: existingCa,
+        examScore: existingExam,
+        remark: existing.teacherComment || existing.remark || ''
+      };
+    }
+    return { caScore: '', examScore: '', remark: '' };
+  };
 
   // Autosave to localStorage on change
-  const saveSessionToStorage = (updatedScores: { [studentId: string]: PupilDraftRow }, page: number, pupilIndex: number) => {
+  const saveSessionToStorage = (
+    updatedScores: { [key: string]: PupilDraftRow },
+    page: number,
+    pupilIndex: number
+  ) => {
     try {
       const payload: SavedSessionState = {
         grade: selectedGrade,
@@ -191,41 +230,36 @@ export const StaffBatchMarksheet: React.FC<StaffBatchMarksheetProps> = ({
       localStorage.setItem(storageKey, JSON.stringify(payload));
       setHasUnsavedChanges(true);
     } catch (e) {
-      console.warn("Autosave marksheet error", e);
+      console.warn('Autosave marksheet error', e);
     }
   };
 
   // Update a single pupil's field
   const handleScoreChange = (
-    studentId: string, 
-    field: 'caScore' | 'examScore' | 'remark', 
+    stu: StudentAccount,
+    field: 'caScore' | 'examScore' | 'remark',
     val: string,
     pupilGlobalIndex: number
   ) => {
-    // CA Test is strictly 0 to 40 max
-    if (field === 'caScore') {
+    if (field === 'caScore' && val !== '') {
       const num = parseFloat(val);
-      if (!isNaN(num) && num > 40) {
-        val = '40'; // Strict clamp: CA test is out of 40 only
-      } else if (!isNaN(num) && num < 0) {
-        val = '0';
-      }
+      if (!isNaN(num) && num > 40) val = '40';
+      else if (!isNaN(num) && num < 0) val = '0';
     }
 
-    // Exam is strictly 0 to 60 max
-    if (field === 'examScore') {
+    if (field === 'examScore' && val !== '') {
       const num = parseFloat(val);
-      if (!isNaN(num) && num > 60) {
-        val = '60';
-      } else if (!isNaN(num) && num < 0) {
-        val = '0';
-      }
+      if (!isNaN(num) && num > 60) val = '60';
+      else if (!isNaN(num) && num < 0) val = '0';
     }
+
+    const key = makeRowKey(stu.id);
+    const currentRow = getRowValues(stu);
 
     const updated = {
       ...draftScores,
-      [studentId]: {
-        ...(draftScores[studentId] || { caScore: '', examScore: '', remark: '' }),
+      [key]: {
+        ...currentRow,
         [field]: val
       }
     };
@@ -235,18 +269,84 @@ export const StaffBatchMarksheet: React.FC<StaffBatchMarksheetProps> = ({
     saveSessionToStorage(updated, currentPage, pupilGlobalIndex);
   };
 
+  // Keyboard navigation between spreadsheet rows
+  const handleCellKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    pageRowIdx: number,
+    col: 'ca' | 'exam' | 'remark'
+  ) => {
+    if (e.key === 'Enter' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const nextRow = Math.min(displayedStudents.length - 1, pageRowIdx + 1);
+      const target = cellRefs.current[`${col}-${nextRow}`];
+      target?.focus();
+      target?.select();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prevRow = Math.max(0, pageRowIdx - 1);
+      const target = cellRefs.current[`${col}-${prevRow}`];
+      target?.focus();
+      target?.select();
+    }
+  };
+
   // Grade info helper
   const getGradeInfo = (score: number) => {
-    const sorted = [...gradingCriteria].sort((a, b) => b.minScore - a.minScore);
+    const criteria = gradingCriteria && gradingCriteria.length > 0 ? gradingCriteria : DEFAULT_GRADING_CRITERIA;
+    const sorted = [...criteria].sort((a, b) => b.minScore - a.minScore);
     const found = sorted.find(c => score >= c.minScore);
     if (found) {
       return {
         letter: found.gradeLetter,
-        remark: found.remark || (found.minScore >= 75 ? 'Excellence' : found.minScore >= 60 ? 'Very Good' : found.minScore >= 50 ? 'Credit' : 'Pass')
+        remark:
+          found.remark ||
+          (found.minScore >= 75 ? 'Excellence' : found.minScore >= 60 ? 'Very Good' : found.minScore >= 50 ? 'Credit' : 'Pass')
       };
     }
     return { letter: 'F9', remark: 'Remedial' };
   };
+
+  // Live Sheet Analytics & Rank Map
+  const { sheetStats, studentRankMap } = useMemo(() => {
+    const totals: { studentId: string; score: number }[] = [];
+
+    classStudents.forEach(stu => {
+      const row = getRowValues(stu);
+      const hasCa = row.caScore !== '' && !isNaN(parseFloat(row.caScore));
+      const hasExam = row.examScore !== '' && !isNaN(parseFloat(row.examScore));
+      if (!hasCa && !hasExam) return;
+
+      const caNum = hasCa ? Math.min(40, Math.max(0, parseFloat(row.caScore))) : 0;
+      const examNum = hasExam ? Math.min(60, Math.max(0, parseFloat(row.examScore))) : 0;
+      const total = sheetMode === 'test_only' ? caNum : Math.min(100, Math.round((caNum + examNum) * 10) / 10);
+      totals.push({ studentId: stu.id, score: total });
+    });
+
+    const sorted = [...totals].sort((a, b) => b.score - a.score);
+    const ranks = new Map<string, number>();
+    sorted.forEach((item, idx) => {
+      if (idx > 0 && item.score === sorted[idx - 1].score) {
+        ranks.set(item.studentId, ranks.get(sorted[idx - 1].studentId) || idx + 1);
+      } else {
+        ranks.set(item.studentId, idx + 1);
+      }
+    });
+
+    const sum = totals.reduce((acc, item) => acc + item.score, 0);
+    const avg = totals.length > 0 ? Math.round((sum / totals.length) * 10) / 10 : 0;
+    const highest = sorted.length > 0 ? sorted[0].score : 0;
+    const lowest = sorted.length > 0 ? sorted[sorted.length - 1].score : 0;
+
+    return {
+      sheetStats: {
+        gradedCount: totals.length,
+        average: avg,
+        highest,
+        lowest
+      },
+      studentRankMap: ranks
+    };
+  }, [classStudents, draftScores, results, selectedGrade, activeSubjectName, selectedTerm, sheetMode]);
 
   // Pagination calculation
   const totalStudents = classStudents.length;
@@ -263,7 +363,6 @@ export const StaffBatchMarksheet: React.FC<StaffBatchMarksheetProps> = ({
     const clamped = Math.max(1, Math.min(totalPages, newPage));
     setCurrentPage(clamped);
     saveSessionToStorage(draftScores, clamped, lastActivePupilIndex);
-    // Smooth scroll to top of table on page change
     const tableEl = document.getElementById('ghs-marksheet-table-container');
     if (tableEl) {
       tableEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -272,7 +371,7 @@ export const StaffBatchMarksheet: React.FC<StaffBatchMarksheetProps> = ({
 
   // Clear draft
   const handleClearDraft = () => {
-    if (window.confirm("Are you sure you want to discard your unsaved draft and reload saved records?")) {
+    if (window.confirm('Are you sure you want to discard your unsaved draft and reload saved records?')) {
       localStorage.removeItem(storageKey);
       setDraftScores({});
       setHasUnsavedChanges(false);
@@ -280,10 +379,46 @@ export const StaffBatchMarksheet: React.FC<StaffBatchMarksheetProps> = ({
     }
   };
 
+  // Export current sheet to CSV
+  const handleExportCsv = () => {
+    if (!activeSubjectName) return;
+    const headers = ['S/N', 'Student ID', 'Student Name', 'CA Test (40)', 'Exam (60)', 'Total (100)', 'Grade', 'Position', 'Remark'];
+    const rows = classStudents.map((stu, idx) => {
+      const row = getRowValues(stu);
+      const caNum = parseFloat(row.caScore) || 0;
+      const examNum = parseFloat(row.examScore) || 0;
+      const hasScore = row.caScore !== '' || row.examScore !== '';
+      const total = Math.min(100, Math.round((caNum + examNum) * 10) / 10);
+      const gradeInfo = getGradeInfo(total);
+      const pos = studentRankMap.get(stu.id);
+      return [
+        String(idx + 1),
+        stu.id,
+        `"${stu.name.replace(/"/g, '""')}"`,
+        row.caScore || '',
+        row.examScore || '',
+        hasScore ? String(total) : '',
+        hasScore ? gradeInfo.letter : '',
+        pos ? formatOrdinal(pos) : '',
+        `"${(row.remark || (hasScore ? gradeInfo.remark : '')).replace(/"/g, '""')}"`
+      ].join(',');
+    });
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `GodsHand_${selectedGrade.replace(/\s+/g, '_')}_${activeSubjectName.replace(/\s+/g, '_')}_${selectedTerm.replace(/\s+/g, '_')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   // Save all marks from sheet to official records
   const handleSaveAllRecords = () => {
     if (!activeSubjectName) {
-      alert("Please select or enter a subject name first.");
+      alert('Please select or enter a subject name first.');
       return;
     }
 
@@ -291,36 +426,24 @@ export const StaffBatchMarksheet: React.FC<StaffBatchMarksheetProps> = ({
     let savedCount = 0;
 
     classStudents.forEach(stu => {
-      const draft = draftScores[stu.id];
-      if (!draft) return;
+      const row = getRowValues(stu);
+      const hasCa = row.caScore !== '' && !isNaN(parseFloat(row.caScore));
+      const hasExam = row.examScore !== '' && !isNaN(parseFloat(row.examScore));
 
-      const hasCa = draft.caScore !== '' && !isNaN(parseFloat(draft.caScore));
-      const hasExam = draft.examScore !== '' && !isNaN(parseFloat(draft.examScore));
-
-      // In test_only mode, require at least CA score. In full sheet, require at least one.
       if (!hasCa && !hasExam) return;
 
-      const caVal = hasCa ? Math.min(40, Math.max(0, parseFloat(draft.caScore))) : 0;
-      const examVal = hasExam ? Math.min(60, Math.max(0, parseFloat(draft.examScore))) : 0;
+      const existing = getExistingResult(stu);
+      const caVal = hasCa ? Math.min(40, Math.max(0, parseFloat(row.caScore))) : 0;
+      const examVal =
+        sheetMode === 'test_only'
+          ? existing?.examScore || 0
+          : hasExam
+          ? Math.min(60, Math.max(0, parseFloat(row.examScore)))
+          : 0;
 
-      // Total score is sum of CA test (out of 40) + Exam (out of 60) = 100
-      let totalVal = 0;
-      if (sheetMode === 'test_only') {
-        // If staff records only CA test, keep test out of 40. Total reflects CA or CA + existing exam
-        totalVal = caVal + examVal;
-      } else {
-        totalVal = Math.min(100, caVal + examVal);
-      }
-
+      const totalVal = Math.min(100, Math.round((caVal + examVal) * 10) / 10);
       const gradeInfo = getGradeInfo(totalVal);
-      const remark = draft.remark.trim() || gradeInfo.remark;
-
-      const existing = results.find(r => 
-        (r.studentId === stu.id || r.studentName.toLowerCase() === stu.name.toLowerCase()) &&
-        r.grade === selectedGrade &&
-        r.subject.toLowerCase() === activeSubjectName.toLowerCase() &&
-        r.term.toLowerCase() === selectedTerm.toLowerCase()
-      );
+      const remark = row.remark.trim() || gradeInfo.remark;
 
       const resultItem: StudentResult = {
         id: existing?.id || `RES-${stu.id}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -345,7 +468,7 @@ export const StaffBatchMarksheet: React.FC<StaffBatchMarksheetProps> = ({
     });
 
     if (recordsToSave.length === 0) {
-      alert("No marks entered to save. Please enter test or examination scores for at least one pupil on the sheet.");
+      alert('No marks entered to save. Please enter test or examination scores for at least one pupil on the sheet.');
       return;
     }
 
@@ -355,42 +478,43 @@ export const StaffBatchMarksheet: React.FC<StaffBatchMarksheetProps> = ({
       recordsToSave.forEach(r => onAddResult(r));
     }
 
-    // Update storage to mark changes committed
-    saveSessionToStorage(draftScores, currentPage, lastActivePupilIndex);
+    localStorage.removeItem(storageKey);
     setHasUnsavedChanges(false);
 
-    setSaveToast(`✅ Successfully saved and published ${savedCount} pupil marks for ${selectedGrade} • ${activeSubjectName} (${selectedTerm}) to the school database!`);
+    setSaveToast(
+      `✅ Successfully saved ${savedCount} pupil marks for ${selectedGrade} • ${activeSubjectName} (${selectedTerm}) to the school database!`
+    );
     setTimeout(() => setSaveToast(null), 6000);
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full max-w-full space-y-6">
       {/* Session Resume Alert Banner */}
       {resumedMessage && (
         <div className="p-4 bg-emerald-50 border-2 border-emerald-300 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-emerald-950 animate-in fade-in duration-300 shadow-sm">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">📱</span>
-            <div>
-              <p className="font-serif font-black text-xs sm:text-sm">
-                Mobile Auto-Save Active & Resumed
+          <div className="flex items-start sm:items-center gap-3 min-w-0">
+            <span className="text-2xl shrink-0">📱</span>
+            <div className="min-w-0">
+              <p className="font-serif font-black text-xs sm:text-sm break-words">
+                Auto-Save Active & Resumed
               </p>
-              <p className="text-[11px] text-emerald-800 font-medium">
-                {resumedMessage} Even if you close your phone browser, your marks and page will not be lost.
+              <p className="text-[11px] text-emerald-800 font-medium break-words">
+                {resumedMessage}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+          <div className="flex flex-wrap items-center gap-2 self-end sm:self-center shrink-0">
             <button
               type="button"
               onClick={handleClearDraft}
-              className="px-3 py-1.5 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all"
+              className="min-h-[44px] px-3.5 py-2 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all"
             >
               Discard Draft
             </button>
             <button
               type="button"
               onClick={() => setResumedMessage(null)}
-              className="px-3 py-1.5 bg-emerald-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider"
+              className="min-h-[44px] px-3.5 py-2 bg-emerald-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider"
             >
               Dismiss
             </button>
@@ -400,15 +524,16 @@ export const StaffBatchMarksheet: React.FC<StaffBatchMarksheetProps> = ({
 
       {/* Save Toast */}
       {saveToast && (
-        <div className="p-4 bg-blue-900 border-2 border-yellow-400 text-yellow-300 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-between shadow-xl animate-in fade-in duration-300">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">💾</span>
-            <span>{saveToast}</span>
+        <div className="p-4 bg-blue-900 border-2 border-yellow-400 text-yellow-300 rounded-2xl font-black text-xs sm:text-sm flex items-start sm:items-center justify-between gap-3 shadow-xl animate-in fade-in duration-300">
+          <div className="flex items-start sm:items-center gap-3 min-w-0">
+            <span className="text-2xl shrink-0">💾</span>
+            <span className="break-words">{saveToast}</span>
           </div>
           <button
             type="button"
             onClick={() => setSaveToast(null)}
-            className="text-white hover:text-yellow-400 font-black text-sm p-1"
+            aria-label="Dismiss save notice"
+            className="min-h-[44px] min-w-[44px] shrink-0 text-white hover:text-yellow-400 font-black text-sm flex items-center justify-center rounded-xl hover:bg-white/10"
           >
             ✕
           </button>
@@ -416,38 +541,38 @@ export const StaffBatchMarksheet: React.FC<StaffBatchMarksheetProps> = ({
       )}
 
       {/* Control Bar: Class, Subject, Term & Scope Selector */}
-      <div className="bg-white rounded-3xl p-6 sm:p-7 border-2 border-slate-100 shadow-md space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-blue-900 text-yellow-400 flex items-center justify-center font-black text-2xl shadow-md">
+      <div className="bg-white rounded-3xl p-4 sm:p-7 border-2 border-slate-100 shadow-md space-y-5">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+          <div className="flex items-start sm:items-center gap-3 min-w-0">
+            <div className="w-12 h-12 rounded-2xl bg-blue-900 text-yellow-400 flex items-center justify-center font-black text-2xl shadow-md shrink-0">
               📋
             </div>
-            <div>
-              <h3 className="font-serif font-black text-xl text-blue-950">
-                Staff Class Marksheet & Grade Ledger
+            <div className="min-w-0">
+              <h3 className="font-serif font-black text-lg sm:text-xl text-blue-950 break-words">
+                Direct Subject Marksheet (Spreadsheet Format)
               </h3>
-              <p className="text-xs text-slate-500 font-medium">
-                Record Continuous Assessment (CA) test marks and terminal examination scores for all pupils on a single sheet.
+              <p className="text-xs text-slate-500 font-medium break-words">
+                Enter CA (40), Exam (60) and remarks directly down the sheet. Use <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-[10px] font-mono">Enter</kbd> or <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-[10px] font-mono">↓</kbd> to step down rows.
               </p>
             </div>
           </div>
 
           {/* Scope Selector: Test Only vs Full Sheet */}
-          <div className="bg-slate-100 p-1.5 rounded-2xl flex items-center gap-1.5 border border-slate-200 shrink-0">
+          <div className="bg-slate-100 p-1.5 rounded-2xl flex flex-wrap items-center gap-1.5 border border-slate-200">
             <button
               type="button"
               onClick={() => {
                 setSheetMode('test_only');
                 saveSessionToStorage(draftScores, currentPage, lastActivePupilIndex);
               }}
-              className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+              className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                 sheetMode === 'test_only'
                   ? 'bg-amber-500 text-white shadow-md'
                   : 'text-slate-600 hover:text-blue-950 hover:bg-white'
               }`}
             >
               <span>🧪</span>
-              <span>CA Test Only (Max 40)</span>
+              <span>CA Test Only (40)</span>
             </button>
 
             <button
@@ -456,7 +581,7 @@ export const StaffBatchMarksheet: React.FC<StaffBatchMarksheetProps> = ({
                 setSheetMode('full_sheet');
                 saveSessionToStorage(draftScores, currentPage, lastActivePupilIndex);
               }}
-              className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+              className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                 sheetMode === 'full_sheet'
                   ? 'bg-blue-900 text-yellow-400 shadow-md'
                   : 'text-slate-600 hover:text-blue-950 hover:bg-white'
@@ -469,7 +594,7 @@ export const StaffBatchMarksheet: React.FC<StaffBatchMarksheetProps> = ({
         </div>
 
         {/* Configuration Row: Class, Subject, Term */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Class Selector */}
           <div>
             <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 mb-1.5">
@@ -483,40 +608,34 @@ export const StaffBatchMarksheet: React.FC<StaffBatchMarksheetProps> = ({
                 setCurrentPage(1);
                 setLastActivePupilIndex(0);
               }}
-              className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl text-xs font-black text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+              className="min-h-[44px] w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-2xl text-xs font-black text-blue-950 outline-none focus:bg-white focus:border-blue-900"
             >
               {assignedGrades.map(g => (
-                <option key={g} value={g}>{g} ({allStudents.filter(s => s.grade === g).length} pupils)</option>
+                <option key={g} value={g}>
+                  {g} ({allStudents.filter(s => s.grade === g).length} pupils)
+                </option>
               ))}
             </select>
           </div>
 
           {/* Subject Selector */}
           <div>
-            <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 mb-1.5 flex items-center justify-between">
-              <span>Subject *</span>
-              {assignedSubjects && assignedSubjects.length > 0 && (
-                <span className="text-[10px] text-indigo-700 font-bold">★ {assignedSubjects.length} Assigned</span>
-              )}
+            <label className="text-[11px] font-black uppercase tracking-wider text-slate-600 mb-1.5 flex flex-wrap items-center justify-between gap-1">
+              <span>Assigned Subject *</span>
+              <span className="text-[10px] text-indigo-700 font-bold">
+                {cleanClassCurriculumSubjects.length} Available
+              </span>
             </label>
             <select
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl text-xs font-black text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+              className="min-h-[44px] w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-2xl text-xs font-black text-blue-950 outline-none focus:bg-white focus:border-blue-900"
             >
-              {assignedSubjects.length > 0 && (
-                <optgroup label="★ Your Assigned Subjects">
-                  {assignedSubjects.map(subj => {
-                    const clean = formatSubjectName(subj);
-                    return <option key={`my-sub-${clean}`} value={clean}>★ {clean}</option>;
-                  })}
-                </optgroup>
-              )}
-              <optgroup label="School Curriculum">
-                {cleanCurriculumSubjects.map(subj => (
-                  <option key={subj} value={subj}>{subj}</option>
-                ))}
-              </optgroup>
+              {cleanClassCurriculumSubjects.map(subj => (
+                <option key={subj} value={subj}>
+                  {subj}
+                </option>
+              ))}
               <option value="__custom__">➕ Type Custom Subject...</option>
             </select>
             {selectedSubject === '__custom__' && (
@@ -525,7 +644,7 @@ export const StaffBatchMarksheet: React.FC<StaffBatchMarksheetProps> = ({
                 value={customSubject}
                 onChange={(e) => setCustomSubject(e.target.value)}
                 placeholder="Enter subject name..."
-                className="w-full mt-2 px-3 py-2 bg-yellow-50 border-2 border-yellow-400 rounded-xl text-xs font-black text-blue-950 outline-none"
+                className="min-h-[44px] w-full mt-2 px-3 py-2 bg-yellow-50 border-2 border-yellow-400 rounded-xl text-xs font-black text-blue-950 outline-none"
               />
             )}
           </div>
@@ -538,7 +657,7 @@ export const StaffBatchMarksheet: React.FC<StaffBatchMarksheetProps> = ({
             <select
               value={selectedTerm}
               onChange={(e) => setSelectedTerm(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl text-xs font-black text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+              className="min-h-[44px] w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-2xl text-xs font-black text-blue-950 outline-none focus:bg-white focus:border-blue-900"
             >
               <option value="First Term">First Term</option>
               <option value="Second Term">Second Term</option>
@@ -547,200 +666,219 @@ export const StaffBatchMarksheet: React.FC<StaffBatchMarksheetProps> = ({
           </div>
         </div>
 
-        {/* Quick info chip */}
-        <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 text-blue-950 font-bold">
-            <span className="px-2 py-0.5 bg-blue-900 text-yellow-300 rounded-md font-mono text-[10px] font-black uppercase">
-              {sheetMode === 'test_only' ? 'CA TEST ONLY: MAX 40 MARKS' : 'FULL DOSSIER: CA 40 + EXAM 60 = 100'}
-            </span>
-            <span>
-              {sheetMode === 'test_only' 
-                ? 'Test marks are strictly graded over 40 (0 to 40). Continuous Assessment is immediately accessible to parents.' 
-                : 'Terminal Examination is out of 60, aggregating to 100 total with automated letter grades.'}
-            </span>
+        {/* Live Analytics Strip */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+          <div className="p-3 bg-blue-50/70 rounded-2xl border border-blue-100 text-center">
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Pupils Graded</p>
+            <p className="text-lg font-black text-blue-950 tabular-nums">
+              {sheetStats.gradedCount} <span className="text-xs text-slate-400 font-bold">/ {classStudents.length}</span>
+            </p>
           </div>
-
-          {/* Unsaved indicator */}
-          <div className="flex items-center gap-2">
-            <span className={`w-2.5 h-2.5 rounded-full ${hasUnsavedChanges ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`}></span>
-            <span className="text-[11px] font-black text-slate-600">
-              {hasUnsavedChanges ? 'Draft in Local Storage (Not yet committed)' : 'All Marks Committed'}
-            </span>
+          <div className="p-3 bg-emerald-50/70 rounded-2xl border border-emerald-100 text-center">
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Class Average</p>
+            <p className="text-lg font-black text-emerald-800 tabular-nums">{sheetStats.average}%</p>
+          </div>
+          <div className="p-3 bg-amber-50/70 rounded-2xl border border-amber-100 text-center">
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Highest Score</p>
+            <p className="text-lg font-black text-amber-800 tabular-nums">{sheetStats.highest}%</p>
+          </div>
+          <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-center flex flex-col justify-center">
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Sync Status</p>
+            <p className="text-xs font-black text-blue-950 flex items-center justify-center gap-1.5 mt-0.5">
+              <span className={`w-2 h-2 rounded-full ${hasUnsavedChanges ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`}></span>
+              {hasUnsavedChanges ? 'Unsaved Edits' : 'Synced'}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Pagination & Mobile Control Bar */}
+      {/* Pagination & Export Bar */}
       <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-xs">
-          <span className="font-black text-slate-500 uppercase tracking-wider text-[11px]">Pupils per page:</span>
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="font-black text-slate-500 uppercase tracking-wider text-[11px]">Sheet Rows:</span>
           <select
             value={pageSize}
             onChange={(e) => {
               setPageSize(Number(e.target.value));
               setCurrentPage(1);
             }}
-            className="px-2.5 py-1 bg-slate-100 border border-slate-300 rounded-xl text-xs font-black text-blue-950 outline-none"
+            className="min-h-[44px] px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-black text-blue-950 outline-none"
           >
-            <option value={5}>5 (Recommended for Mobile)</option>
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={500}>All ({classStudents.length})</option>
+            <option value={500}>All Pupils on Sheet ({classStudents.length})</option>
+            <option value={10}>10 per page</option>
+            <option value={5}>5 per page (Compact Phone)</option>
+            <option value={20}>20 per page</option>
           </select>
-          <span className="text-slate-400 font-bold ml-2">
-            Showing {(safeCurrentPage - 1) * pageSize + 1} - {Math.min(safeCurrentPage * pageSize, totalStudents)} of {totalStudents} pupils
+          <span className="text-slate-500 font-bold">
+            Showing {totalStudents === 0 ? 0 : (safeCurrentPage - 1) * pageSize + 1} -{' '}
+            {Math.min(safeCurrentPage * pageSize, totalStudents)} of {totalStudents}
           </span>
         </div>
 
-        {/* Page Switcher */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            disabled={safeCurrentPage <= 1}
-            onClick={() => handlePageChange(safeCurrentPage - 1)}
-            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-30 rounded-xl font-black text-xs text-blue-950 transition-all cursor-pointer"
+            onClick={handleExportCsv}
+            className="min-h-[44px] px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all"
           >
-            ← Prev
+            📥 Export CSV
           </button>
-          <span className="px-3 py-1 bg-blue-900 text-yellow-400 font-mono font-black text-xs rounded-xl">
-            Page {safeCurrentPage} / {totalPages}
-          </span>
-          <button
-            type="button"
-            disabled={safeCurrentPage >= totalPages}
-            onClick={() => handlePageChange(safeCurrentPage + 1)}
-            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-30 rounded-xl font-black text-xs text-blue-950 transition-all cursor-pointer"
-          >
-            Next →
-          </button>
+
+          {totalPages > 1 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                disabled={safeCurrentPage <= 1}
+                onClick={() => handlePageChange(safeCurrentPage - 1)}
+                className="min-h-[44px] px-3.5 py-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-30 rounded-xl font-black text-xs text-blue-950 transition-all cursor-pointer"
+              >
+                ← Prev
+              </button>
+              <span className="min-h-[44px] px-3.5 py-2 inline-flex items-center bg-blue-900 text-yellow-400 font-mono font-black text-xs rounded-xl">
+                {safeCurrentPage} / {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={safeCurrentPage >= totalPages}
+                onClick={() => handlePageChange(safeCurrentPage + 1)}
+                className="min-h-[44px] px-3.5 py-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-30 rounded-xl font-black text-xs text-blue-950 transition-all cursor-pointer"
+              >
+                Next →
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Sheet Table */}
-      <div id="ghs-marksheet-table-container" className="bg-white rounded-3xl border-2 border-slate-100 shadow-md overflow-hidden">
+      <div id="ghs-marksheet-table-container" className="bg-white rounded-3xl border-2 border-slate-200 shadow-md">
         {classStudents.length === 0 ? (
-          <div className="p-16 text-center text-slate-400 space-y-2">
+          <div className="p-8 sm:p-16 text-center text-slate-400 space-y-2">
             <span className="text-4xl block">🧑‍🎓</span>
-            <p className="font-serif font-black text-blue-900 text-base">No pupils enrolled in {selectedGrade} yet</p>
-            <p className="text-xs">Once pupils are added to this class, their marksheet rows will display here automatically.</p>
+            <p className="font-serif font-black text-blue-900 text-base break-words">No pupils enrolled in {selectedGrade} yet</p>
+            <p className="text-xs break-words">Once pupils are added to this class, their marksheet rows will display here automatically.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[720px]">
+          <div className="overflow-x-auto w-full rounded-t-3xl">
+            <table className="w-full text-left border-collapse min-w-[780px]">
               <thead>
-                <tr className="bg-slate-50 border-b-2 border-slate-100 text-[10px] font-black uppercase tracking-wider text-slate-500">
-                  <th className="py-4 px-4 w-12 text-center">#</th>
-                  <th className="py-4 px-4">Pupil Details</th>
-                  <th className="py-4 px-4 w-36 text-center">
-                    <span className="block text-amber-700 font-black">CA Test (0-40) *</span>
-                    <span className="text-[9px] text-slate-400 font-normal lowercase">max 40 marks</span>
+                <tr className="bg-blue-950 text-yellow-300 border-b-2 border-yellow-400 text-[10px] font-black uppercase tracking-wider">
+                  <th className="md:sticky md:left-0 z-20 bg-blue-950 py-3.5 px-3 w-12 text-center border-r border-blue-800">#</th>
+                  <th className="md:sticky md:left-12 z-20 bg-blue-950 py-3.5 px-4 min-w-[200px] border-r-2 border-yellow-400/50 md:shadow-[2px_0_8px_rgba(0,0,0,0.18)]">
+                    Pupil Name & ID
+                  </th>
+                  <th className="py-3.5 px-3 w-32 text-center border-r border-blue-800">
+                    <span className="block text-yellow-300 font-black">CA Test (0–40)</span>
+                    <span className="text-[9px] text-blue-200 font-normal lowercase">max 40 marks</span>
                   </th>
                   {sheetMode === 'full_sheet' && (
-                    <th className="py-4 px-4 w-36 text-center">
-                      <span className="block text-indigo-700 font-black">Exam (0-60)</span>
-                      <span className="text-[9px] text-slate-400 font-normal lowercase">max 60 marks</span>
+                    <th className="py-3.5 px-3 w-32 text-center border-r border-blue-800">
+                      <span className="block text-white font-black">Exam (0–60)</span>
+                      <span className="text-[9px] text-blue-200 font-normal lowercase">max 60 marks</span>
                     </th>
                   )}
                   {sheetMode === 'full_sheet' && (
-                    <th className="py-4 px-4 w-28 text-center">Total (/100)</th>
+                    <th className="py-3.5 px-3 w-24 text-center border-r border-blue-800">Total (/100)</th>
                   )}
                   {sheetMode === 'full_sheet' && (
-                    <th className="py-4 px-4 w-20 text-center">Grade</th>
+                    <th className="py-3.5 px-3 w-20 text-center border-r border-blue-800">Grade</th>
                   )}
-                  <th className="py-4 px-4 min-w-[180px]">Teacher Remark / Notes</th>
+                  <th className="py-3.5 px-3 w-20 text-center border-r border-blue-800">Pos</th>
+                  <th className="py-3.5 px-4 min-w-[200px]">Teacher Remark / Notes</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-xs">
+              <tbody className="divide-y divide-slate-200 text-xs">
                 {displayedStudents.map((stu, pageIndex) => {
                   const globalIndex = (safeCurrentPage - 1) * pageSize + pageIndex;
-                  const row = draftScores[stu.id] || { caScore: '', examScore: '', remark: '' };
+                  const row = getRowValues(stu);
 
                   const caNum = parseFloat(row.caScore) || 0;
                   const examNum = parseFloat(row.examScore) || 0;
                   const totalNum = Math.min(100, Math.round((caNum + examNum) * 10) / 10);
                   const gradeInfo = getGradeInfo(totalNum);
-
-                  const isCurrentActive = lastActivePupilIndex === globalIndex;
+                  const pos = studentRankMap.get(stu.id);
+                  const rowBg = pageIndex % 2 === 0 ? 'bg-white' : 'bg-slate-50/70';
 
                   return (
-                    <tr 
-                      key={stu.id} 
-                      className={`transition-colors ${
-                        isCurrentActive ? 'bg-amber-50/50' : 'hover:bg-slate-50/60'
-                      }`}
-                    >
+                    <tr key={stu.id} className={`${rowBg} hover:bg-blue-50/40 transition-colors`}>
                       {/* Pupil Number */}
-                      <td className="py-4 px-4 text-center font-mono font-black text-slate-400">
+                      <td className={`md:sticky md:left-0 z-10 ${rowBg} py-3 px-2 text-center font-mono font-black text-slate-400 border-r border-slate-200`}>
                         #{globalIndex + 1}
                       </td>
 
                       {/* Pupil Info */}
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-blue-900 text-yellow-300 font-black flex items-center justify-center shrink-0 uppercase shadow-xs">
+                      <td className={`md:sticky md:left-12 z-10 ${rowBg} py-3 px-3 border-r-2 border-slate-300 md:shadow-[2px_0_6px_rgba(0,0,0,0.05)]`}>
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-lg bg-blue-900 text-yellow-300 font-black flex items-center justify-center shrink-0 uppercase text-xs overflow-hidden">
                             {stu.photo ? (
-                              <img src={stu.photo} alt={stu.name} className="w-full h-full object-cover rounded-xl" />
+                              <img src={stu.photo} alt={stu.name} className="w-full h-full object-cover" />
                             ) : (
                               stu.name.charAt(0)
                             )}
                           </div>
-                          <div className="overflow-hidden">
-                            <p className="font-serif font-black text-blue-950 text-xs leading-snug truncate">
+                          <div className="min-w-0">
+                            <p className="font-serif font-black text-blue-950 text-xs leading-snug break-words whitespace-normal" title={stu.name}>
                               {stu.name}
                             </p>
-                            <p className="text-[10px] font-mono text-slate-400 font-bold">
-                              ID: {stu.id}
+                            <p className="text-[10px] font-mono text-slate-400 font-bold break-all">
+                              {stu.id}
                             </p>
                           </div>
                         </div>
                       </td>
 
                       {/* CA Test Score Input (Strictly 0 to 40) */}
-                      <td className="py-4 px-4 text-center">
-                        <div className="space-y-1">
-                          <input
-                            type="number"
-                            min="0"
-                            max="40"
-                            step="any"
-                            value={row.caScore}
-                            onChange={(e) => handleScoreChange(stu.id, 'caScore', e.target.value, globalIndex)}
-                            placeholder="0-40"
-                            className="w-24 px-3 py-2 bg-amber-50/70 border-2 border-amber-300 rounded-xl font-mono font-black text-center text-amber-950 outline-none focus:bg-white focus:border-amber-600 transition-all text-sm mx-auto block"
-                          />
-                          {row.caScore !== '' && parseFloat(row.caScore) > 40 && (
-                            <span className="text-[9px] text-rose-600 font-bold block">Max 40 only!</span>
-                          )}
-                        </div>
+                      <td className="py-2.5 px-3 text-center border-r border-slate-200">
+                        <input
+                          ref={el => {
+                            cellRefs.current[`ca-${pageIndex}`] = el;
+                          }}
+                          type="number"
+                          min="0"
+                          max="40"
+                          step="any"
+                          value={row.caScore}
+                          onKeyDown={(e) => handleCellKeyDown(e, pageIndex, 'ca')}
+                          onChange={(e) => handleScoreChange(stu, 'caScore', e.target.value, globalIndex)}
+                          placeholder="0-40"
+                          className="min-h-[44px] w-20 px-2.5 py-2 bg-amber-50/70 border-2 border-amber-300 rounded-xl font-mono font-black text-center text-amber-950 outline-none focus:bg-white focus:border-amber-600 transition-all text-sm mx-auto block tabular-nums"
+                        />
                       </td>
 
                       {/* Exam Score Input (Strictly 0 to 60) - Full Sheet mode */}
                       {sheetMode === 'full_sheet' && (
-                        <td className="py-4 px-4 text-center">
-                          <div className="space-y-1">
-                            <input
-                              type="number"
-                              min="0"
-                              max="60"
-                              step="any"
-                              value={row.examScore}
-                              onChange={(e) => handleScoreChange(stu.id, 'examScore', e.target.value, globalIndex)}
-                              placeholder="0-60"
-                              className="w-24 px-3 py-2 bg-indigo-50/70 border-2 border-indigo-300 rounded-xl font-mono font-black text-center text-indigo-950 outline-none focus:bg-white focus:border-indigo-600 transition-all text-sm mx-auto block"
-                            />
-                            {row.examScore !== '' && parseFloat(row.examScore) > 60 && (
-                              <span className="text-[9px] text-rose-600 font-bold block">Max 60 only!</span>
-                            )}
-                          </div>
+                        <td className="py-2.5 px-3 text-center border-r border-slate-200">
+                          <input
+                            ref={el => {
+                              cellRefs.current[`exam-${pageIndex}`] = el;
+                            }}
+                            type="number"
+                            min="0"
+                            max="60"
+                            step="any"
+                            value={row.examScore}
+                            onKeyDown={(e) => handleCellKeyDown(e, pageIndex, 'exam')}
+                            onChange={(e) => handleScoreChange(stu, 'examScore', e.target.value, globalIndex)}
+                            placeholder="0-60"
+                            className="min-h-[44px] w-20 px-2.5 py-2 bg-indigo-50/70 border-2 border-indigo-300 rounded-xl font-mono font-black text-center text-indigo-950 outline-none focus:bg-white focus:border-indigo-600 transition-all text-sm mx-auto block tabular-nums"
+                          />
                         </td>
                       )}
 
                       {/* Total Score - Full Sheet mode */}
                       {sheetMode === 'full_sheet' && (
-                        <td className="py-4 px-4 text-center">
-                          <span className={`font-mono font-black text-sm px-2.5 py-1 rounded-xl inline-block ${
-                            totalNum >= 75 ? 'bg-emerald-100 text-emerald-800' : totalNum >= 60 ? 'bg-blue-100 text-blue-800' : totalNum >= 50 ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'
-                          }`}>
+                        <td className="py-2.5 px-3 text-center border-r border-slate-200">
+                          <span
+                            className={`font-mono font-black text-sm px-2.5 py-1 rounded-xl inline-block tabular-nums ${
+                              totalNum >= 75
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : totalNum >= 60
+                                ? 'bg-blue-100 text-blue-800'
+                                : totalNum >= 50
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-slate-100 text-slate-700'
+                            }`}
+                          >
                             {row.caScore !== '' || row.examScore !== '' ? `${totalNum}%` : '—'}
                           </span>
                         </td>
@@ -748,39 +886,55 @@ export const StaffBatchMarksheet: React.FC<StaffBatchMarksheetProps> = ({
 
                       {/* Letter Grade */}
                       {sheetMode === 'full_sheet' && (
-                        <td className="py-4 px-4 text-center">
-                          <span className={`font-black text-xs px-2 py-0.5 rounded-lg ${
-                            gradeInfo.letter.startsWith('A') ? 'bg-emerald-600 text-white' : gradeInfo.letter.startsWith('B') ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-800'
-                          }`}>
+                        <td className="py-2.5 px-3 text-center border-r border-slate-200">
+                          <span
+                            className={`font-black text-xs px-2 py-0.5 rounded-lg ${
+                              gradeInfo.letter.startsWith('A')
+                                ? 'bg-emerald-600 text-white'
+                                : gradeInfo.letter.startsWith('B')
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-slate-200 text-slate-800'
+                            }`}
+                          >
                             {row.caScore !== '' || row.examScore !== '' ? gradeInfo.letter : '—'}
                           </span>
                         </td>
                       )}
 
+                      {/* Position */}
+                      <td className="py-2.5 px-3 text-center font-black text-xs text-blue-900 border-r border-slate-200">
+                        {pos ? formatOrdinal(pos) : '—'}
+                      </td>
+
                       {/* Teacher Remark */}
-                      <td className="py-4 px-4">
+                      <td className="py-2.5 px-3">
                         <div className="flex items-center gap-1.5">
                           <input
+                            ref={el => {
+                              cellRefs.current[`remark-${pageIndex}`] = el;
+                            }}
                             type="text"
                             value={row.remark}
-                            onChange={(e) => handleScoreChange(stu.id, 'remark', e.target.value, globalIndex)}
+                            onKeyDown={(e) => handleCellKeyDown(e, pageIndex, 'remark')}
+                            onChange={(e) => handleScoreChange(stu, 'remark', e.target.value, globalIndex)}
                             placeholder="e.g. Excellent progress..."
-                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:bg-white focus:border-blue-900"
+                            className="min-h-[44px] w-full min-w-[140px] px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:bg-white focus:border-blue-900"
                           />
-                          {/* Quick preset dropdown button */}
                           <select
                             value=""
                             onChange={(e) => {
                               if (e.target.value) {
-                                handleScoreChange(stu.id, 'remark', e.target.value, globalIndex);
+                                handleScoreChange(stu, 'remark', e.target.value, globalIndex);
                               }
                             }}
-                            className="px-2 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 rounded-xl text-[10px] font-black uppercase outline-none cursor-pointer"
+                            className="min-h-[44px] min-w-[44px] px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 rounded-xl text-[10px] font-black uppercase outline-none cursor-pointer"
                             title="Quick remarks"
                           >
                             <option value="">▼</option>
                             {quickRemarks.map(qr => (
-                              <option key={qr} value={qr}>{qr}</option>
+                              <option key={qr} value={qr}>
+                                {qr}
+                              </option>
                             ))}
                           </select>
                         </div>
@@ -794,16 +948,17 @@ export const StaffBatchMarksheet: React.FC<StaffBatchMarksheetProps> = ({
         )}
 
         {/* Footer Bar with Action Buttons */}
-        <div className="p-6 bg-slate-50 border-t-2 border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-xs text-slate-500 font-medium">
-            <span className="font-black text-blue-950 uppercase">{classStudents.length} Total Pupils</span> in {selectedGrade} • Page {safeCurrentPage} of {totalPages}
+        <div className="p-4 sm:p-6 bg-slate-50 border-t-2 border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="text-xs text-slate-500 font-medium break-words">
+            <span className="font-black text-blue-950 uppercase">{classStudents.length} Total Pupils</span> in {selectedGrade} •{' '}
+            {activeSubjectName} ({selectedTerm})
           </div>
 
           <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
             <button
               type="button"
               onClick={handleClearDraft}
-              className="px-4 py-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-2xl font-black text-xs uppercase tracking-wider transition-all"
+              className="min-h-[44px] px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-2xl font-black text-xs uppercase tracking-wider transition-all"
             >
               Reset Draft
             </button>
@@ -811,10 +966,10 @@ export const StaffBatchMarksheet: React.FC<StaffBatchMarksheetProps> = ({
             <button
               type="button"
               onClick={handleSaveAllRecords}
-              className="flex-1 sm:flex-none px-8 py-3.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg transition-all transform active:scale-95 flex items-center justify-center gap-2 border-2 border-yellow-500"
+              className="min-h-[48px] flex-1 sm:flex-none px-6 sm:px-8 py-3 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg transition-all transform active:scale-95 flex items-center justify-center gap-2 border-2 border-yellow-500"
             >
               <span>💾</span>
-              <span>Save & Publish Sheet Marks to Database</span>
+              <span>Save & Sync Subject Sheet</span>
             </button>
           </div>
         </div>

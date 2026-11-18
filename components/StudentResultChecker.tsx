@@ -235,13 +235,13 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-10 px-4 sm:px-6">
+    <div className="w-full max-w-4xl mx-auto overflow-x-hidden">
       {/* Top Banner Card */}
-      <div className="bg-white rounded-[2.5rem] shadow-2xl border-4 border-blue-900 overflow-hidden mb-8">
-        <div className="bg-blue-900 px-8 py-10 text-white relative">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
-            <div className="flex items-center space-x-5">
-              <div className="w-20 h-20 bg-white rounded-2xl border-2 border-yellow-400 shadow-xl overflow-hidden shrink-0 flex items-center justify-center p-1">
+      <div className="bg-white rounded-3xl sm:rounded-[2.5rem] shadow-2xl border-4 border-blue-900 mb-8">
+        <div className="bg-blue-900 rounded-[1.25rem] sm:rounded-[2.2rem] px-4 sm:px-8 py-6 sm:py-10 text-white">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-4 min-w-0">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-2xl border-2 border-yellow-400 shadow-xl overflow-hidden shrink-0 flex items-center justify-center p-1">
                 <img 
                   src="/logo.png" 
                   alt="God's Hand International Model School Logo" 
@@ -249,20 +249,21 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
                   onError={(e) => { e.currentTarget.src = 'hands.jpg'; }}
                 />
               </div>
-              <div>
-                <span className="px-3 py-1 bg-yellow-400 text-blue-900 font-black text-[10px] uppercase tracking-widest rounded-full">
+              <div className="min-w-0">
+                <span className="inline-block px-3 py-1 bg-yellow-400 text-blue-900 font-black text-[10px] uppercase tracking-widest rounded-full">
                   Academic Portal
                 </span>
-                <h1 className="text-2xl sm:text-3xl font-black font-serif mt-1">Student Result Checker</h1>
-                <p className="text-xs text-blue-200 uppercase font-black tracking-widest mt-0.5">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-black font-serif mt-1.5 break-words">Student Result Checker</h1>
+                <p className="text-[11px] sm:text-xs text-blue-200 uppercase font-black tracking-wider mt-0.5 break-words">
                   Termly Academic Performance & Report Card
                 </p>
               </div>
             </div>
 
             <button 
+              type="button"
               onClick={onBack}
-              className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all border border-white/20 flex items-center gap-2"
+              className="min-h-[44px] px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all border border-white/20 flex items-center gap-2 shrink-0"
             >
               <span>←</span> Back to School Home
             </button>
@@ -272,18 +273,18 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
 
       {/* Case 1: NOT Logged In */}
       {!isLoggedIn || !student ? (
-        <div className="bg-white rounded-3xl shadow-xl p-8 sm:p-12 border-2 border-slate-100 text-center max-w-lg mx-auto">
-          <div className="w-20 h-20 bg-blue-50 text-blue-900 rounded-3xl mx-auto flex items-center justify-center text-4xl mb-6 shadow-sm border border-blue-100">
+        <div className="bg-white rounded-3xl shadow-xl p-5 sm:p-10 border-2 border-slate-100 text-center max-w-lg mx-auto">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-blue-50 text-blue-900 rounded-3xl mx-auto flex items-center justify-center text-3xl sm:text-4xl mb-6 shadow-sm border border-blue-100">
             🎓
           </div>
-          <h2 className="text-2xl font-black text-blue-900 font-serif mb-2">Check Your Result</h2>
-          <p className="text-xs text-slate-500 font-bold mb-8 leading-relaxed">
+          <h2 className="text-xl sm:text-2xl font-black text-blue-900 font-serif mb-2 break-words">Check Your Result</h2>
+          <p className="text-xs text-slate-500 font-bold mb-6 leading-relaxed break-words">
             Please log in with your Student ID or Registered Email to view your academic results and upload transaction confirmation.
           </p>
 
           <form onSubmit={handleQuickLogin} className="space-y-4 text-left">
             {loginError && (
-              <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-bold">
+              <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-bold break-words">
                 ⚠️ {loginError}
               </div>
             )}
@@ -298,7 +299,7 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
                 placeholder="e.g. STU-1 or samuel@Godshand.sch.ng"
                 value={loginInput}
                 onChange={(e) => setLoginInput(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-blue-900 outline-none focus:border-blue-900 focus:bg-white text-sm transition-all"
+                className="w-full min-h-[44px] px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-blue-900 outline-none focus:border-blue-900 focus:bg-white text-sm transition-all"
               />
             </div>
 
@@ -312,23 +313,24 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
                 placeholder="••••••••"
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-blue-900 outline-none focus:border-blue-900 focus:bg-white text-sm transition-all"
+                className="w-full min-h-[44px] px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-blue-900 outline-none focus:border-blue-900 focus:bg-white text-sm transition-all"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full py-4 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black uppercase text-xs tracking-widest rounded-xl shadow-lg transition-all active:scale-95 mt-2"
+              className="w-full min-h-[48px] py-3.5 px-4 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black uppercase text-xs tracking-widest rounded-xl shadow-lg transition-all active:scale-95 mt-2"
             >
               Sign In To Check Result
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col gap-2">
-            <p className="text-xs text-slate-400 font-bold">Don't have an account or lost your password?</p>
+          <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col items-center gap-2">
+            <p className="text-xs text-slate-400 font-bold break-words">Don't have an account or lost your password?</p>
             <button
+              type="button"
               onClick={onGoToStudentAuth}
-              className="text-xs font-black text-blue-900 hover:underline uppercase tracking-wider"
+              className="min-h-[44px] px-3 text-xs font-black text-blue-900 hover:underline uppercase tracking-wider"
             >
               Create Account / Reset Password →
             </button>
@@ -338,27 +340,28 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
         /* Case 2: Logged in Student */
         <div className="space-y-8">
           {/* Student Profile Overview Card */}
-          <div className="bg-white rounded-3xl shadow-lg p-6 sm:p-8 border-2 border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-blue-900 text-yellow-400 font-serif font-black text-2xl flex items-center justify-center shadow-md">
+          <div className="bg-white rounded-3xl shadow-lg p-4 sm:p-8 border-2 border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-4 min-w-0">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-blue-900 text-yellow-400 font-serif font-black text-2xl flex items-center justify-center shadow-md shrink-0">
                 {student.name.charAt(0)}
               </div>
-              <div>
-                <span className="px-2.5 py-0.5 bg-yellow-100 text-blue-900 font-black text-[10px] uppercase tracking-wider rounded-md">
+              <div className="min-w-0">
+                <span className="inline-block px-2.5 py-0.5 bg-yellow-100 text-blue-900 font-black text-[10px] uppercase tracking-wider rounded-md">
                   Class: {student.grade}
                 </span>
-                <h2 className="text-2xl font-black text-blue-900 font-serif mt-1">{student.name}</h2>
-                <p className="text-xs text-slate-400 font-bold">
-                  Student ID: <span className="text-slate-600">{student.id}</span> • Email: <span className="text-slate-600">{student.email}</span>
+                <h2 className="text-xl sm:text-2xl font-black text-blue-900 font-serif mt-1 break-words">{student.name}</h2>
+                <p className="text-xs text-slate-500 font-bold break-all">
+                  Student ID: <span className="text-slate-700">{student.id}</span> • Email: <span className="text-slate-700">{student.email}</span>
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               {hasAccess && (
                 <button
+                  type="button"
                   onClick={handlePrint}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-blue-900 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2"
+                  className="min-h-[44px] px-4 py-2 bg-slate-100 hover:bg-slate-200 text-blue-900 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2"
                 >
                   <span>🖨️</span>
                   <span>Print Result Slip</span>
@@ -369,20 +372,20 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
 
           {/* Term Selector Header (Always visible so students can switch between First, Second, and Third Term) */}
           <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🗓️</span>
-              <div>
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-xl shrink-0">🗓️</span>
+              <div className="min-w-0">
                 <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Academic Session & Term</span>
-                <span className="text-xs font-black text-blue-950">{activeSession}</span>
+                <span className="text-xs font-black text-blue-950 break-words">{activeSession}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <span className="text-xs font-black text-slate-600 uppercase">Select Term:</span>
+            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+              <span className="text-xs font-black text-slate-600 uppercase shrink-0">Select Term:</span>
               <select
                 value={selectedTermFilter}
                 onChange={(e) => setSelectedTermFilter(e.target.value)}
-                className="flex-1 sm:flex-none px-4 py-2 bg-slate-50 hover:bg-slate-100 border-2 border-blue-900 rounded-xl font-black text-xs text-blue-950 outline-none shadow-xs cursor-pointer"
+                className="min-h-[44px] flex-1 sm:flex-none px-4 py-2 bg-slate-50 hover:bg-slate-100 border-2 border-blue-900 rounded-xl font-black text-xs text-blue-950 outline-none shadow-xs cursor-pointer"
               >
                 <option value="First Term">First Term</option>
                 <option value="Second Term">Second Term</option>
@@ -390,7 +393,7 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
                 <option value="all">All Terms (Consolidated)</option>
               </select>
 
-              <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+              <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0 ${
                 hasAccess
                   ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                   : 'bg-amber-100 text-amber-900 border border-amber-300'
@@ -402,22 +405,20 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
 
           {/* ACCESS CONTROL & PAYMENT GATEWAY: Requires ₦1,000 Result Fee per Term */}
           {!hasAccess ? (
-            <div className="bg-white rounded-3xl shadow-xl p-6 sm:p-10 border-4 border-yellow-400 relative overflow-hidden space-y-6">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-yellow-400/10 rounded-full blur-2xl pointer-events-none"></div>
-              
+            <div className="bg-white rounded-3xl shadow-xl p-4 sm:p-8 lg:p-10 border-4 border-yellow-400 space-y-6">
               <div className="max-w-2xl mx-auto text-center space-y-5">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-amber-100 text-amber-950 text-3xl shadow-sm border border-amber-200">
                   🔒
                 </div>
 
                 <div>
-                  <span className="px-3.5 py-1 bg-amber-100 text-amber-900 font-black text-[10px] uppercase tracking-widest rounded-full border border-amber-200">
+                  <span className="inline-block px-3.5 py-1 bg-amber-100 text-amber-900 font-black text-[10px] uppercase tracking-widest rounded-full border border-amber-200 break-words whitespace-normal">
                     Result Checker Fee Clearance • {activeTerm}
                   </span>
-                  <h3 className="text-2xl sm:text-3xl font-black text-blue-950 font-serif mt-3">
+                  <h3 className="text-xl sm:text-3xl font-black text-blue-950 font-serif mt-3 break-words">
                     Unlock Official Report Card for {activeTerm}
                   </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 font-medium mt-2 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-slate-600 font-medium mt-2 leading-relaxed break-words">
                     In accordance with school policy, checking and downloading the terminal report card dossier requires a confirmed clearance fee of <strong className="text-blue-900 font-black">₦1,000 (100,000 kobo)</strong> collected via <strong className="text-emerald-700 font-black">Paystack</strong>.
                   </p>
                 </div>
@@ -502,7 +503,7 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
                           handlePaystackPaymentSuccess(payload);
                         }}
                         onClose={() => {}}
-                        className="w-full py-4 px-6 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-center"
+                        className="w-full min-h-[48px] py-3.5 px-5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-center break-words whitespace-normal"
                       />
                     </div>
 
@@ -510,7 +511,7 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
                     <button
                       type="button"
                       onClick={() => setShowPaystackModal(true)}
-                      className="py-4 px-5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+                      className="min-h-[48px] py-3.5 px-5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
                       title="Open full Paystack checkout dialogue with custom payer details"
                     >
                       <span>💳</span>
@@ -519,9 +520,9 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
                   </div>
 
                   {/* Sandbox Instant Simulation Clearance */}
-                  <div className="pt-2 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs">
-                    <span className="text-[11px] text-emerald-400 font-bold flex items-center gap-1.5">
-                      <span>🔒</span>
+                  <div className="pt-2 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs">
+                    <span className="text-[11px] text-emerald-400 font-bold flex items-center gap-1.5 break-words text-center sm:text-left">
+                      <span className="shrink-0">🔒</span>
                       <span>Secured: Verve, Mastercard, Visa, Bank Transfer & USSD</span>
                     </span>
 
@@ -540,7 +541,7 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
                         );
                         handlePaystackPaymentSuccess(payload);
                       }}
-                      className="text-[11px] font-bold text-yellow-300 hover:text-yellow-200 underline cursor-pointer"
+                      className="min-h-[44px] px-2 text-xs font-bold text-yellow-300 hover:text-yellow-200 underline cursor-pointer shrink-0"
                       title="Instant test approval simulation"
                     >
                       Instant Test Clearance Mode →
@@ -553,42 +554,42 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowManualUploadForm(!showManualUploadForm)}
-                    className="text-xs font-bold text-slate-500 hover:text-blue-900 transition-colors"
+                    className="min-h-[44px] px-3 py-2 text-xs font-bold text-slate-600 hover:text-blue-900 transition-colors break-words whitespace-normal"
                   >
                     {showManualUploadForm ? '▲ Hide Bank Transfer Receipt Upload' : '▼ Alternatively: Pay via Bank Transfer & Upload Receipt for Admin Approval'}
                   </button>
 
                   {showManualUploadForm && (
-                    <div className="mt-4 p-6 bg-slate-50 rounded-2xl border border-slate-200 text-left space-y-4">
+                    <div className="mt-4 p-4 sm:p-6 bg-slate-50 rounded-2xl border border-slate-200 text-left space-y-4">
                       {/* School Bank Details Card */}
-                      <div className="bg-white p-5 rounded-xl border border-slate-200 space-y-2">
+                      <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 space-y-2">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                           School Account Details (Manual Transfers)
                         </p>
-                        <div className="grid sm:grid-cols-3 gap-3 text-xs">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                           <div>
                             <p className="text-slate-400 font-bold">Bank Name</p>
-                            <p className="font-black text-blue-900 text-sm">First Bank of Nigeria</p>
+                            <p className="font-black text-blue-900 text-sm break-words">First Bank of Nigeria</p>
                           </div>
                           <div>
                             <p className="text-slate-400 font-bold">Account Name</p>
-                            <p className="font-black text-blue-900 text-sm">God's Hand Int'l Model School</p>
+                            <p className="font-black text-blue-900 text-sm break-words">God's Hand Int'l Model School</p>
                           </div>
                           <div>
                             <p className="text-slate-400 font-bold">Account Number</p>
-                            <p className="font-mono font-black text-blue-900 text-base">3045892104</p>
+                            <p className="font-mono font-black text-blue-900 text-base break-all">3045892104</p>
                           </div>
                         </div>
                       </div>
 
                       <form onSubmit={handleManualPaymentSubmit} className="space-y-4">
                         {uploadError && (
-                          <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-bold">
+                          <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-bold break-words">
                             ⚠️ {uploadError}
                           </div>
                         )}
 
-                        <div className="grid sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">
                               Payer Name
@@ -599,7 +600,7 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
                               placeholder="e.g. Mrs. Adebayo"
                               value={payerName}
                               onChange={(e) => setPayerName(e.target.value)}
-                              className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-xs text-blue-900 outline-none"
+                              className="w-full min-h-[44px] px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-xs text-blue-900 outline-none"
                             />
                           </div>
 
@@ -612,7 +613,7 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
                               placeholder="e.g. GTBank, OPay, First Bank"
                               value={bankName}
                               onChange={(e) => setBankName(e.target.value)}
-                              className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-xs text-blue-900 outline-none"
+                              className="w-full min-h-[44px] px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-xs text-blue-900 outline-none"
                             />
                           </div>
                         </div>
@@ -626,16 +627,16 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
                             placeholder="e.g. 000013248921894"
                             value={transactionRef}
                             onChange={(e) => setTransactionRef(e.target.value)}
-                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-xs text-blue-900 outline-none"
+                            className="w-full min-h-[44px] px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-xs text-blue-900 outline-none"
                           />
                         </div>
 
                         {/* Photo / Receipt Upload Input */}
                         <div>
-                          <label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">
+                          <span className="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">
                             Photo / Screenshot of Transfer Receipt *
-                          </label>
-                          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-blue-200 border-dashed rounded-2xl bg-white hover:bg-slate-50 transition-colors cursor-pointer relative">
+                          </span>
+                          <label className="mt-1 min-h-[88px] flex justify-center items-center px-4 sm:px-6 py-5 border-2 border-blue-200 border-dashed rounded-2xl bg-white hover:bg-slate-50 transition-colors cursor-pointer">
                             <div className="space-y-2 text-center">
                               {receiptImage ? (
                                 <div className="space-y-2">
@@ -644,7 +645,7 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
                                     alt="Receipt preview" 
                                     className="max-h-40 mx-auto rounded-xl border border-slate-200 shadow-md object-contain"
                                   />
-                                  <p className="text-xs font-bold text-green-700">✓ {fileName || 'Receipt photo attached'}</p>
+                                  <p className="text-xs font-bold text-green-700 break-all">✓ {fileName || 'Receipt photo attached'}</p>
                                 </div>
                               ) : (
                                 <>
@@ -656,16 +657,16 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
                                 type="file" 
                                 accept="image/*"
                                 onChange={handleReceiptUpload}
-                                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" 
+                                className="hidden" 
                               />
                             </div>
-                          </div>
+                          </label>
                         </div>
 
                         <button
                           type="submit"
                           disabled={isSubmitting || !receiptImage}
-                          className="w-full py-3.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black uppercase text-xs tracking-widest rounded-xl shadow-md transition-all active:scale-95 disabled:opacity-50"
+                          className="w-full min-h-[48px] py-3.5 px-4 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black uppercase text-xs tracking-widest rounded-xl shadow-md transition-all active:scale-95 disabled:opacity-50"
                         >
                           {isSubmitting ? 'Submitting...' : `Submit Receipt for ${activeTerm} Admin Approval (₦1,000)`}
                         </button>
@@ -695,12 +696,12 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
                 </div>
 
                 {/* Term Selector Filter */}
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                   <span className="text-xs font-black text-slate-600 uppercase">Term:</span>
                   <select
                     value={selectedTermFilter}
                     onChange={(e) => setSelectedTermFilter(e.target.value)}
-                    className="px-3 py-1.5 bg-white border border-slate-300 rounded-xl font-bold text-xs text-blue-900 outline-none shadow-xs"
+                    className="min-h-[44px] flex-1 sm:flex-none px-3 py-2 bg-white border border-slate-300 rounded-xl font-bold text-xs text-blue-900 outline-none shadow-xs"
                   >
                     <option value="First Term">First Term</option>
                     <option value="Second Term">Second Term</option>
@@ -711,11 +712,11 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
               </div>
 
               {/* Assessment Mode Selector: Full Dossier | Test (CA) Only | Exam Only | Total & Position */}
-              <div className="no-print bg-slate-100 p-1.5 rounded-2xl flex flex-wrap gap-1.5 border border-slate-200">
+              <div className="no-print bg-slate-100 p-2 rounded-2xl flex flex-wrap gap-2 border border-slate-200">
                 <button
                   type="button"
                   onClick={() => setResultScoreMode('all')}
-                  className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                  className={`min-h-[44px] px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                     resultScoreMode === 'all'
                       ? 'bg-blue-900 text-yellow-400 shadow-md'
                       : 'text-slate-600 hover:text-blue-950 hover:bg-white/60'
@@ -728,7 +729,7 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
                 <button
                   type="button"
                   onClick={() => setResultScoreMode('test')}
-                  className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                  className={`min-h-[44px] px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                     resultScoreMode === 'test'
                       ? 'bg-amber-600 text-white shadow-md'
                       : 'text-slate-600 hover:text-blue-950 hover:bg-white/60'
@@ -741,7 +742,7 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
                 <button
                   type="button"
                   onClick={() => setResultScoreMode('exam')}
-                  className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                  className={`min-h-[44px] px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                     resultScoreMode === 'exam'
                       ? 'bg-indigo-700 text-white shadow-md'
                       : 'text-slate-600 hover:text-blue-950 hover:bg-white/60'
@@ -754,7 +755,7 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
                 <button
                   type="button"
                   onClick={() => setResultScoreMode('total')}
-                  className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                  className={`min-h-[44px] px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                     resultScoreMode === 'total'
                       ? 'bg-emerald-700 text-white shadow-md'
                       : 'text-slate-600 hover:text-blue-950 hover:bg-white/60'
@@ -790,7 +791,7 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
                       </div>
                     </div>
 
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       {resultsToShow.map(res => {
                         const ca = res.caScore !== undefined ? res.caScore : Math.round(res.score * 0.4);
                         const exam = res.examScore !== undefined ? res.examScore : (res.score - ca);

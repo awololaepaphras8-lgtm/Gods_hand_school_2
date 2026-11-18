@@ -43,6 +43,7 @@ import { DedicatedAppInstallModal } from './DedicatedAppInstallModal';
 import { generateSecureTempPassword } from '../utils/authSecurity';
 import { AdminGradingCriteriaManager } from './AdminGradingCriteriaManager';
 import { StudentIDCardModal } from './StudentIDCardModal';
+import { normalizeCourseName } from '../utils/courseUtils';
 import { AdminDirectGradeEntry } from './AdminDirectGradeEntry';
 
 interface AdminPanelProps {
@@ -296,6 +297,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [balanceSaveSuccessId, setBalanceSaveSuccessId] = useState<string | null>(null);
   const [selectedStudentForIDCard, setSelectedStudentForIDCard] = useState<StudentAccount | null>(null);
   const [activeTab, setActiveTab] = useState<'attendance' | 'attendanceScanning' | 'academicTrends' | 'payments' | 'resultPublish' | 'directGrading' | 'fees' | 'bankAccount' | 'applications' | 'teachers' | 'courses' | 'calendar' | 'announcements' | 'access' | 'parents' | 'export' | 'delegations' | 'pageAccess' | 'assignments' | 'gradingCriteria'>((initialTab as any) || 'attendance');
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
   const [rejectModalRequestId, setRejectModalRequestId] = useState<string | null>(null);
   const [rejectFeedbackText, setRejectFeedbackText] = useState<string>('');
   const [delegationNow, setDelegationNow] = useState<Date>(new Date());
@@ -611,10 +613,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const handleCourseSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (courseName) {
-      onAddCourse(courseName, courseGrade, courseDesc);
+      const cleanCourseTitle = normalizeCourseName(courseName);
+      // Check if course already registered for this grade
+      const alreadyExists = courses.some(
+        c => c.grade === courseGrade && normalizeCourseName(c.name).toLowerCase() === cleanCourseTitle.toLowerCase()
+      );
+      if (alreadyExists) {
+        alert(`Subject "${cleanCourseTitle}" is already registered for ${courseGrade}. Redundant duplicates are prevented.`);
+        return;
+      }
+      onAddCourse(cleanCourseTitle, courseGrade, courseDesc);
       setCourseName('');
       setCourseDesc('');
-      alert("Course added successfully!");
+      alert(`✓ Subject "${cleanCourseTitle}" successfully added to ${courseGrade} curriculum!`);
     }
   };
 
@@ -709,29 +720,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-4 border-blue-900">
+    <div className="bg-white rounded-2xl sm:rounded-[2.5rem] shadow-2xl w-full max-w-full overflow-x-hidden border-2 sm:border-4 border-blue-900">
       {/* Delegated Session Top Warning Bar */}
       {delegationExpiresAt && (
-        <div className="bg-amber-400 text-blue-950 px-6 py-3 border-b-2 border-yellow-500 flex flex-wrap items-center justify-between gap-3 shadow-md">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">⏱️</span>
-            <span className="text-xs sm:text-sm font-black uppercase tracking-wider">
+        <div className="bg-amber-400 text-blue-950 px-4 sm:px-6 py-3 border-b-2 border-yellow-500 flex flex-wrap items-center justify-between gap-3 shadow-md">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <span className="text-lg shrink-0">⏱️</span>
+            <span className="text-xs sm:text-sm font-black uppercase tracking-wider break-words whitespace-normal">
               Temporary Delegated Admin Session: {activeStaffName || 'Staff Member'}
             </span>
-            <span className="text-xs font-bold text-blue-900 hidden md:inline">
+            <span className="text-xs font-bold text-blue-900 hidden md:inline break-words whitespace-normal">
               (Access restricted strictly to granted sections)
             </span>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-950 text-white px-3 py-1 rounded-full text-xs font-mono font-black flex items-center gap-1.5 shadow-xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>Expires in: {getRemainingBannerTime()}</span>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="bg-blue-950 text-white px-3 py-1.5 rounded-full text-xs font-mono font-black flex items-center gap-1.5 shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+              <span className="break-words whitespace-normal">Expires in: {getRemainingBannerTime()}</span>
             </div>
             {onExitDelegation && (
               <button
                 type="button"
                 onClick={onExitDelegation}
-                className="px-3 py-1 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-lg text-xs font-black uppercase tracking-wider transition-all"
+                className="min-h-[44px] px-4 py-2 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-lg text-xs font-black uppercase tracking-wider transition-all"
               >
                 Exit Admin Mode
               </button>
@@ -740,26 +751,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
       )}
 
-      <div className="bg-blue-900 px-10 py-12 text-white relative">
-        <div className="absolute top-0 right-0 p-10 opacity-10">
-          <svg className="w-48 h-48" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
-        </div>
-        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h2 className="text-4xl font-black mb-3 font-serif">
+      <div className="bg-blue-900 px-4 py-6 sm:px-8 sm:py-10 lg:px-10 lg:py-12 text-white">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5">
+          <div className="min-w-0 w-full lg:w-auto">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black mb-3 font-serif break-words whitespace-normal">
               {allowedAdminSections ? `Admin Portal (Delegated Staff Session)` : `Proprietor's Dashboard`}
             </h2>
-            <div className="flex items-center space-x-4">
-              <span className="px-3 py-1 bg-yellow-400 text-blue-900 rounded-lg text-xs font-black uppercase tracking-tighter shadow-md">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+              <span className="px-3 py-1 bg-yellow-400 text-blue-900 rounded-lg text-xs font-black uppercase tracking-tighter shadow-md break-words whitespace-normal">
                 {allowedAdminSections ? 'Temporary Delegated Privileges' : 'School Database Manager'}
               </span>
-              <p className="text-blue-100 font-medium">
+              <p className="text-blue-100 font-medium text-xs sm:text-sm break-words whitespace-normal">
                 {allowedAdminSections ? `Authorized administrative operations for ${activeStaffName || 'Staff'}` : 'Monitoring attendance and academic records.'}
               </p>
             </div>
           </div>
           {!allowedAdminSections && (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
               {/* Mandated Feature: Move whole app to next term from First, Second, Third */}
               <button
                 type="button"
@@ -779,20 +787,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     }
                   }
                 }}
-                className="flex items-center space-x-2 px-4 py-3 bg-emerald-600 hover:bg-emerald-500 text-white border-2 border-emerald-400 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg hover:scale-105 active:scale-95"
+                className="min-h-[44px] flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white border-2 border-emerald-400 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-lg break-words whitespace-normal text-left"
                 title={`Currently on ${activeTerm}. Click to move whole school to next academic term.`}
               >
-                <span>🎓</span>
+                <span className="shrink-0">🎓</span>
                 <span>Term: {activeTerm} ➔ Next</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setShowProphModal(true)}
-                className="flex items-center space-x-2 px-4 py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 border border-yellow-400/40 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg hover:scale-105 active:scale-95"
+                className="min-h-[44px] flex items-center gap-2 px-4 py-2.5 bg-blue-950 hover:bg-blue-800 text-yellow-400 border border-yellow-400/40 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-lg break-words whitespace-normal text-left"
                 title="Audit school database for external app 'proph' using Admin Unique ID pro01"
               >
-                <span className="px-2 py-0.5 bg-yellow-400 text-blue-950 rounded-lg text-[10px] font-mono font-black">ID: pro01</span>
+                <span className="px-2 py-0.5 bg-yellow-400 text-blue-950 rounded-lg text-[10px] font-mono font-black shrink-0">ID: pro01</span>
                 <span>Audit Database (Proph)</span>
               </button>
 
@@ -800,10 +808,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => onNavigateToView('communityHub')}
-                  className="flex items-center space-x-1.5 px-4 py-3 bg-blue-950 hover:bg-blue-900 text-yellow-400 border border-yellow-400/40 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg hover:scale-105 active:scale-95"
+                  className="min-h-[44px] flex items-center gap-1.5 px-4 py-2.5 bg-blue-950 hover:bg-blue-900 text-yellow-400 border border-yellow-400/40 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-lg break-words whitespace-normal"
                   title="Open live chat rooms, virtual meetings and voice/video calling"
                 >
-                  <span>💬</span>
+                  <span className="shrink-0">💬</span>
                   <span>Live Hub & Calls</span>
                 </button>
               )}
@@ -811,14 +819,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <button
                 type="button"
                 onClick={() => setShowAdminAppDownloadModal(true)}
-                className="flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-blue-900 to-indigo-900 text-yellow-400 rounded-2xl font-black text-xs uppercase tracking-widest hover:brightness-110 transition-all shadow-lg hover:scale-105 active:scale-95 border-2 border-yellow-400 cursor-pointer"
+                className="min-h-[44px] flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-900 to-indigo-900 text-yellow-400 rounded-2xl font-black text-xs uppercase tracking-wider hover:brightness-110 transition-all shadow-lg border-2 border-yellow-400 cursor-pointer break-words whitespace-normal"
                 title="Download Admin App to open straight to Admin Panel next time"
               >
-                <span>📲</span>
+                <span className="shrink-0">📲</span>
                 <span>Download Admin App</span>
               </button>
 
               <button
+                type="button"
                 onClick={() => {
                   const statePayload: AppState = {
                     fees,
@@ -835,10 +844,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   exportCompleteSchoolDataBoth(statePayload);
                   setActiveTab('export');
                 }}
-                className="flex items-center space-x-2 px-4 py-3 bg-yellow-400 text-blue-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-yellow-300 transition-all shadow-lg hover:scale-105 active:scale-95"
+                className="min-h-[44px] flex items-center gap-2 px-4 py-2.5 bg-yellow-400 text-blue-900 rounded-2xl font-black text-xs uppercase tracking-wider hover:bg-yellow-300 transition-all shadow-lg break-words whitespace-normal"
                 title="Download complete school database in both PDF and Excel formats simultaneously"
               >
-                <span>⚡</span>
+                <span className="shrink-0">⚡</span>
                 <span>Export Data</span>
               </button>
             </div>
@@ -846,54 +855,144 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
       </div>
 
-      <div className="flex flex-wrap border-b-2 border-slate-100 bg-slate-50">
-        {visibleTabs.map(tab => (
-          <button 
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`px-6 py-5 font-black text-sm uppercase tracking-widest transition-all ${activeTab === tab.id ? 'text-blue-900 border-b-4 border-blue-900 bg-white' : 'text-slate-400 hover:text-blue-700 hover:bg-slate-100'}`}
+      {/* Responsive Layout Shell: Mobile Top Bar + Hamburger Drawer (<768px) & Fixed/Sticky Sidebar (>=768px) */}
+      <div className="flex flex-col md:flex-row w-full max-w-full">
+        {/* Mobile Top Navigation Strip & Hamburger Drawer Trigger (<768px) */}
+        <div className="md:hidden border-b-2 border-slate-200 bg-slate-50 p-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400">
+              Active Admin Module ({visibleTabs.length})
+            </span>
+            <p className="text-xs sm:text-sm font-black text-blue-950 break-words whitespace-normal">
+              {visibleTabs.find(t => t.id === activeTab)?.label || 'Admin Module'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setMobileSidebarOpen(true)}
+            aria-label="Open Admin Modules Menu"
+            className="min-h-[44px] px-4 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl font-black text-xs uppercase tracking-wider shadow-sm flex items-center gap-2 shrink-0"
           >
-            {tab.label}
+            <span className="text-base leading-none">☰</span>
+            <span>Modules</span>
           </button>
-        ))}
-      </div>
+        </div>
 
-      <div className="p-10">
+        {/* Mobile Hamburger Drawer (<768px) */}
+        {mobileSidebarOpen && (
+          <div className="fixed inset-0 z-50 md:hidden flex">
+            <div
+              className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm"
+              onClick={() => setMobileSidebarOpen(false)}
+            />
+            <aside
+              aria-label="Admin Modules Drawer"
+              className="relative z-10 w-full max-w-xs bg-white h-full overflow-y-auto shadow-2xl border-r-2 border-blue-900/20 flex flex-col"
+            >
+              <div className="p-4 bg-blue-950 text-white flex items-center justify-between gap-3 sticky top-0 z-10">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-yellow-400">Admin Navigation</p>
+                  <h4 className="font-serif font-black text-sm text-white break-words whitespace-normal">
+                    {visibleTabs.length} Modules Available
+                  </h4>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMobileSidebarOpen(false)}
+                  aria-label="Close Admin Drawer"
+                  className="min-w-[44px] min-h-[44px] rounded-xl bg-white/10 hover:bg-white/20 text-white font-black flex items-center justify-center shrink-0"
+                >
+                  ✕
+                </button>
+              </div>
+              <nav className="p-3 flex flex-col gap-1.5 flex-1">
+                {visibleTabs.map(tab => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveTab(tab.id as any);
+                      setMobileSidebarOpen(false);
+                    }}
+                    className={`min-h-[44px] w-full px-3.5 py-2.5 font-black text-xs uppercase tracking-wider transition-all rounded-xl break-words whitespace-normal text-left flex items-center justify-between gap-2 ${
+                      activeTab === tab.id
+                        ? 'text-blue-950 bg-yellow-400 border-2 border-blue-900 shadow-sm'
+                        : 'text-slate-700 bg-slate-50 hover:text-blue-900 hover:bg-blue-50 border border-slate-200'
+                    }`}
+                  >
+                    <span className="break-words whitespace-normal">{tab.label}</span>
+                  </button>
+                ))}
+              </nav>
+            </aside>
+          </div>
+        )}
+
+        {/* Fixed / Sticky Side Navigation (Tablet & Desktop >=768px) */}
+        <aside
+          aria-label="Proprietor Sidebar Navigation"
+          className="hidden md:flex md:flex-col md:w-64 lg:w-72 shrink-0 border-r-2 border-slate-200 bg-slate-50/90 md:sticky md:top-20 md:self-start md:max-h-[calc(100vh-5.5rem)] overflow-y-auto p-3 lg:p-4 gap-1.5"
+        >
+          <div className="px-2 py-2 mb-1 border-b border-slate-200">
+            <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400">
+              Admin Module Menu
+            </span>
+            <span className="text-xs font-black text-blue-950">
+              {visibleTabs.length} Modules
+            </span>
+          </div>
+          {visibleTabs.map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`min-h-[44px] w-full px-3.5 py-2.5 font-black text-[11px] lg:text-xs uppercase tracking-wider transition-all rounded-xl break-words whitespace-normal text-left ${
+                activeTab === tab.id
+                  ? 'text-blue-950 bg-yellow-400 border-2 border-blue-900 shadow-sm'
+                  : 'text-slate-600 bg-white hover:text-blue-900 hover:bg-blue-50 border border-slate-200'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </aside>
+
+        <div className="flex-1 min-w-0 p-4 sm:p-6 md:p-8 lg:p-10 overflow-x-hidden">
         {activeTab === 'attendance' && (
           <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-               <div className="p-8 bg-blue-50 rounded-3xl border-2 border-blue-100 text-center">
-                  <p className="text-blue-900 font-black text-[10px] uppercase tracking-widest mb-2">Total Scanned Today</p>
-                  <p className="text-5xl font-black text-blue-900 font-serif">{presentToday.length}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12">
+               <div className="p-5 sm:p-8 bg-blue-50 rounded-3xl border-2 border-blue-100 text-center">
+                  <p className="text-blue-900 font-black text-[11px] uppercase tracking-widest mb-2 break-words whitespace-normal">Total Scanned Today</p>
+                  <p className="text-3xl sm:text-5xl font-black text-blue-900 font-serif">{presentToday.length}</p>
                </div>
-               <div className="p-8 bg-green-50 rounded-3xl border-2 border-green-100 text-center">
-                  <p className="text-green-800 font-black text-[10px] uppercase tracking-widest mb-2">Total Enrolled</p>
-                  <p className="text-5xl font-black text-green-800 font-serif">{students.length}</p>
+               <div className="p-5 sm:p-8 bg-green-50 rounded-3xl border-2 border-green-100 text-center">
+                  <p className="text-green-800 font-black text-[11px] uppercase tracking-widest mb-2 break-words whitespace-normal">Total Enrolled</p>
+                  <p className="text-3xl sm:text-5xl font-black text-green-800 font-serif">{students.length}</p>
                </div>
-               <div className="p-8 bg-yellow-50 rounded-3xl border-2 border-yellow-100 text-center">
-                  <p className="text-yellow-800 font-black text-[10px] uppercase tracking-widest mb-2">Presence Rate</p>
-                  <p className="text-5xl font-black text-yellow-800 font-serif">
+               <div className="p-5 sm:p-8 bg-yellow-50 rounded-3xl border-2 border-yellow-100 text-center">
+                  <p className="text-yellow-800 font-black text-[11px] uppercase tracking-widest mb-2 break-words whitespace-normal">Presence Rate</p>
+                  <p className="text-3xl sm:text-5xl font-black text-yellow-800 font-serif">
                     {students.length > 0 ? Math.round((presentToday.length / students.length) * 100) : 0}%
                   </p>
                </div>
             </div>
 
             {/* Attendance Camera Scanner Featured Banner */}
-            <div className="bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-500 p-6 sm:p-7 rounded-3xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-5 border-2 border-yellow-500">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-blue-950 text-yellow-400 flex items-center justify-center text-3xl font-black shadow-lg shrink-0">
+            <div className="bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-500 p-4 sm:p-7 rounded-3xl shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-5 border-2 border-yellow-500">
+              <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-blue-950 text-yellow-400 flex items-center justify-center text-2xl sm:text-3xl font-black shadow-lg shrink-0">
                   📷
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-serif font-black text-blue-950 text-xl">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h4 className="font-serif font-black text-blue-950 text-lg sm:text-xl break-words whitespace-normal">
                       Live Attendance Camera Scanner
                     </h4>
-                    <span className="px-2.5 py-0.5 rounded-full bg-blue-950 text-yellow-400 text-[10px] font-black uppercase tracking-wider">
+                    <span className="px-2.5 py-0.5 rounded-full bg-blue-950 text-yellow-400 text-[10px] font-black uppercase tracking-wider shrink-0">
                       Camera View
                     </span>
                   </div>
-                  <p className="text-xs sm:text-sm text-blue-950/80 font-bold mt-0.5">
+                  <p className="text-xs sm:text-sm text-blue-950/80 font-bold mt-1 break-words whitespace-normal">
                     Utilize your phone or laptop camera to scan pupil term QR attendance passes with instant audible chimes, vibration, gate entry clearance & real-time attendance sync.
                   </p>
                 </div>
@@ -901,7 +1000,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('attendanceScanning')}
-                className="w-full md:w-auto px-7 py-3.5 bg-blue-950 hover:bg-blue-900 text-yellow-400 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl active:scale-95 shrink-0 flex items-center justify-center gap-2 whitespace-nowrap hover:scale-105"
+                className="w-full md:w-auto min-h-[44px] px-6 py-3 bg-blue-950 hover:bg-blue-900 text-yellow-400 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shrink-0 flex items-center justify-center gap-2 break-words whitespace-normal"
               >
                 <span>📷</span>
                 <span>Open Camera Scanner</span>
@@ -909,38 +1008,38 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             {/* Mandated Gate QR Pass Verification Station: Strictly for Admin & Staff */}
-            <div className="bg-gradient-to-r from-blue-900 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl space-y-4 border-2 border-yellow-400/40">
+            <div className="bg-gradient-to-r from-blue-900 to-indigo-950 rounded-3xl p-4 sm:p-8 text-white shadow-xl space-y-4 border-2 border-yellow-400/40">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-yellow-400 text-blue-950 flex items-center justify-center font-black text-2xl shadow-md">
+                <div className="flex items-start sm:items-center gap-3 min-w-0">
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-yellow-400 text-blue-950 flex items-center justify-center font-black text-xl sm:text-2xl shadow-md shrink-0">
                     🔍
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-serif font-black text-xl text-yellow-400">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h4 className="font-serif font-black text-lg sm:text-xl text-yellow-400 break-words whitespace-normal">
                         Gate QR Pass Verification Station
                       </h4>
-                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-wider">
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-wider shrink-0">
                         Staff & Admin Authorized
                       </span>
                     </div>
-                    <p className="text-xs text-blue-200 mt-0.5">
+                    <p className="text-xs text-blue-200 mt-1 break-words whitespace-normal">
                       Verify pupil and student digital gate passes, entry authorization status & fee clearance.
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setActiveTab('attendanceScanning')}
-                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center gap-1.5"
+                    className="min-h-[44px] px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-1.5"
                     title="Switch to camera scanning view"
                   >
                     <span>📷</span>
                     <span>Use Camera</span>
                   </button>
-                  <div className="text-right text-[11px] text-yellow-300/90 font-bold bg-white/10 px-3.5 py-1.5 rounded-xl border border-white/10">
+                  <div className="text-[11px] text-yellow-300/90 font-bold bg-white/10 px-3.5 py-2 rounded-xl border border-white/10 break-words whitespace-normal">
                     <span>Current Gate Session: <strong>{activeTerm}</strong></span>
                   </div>
                 </div>
@@ -957,13 +1056,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     }
                   }}
                   placeholder="Paste or scan Student ID / QR Code (e.g. GHS20268001 or GHS-ATT|...)"
-                  className="flex-1 px-5 py-3.5 bg-white/10 border-2 border-white/20 rounded-2xl text-xs sm:text-sm text-white placeholder-blue-300 font-mono focus:outline-none focus:border-yellow-400 transition-colors"
+                  className="flex-1 min-h-[44px] px-4 py-3 bg-white/10 border-2 border-white/20 rounded-2xl text-xs sm:text-sm text-white placeholder-blue-300 font-mono focus:outline-none focus:border-yellow-400 transition-colors"
                 />
 
                 <button
                   type="button"
                   onClick={() => handleVerifyStudentPass(adminQrInput)}
-                  className="px-6 py-3.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 shrink-0"
+                  className="min-h-[44px] px-6 py-3 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-2 shrink-0"
                 >
                   <span>✓</span>
                   <span>Verify Gate Pass</span>
@@ -976,7 +1075,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       setAdminQrInput('');
                       setAdminQrVerificationResult(null);
                     }}
-                    className="px-4 py-3.5 bg-white/10 hover:bg-white/20 text-white rounded-2xl text-xs font-bold transition-all shrink-0"
+                    className="min-h-[44px] px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-2xl text-xs font-bold transition-all shrink-0"
                   >
                     Clear
                   </button>
@@ -991,13 +1090,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     ? 'bg-amber-950/80 border-amber-400 text-amber-100'
                     : 'bg-red-950/80 border-red-400 text-red-100'
                 }`}>
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="font-serif font-black text-sm sm:text-base">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="font-serif font-black text-sm sm:text-base break-words whitespace-normal">
                         {adminQrVerificationResult.message}
                       </p>
                       {adminQrVerificationResult.details && (
-                        <p className="text-xs opacity-90 mt-1 font-mono">
+                        <p className="text-xs opacity-90 mt-1 font-mono break-words whitespace-normal">
                           {adminQrVerificationResult.details}
                         </p>
                       )}
@@ -1014,7 +1113,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             message: `Updated: ${s.name} entry status toggled to ${!s.entryAllowed ? 'Allowed' : 'Blocked'}`
                           } : null);
                         }}
-                        className="px-3 py-1.5 bg-white text-blue-950 rounded-xl font-black text-xs uppercase tracking-wider shrink-0 hover:bg-yellow-300 transition-all"
+                        className="min-h-[44px] px-4 py-2 bg-white text-blue-950 rounded-xl font-black text-xs uppercase tracking-wider shrink-0 hover:bg-yellow-300 transition-all"
                       >
                         Toggle Entry Clearance
                       </button>
@@ -1027,7 +1126,56 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <h3 className="text-2xl font-black text-blue-900 font-serif">Live Attendance Database</h3>
             <p className="text-slate-500 text-sm font-medium mb-6 italic">Record of all students and pupils scanned present by staff today ({today}).</p>
 
-            <div className="bg-white rounded-[2rem] border-2 border-slate-100 overflow-x-auto shadow-sm">
+            {/* Mobile Stacked Card View (<768px) */}
+            <div className="md:hidden space-y-3">
+              {presentToday.length === 0 ? (
+                <div className="bg-white rounded-3xl border-2 border-slate-100 py-14 px-6 text-center shadow-sm">
+                  <span className="text-5xl block mb-3 opacity-30">📭</span>
+                  <p className="font-black text-slate-400 uppercase tracking-widest text-xs break-words whitespace-normal">
+                    No students or pupils marked present yet today
+                  </p>
+                </div>
+              ) : (
+                presentToday.map((record, i) => {
+                  const student = students.find(s => s.id === record.studentId);
+                  return (
+                    <div key={i} className="bg-white rounded-2xl border-2 border-slate-100 p-4 shadow-sm space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-900 flex items-center justify-center font-black border-2 border-white shadow-sm shrink-0">
+                            {student?.name.charAt(0) || '?'}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-black text-blue-900 text-sm break-words whitespace-normal">
+                              {student?.name || 'Unknown Student / Pupil'}
+                            </p>
+                            <span className="inline-block mt-1 px-2.5 py-0.5 bg-yellow-100 text-blue-900 text-[10px] font-black rounded-lg uppercase">
+                              {student?.grade || 'Unassigned'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100 text-xs">
+                        <div className="min-w-0">
+                          <span className="block text-[10px] font-black uppercase text-slate-400">Marked By</span>
+                          <span className="font-bold text-slate-600 inline-flex items-center gap-1.5 break-words whitespace-normal">
+                            <span className="w-2 h-2 rounded-full bg-green-500 shrink-0"></span>
+                            <span>{record.markedBy}</span>
+                          </span>
+                        </div>
+                        <div className="text-right min-w-0">
+                          <span className="block text-[10px] font-black uppercase text-slate-400">Date Verified</span>
+                          <span className="font-bold text-slate-500 font-mono">{record.date}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Tablet & Desktop Table View (>=768px) */}
+            <div className="hidden md:block bg-white rounded-[2rem] border-2 border-slate-100 overflow-x-auto w-full shadow-sm">
               <table className="w-full text-left min-w-[700px]">
                 <thead>
                   <tr className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
@@ -1054,10 +1202,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <tr key={i} className="hover:bg-blue-50/50 transition-colors group">
                           <td className="px-8 py-6">
                             <div className="flex items-center">
-                              <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-900 flex items-center justify-center font-black mr-3 border-2 border-white shadow-sm">
+                              <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-900 flex items-center justify-center font-black mr-3 border-2 border-white shadow-sm shrink-0">
                                 {student?.name.charAt(0)}
                               </div>
-                              <span className="font-black text-blue-900">{student?.name || 'Unknown Student / Pupil'}</span>
+                              <span className="font-black text-blue-900 break-words whitespace-normal">{student?.name || 'Unknown Student / Pupil'}</span>
                             </div>
                           </td>
                           <td className="px-8 py-6">
@@ -1065,11 +1213,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           </td>
                           <td className="px-8 py-6">
                             <span className="text-sm font-bold text-slate-500 flex items-center">
-                              <span className="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
-                              {record.markedBy}
+                              <span className="w-2 h-2 rounded-full bg-green-500 mr-2 shrink-0"></span>
+                              <span className="break-words whitespace-normal">{record.markedBy}</span>
                             </span>
                           </td>
-                          <td className="px-8 py-6 text-right font-bold text-slate-400 text-xs">
+                          <td className="px-8 py-6 text-right font-bold text-slate-400 text-xs font-mono">
                             {record.date}
                           </td>
                         </tr>
@@ -1084,17 +1232,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
         {activeTab === 'attendanceScanning' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between gap-4 pb-2">
+            <div className="flex flex-wrap items-center justify-between gap-4 pb-2">
               <button
                 type="button"
                 onClick={() => setActiveTab('attendance')}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-blue-950 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+                className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-blue-950 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
               >
                 <span>←</span>
                 <span>Back to Attendance Hub</span>
               </button>
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
                 <span className="text-xs font-mono font-black text-slate-500">Live Device Gate Scanner</span>
               </div>
             </div>
@@ -1138,18 +1286,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
         {activeTab === 'resultPublish' && (
           <div className="space-y-8">
-            <div className="bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-950 text-white rounded-[2.5rem] p-8 sm:p-10 border-4 border-yellow-400 shadow-xl relative overflow-hidden">
-              <div className="relative z-10">
+            <div className="bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-950 text-white rounded-3xl sm:rounded-[2.5rem] p-5 sm:p-10 border-4 border-yellow-400 shadow-xl">
+              <div>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-blue-800 pb-5 mb-6">
-                  <div>
-                    <h3 className="font-serif font-black text-2xl sm:text-3xl text-yellow-300">
+                  <div className="min-w-0">
+                    <h3 className="font-serif font-black text-xl sm:text-3xl text-yellow-300 break-words whitespace-normal">
                       Staff Result Publication Authorizations
                     </h3>
-                    <p className="text-xs sm:text-sm text-blue-200 mt-1">
+                    <p className="text-xs sm:text-sm text-blue-200 mt-1 break-words whitespace-normal">
                       Staff request administrative clearance to deliver terminal assessment reports to all pupils at once
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
                     <span className="px-4 py-2 bg-yellow-400 text-blue-950 font-black text-xs uppercase rounded-xl shadow-md">
                       {resultPublishRequests.filter(r => r.status === 'pending').length} Action Required
                     </span>
@@ -1180,15 +1328,107 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             {/* Pending & Historic Publication Clearance Requests */}
-            <div className="bg-white rounded-[2rem] border-2 border-slate-100 overflow-hidden shadow-sm">
-              <div className="p-6 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+            <div className="bg-white rounded-3xl sm:rounded-[2rem] border-2 border-slate-100 shadow-sm">
+              <div className="p-4 sm:p-6 bg-slate-50 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2 rounded-t-3xl">
                 <div>
-                  <h4 className="font-serif font-black text-blue-950 text-lg">Clearance Requests Roster</h4>
-                  <p className="text-xs text-slate-500 font-medium">Review and grant permissions for staff to send terminal results to all enrolled pupils</p>
+                  <h4 className="font-serif font-black text-blue-950 text-lg break-words whitespace-normal">Clearance Requests Roster</h4>
+                  <p className="text-xs text-slate-500 font-medium break-words whitespace-normal">Review and grant permissions for staff to send terminal results to all enrolled pupils</p>
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
+              {/* Mobile Stacked Cards (<768px) */}
+              <div className="md:hidden divide-y divide-slate-100">
+                {resultPublishRequests.length === 0 ? (
+                  <div className="py-14 px-4 text-center text-slate-400 font-bold uppercase text-xs tracking-widest break-words whitespace-normal">
+                    No result publication requests submitted yet. Staff can request permission in the Grading Portal.
+                  </div>
+                ) : (
+                  resultPublishRequests.map(req => {
+                    const classStudents = students.filter(s => s.grade === req.grade);
+                    const classScores = results.filter(r => r.grade === req.grade && r.term.toLowerCase() === req.term.toLowerCase());
+                    return (
+                      <div key={req.id} className="p-4 space-y-3">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="font-black text-blue-950 text-sm break-words whitespace-normal">{req.teacherName}</p>
+                            <p className="text-[11px] text-slate-400 font-mono">
+                              REQ: {req.id.slice(-6)} • {new Date(req.timestamp).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0 ${
+                            req.status === 'approved'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : req.status === 'pending'
+                                ? 'bg-amber-100 text-amber-900 animate-pulse'
+                                : 'bg-rose-100 text-rose-800'
+                          }`}>
+                            {req.status === 'approved' ? '✓ Authorized' : req.status === 'pending' ? '⏳ Awaiting Review' : '✕ Rejected'}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-50 p-3 rounded-2xl text-xs">
+                          <div>
+                            <span className="block text-[10px] font-black uppercase text-slate-400">Class</span>
+                            <span className="inline-block mt-0.5 px-2.5 py-0.5 bg-yellow-100 text-blue-900 rounded-md font-black">{req.grade}</span>
+                          </div>
+                          <div>
+                            <span className="block text-[10px] font-black uppercase text-slate-400">Term</span>
+                            <span className="font-bold text-slate-700 break-words whitespace-normal">{req.term}</span>
+                          </div>
+                          <div>
+                            <span className="block text-[10px] font-black uppercase text-slate-400">Pupils</span>
+                            <span className="font-mono font-black text-blue-950 tabular-nums">{classStudents.length}</span>
+                          </div>
+                          <div>
+                            <span className="block text-[10px] font-black uppercase text-slate-400">Scores</span>
+                            <span className="font-mono font-black text-indigo-900 tabular-nums">{classScores.length}</span>
+                          </div>
+                        </div>
+
+                        {req.status === 'rejected' && req.adminFeedback && (
+                          <p className="text-xs text-rose-600 italic break-words whitespace-normal">"{req.adminFeedback}"</p>
+                        )}
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          {req.status === 'pending' && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => onApprovePublishRequest && onApprovePublishRequest(req.id)}
+                                className="flex-1 min-h-[44px] px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-xs flex items-center justify-center gap-1"
+                              >
+                                <span>✓</span>
+                                <span>Authorize</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setRejectModalRequestId(req.id);
+                                  setRejectFeedbackText('');
+                                }}
+                                className="flex-1 min-h-[44px] px-3.5 py-2 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-xl font-black text-xs uppercase tracking-wider transition-all"
+                              >
+                                Decline
+                              </button>
+                            </>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => onBroadcastResultsToClass && onBroadcastResultsToClass(req.grade, req.term)}
+                            className="w-full sm:w-auto flex-1 min-h-[44px] px-3.5 py-2 bg-blue-900 hover:bg-blue-800 text-yellow-300 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-xs flex items-center justify-center gap-1"
+                          >
+                            <span>📢</span>
+                            <span>Broadcast Now</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Tablet & Desktop Table View (>=768px) */}
+              <div className="hidden md:block overflow-x-auto w-full">
                 <table className="w-full text-left min-w-[750px]">
                   <thead>
                     <tr className="bg-slate-50/80 text-slate-400 text-[11px] font-black uppercase tracking-wider border-b border-slate-100">
@@ -1221,7 +1461,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               <span className="text-[10px] text-slate-400">{new Date(req.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                             </td>
                             <td className="px-6 py-4">
-                              <p className="font-black text-blue-950">{req.teacherName}</p>
+                              <p className="font-black text-blue-950 break-words whitespace-normal">{req.teacherName}</p>
                               <span className="text-[10px] text-slate-400 font-mono">REQ: {req.id.slice(-6)}</span>
                             </td>
                             <td className="px-6 py-4">
@@ -1232,10 +1472,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             <td className="px-6 py-4 font-bold text-slate-700">
                               {req.term}
                             </td>
-                            <td className="px-6 py-4 text-center font-mono font-bold text-blue-950">
+                            <td className="px-6 py-4 text-center font-mono font-bold text-blue-950 tabular-nums">
                               {classStudents.length}
                             </td>
-                            <td className="px-6 py-4 text-center font-mono font-bold text-indigo-900">
+                            <td className="px-6 py-4 text-center font-mono font-bold text-indigo-900 tabular-nums">
                               {classScores.length}
                             </td>
                             <td className="px-6 py-4 text-center">
@@ -1249,17 +1489,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 {req.status === 'approved' ? '✓ Authorized' : req.status === 'pending' ? '⏳ Awaiting Review' : '✕ Rejected'}
                               </span>
                               {req.status === 'rejected' && req.adminFeedback && (
-                                <p className="text-[10px] text-rose-600 mt-1 italic">"{req.adminFeedback}"</p>
+                                <p className="text-[10px] text-rose-600 mt-1 italic break-words whitespace-normal">"{req.adminFeedback}"</p>
                               )}
                             </td>
                             <td className="px-6 py-4 text-right">
-                              <div className="flex items-center justify-end gap-2">
+                              <div className="flex flex-wrap items-center justify-end gap-2">
                                 {req.status === 'pending' && (
                                   <>
                                     <button
                                       type="button"
                                       onClick={() => onApprovePublishRequest && onApprovePublishRequest(req.id)}
-                                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-[11px] uppercase tracking-wider transition-all shadow-xs active:scale-95 flex items-center gap-1"
+                                      className="min-h-[44px] px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-[11px] uppercase tracking-wider transition-all shadow-xs flex items-center gap-1"
                                       title="Authorize staff to send results to all pupils"
                                     >
                                       <span>✓</span>
@@ -1271,7 +1511,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                         setRejectModalRequestId(req.id);
                                         setRejectFeedbackText('');
                                       }}
-                                      className="px-2.5 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all"
+                                      className="min-h-[44px] px-3.5 py-2 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all"
                                       title="Decline and request revision"
                                     >
                                       Decline
@@ -1282,7 +1522,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => onBroadcastResultsToClass && onBroadcastResultsToClass(req.grade, req.term)}
-                                  className="px-3 py-1.5 bg-blue-900 hover:bg-blue-800 text-yellow-300 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all shadow-xs active:scale-95 flex items-center gap-1"
+                                  className="min-h-[44px] px-3.5 py-2 bg-blue-900 hover:bg-blue-800 text-yellow-300 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all shadow-xs flex items-center gap-1"
                                   title="Deliver results to all pupils and parents right now"
                                 >
                                   <span>📢</span>
@@ -1300,12 +1540,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             {/* Direct Admin Fast-Publish Widget */}
-            <div className="bg-slate-50 border-2 border-slate-200 rounded-3xl p-6 sm:p-8 space-y-4">
-              <h4 className="font-serif font-black text-blue-950 text-base flex items-center gap-2">
+            <div className="bg-slate-50 border-2 border-slate-200 rounded-3xl p-4 sm:p-8 space-y-4">
+              <h4 className="font-serif font-black text-blue-950 text-base flex items-center gap-2 break-words whitespace-normal">
                 <span>⚡</span>
                 <span>Immediate Administrator Broadcast (All Classes)</span>
               </h4>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 break-words whitespace-normal">
                 As the School Administrator, you can bypass requests and immediately publish results for any class with a single click.
               </p>
               <div className="flex flex-wrap gap-2 pt-1">
@@ -1320,7 +1560,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         }
                       }
                     }}
-                    className="px-3.5 py-2 bg-white hover:bg-yellow-400 hover:text-blue-950 text-blue-900 border border-slate-200 rounded-xl text-xs font-black transition-all shadow-2xs"
+                    className="min-h-[44px] px-3.5 py-2 bg-white hover:bg-yellow-400 hover:text-blue-950 text-blue-900 border border-slate-200 rounded-xl text-xs font-black transition-all shadow-2xs"
                   >
                     Send {lvl} Results
                   </button>
@@ -1330,12 +1570,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
             {/* Rejection / Revision Note Modal */}
             {rejectModalRequestId && (
-              <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-blue-950/80 backdrop-blur-xs">
-                <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border-4 border-yellow-400 space-y-4">
-                  <h4 className="font-serif font-black text-blue-950 text-lg">
+              <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-blue-950/80 backdrop-blur-sm">
+                <div className="bg-white rounded-3xl p-5 sm:p-8 max-w-md w-full max-h-[92vh] overflow-y-auto shadow-2xl border-4 border-yellow-400 space-y-4">
+                  <h4 className="font-serif font-black text-blue-950 text-lg break-words whitespace-normal">
                     Return Request with Feedback
                   </h4>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 break-words whitespace-normal">
                     Specify what the staff member should review or adjust before the results can be sent to pupils.
                   </p>
                   <textarea
@@ -1345,11 +1585,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     placeholder="e.g. Please verify Mathematics test scores for the 3 pupils with zero scores before release."
                     className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-xs font-bold outline-none focus:border-blue-900"
                   />
-                  <div className="flex justify-end gap-2 pt-2">
+                  <div className="flex flex-wrap justify-end gap-2 pt-2">
                     <button
                       type="button"
                       onClick={() => setRejectModalRequestId(null)}
-                      className="px-4 py-2 rounded-xl text-xs font-black text-slate-500 hover:bg-slate-100"
+                      className="min-h-[44px] px-4 py-2 rounded-xl text-xs font-black text-slate-500 hover:bg-slate-100"
                     >
                       Cancel
                     </button>
@@ -1361,7 +1601,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         }
                         setRejectModalRequestId(null);
                       }}
-                      className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md"
+                      className="min-h-[44px] px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md"
                     >
                       Confirm & Send Feedback
                     </button>
@@ -1375,15 +1615,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         {activeTab === 'fees' && (
           <div className="space-y-8">
             {/* Header & Primary Action Bar */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b-2 border-slate-100 pb-6">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-2xl font-black text-blue-900 font-serif">First Term Fee Structure & Tuition Setup</h3>
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b-2 border-slate-100 pb-6">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-xl sm:text-2xl font-black text-blue-900 font-serif break-words whitespace-normal">First Term Fee Structure & Tuition Setup</h3>
                   <span className="px-3 py-1 bg-yellow-400 text-blue-950 font-black text-[10px] uppercase rounded-full tracking-wider shadow-xs">
                     Current Active Schedule: First Term
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 font-bold mt-1">
+                <p className="text-xs text-slate-500 font-bold mt-1.5 break-words whitespace-normal">
                   The tuition amounts shown below currently represent approved First Term fees payable by students from Crèche to Senior Secondary (SS3).
                 </p>
               </div>
@@ -1393,7 +1633,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <button
                   type="button"
                   onClick={handleApplyMandatedPreset}
-                  className="px-4 py-3 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-xs hover:scale-[1.02] active:scale-[0.98]"
+                  className="min-h-[44px] px-4 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-xs"
                   title="Load official school fee schedule into editor"
                 >
                   <span>⚡</span>
@@ -1403,7 +1643,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <button
                   type="button"
                   onClick={handleResetFees}
-                  className="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-black uppercase tracking-wider transition-all"
+                  className="min-h-[44px] px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-black uppercase tracking-wider transition-all"
                   title="Discard changes and reload saved values"
                 >
                   Reset
@@ -1413,7 +1653,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   type="button"
                   onClick={handleSaveAllFees}
                   disabled={isSavingFees}
-                  className="px-6 py-3.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-2xl text-xs sm:text-sm font-black uppercase tracking-widest shadow-xl transition-all hover:scale-[1.03] active:scale-[0.97] flex items-center gap-2 border-2 border-yellow-400"
+                  className="min-h-[44px] px-5 py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-2xl text-xs sm:text-sm font-black uppercase tracking-widest shadow-xl transition-all flex items-center gap-2 border-2 border-yellow-400"
                 >
                   <span>{isSavingFees ? '⏳' : '💾'}</span>
                   <span>{isSavingFees ? 'Saving Changes...' : 'Update Fee Configuration'}</span>
@@ -1424,14 +1664,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             {/* Confirmation & Status Banner */}
             {feesSaveMsg && (
               <div className="p-4 bg-emerald-50 border-2 border-emerald-300 text-emerald-900 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-between gap-3 shadow-md animate-in fade-in">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">✅</span>
-                  <span>{feesSaveMsg}</span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-lg shrink-0">✅</span>
+                  <span className="break-words whitespace-normal">{feesSaveMsg}</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setFeesSaveMsg('')}
-                  className="text-emerald-700 hover:text-emerald-950 text-xs font-black px-2 py-1"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center text-emerald-700 hover:text-emerald-950 text-sm font-black shrink-0"
                 >
                   ✕
                 </button>
@@ -1439,13 +1679,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             )}
 
             {/* Fee Input Grid Grouped by Academic Section */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-8">
               {GRADE_GROUPS.map(group => (
-                <div key={group.name} className="bg-slate-50/50 rounded-3xl p-6 sm:p-7 border-2 border-blue-100 shadow-sm flex flex-col justify-between">
+                <div key={group.name} className="bg-slate-50/50 rounded-3xl p-4 sm:p-7 border-2 border-blue-100 shadow-sm flex flex-col justify-between min-w-0">
                   <div>
-                    <div className="flex items-center justify-between mb-5 pb-3 border-b border-blue-100">
-                      <h4 className="font-black text-blue-900 text-base font-serif">{group.name}</h4>
-                      <span className="text-[10px] font-black uppercase bg-blue-100 text-blue-900 px-2.5 py-0.5 rounded-full">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-5 pb-3 border-b border-blue-100">
+                      <h4 className="font-black text-blue-900 text-base font-serif break-words whitespace-normal">{group.name}</h4>
+                      <span className="text-[10px] font-black uppercase bg-blue-100 text-blue-900 px-2.5 py-0.5 rounded-full shrink-0">
                         {group.levels.length} Classes
                       </span>
                     </div>
@@ -1455,20 +1695,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         const currentAmount = localFees[level] !== undefined ? localFees[level] : (fees[level] || 0);
                         return (
                           <div key={level} className="flex flex-col space-y-1.5 p-3 rounded-2xl bg-white border border-slate-200 focus-within:border-blue-900 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-                            <div className="flex items-center justify-between">
-                              <label className="text-xs font-black text-blue-950 uppercase tracking-wider">{level}</label>
-                              <span className="text-[11px] font-bold text-slate-500 font-mono">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <label className="text-xs font-black text-blue-950 uppercase tracking-wider break-words whitespace-normal">{level}</label>
+                              <span className="text-[11px] font-bold text-slate-500 font-mono break-all">
                                 ₦{Number(currentAmount || 0).toLocaleString()}
                               </span>
                             </div>
-                            <div className="relative">
-                              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-900 font-black text-sm">₦</span>
+                            <div className="flex items-center gap-2 px-3 bg-slate-50/50 border border-slate-200 rounded-xl focus-within:bg-white focus-within:border-blue-900 min-h-[44px]">
+                              <span className="text-blue-900 font-black text-sm shrink-0">₦</span>
                               <input 
                                 type="number" 
                                 value={currentAmount === 0 ? '' : currentAmount}
                                 onChange={(e) => handleUpdateFeeChange(level, parseInt(e.target.value) || 0)}
                                 placeholder="0"
-                                className="pl-9 pr-3 py-2.5 w-full bg-slate-50/50 border border-slate-200 rounded-xl text-base font-black text-blue-950 outline-none focus:bg-white transition-all font-mono"
+                                className="py-2 w-full bg-transparent text-base font-black text-blue-950 outline-none font-mono"
                               />
                             </div>
                           </div>
@@ -1481,13 +1721,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             {/* Bottom Floating Save Button Bar */}
-            <div className="p-6 bg-blue-950 rounded-3xl border-4 border-yellow-400 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xl">
-              <div>
-                <p className="text-white font-black text-sm uppercase tracking-wider flex items-center gap-2">
+            <div className="p-4 sm:p-6 bg-blue-950 rounded-3xl border-4 border-yellow-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xl">
+              <div className="min-w-0">
+                <p className="text-white font-black text-sm uppercase tracking-wider flex items-center gap-2 break-words whitespace-normal">
                   <span>⚡</span>
                   <span>Ready to publish new fee changes?</span>
                 </p>
-                <p className="text-xs text-yellow-300 font-medium mt-0.5">
+                <p className="text-xs text-yellow-300 font-medium mt-1 break-words whitespace-normal">
                   Clicking update synchronizes these tuition rates across student fee checkers, admission portals, and parent dashboards.
                 </p>
               </div>
@@ -1497,7 +1737,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   type="button"
                   onClick={handleSaveAllFees}
                   disabled={isSavingFees}
-                  className="w-full sm:w-auto px-8 py-4 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl transition-all hover:scale-[1.03] active:scale-[0.97] flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto min-h-[44px] px-6 sm:px-8 py-3.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-widest shadow-xl transition-all flex items-center justify-center gap-2"
                 >
                   <span>{isSavingFees ? '⏳' : '💾'}</span>
                   <span>{isSavingFees ? 'Saving Changes...' : 'Update Fee Configuration'}</span>
@@ -1518,8 +1758,34 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
         {activeTab === 'applications' && (
           <div className="space-y-8">
-            <h3 className="text-2xl font-black text-blue-900 font-serif">Admission Forms</h3>
-            <div className="bg-white rounded-[2rem] border-2 border-slate-100 overflow-x-auto shadow-sm">
+            <h3 className="text-xl sm:text-2xl font-black text-blue-900 font-serif break-words whitespace-normal">Admission Forms</h3>
+            {/* Mobile Stacked Cards (<768px) */}
+            <div className="md:hidden space-y-3">
+              {applications.length === 0 ? (
+                <div className="bg-white rounded-3xl border-2 border-slate-100 py-14 px-6 text-center text-slate-400 font-bold uppercase tracking-widest text-xs shadow-sm">
+                  No entries found
+                </div>
+              ) : (
+                applications.map(app => (
+                  <div key={app.id} className="bg-white rounded-2xl border-2 border-slate-100 p-4 shadow-sm space-y-2.5">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-black text-blue-900 text-sm break-words whitespace-normal">{app.name}</p>
+                        <p className="text-xs text-slate-400 break-all">{app.email}</p>
+                      </div>
+                      <span className="px-2.5 py-1 bg-yellow-100 text-blue-700 rounded-lg text-[10px] font-black uppercase shrink-0">{app.grade}</span>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+                      <span className="text-slate-500 font-medium break-words whitespace-normal">{new Date(app.timestamp).toLocaleString()}</span>
+                      <span className="text-green-600 font-black uppercase tracking-widest shrink-0">✓ Verified</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Tablet & Desktop Table View (>=768px) */}
+            <div className="hidden md:block bg-white rounded-3xl sm:rounded-[2rem] border-2 border-slate-100 overflow-x-auto w-full shadow-sm">
               <table className="w-full text-left min-w-[600px]">
                 <thead>
                   <tr className="bg-slate-50 text-slate-400 text-xs font-black uppercase tracking-widest">
@@ -1537,8 +1803,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <tr key={app.id} className="hover:bg-blue-50/30 transition-colors">
                         <td className="px-8 py-6 text-sm text-slate-500 font-medium">{new Date(app.timestamp).toLocaleString()}</td>
                         <td className="px-8 py-6">
-                          <p className="font-black text-blue-900">{app.name}</p>
-                          <p className="text-xs text-slate-400">{app.email}</p>
+                          <p className="font-black text-blue-900 break-words whitespace-normal">{app.name}</p>
+                          <p className="text-xs text-slate-400 break-all">{app.email}</p>
                         </td>
                         <td className="px-8 py-6">
                           <span className="px-3 py-1 bg-yellow-100 text-blue-700 rounded-lg text-[10px] font-black uppercase">{app.grade}</span>
@@ -1558,24 +1824,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         {activeTab === 'teachers' && (
           <div className="space-y-8">
             {/* Top Bar for Staff Management with Realtime SQL Action */}
-            <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-950 p-6 rounded-3xl text-white shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">👔</span>
-                  <h3 className="text-2xl font-black font-serif text-yellow-400">Faculty & Staff Assignment Management</h3>
+            <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-950 p-4 sm:p-6 rounded-3xl text-white shadow-lg flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-2xl shrink-0">👔</span>
+                  <h3 className="text-xl sm:text-2xl font-black font-serif text-yellow-400 break-words whitespace-normal">Faculty & Staff Assignment Management</h3>
                 </div>
-                <p className="text-xs text-blue-200 mt-1 max-w-2xl">
+                <p className="text-xs text-blue-200 mt-1 max-w-2xl break-words whitespace-normal">
                   Assign faculty as <strong>Class Teachers</strong> (attendance, broadsheets, conduct & pupil enrolment), <strong>Subject Teachers</strong> (specialist subject curricula across levels), or <strong>Both</strong>.
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
                 <button
                   type="button"
                   onClick={() => {
                     setSqlModalTab('staffAssignments');
                     setShowSqlModal(true);
                   }}
-                  className="px-4 py-2.5 bg-yellow-400 text-blue-950 hover:bg-yellow-300 font-black text-xs uppercase tracking-wider rounded-xl shadow transition-all flex items-center gap-2 active:scale-95"
+                  className="min-h-[44px] px-4 py-2.5 bg-yellow-400 text-blue-950 hover:bg-yellow-300 font-black text-xs uppercase tracking-wider rounded-xl shadow transition-all flex items-center gap-2"
                 >
                   <span>⚡</span>
                   <span>View Staff Assignment SQL</span>
@@ -1583,7 +1849,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <button
                   type="button"
                   onClick={handleCopyStaffAssignmentSql}
-                  className="px-4 py-2.5 bg-blue-800/80 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider rounded-xl border border-blue-600 transition-all flex items-center gap-2"
+                  className="min-h-[44px] px-4 py-2.5 bg-blue-800/80 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider rounded-xl border border-blue-600 transition-all flex items-center gap-2"
                 >
                   <span>{staffSqlCopied ? '✓' : '📋'}</span>
                   <span>{staffSqlCopied ? 'SQL Copied!' : 'Copy SQL Code'}</span>
@@ -1591,7 +1857,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowInlineStaffSql(prev => !prev)}
-                  className="px-3 py-2.5 bg-blue-900/60 hover:bg-blue-800 text-blue-200 hover:text-white text-xs font-bold rounded-xl border border-blue-700/60"
+                  className="min-h-[44px] px-3.5 py-2.5 bg-blue-900/60 hover:bg-blue-800 text-blue-200 hover:text-white text-xs font-bold rounded-xl border border-blue-700/60"
                   title="Toggle Quick SQL Snippet"
                 >
                   {showInlineStaffSql ? 'Hide SQL Code ▲' : 'Show SQL Code ▼'}
@@ -1601,24 +1867,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
             {/* Inline SQL Code Viewer dropdown */}
             {showInlineStaffSql && (
-              <div className="p-5 bg-slate-900 rounded-3xl text-slate-100 border-2 border-yellow-400/30 shadow-xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-yellow-400 font-mono text-xs font-bold">SQL SCRIPT • Staff Role & Subject Assignments</span>
+              <div className="p-4 sm:p-5 bg-slate-900 rounded-3xl text-slate-100 border-2 border-yellow-400/30 shadow-xl space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-yellow-400 font-mono text-xs font-bold break-words whitespace-normal">SQL SCRIPT • Staff Role & Subject Assignments</span>
                     <span className="text-[10px] bg-blue-800 text-blue-200 px-2 py-0.5 rounded-full font-bold">Supabase / PostgreSQL</span>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
                       onClick={handleCopyStaffAssignmentSql}
-                      className="px-3 py-1 bg-yellow-400 text-blue-950 font-black text-xs rounded-lg hover:bg-yellow-300 transition-all"
+                      className="min-h-[44px] px-3.5 py-2 bg-yellow-400 text-blue-950 font-black text-xs rounded-lg hover:bg-yellow-300 transition-all"
                     >
                       {staffSqlCopied ? '✓ Copied' : 'Copy Script'}
                     </button>
                     <button
                       type="button"
                       onClick={downloadStaffAssignmentSql}
-                      className="px-3 py-1 bg-slate-800 text-slate-300 border border-slate-700 font-bold text-xs rounded-lg hover:bg-slate-700 transition-all"
+                      className="min-h-[44px] px-3.5 py-2 bg-slate-800 text-slate-300 border border-slate-700 font-bold text-xs rounded-lg hover:bg-slate-700 transition-all"
                     >
                       Download .sql
                     </button>
@@ -1627,42 +1893,42 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <pre className="font-mono text-xs bg-black/60 p-4 rounded-2xl overflow-x-auto text-green-400 max-h-56 leading-relaxed select-all">
                   {SUPABASE_STAFF_ASSIGNMENT_SQL}
                 </pre>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-slate-400 break-words whitespace-normal">
                   Run this SQL in your Supabase SQL Editor. It adds <code className="text-yellow-400 font-mono">assignment_role</code> and <code className="text-yellow-400 font-mono">assigned_subjects</code> columns with zero downtime.
                 </p>
               </div>
             )}
 
-            <div className="grid lg:grid-cols-12 gap-10">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
               {/* Staff Registration & Initial Permissions */}
-              <div className="lg:col-span-5 space-y-8">
+              <div className="lg:col-span-5 space-y-6 sm:space-y-8 min-w-0">
                 <div>
-                  <h3 className="text-2xl font-black text-blue-900 font-serif">Staff Registration & Assignment</h3>
-                  <p className="text-xs text-slate-500 font-bold mt-1">Register new academic staff as Class Teachers, Subject Teachers, or Both</p>
+                  <h3 className="text-xl sm:text-2xl font-black text-blue-900 font-serif break-words whitespace-normal">Staff Registration & Assignment</h3>
+                  <p className="text-xs text-slate-500 font-bold mt-1 break-words whitespace-normal">Register new academic staff as Class Teachers, Subject Teachers, or Both</p>
                 </div>
 
-                <form onSubmit={handleTeacherSubmit} className="space-y-6 bg-slate-50 p-8 rounded-[2.5rem] border-2 border-slate-200">
+                <form onSubmit={handleTeacherSubmit} className="space-y-6 bg-slate-50 p-4 sm:p-8 rounded-3xl sm:rounded-[2.5rem] border-2 border-slate-200">
                   <div className="space-y-4">
                     <div className="space-y-1">
-                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Staff Username</label>
+                      <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Staff Username</label>
                       <input 
                         type="text" 
                         required 
                         value={teacherUser} 
                         onChange={(e) => setTeacherUser(e.target.value)} 
                         placeholder="e.g. Mr. Benson"
-                        className="w-full px-5 py-3.5 bg-white border-2 border-slate-200 rounded-2xl font-bold text-blue-900 outline-none focus:border-blue-900 shadow-sm" 
+                        className="w-full min-h-[44px] px-4 py-3 bg-white border-2 border-slate-200 rounded-2xl font-bold text-blue-900 outline-none focus:border-blue-900 shadow-sm" 
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Pass-key</label>
+                      <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Pass-key</label>
                       <input 
                         type="password" 
                         required 
                         value={teacherPass} 
                         onChange={(e) => setTeacherPass(e.target.value)} 
                         placeholder="••••••••"
-                        className="w-full px-5 py-3.5 bg-white border-2 border-slate-200 rounded-2xl font-bold text-blue-900 outline-none focus:border-blue-900 shadow-sm" 
+                        className="w-full min-h-[44px] px-4 py-3 bg-white border-2 border-slate-200 rounded-2xl font-bold text-blue-900 outline-none focus:border-blue-900 shadow-sm" 
                       />
                     </div>
                   </div>
@@ -1672,63 +1938,63 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <label className="text-xs font-black text-blue-900 uppercase tracking-widest block">
                       Choose Assignment Role
                     </label>
-                    <p className="text-[11px] text-slate-500 font-medium">Select whether to assign this teacher to a Class, a Subject, or Both:</p>
+                    <p className="text-[11px] text-slate-500 font-medium break-words whitespace-normal">Select whether to assign this teacher to a Class, a Subject, or Both:</p>
                     
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       <button
                         type="button"
                         onClick={() => setStaffAssignmentRole('class_teacher')}
-                        className={`p-3 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                        className={`min-h-[44px] p-3 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center gap-1 ${
                           staffAssignmentRole === 'class_teacher'
-                            ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md scale-[1.02]'
+                            ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md'
                             : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-100/50'
                         }`}
                       >
                         <span className="text-lg">🏫</span>
-                        <span className="text-xs font-black uppercase tracking-tight">Class Teacher</span>
-                        <span className={`text-[9px] font-bold ${staffAssignmentRole === 'class_teacher' ? 'text-yellow-200' : 'text-slate-400'}`}>Assign Class</span>
+                        <span className="text-xs font-black uppercase tracking-tight break-words whitespace-normal">Class Teacher</span>
+                        <span className={`text-[10px] font-bold ${staffAssignmentRole === 'class_teacher' ? 'text-yellow-200' : 'text-slate-400'}`}>Assign Class</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setStaffAssignmentRole('subject_teacher')}
-                        className={`p-3 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                        className={`min-h-[44px] p-3 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center gap-1 ${
                           staffAssignmentRole === 'subject_teacher'
-                            ? 'bg-indigo-900 text-yellow-400 border-indigo-900 shadow-md scale-[1.02]'
+                            ? 'bg-indigo-900 text-yellow-400 border-indigo-900 shadow-md'
                             : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-100/50'
                         }`}
                       >
                         <span className="text-lg">📚</span>
-                        <span className="text-xs font-black uppercase tracking-tight">Subject Teacher</span>
-                        <span className={`text-[9px] font-bold ${staffAssignmentRole === 'subject_teacher' ? 'text-yellow-200' : 'text-slate-400'}`}>Assign Subject</span>
+                        <span className="text-xs font-black uppercase tracking-tight break-words whitespace-normal">Subject Teacher</span>
+                        <span className={`text-[10px] font-bold ${staffAssignmentRole === 'subject_teacher' ? 'text-yellow-200' : 'text-slate-400'}`}>Assign Subject</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setStaffAssignmentRole('both')}
-                        className={`p-3 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                        className={`min-h-[44px] p-3 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center gap-1 ${
                           staffAssignmentRole === 'both'
-                            ? 'bg-purple-900 text-yellow-400 border-purple-900 shadow-md scale-[1.02]'
+                            ? 'bg-purple-900 text-yellow-400 border-purple-900 shadow-md'
                             : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-100/50'
                         }`}
                       >
                         <span className="text-lg">🌟</span>
-                        <span className="text-xs font-black uppercase tracking-tight">Both (Class & Subj)</span>
-                        <span className={`text-[9px] font-bold ${staffAssignmentRole === 'both' ? 'text-yellow-200' : 'text-slate-400'}`}>Dual Role</span>
+                        <span className="text-xs font-black uppercase tracking-tight break-words whitespace-normal">Both (Class & Subj)</span>
+                        <span className={`text-[10px] font-bold ${staffAssignmentRole === 'both' ? 'text-yellow-200' : 'text-slate-400'}`}>Dual Role</span>
                       </button>
                     </div>
                   </div>
 
                   {/* Designated Class Teacher Dropdown */}
                   <div className="space-y-1.5 pt-2 border-t border-slate-200">
-                    <label className="text-xs font-black text-blue-950 uppercase tracking-wider block">
+                    <label className="text-xs font-black text-blue-950 uppercase tracking-wider block break-words whitespace-normal">
                       Designated Class Teacher (e.g. JSS 1)
                     </label>
-                    <p className="text-[11px] text-slate-500 font-medium">Designate the specific class where this staff is the primary Class Teacher / Form Tutor:</p>
+                    <p className="text-[11px] text-slate-500 font-medium break-words whitespace-normal">Designate the specific class where this staff is the primary Class Teacher / Form Tutor:</p>
                     <select
                       value={classTeacherGrade}
                       onChange={(e) => setClassTeacherGrade(e.target.value as GradeLevel | '')}
-                      className="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:border-blue-900"
+                      className="w-full min-h-[44px] px-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:border-blue-900"
                     >
                       <option value="">-- None / Subject Teacher Only --</option>
                       {GRADE_GROUPS.flatMap(g => g.levels).map(lvl => (
@@ -1739,15 +2005,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                   {/* 2. All Classes Taught */}
                   <div className="space-y-2 pt-2 border-t border-slate-200">
-                    <div className="flex justify-between items-center">
-                      <label className="text-xs font-black text-slate-600 uppercase tracking-widest block">
-                        Classes Taught (e.g. JSS 1, JSS 2, JSS 3, SS 1, SS 2) ({assignedGrades.length} selected)
+                    <div className="flex flex-wrap justify-between items-center gap-2">
+                      <label className="text-xs font-black text-slate-600 uppercase tracking-widest block break-words whitespace-normal">
+                        Classes Taught ({assignedGrades.length} selected)
                       </label>
-                      <div className="flex space-x-2">
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => setAssignedGrades(GRADE_GROUPS.flatMap(g => g.levels) as GradeLevel[])}
-                          className="text-[10px] font-black text-blue-900 hover:underline uppercase"
+                          className="min-h-[44px] px-2 text-[11px] font-black text-blue-900 hover:underline uppercase"
                         >
                           All Classes
                         </button>
@@ -1755,13 +2021,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <button
                           type="button"
                           onClick={() => setAssignedGrades([])}
-                          className="text-[10px] font-black text-red-600 hover:underline uppercase"
+                          className="min-h-[44px] px-2 text-[11px] font-black text-red-600 hover:underline uppercase"
                         >
                           Clear
                         </button>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 bg-white rounded-2xl border border-slate-200">
+                    <div className="flex flex-wrap gap-1.5 max-h-44 overflow-y-auto p-2.5 bg-white rounded-2xl border border-slate-200">
                       {GRADE_GROUPS.flatMap(g => g.levels).map(lvl => {
                         const isSelected = assignedGrades.includes(lvl as GradeLevel);
                         return (
@@ -1769,10 +2035,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             type="button"
                             key={lvl}
                             onClick={() => toggleGrade(lvl as GradeLevel)}
-                            className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase transition-all ${
+                            className={`min-h-[44px] px-3 py-2 rounded-xl text-[11px] font-black uppercase transition-all ${
                               isSelected 
                                 ? 'bg-blue-900 text-yellow-400 border border-blue-900' 
-                                : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100'
+                                : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100'
                             }`}
                           >
                             {isSelected ? '✓ ' : ''}{lvl}
@@ -1784,15 +2050,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                   {/* 3. Assigned Subjects */}
                   <div className="space-y-2 pt-2 border-t border-slate-200">
-                    <div className="flex justify-between items-center">
-                      <label className="text-xs font-black text-indigo-950 uppercase tracking-widest block">
-                        Assigned Subjects (e.g. CRS, Yoruba) ({assignedSubjects.length} selected)
+                    <div className="flex flex-wrap justify-between items-center gap-2">
+                      <label className="text-xs font-black text-indigo-950 uppercase tracking-widest block break-words whitespace-normal">
+                        Assigned Subjects ({assignedSubjects.length} selected)
                       </label>
-                        <div className="flex space-x-2">
+                        <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => setAssignedSubjects([...STANDARD_SUBJECTS])}
-                            className="text-[10px] font-black text-indigo-900 hover:underline uppercase"
+                            className="min-h-[44px] px-2 text-[11px] font-black text-indigo-900 hover:underline uppercase"
                           >
                             All Standard
                           </button>
@@ -1800,7 +2066,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           <button
                             type="button"
                             onClick={() => setAssignedSubjects([])}
-                            className="text-[10px] font-black text-red-600 hover:underline uppercase"
+                            className="min-h-[44px] px-2 text-[11px] font-black text-red-600 hover:underline uppercase"
                           >
                             Clear
                           </button>
@@ -1808,7 +2074,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       </div>
                       
                       {/* Standard Subject Pills */}
-                      <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-2.5 bg-white rounded-2xl border border-slate-200">
+                      <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto p-2.5 bg-white rounded-2xl border border-slate-200">
                         {STANDARD_SUBJECTS.map(subj => {
                           const isSelected = assignedSubjects.includes(subj);
                           return (
@@ -1816,10 +2082,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               type="button"
                               key={subj}
                               onClick={() => toggleSubject(subj)}
-                              className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase transition-all ${
+                              className={`min-h-[44px] px-3 py-2 rounded-xl text-[11px] font-black uppercase transition-all ${
                                 isSelected
                                   ? 'bg-indigo-900 text-yellow-400 border border-indigo-900 shadow-sm'
-                                  : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100'
+                                  : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100'
                               }`}
                             >
                               {isSelected ? '✓ ' : ''}{subj}
@@ -1832,7 +2098,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             type="button"
                             key={customSubj}
                             onClick={() => toggleSubject(customSubj)}
-                            className="px-2.5 py-1 rounded-xl text-[10px] font-black uppercase bg-purple-900 text-yellow-300 border border-purple-900 shadow-sm"
+                            className="min-h-[44px] px-3 py-2 rounded-xl text-[11px] font-black uppercase bg-purple-900 text-yellow-300 border border-purple-900 shadow-sm"
                           >
                             ✓ {customSubj} ✕
                           </button>
@@ -1840,19 +2106,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       </div>
 
                       {/* Add Custom Subject field */}
-                      <div className="flex items-center gap-2 pt-1">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
                         <input
                           type="text"
                           value={customSubjectInput}
                           onChange={(e) => setCustomSubjectInput(e.target.value)}
                           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomSubject(); } }}
                           placeholder="Add custom subject (e.g. French, Phonics)..."
-                          className="flex-1 px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl font-medium outline-none focus:border-indigo-900"
+                          className="flex-1 min-h-[44px] px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl font-medium outline-none focus:border-indigo-900"
                         />
                         <button
                           type="button"
                           onClick={handleAddCustomSubject}
-                          className="px-3 py-2 bg-indigo-900 text-yellow-400 text-xs font-black rounded-xl hover:bg-indigo-800"
+                          className="min-h-[44px] px-4 py-2 bg-indigo-900 text-yellow-400 text-xs font-black rounded-xl hover:bg-indigo-800 shrink-0"
                         >
                           + Add Subject
                         </button>
@@ -1861,18 +2127,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                     {/* Page Access Control Section */}
                   <div className="space-y-3 pt-2 border-t border-slate-200">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-wrap justify-between items-center gap-2">
                       <div>
                         <label className="text-xs font-black text-blue-900 uppercase tracking-widest block">
                           Page & Module Access Control
                         </label>
-                        <p className="text-[10px] text-slate-500 font-medium">Select pages this staff can access</p>
+                        <p className="text-[11px] text-slate-500 font-medium">Select pages this staff can access</p>
                       </div>
-                      <div className="flex space-x-2">
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => setSelectedNewPermissions(ALL_STAFF_PAGES.map(p => p.id))}
-                          className="text-[10px] font-black text-blue-900 hover:text-blue-700 uppercase underline"
+                          className="min-h-[44px] px-2 text-[11px] font-black text-blue-900 hover:text-blue-700 uppercase underline"
                         >
                           All
                         </button>
@@ -1880,14 +2146,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <button
                           type="button"
                           onClick={() => setSelectedNewPermissions([])}
-                          className="text-[10px] font-black text-red-600 hover:text-red-700 uppercase underline"
+                          className="min-h-[44px] px-2 text-[11px] font-black text-red-600 hover:text-red-700 uppercase underline"
                         >
                           None
                         </button>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {ALL_STAFF_PAGES.map(page => {
                         const isChecked = selectedNewPermissions.includes(page.id);
                         return (
@@ -1895,16 +2161,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             type="button"
                             key={page.id}
                             onClick={() => toggleNewPermission(page.id)}
-                            className={`p-2.5 rounded-xl border text-left transition-all flex items-start space-x-2 ${
+                            className={`min-h-[44px] p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 ${
                               isChecked 
                                 ? 'bg-blue-900 text-white border-blue-900 shadow-sm' 
-                                : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'
+                                : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
                             }`}
                           >
-                            <span className="text-base">{page.icon}</span>
-                            <div className="overflow-hidden">
-                              <p className="text-[11px] font-black leading-tight truncate">{page.label}</p>
-                              <span className={`text-[9px] font-bold ${isChecked ? 'text-yellow-400' : 'text-slate-400'}`}>
+                            <span className="text-base shrink-0">{page.icon}</span>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[11px] font-black leading-tight break-words whitespace-normal">{page.label}</p>
+                              <span className={`text-[10px] font-bold ${isChecked ? 'text-yellow-400' : 'text-slate-400'}`}>
                                 {isChecked ? '✓ Granted' : '✗ Denied'}
                               </span>
                             </div>
@@ -1916,18 +2182,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                   {/* Class Teacher Student Registration Permission Toggle */}
                   <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 space-y-2">
-                    <label className="flex items-start gap-3 cursor-pointer">
+                    <label className="flex items-start gap-3 cursor-pointer min-h-[44px]">
                       <input
                         type="checkbox"
                         checked={canCreateStudents}
                         onChange={(e) => setCanCreateStudents(e.target.checked)}
-                        className="mt-1 w-4 h-4 rounded text-blue-900 border-slate-300 focus:ring-blue-900"
+                        className="mt-0.5 w-5 h-5 shrink-0 rounded text-blue-900 border-slate-300 focus:ring-blue-900"
                       />
-                      <div>
-                        <span className="text-xs font-black text-blue-950 uppercase tracking-wider block">
+                      <div className="min-w-0">
+                        <span className="text-xs font-black text-blue-950 uppercase tracking-wider block break-words whitespace-normal">
                           Allow Class Teacher to Open Student Accounts
                         </span>
-                        <p className="text-[11px] text-amber-900 leading-snug mt-0.5">
+                        <p className="text-[11px] text-amber-900 leading-snug mt-0.5 break-words whitespace-normal">
                           Permits this staff member to register pupils strictly for their assigned class(es). Unassigned classes remain blocked.
                         </p>
                       </div>
@@ -1936,7 +2202,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                   <button 
                     type="submit" 
-                    className="w-full py-4 bg-blue-900 text-yellow-400 font-black text-sm uppercase tracking-widest rounded-2xl shadow-xl hover:bg-blue-800 transition-all active:scale-[0.99]"
+                    className="w-full min-h-[44px] py-4 px-4 bg-blue-900 text-yellow-400 font-black text-xs sm:text-sm uppercase tracking-widest rounded-2xl shadow-xl hover:bg-blue-800 transition-all break-words whitespace-normal"
                   >
                     Register Staff as {staffAssignmentRole === 'both' ? 'Class & Subject Teacher' : staffAssignmentRole === 'subject_teacher' ? 'Subject Teacher' : 'Class Teacher'} →
                   </button>
@@ -1944,19 +2210,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
 
               {/* Staff Directory & Interactive Page Access Controller */}
-              <div className="lg:col-span-7 space-y-6">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="text-2xl font-black text-blue-900 font-serif">Staff Directory & Page Permissions</h3>
-                    <p className="text-xs text-slate-500 font-bold">Assign classes or subjects, edit assignments, and grant/revoke access in real time</p>
+              <div className="lg:col-span-7 space-y-6 min-w-0">
+                <div className="flex flex-wrap justify-between items-center gap-3">
+                  <div className="min-w-0">
+                    <h3 className="text-xl sm:text-2xl font-black text-blue-900 font-serif break-words whitespace-normal">Staff Directory & Page Permissions</h3>
+                    <p className="text-xs text-slate-500 font-bold break-words whitespace-normal">Assign classes or subjects, edit assignments, and grant/revoke access in real time</p>
                   </div>
-                  <span className="px-3 py-1 bg-blue-100 text-blue-900 rounded-full text-xs font-black uppercase tracking-widest">
+                  <span className="px-3 py-1 bg-blue-100 text-blue-900 rounded-full text-xs font-black uppercase tracking-widest shrink-0">
                     {teachers.length} Staff Member(s)
                   </span>
                 </div>
 
                 {teachers.length === 0 ? (
-                  <div className="p-12 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                  <div className="p-8 sm:p-12 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
                     <span className="text-4xl block mb-3">👔</span>
                     <p className="font-black text-blue-900">No staff members registered yet</p>
                     <p className="text-xs text-slate-400 mt-1 font-medium">Use the form on the left to create staff accounts and assign classes or subjects.</p>
@@ -1989,15 +2255,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       };
 
                       return (
-                        <div key={teacher.id} className="p-6 bg-white rounded-3xl border-2 border-slate-100 shadow-sm hover:border-blue-200 transition-colors">
+                        <div key={teacher.id} className="p-4 sm:p-6 bg-white rounded-3xl border-2 border-slate-100 shadow-sm hover:border-blue-200 transition-colors">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-12 h-12 bg-blue-900 text-yellow-400 rounded-2xl flex items-center justify-center font-black text-lg shadow-md uppercase">
+                            <div className="flex items-start sm:items-center gap-3 min-w-0">
+                              <div className="w-11 h-11 sm:w-12 sm:h-12 bg-blue-900 text-yellow-400 rounded-2xl flex items-center justify-center font-black text-lg shadow-md uppercase shrink-0">
                                 {teacher.username.charAt(0)}
                               </div>
-                              <div>
-                                <div className="flex items-center space-x-2 flex-wrap gap-y-1">
-                                  <h4 className="font-black text-blue-900 text-base">{teacher.username}</h4>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center flex-wrap gap-2">
+                                  <h4 className="font-black text-blue-900 text-base break-words whitespace-normal">{teacher.username}</h4>
                                   {role === 'subject_teacher' ? (
                                     <span className="px-2.5 py-0.5 bg-indigo-100 text-indigo-900 border border-indigo-200 rounded-full text-[10px] font-black uppercase tracking-wider">
                                       📚 Subject Teacher
@@ -2026,16 +2292,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-[11px] text-slate-500 font-bold mt-1 space-y-1">
+                                <div className="text-[11px] text-slate-500 font-bold mt-1.5 space-y-1">
                                   {teacher.classTeacherGrade && (
                                     <div className="flex items-center gap-1.5 pb-0.5">
-                                      <span className="px-2.5 py-0.5 bg-yellow-400 text-blue-950 font-black rounded-lg text-[10px] uppercase shadow-xs border border-yellow-500 flex items-center gap-1">
+                                      <span className="px-2.5 py-0.5 bg-yellow-400 text-blue-950 font-black rounded-lg text-[10px] uppercase shadow-xs border border-yellow-500 inline-flex items-center gap-1">
                                         <span>🏫</span>
                                         <span>Class Teacher: {teacher.classTeacherGrade}</span>
                                       </span>
                                     </div>
                                   )}
-                                  <p className="flex items-center gap-2 flex-wrap">
+                                  <p className="flex items-center gap-2 flex-wrap break-words whitespace-normal">
                                     <span>Classes Taught: <strong className="text-blue-900">{teacher.assignedGrades && teacher.assignedGrades.length > 0 ? teacher.assignedGrades.join(', ') : (role === 'subject_teacher' ? 'All Classes (Subject Specialist)' : 'None')}</strong></span>
                                     {teacher.canCreateStudents && (
                                       <span className="px-2 py-0.5 bg-amber-100 text-amber-900 rounded-full text-[9px] font-black uppercase">
@@ -2047,7 +2313,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                     <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
                                       <span className="text-indigo-900">Assigned Subjects:</span>
                                       {teacher.assignedSubjects.map(subj => (
-                                        <span key={subj} className="px-2 py-0.5 bg-indigo-50 text-indigo-800 rounded-md text-[10px] font-bold border border-indigo-200">
+                                        <span key={subj} className="px-2 py-0.5 bg-indigo-50 text-indigo-800 rounded-md text-[10px] font-bold border border-indigo-200 break-words whitespace-normal">
                                           {subj}
                                         </span>
                                       ))}
@@ -2057,13 +2323,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               </div>
                             </div>
 
-                            <div className="flex items-center space-x-2 self-end sm:self-auto flex-wrap gap-y-2">
+                            <div className="flex items-center flex-wrap gap-2 self-start sm:self-auto">
                               {/* Edit Assignment Button */}
                               <button
                                 type="button"
                                 onClick={() => openEditTeacherAssignmentModal(teacher)}
                                 title="Change role or reassign classes and subjects"
-                                className="px-3 py-1.5 bg-blue-900 text-yellow-400 hover:bg-blue-800 rounded-xl text-[10px] font-black uppercase shadow-sm transition-all flex items-center gap-1 active:scale-95"
+                                className="min-h-[44px] px-3.5 py-2 bg-blue-900 text-yellow-400 hover:bg-blue-800 rounded-xl text-[11px] font-black uppercase shadow-sm transition-all flex items-center gap-1"
                               >
                                 <span>✏️</span>
                                 <span>Assign Class / Subject</span>
@@ -2073,7 +2339,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 type="button"
                                 onClick={grantAllForTeacher}
                                 title="Grant access to all staff pages"
-                                className="px-2.5 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg text-[10px] font-black uppercase border border-green-200 transition-colors"
+                                className="min-h-[44px] px-3 py-2 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg text-[11px] font-black uppercase border border-green-200 transition-colors"
                               >
                                 Grant All
                               </button>
@@ -2081,7 +2347,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 type="button"
                                 onClick={revokeAllForTeacher}
                                 title="Revoke access to all staff pages"
-                                className="px-2.5 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-[10px] font-black uppercase border border-red-200 transition-colors"
+                                className="min-h-[44px] px-3 py-2 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-[11px] font-black uppercase border border-red-200 transition-colors"
                               >
                                 Revoke All
                               </button>
@@ -2093,7 +2359,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                       onDeleteTeacher(teacher.id);
                                     }
                                   }}
-                                  className="p-1.5 text-slate-300 hover:text-red-500 transition-colors"
+                                  className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors font-black"
                                   title="Delete staff account"
                                 >
                                   ✕
@@ -2104,10 +2370,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                           {/* Interactive Page Permission Pills for this Teacher */}
                           <div className="mt-4">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                            <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2">
                               Toggle Accessible Pages (Click to Grant / Revoke):
                             </p>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
                               {ALL_STAFF_PAGES.map(page => {
                                 const hasAccess = currentPermissions.includes(page.id);
                                 return (
@@ -2115,18 +2381,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                     key={page.id}
                                     type="button"
                                     onClick={() => togglePageForTeacher(page.id)}
-                                    className={`px-3 py-2 rounded-xl text-left transition-all border flex items-center justify-between group ${
+                                    className={`min-h-[44px] px-3 py-2 rounded-xl text-left transition-all border flex items-center justify-between gap-2 group ${
                                       hasAccess 
                                         ? 'bg-blue-50 border-blue-200 text-blue-900 hover:bg-red-50 hover:border-red-200' 
-                                        : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-green-50 hover:border-green-200'
+                                        : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-green-50 hover:border-green-200'
                                     }`}
                                     title={hasAccess ? `Revoke access to ${page.label}` : `Grant access to ${page.label}`}
                                 >
-                                  <div className="flex items-center space-x-1.5 truncate mr-1">
-                                    <span className="text-xs">{page.icon}</span>
-                                    <span className="text-[10px] font-black truncate">{page.label}</span>
+                                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                    <span className="text-xs shrink-0">{page.icon}</span>
+                                    <span className="text-[11px] font-black break-words whitespace-normal leading-tight">{page.label}</span>
                                   </div>
-                                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${
+                                  <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase shrink-0 ${
                                     hasAccess 
                                       ? 'bg-blue-900 text-yellow-400 group-hover:bg-red-600 group-hover:text-white' 
                                       : 'bg-slate-200 text-slate-600 group-hover:bg-green-600 group-hover:text-white'
@@ -2156,37 +2422,37 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               onAddCourse={(c) => onAddCourse(c.name, c.grade, c.description)}
             />
 
-            <div className="grid lg:grid-cols-2 gap-12">
-              <div>
-                <h3 className="text-2xl font-black text-blue-900 mb-6 font-serif">Custom Subject / Class Manual Entry</h3>
-                <form onSubmit={handleCourseSubmit} className="space-y-6 bg-slate-50 p-8 rounded-[2.5rem] border-2 border-slate-100 shadow-sm">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+              <div className="min-w-0">
+                <h3 className="text-xl sm:text-2xl font-black text-blue-900 mb-6 font-serif break-words whitespace-normal">Custom Subject / Class Manual Entry</h3>
+                <form onSubmit={handleCourseSubmit} className="space-y-6 bg-slate-50 p-4 sm:p-8 rounded-3xl sm:rounded-[2.5rem] border-2 border-slate-100 shadow-sm">
                   <div>
-                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Subject Name</label>
-                    <input type="text" required value={courseName} onChange={(e) => setCourseName(e.target.value)} className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl font-bold outline-none focus:border-blue-900" placeholder="e.g. Mathematics, Basic Science" />
+                    <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Subject Name</label>
+                    <input type="text" required value={courseName} onChange={(e) => setCourseName(e.target.value)} className="w-full min-h-[44px] px-4 py-3.5 bg-white border-2 border-slate-200 rounded-2xl font-bold outline-none focus:border-blue-900" placeholder="e.g. Mathematics, Basic Science" />
                   </div>
                   <div>
-                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Target Class</label>
-                    <select value={courseGrade} onChange={(e) => setCourseGrade(e.target.value as GradeLevel)} className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl font-bold outline-none focus:border-blue-900">
+                    <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Target Class</label>
+                    <select value={courseGrade} onChange={(e) => setCourseGrade(e.target.value as GradeLevel)} className="w-full min-h-[44px] px-4 py-3.5 bg-white border-2 border-slate-200 rounded-2xl font-bold outline-none focus:border-blue-900">
                       {GRADE_GROUPS.flatMap(g => g.levels).map(lvl => <option key={lvl} value={lvl}>{lvl}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Description / Objective</label>
-                    <textarea value={courseDesc} onChange={(e) => setCourseDesc(e.target.value)} rows={3} className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl font-bold outline-none focus:border-blue-900" placeholder="Subject description..." />
+                    <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Description / Objective</label>
+                    <textarea value={courseDesc} onChange={(e) => setCourseDesc(e.target.value)} rows={3} className="w-full px-4 py-3.5 bg-white border-2 border-slate-200 rounded-2xl font-bold outline-none focus:border-blue-900" placeholder="Subject description..." />
                   </div>
-                  <button type="submit" className="w-full py-5 bg-blue-900 text-yellow-400 font-black text-lg rounded-2xl shadow-xl hover:bg-blue-800 transition-all">Add Subject</button>
+                  <button type="submit" className="w-full min-h-[44px] py-4 px-4 bg-blue-900 text-yellow-400 font-black text-base sm:text-lg rounded-2xl shadow-xl hover:bg-blue-800 transition-all">Add Subject</button>
                 </form>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-6 min-w-0">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                  <h3 className="text-2xl font-black text-blue-900 font-serif">Existing Courses ({courses.length})</h3>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-black text-slate-400 uppercase">Filter:</span>
+                  <h3 className="text-xl sm:text-2xl font-black text-blue-900 font-serif break-words whitespace-normal">Existing Courses ({courses.length})</h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-black text-slate-500 uppercase">Filter:</span>
                     <select 
                       value={courseFilterGrade} 
                       onChange={(e) => setCourseFilterGrade(e.target.value)}
-                      className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs outline-none"
+                      className="min-h-[44px] px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs outline-none"
                     >
                       <option value="ALL">All Classes</option>
                       {GRADE_GROUPS.flatMap(g => g.levels).map(lvl => (
@@ -2196,21 +2462,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </div>
                 </div>
 
-                <div className="space-y-4 max-h-[550px] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="space-y-4 max-h-[550px] overflow-y-auto pr-1 custom-scrollbar">
                   {courses.filter(c => courseFilterGrade === 'ALL' || c.grade === courseFilterGrade).length === 0 ? (
-                    <div className="p-12 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 text-slate-400 font-bold uppercase text-xs">No courses found for selected class filter.</div>
+                    <div className="p-8 sm:p-12 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 text-slate-400 font-bold uppercase text-xs">No courses found for selected class filter.</div>
                   ) : (
                     courses.filter(c => courseFilterGrade === 'ALL' || c.grade === courseFilterGrade).map(course => (
-                      <div key={course.id} className="p-6 bg-white border-2 border-slate-100 rounded-2xl shadow-sm hover:border-blue-200 transition-colors">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-black text-blue-900 text-lg">{course.name}</h4>
-                              <span className="text-[10px] font-black uppercase bg-yellow-400 text-blue-900 px-3 py-0.5 rounded-full shadow-sm">{course.grade}</span>
+                      <div key={course.id} className="p-4 sm:p-6 bg-white border-2 border-slate-100 rounded-2xl shadow-sm hover:border-blue-200 transition-colors">
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-2">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h4 className="font-black text-blue-900 text-base sm:text-lg break-words whitespace-normal">{course.name}</h4>
+                              <span className="text-[10px] font-black uppercase bg-yellow-400 text-blue-900 px-3 py-0.5 rounded-full shadow-sm shrink-0">{course.grade}</span>
                             </div>
-                            <p className="text-xs text-slate-500 mt-1 leading-relaxed">{course.description || 'No description provided.'}</p>
+                            <p className="text-xs text-slate-500 mt-1 leading-relaxed break-words whitespace-normal">{course.description || 'No description provided.'}</p>
                           </div>
                           <button
+                            type="button"
                             onClick={() => {
                               if (duplicateCourseId === course.id) {
                                 setDuplicateCourseId(null);
@@ -2219,37 +2486,37 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 setTargetDuplicateGrades([course.grade]);
                               }
                             }}
-                            className="px-3 py-1.5 bg-blue-50 text-blue-900 hover:bg-blue-100 font-black text-[10px] uppercase rounded-xl transition-all border border-blue-200 flex items-center gap-1 shrink-0"
+                            className="min-h-[44px] px-3.5 py-2 bg-blue-50 text-blue-900 hover:bg-blue-100 font-black text-[11px] uppercase rounded-xl transition-all border border-blue-200 flex items-center gap-1 shrink-0"
                           >
                             <span>📋</span> Duplicate Course
                           </button>
                         </div>
 
                         {duplicateCourseId === course.id && (
-                          <div className="mt-4 p-5 bg-blue-50 rounded-2xl border-2 border-blue-200 animate-in fade-in duration-200">
-                            <div className="flex justify-between items-center mb-3">
-                              <p className="text-xs font-black text-blue-900 uppercase">Duplicate "{course.name}" to other classes:</p>
-                              <div className="flex gap-2 text-[10px]">
+                          <div className="mt-4 p-4 sm:p-5 bg-blue-50 rounded-2xl border-2 border-blue-200 animate-in fade-in duration-200">
+                            <div className="flex flex-wrap justify-between items-center gap-2 mb-3">
+                              <p className="text-xs font-black text-blue-900 uppercase break-words whitespace-normal">Duplicate "{course.name}" to other classes:</p>
+                              <div className="flex gap-3 text-xs">
                                 <button 
                                   type="button" 
                                   onClick={() => setTargetDuplicateGrades([...GRADE_ORDER])}
-                                  className="text-blue-700 underline font-black"
+                                  className="min-h-[44px] px-2 text-blue-700 underline font-black"
                                 >
                                   Select All
                                 </button>
                                 <button 
                                   type="button" 
                                   onClick={() => setTargetDuplicateGrades([])}
-                                  className="text-slate-400 underline font-black"
+                                  className="min-h-[44px] px-2 text-slate-500 underline font-black"
                                 >
                                   Clear
                                 </button>
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto mb-4 bg-white p-3 rounded-xl border border-blue-100">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto mb-4 bg-white p-3 rounded-xl border border-blue-100">
                               {GRADE_ORDER.map(g => (
-                                <label key={g} className="flex items-center space-x-2 text-xs font-bold text-slate-700 cursor-pointer">
+                                <label key={g} className="flex items-center space-x-2 text-xs font-bold text-slate-700 cursor-pointer min-h-[36px]">
                                   <input 
                                     type="checkbox"
                                     checked={targetDuplicateGrades.includes(g)}
@@ -2260,18 +2527,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                         setTargetDuplicateGrades(prev => prev.filter(item => item !== g));
                                       }
                                     }}
-                                    className="rounded border-slate-300 text-blue-900 focus:ring-blue-900"
+                                    className="w-5 h-5 shrink-0 rounded border-slate-300 text-blue-900 focus:ring-blue-900"
                                   />
-                                  <span>{g}</span>
+                                  <span className="break-words whitespace-normal">{g}</span>
                                 </label>
                               ))}
                             </div>
 
-                            <div className="flex gap-3 justify-end">
+                            <div className="flex flex-wrap gap-3 justify-end">
                               <button
                                 type="button"
                                 onClick={() => setDuplicateCourseId(null)}
-                                className="px-4 py-2 bg-slate-200 text-slate-600 font-black text-[10px] uppercase rounded-xl"
+                                className="min-h-[44px] px-4 py-2 bg-slate-200 text-slate-700 font-black text-xs uppercase rounded-xl"
                               >
                                 Cancel
                               </button>
@@ -2286,7 +2553,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                   alert(`Course "${course.name}" duplicated to ${targetDuplicateGrades.length} classes!`);
                                   setDuplicateCourseId(null);
                                 }}
-                                className="px-5 py-2 bg-blue-900 text-yellow-400 font-black text-[10px] uppercase rounded-xl shadow-md hover:bg-blue-800"
+                                className="min-h-[44px] px-5 py-2 bg-blue-900 text-yellow-400 font-black text-xs uppercase rounded-xl shadow-md hover:bg-blue-800"
                               >
                                 Confirm Duplication ({targetDuplicateGrades.length})
                               </button>
@@ -2317,8 +2584,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           <div className="space-y-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-2 border-slate-100 pb-4">
               <div>
-                <h3 className="text-3xl font-black text-blue-900 font-serif">Academic Calendar Manager</h3>
-                <p className="text-slate-500 text-sm font-medium mt-1">
+                <h3 className="text-xl sm:text-3xl font-black text-blue-900 font-serif break-words whitespace-normal">Academic Calendar Manager</h3>
+                <p className="text-slate-500 text-xs sm:text-sm font-medium mt-1 break-words whitespace-normal">
                   Configure and publish the official school term schedule, resumption dates, mid-term breaks, examinations, and vacation dates.
                 </p>
               </div>
@@ -2329,11 +2596,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               )}
             </div>
 
-            <div className="grid lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Left Column: Editor & Templates */}
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">
+              <div className="space-y-6 min-w-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest">
                     Calendar Content (Text / Markdown formatting)
                   </label>
                   <span className="text-[10px] font-bold text-blue-900 bg-yellow-400 px-3 py-1 rounded-full uppercase">
@@ -2348,13 +2615,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     setCalendarSaveMsg('');
                   }} 
                   rows={12} 
-                  className="w-full px-6 py-5 bg-white border-2 border-slate-200 rounded-3xl font-bold text-blue-900 text-sm outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all font-mono leading-relaxed" 
+                  className="w-full px-4 sm:px-6 py-4 bg-white border-2 border-slate-200 rounded-3xl font-bold text-blue-900 text-sm outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-100 transition-all font-mono leading-relaxed" 
                   placeholder="Enter term schedules, resumption dates, and examination periods..."
                 />
 
                 {/* Quick Templates */}
-                <div className="bg-slate-50 border-2 border-slate-100 p-5 rounded-2xl space-y-3">
-                  <p className="text-xs font-black text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
+                <div className="bg-slate-50 border-2 border-slate-100 p-4 sm:p-5 rounded-2xl space-y-3">
+                  <p className="text-xs font-black text-blue-900 uppercase tracking-wider flex items-center gap-1.5 break-words whitespace-normal">
                     <span>⚡</span>
                     <span>Quick Load Calendar Templates:</span>
                   </p>
@@ -2366,7 +2633,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         setTempCalendar(template);
                         setCalendarSaveMsg('');
                       }}
-                      className="px-3 py-2 bg-white hover:bg-blue-900 hover:text-white text-blue-900 text-[10px] font-black uppercase rounded-xl border border-slate-200 transition-all shadow-sm"
+                      className="min-h-[44px] px-3.5 py-2 bg-white hover:bg-blue-900 hover:text-white text-blue-900 text-[11px] font-black uppercase rounded-xl border border-slate-200 transition-all shadow-sm"
                     >
                       📅 First Term Session
                     </button>
@@ -2377,7 +2644,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         setTempCalendar(template);
                         setCalendarSaveMsg('');
                       }}
-                      className="px-3 py-2 bg-white hover:bg-blue-900 hover:text-white text-blue-900 text-[10px] font-black uppercase rounded-xl border border-slate-200 transition-all shadow-sm"
+                      className="min-h-[44px] px-3.5 py-2 bg-white hover:bg-blue-900 hover:text-white text-blue-900 text-[11px] font-black uppercase rounded-xl border border-slate-200 transition-all shadow-sm"
                     >
                       🏃 Second Term Session
                     </button>
@@ -2388,20 +2655,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         setTempCalendar(template);
                         setCalendarSaveMsg('');
                       }}
-                      className="px-3 py-2 bg-white hover:bg-blue-900 hover:text-white text-blue-900 text-[10px] font-black uppercase rounded-xl border border-slate-200 transition-all shadow-sm"
+                      className="min-h-[44px] px-3.5 py-2 bg-white hover:bg-blue-900 hover:text-white text-blue-900 text-[11px] font-black uppercase rounded-xl border border-slate-200 transition-all shadow-sm"
                     >
                       🎓 Third Term & WAEC
                     </button>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                   <button 
+                    type="button"
                     onClick={() => { 
                       onUpdateCalendar(tempCalendar); 
                       setCalendarSaveMsg(`Published successfully at ${new Date().toLocaleTimeString()}!`);
                     }} 
-                    className="flex-1 py-5 bg-blue-900 text-yellow-400 font-black text-base uppercase tracking-wider rounded-2xl shadow-xl hover:bg-blue-800 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                    className="flex-1 min-h-[44px] py-4 px-5 bg-blue-900 text-yellow-400 font-black text-sm sm:text-base uppercase tracking-wider rounded-2xl shadow-xl hover:bg-blue-800 transition-all flex items-center justify-center gap-2"
                   >
                     <span>💾</span>
                     <span>Save & Publish Calendar</span>
@@ -2412,7 +2680,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       setTempCalendar(calendar);
                       setCalendarSaveMsg('');
                     }}
-                    className="px-6 py-5 bg-slate-100 text-slate-600 hover:bg-slate-200 font-black text-xs uppercase tracking-wider rounded-2xl transition-all"
+                    className="min-h-[44px] px-6 py-4 bg-slate-100 text-slate-600 hover:bg-slate-200 font-black text-xs uppercase tracking-wider rounded-2xl transition-all"
                   >
                     Reset
                   </button>
@@ -2420,38 +2688,38 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
 
               {/* Right Column: Live Homepage Preview */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
+              <div className="space-y-4 min-w-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-black text-slate-500 uppercase tracking-widest">
                     Live Public Website Preview
                   </p>
-                  <span className="text-[10px] text-slate-400 font-bold">
+                  <span className="text-[11px] text-slate-400 font-bold">
                     Appears directly on School Homepage
                   </span>
                 </div>
 
-                <div className="p-8 bg-white border-2 border-slate-200 rounded-3xl shadow-sm space-y-4">
+                <div className="p-4 sm:p-8 bg-white border-2 border-slate-200 rounded-3xl shadow-sm space-y-4">
                   <div className="flex items-center gap-3 border-b-2 border-slate-100 pb-4">
-                    <div className="w-10 h-10 rounded-full bg-blue-900 text-yellow-400 flex items-center justify-center font-bold text-sm">
+                    <div className="w-10 h-10 rounded-full bg-blue-900 text-yellow-400 flex items-center justify-center font-bold text-sm shrink-0">
                       GHS
                     </div>
-                    <div>
-                      <h4 className="font-extrabold text-blue-900 text-sm font-serif">God's Hand International Model School</h4>
+                    <div className="min-w-0">
+                      <h4 className="font-extrabold text-blue-900 text-sm font-serif break-words whitespace-normal">God's Hand International Model School</h4>
                       <p className="text-[10px] text-yellow-600 font-black uppercase tracking-wider">Have Faith In God</p>
                     </div>
                   </div>
 
-                  <div className="p-6 bg-slate-50 border-4 border-blue-900 rounded-2xl">
-                    <h4 className="text-blue-900 font-black text-xs uppercase tracking-widest mb-3 border-b-2 border-blue-900 pb-1 flex items-center justify-between">
+                  <div className="p-4 sm:p-6 bg-slate-50 border-4 border-blue-900 rounded-2xl">
+                    <h4 className="text-blue-900 font-black text-xs uppercase tracking-widest mb-3 border-b-2 border-blue-900 pb-1 flex flex-wrap items-center justify-between gap-2">
                       <span>Academic Calendar</span>
                       <span className="text-[10px] text-green-700 font-bold">● Active</span>
                     </h4>
-                    <div className="text-[11px] text-blue-800 font-bold whitespace-pre-wrap leading-relaxed italic">
+                    <div className="text-xs text-blue-800 font-bold whitespace-pre-wrap break-words leading-relaxed italic">
                       {tempCalendar || <span className="text-slate-400 font-normal">No calendar details entered yet. Type in the editor to the left.</span>}
                     </div>
                   </div>
 
-                  <p className="text-slate-400 text-[11px] italic text-center">
+                  <p className="text-slate-400 text-[11px] italic text-center break-words whitespace-normal">
                     All prospective parents, returning students, and staff see this exact schedule when visiting the main website.
                   </p>
                 </div>
@@ -2461,17 +2729,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         )}
 
         {activeTab === 'announcements' && (
-          <div className="grid lg:grid-cols-12 gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12">
             <div className="lg:col-span-5">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-2xl font-black text-blue-900 font-serif">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                <h3 className="text-xl sm:text-2xl font-black text-blue-900 font-serif break-words whitespace-normal">
                   {editingAnnId ? '✏️ Edit Bulletin Words' : '📢 Post New Bulletin'}
                 </h3>
                 {editingAnnId && (
                   <button
                     type="button"
                     onClick={handleCancelEditAnn}
-                    className="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-all"
+                    className="px-3 py-2 min-h-[44px] bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-all"
                   >
                     ✕ Cancel Edit
                   </button>
@@ -2479,14 +2747,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
 
               {annSaveMsg && (
-                <div className="mb-4 p-4 bg-green-100 border border-green-300 text-green-800 rounded-2xl text-xs font-black animate-in fade-in">
+                <div className="mb-4 p-4 bg-green-100 border border-green-300 text-green-800 rounded-2xl text-xs font-black animate-in fade-in break-words whitespace-normal">
                   {annSaveMsg}
                 </div>
               )}
 
-              <form onSubmit={handleAnnSubmit} className={`space-y-6 p-8 rounded-[2.5rem] border-2 transition-all shadow-md ${editingAnnId ? 'bg-amber-50/70 border-amber-300 ring-4 ring-amber-100' : 'bg-blue-50 border-blue-100'}`}>
+              <form onSubmit={handleAnnSubmit} className={`space-y-6 p-4 sm:p-8 rounded-3xl sm:rounded-[2.5rem] border-2 transition-all shadow-md ${editingAnnId ? 'bg-amber-50/70 border-amber-300 ring-4 ring-amber-100' : 'bg-blue-50 border-blue-100'}`}>
                 {editingAnnId && (
-                  <div className="p-3 bg-amber-100/70 border border-amber-300 rounded-2xl text-[11px] font-bold text-amber-900 flex items-center justify-between">
+                  <div className="p-3 bg-amber-100/70 border border-amber-300 rounded-2xl text-[11px] font-bold text-amber-900 flex items-center justify-between break-words whitespace-normal">
                     <span>Editing active bulletin. Words will update live across all student, parent, and visitor views.</span>
                   </div>
                 )}
@@ -2498,7 +2766,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     value={annTitle} 
                     required 
                     onChange={(e) => setAnnTitle(e.target.value)} 
-                    className="w-full px-6 py-4 bg-white border-2 border-slate-200 focus:border-blue-900 rounded-2xl font-bold text-slate-900 outline-none transition-all" 
+                    className="w-full min-h-[44px] px-4 sm:px-6 py-3 bg-white border-2 border-slate-200 focus:border-blue-900 rounded-2xl font-bold text-slate-900 outline-none transition-all" 
                     placeholder="e.g., Mid-Term Examination Dates Announced" 
                   />
                 </div>
@@ -2510,48 +2778,48 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     value={annContent} 
                     required 
                     onChange={(e) => setAnnContent(e.target.value)} 
-                    className="w-full px-6 py-4 bg-white border-2 border-slate-200 focus:border-blue-900 rounded-2xl font-bold text-slate-900 outline-none transition-all leading-relaxed" 
+                    className="w-full px-4 sm:px-6 py-3.5 bg-white border-2 border-slate-200 focus:border-blue-900 rounded-2xl font-bold text-slate-900 outline-none transition-all leading-relaxed" 
                     placeholder="Type the full announcement details here. All edits appear in real-time." 
                   />
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button 
                     type="submit" 
-                    className={`flex-1 py-5 font-black text-base rounded-2xl shadow-xl transition-all flex items-center justify-center space-x-2 active:scale-98 ${
+                    className={`flex-1 min-h-[48px] py-3.5 px-4 font-black text-sm sm:text-base rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 ${
                       editingAnnId 
                         ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/30' 
                         : 'bg-blue-900 hover:bg-blue-800 text-yellow-400'
                     }`}
                   >
                     <span>{editingAnnId ? '💾' : '🚀'}</span>
-                    <span>{editingAnnId ? 'Save & Update Bulletin Words' : 'Publish Bulletin'}</span>
+                    <span className="break-words whitespace-normal">{editingAnnId ? 'Save & Update Bulletin Words' : 'Publish Bulletin'}</span>
                   </button>
                   {editingAnnId && (
                     <button
                       type="button"
                       onClick={handleCancelEditAnn}
-                      className="px-6 py-5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-black text-xs uppercase rounded-2xl transition-all"
+                      className="min-h-[48px] px-6 py-3.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-black text-xs uppercase rounded-2xl transition-all"
                     >
                       Cancel
                     </button>
                   )}
                 </div>
 
-                <p className="text-[11px] text-slate-400 italic text-center">
+                <p className="text-[11px] text-slate-400 italic text-center break-words whitespace-normal">
                   ⚡ Updates are transmitted to Supabase and synced to all open accounts in real time.
                 </p>
               </form>
             </div>
 
             <div className="lg:col-span-7 space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-2xl font-black text-blue-900 font-serif">Published Bulletins ({announcements.length})</h3>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-xl sm:text-2xl font-black text-blue-900 font-serif break-words whitespace-normal">Published Bulletins ({announcements.length})</h3>
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Live School Notices</span>
               </div>
 
               {announcements.length === 0 ? (
-                <div className="p-12 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 text-slate-400 font-bold">
+                <div className="p-8 sm:p-12 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 text-slate-400 font-bold">
                   No bulletins published yet. Create one using the form.
                 </div>
               ) : (
@@ -2559,16 +2827,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   {announcements.map(ann => (
                     <div 
                       key={ann.id} 
-                      className={`p-7 bg-white border-2 rounded-3xl shadow-sm transition-all hover:shadow-md ${
+                      className={`p-4 sm:p-7 bg-white border-2 rounded-3xl shadow-sm transition-all hover:shadow-md ${
                         editingAnnId === ann.id ? 'border-amber-400 ring-4 ring-amber-100 bg-amber-50/30' : 'border-slate-100'
                       }`}
                     >
                       <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-3 mb-3">
-                        <h4 className="font-black text-blue-900 text-xl font-serif">{ann.title}</h4>
-                        <div className="flex items-center space-x-2 shrink-0">
+                        <h4 className="font-black text-blue-900 text-lg sm:text-xl font-serif break-words whitespace-normal">{ann.title}</h4>
+                        <div className="flex flex-wrap items-center gap-2 shrink-0">
                           <button
                             onClick={() => handleStartEditAnn(ann)}
-                            className="px-3.5 py-1.5 bg-blue-50 hover:bg-blue-900 text-blue-900 hover:text-white rounded-xl text-xs font-black transition-all flex items-center space-x-1"
+                            className="min-h-[44px] px-3.5 py-2 bg-blue-50 hover:bg-blue-900 text-blue-900 hover:text-white rounded-xl text-xs font-black transition-all flex items-center gap-1"
                             title="Edit bulletin words"
                           >
                             <span>✏️</span>
@@ -2581,7 +2849,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                   onDeleteAnnouncement(ann.id);
                                 }
                               }}
-                              className="px-3 py-1.5 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white rounded-xl text-xs font-black transition-all"
+                              className="min-w-[44px] min-h-[44px] px-3 py-2 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white rounded-xl text-xs font-black transition-all flex items-center justify-center"
                               title="Delete bulletin"
                             >
                               🗑️
@@ -2590,9 +2858,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         </div>
                       </div>
                       
-                      <p className="text-slate-700 text-sm whitespace-pre-wrap leading-relaxed mb-4">{ann.content}</p>
+                      <p className="text-slate-700 text-sm whitespace-pre-wrap break-words leading-relaxed mb-4">{ann.content}</p>
                       
-                      <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-[11px] font-bold text-slate-400">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 text-[11px] font-bold text-slate-400">
                         <span className="uppercase">Posted: {ann.date}</span>
                         <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-full font-black text-[10px] uppercase">
                           ● Broadcast Active
@@ -2610,15 +2878,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           <div className="space-y-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-2 border-slate-100 pb-6">
               <div>
-                <h3 className="text-3xl font-black text-blue-900 font-serif">Students & Pupils Official Registry</h3>
-                <p className="text-slate-500 text-sm font-medium mt-1">
+                <h3 className="text-2xl sm:text-3xl font-black text-blue-900 font-serif break-words whitespace-normal">Students & Pupils Official Registry</h3>
+                <p className="text-slate-500 text-sm font-medium mt-1 break-words whitespace-normal">
                   School registry & clearance permissions. Self-creation is restricted; only Admin and authorized Class Teachers can enroll pupils.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowAdminAddStudentModal(true)}
-                className="px-6 py-3.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl transition-all flex items-center gap-2 active:scale-95 shrink-0"
+                className="w-full sm:w-auto min-h-[44px] px-6 py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 shrink-0"
               >
                 <span>➕</span>
                 <span>Provision Pupil Account</span>
@@ -2627,23 +2895,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
             {/* Modal: Admin Provision Pupil */}
             {showAdminAddStudentModal && (
-              <div className="fixed inset-0 z-50 bg-blue-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-                <div className="max-w-xl w-full bg-white rounded-3xl shadow-2xl border-4 border-blue-900 overflow-hidden">
-                  <div className="bg-blue-900 text-white p-6 flex justify-between items-center">
+              <div className="fixed inset-0 z-50 bg-blue-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+                <div className="max-w-xl w-full max-h-[92vh] flex flex-col bg-white rounded-3xl shadow-2xl border-2 sm:border-4 border-blue-900">
+                  <div className="bg-blue-900 text-white p-4 sm:p-6 rounded-t-[1.35rem] flex justify-between items-start gap-3 shrink-0">
                     <div>
-                      <h3 className="font-serif font-black text-xl">Admin Pupil Account Provisioning</h3>
-                      <p className="text-xs text-blue-200 font-medium">Create an authoritative pupil record with real-time database sync</p>
+                      <h3 className="font-serif font-black text-lg sm:text-xl break-words whitespace-normal">Admin Pupil Account Provisioning</h3>
+                      <p className="text-xs text-blue-200 font-medium break-words whitespace-normal">Create an authoritative pupil record with real-time database sync</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => setShowAdminAddStudentModal(false)}
-                      className="text-white hover:text-yellow-400 font-black text-xl p-1"
+                      className="min-w-[44px] min-h-[44px] rounded-xl bg-white/10 hover:bg-white/20 text-white hover:text-yellow-400 font-black text-xl flex items-center justify-center shrink-0"
                     >
                       ✕
                     </button>
                   </div>
 
-                  <form onSubmit={handleAdminCreateStudent} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                  <form onSubmit={handleAdminCreateStudent} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
                     <div className="space-y-1">
                       <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider block">
                         Pupil Full Name *
@@ -2654,7 +2922,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         value={adminPupilName}
                         onChange={(e) => setAdminPupilName(e.target.value)}
                         placeholder="e.g. Samuel Olawale"
-                        className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+                        className="w-full min-h-[44px] px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-blue-950 outline-none focus:bg-white focus:border-blue-900"
                       />
                     </div>
 
@@ -2666,7 +2934,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <select
                           value={adminPupilGrade}
                           onChange={(e) => setAdminPupilGrade(e.target.value as GradeLevel)}
-                          className="w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+                          className="w-full min-h-[44px] px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
                         >
                           {GRADE_GROUPS.flatMap(g => g.levels).map(lvl => (
                             <option key={lvl} value={lvl}>{lvl}</option>
@@ -2681,7 +2949,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <select
                           value={adminPupilGender}
                           onChange={(e) => setAdminPupilGender(e.target.value as any)}
-                          className="w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+                          className="w-full min-h-[44px] px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
                         >
                           <option value="Male">Male</option>
                           <option value="Female">Female</option>
@@ -2699,7 +2967,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           type="number"
                           value={adminPupilAdmissionYear}
                           onChange={(e) => setAdminPupilAdmissionYear(Number(e.target.value))}
-                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none"
+                          className="w-full min-h-[44px] px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none"
                         />
                       </div>
                       <div className="space-y-1">
@@ -2711,7 +2979,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           value={adminPupilParentPhone}
                           onChange={(e) => setAdminPupilParentPhone(e.target.value)}
                           placeholder="08012345678"
-                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none"
+                          className="w-full min-h-[44px] px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none"
                         />
                       </div>
                     </div>
@@ -2725,54 +2993,54 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         value={adminPupilParentEmail}
                         onChange={(e) => setAdminPupilParentEmail(e.target.value)}
                         placeholder="parent@example.com"
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-xs text-blue-950 outline-none"
+                        className="w-full min-h-[44px] px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-xs text-blue-950 outline-none"
                       />
                     </div>
 
                     {/* Alphanumeric Password Input with Toggle */}
-                    <div className="space-y-1 p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl">
-                      <div className="flex justify-between items-center mb-1">
-                        <label className="text-[11px] font-black text-blue-950 uppercase tracking-wider block">
+                    <div className="space-y-2 p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl">
+                      <div className="flex flex-wrap justify-between items-center gap-2">
+                        <label className="text-[11px] font-black text-blue-950 uppercase tracking-wider block break-words whitespace-normal">
                           Pupil Login Password (Accepts Letters & Numbers) *
                         </label>
                         <button
                           type="button"
                           onClick={() => setAdminPupilPassword(generateSecureTempPassword())}
-                          className="text-[10px] font-black text-blue-900 hover:text-blue-700 uppercase underline"
+                          className="min-h-[36px] px-2 py-1 text-[10px] font-black text-blue-900 hover:text-blue-700 uppercase underline"
                         >
                           ⚡ Suggest Alphanumeric Password
                         </button>
                       </div>
-                      <div className="relative">
+                      <div className="flex items-stretch gap-2">
                         <input
                           type={showAdminPupilPassword ? "text" : "password"}
                           value={adminPupilPassword}
                           onChange={(e) => setAdminPupilPassword(e.target.value)}
                           placeholder="e.g. Samuel2025 (Letters & Numbers accepted)"
-                          className="w-full px-4 py-2.5 pr-20 bg-white border-2 border-slate-300 rounded-xl font-bold text-xs text-blue-950 outline-none focus:border-blue-900"
+                          className="flex-1 min-w-0 min-h-[44px] px-4 py-2.5 bg-white border-2 border-slate-300 rounded-xl font-bold text-xs text-blue-950 outline-none focus:border-blue-900"
                         />
                         <button
                           type="button"
                           onClick={() => setShowAdminPupilPassword(!showAdminPupilPassword)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[10px] font-black uppercase text-slate-500 hover:text-blue-900 bg-slate-100 hover:bg-slate-200 rounded-md border border-slate-200"
+                          className="min-w-[64px] min-h-[44px] px-3 py-2 text-[10px] font-black uppercase text-slate-600 hover:text-blue-900 bg-slate-100 hover:bg-slate-200 rounded-xl border border-slate-300 shrink-0"
                         >
                           {showAdminPupilPassword ? "Hide" : "Show"}
                         </button>
                       </div>
-                      <p className="text-[10px] text-slate-500 mt-1">
+                      <p className="text-[10px] text-slate-500 leading-relaxed">
                         Input any password containing numbers and letters. If left blank, a secure alphanumeric password will be generated automatically.
                       </p>
                     </div>
 
                     <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-2xl space-y-3">
-                      <label className="flex items-center gap-2 cursor-pointer">
+                      <label className="flex items-center gap-3 min-h-[44px] cursor-pointer">
                         <input
                           type="checkbox"
                           checked={adminPupilCreateParent}
                           onChange={(e) => setAdminPupilCreateParent(e.target.checked)}
-                          className="w-4 h-4 rounded text-blue-900 focus:ring-blue-900"
+                          className="w-5 h-5 rounded text-blue-900 focus:ring-blue-900 shrink-0"
                         />
-                        <span className="text-xs font-black text-blue-950 uppercase tracking-wider">
+                        <span className="text-xs font-black text-blue-950 uppercase tracking-wider break-words whitespace-normal">
                           Also Provision Parent Account in Real Time
                         </span>
                       </label>
@@ -2787,7 +3055,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               value={adminPupilParentName}
                               onChange={(e) => setAdminPupilParentName(e.target.value)}
                               placeholder="e.g. Chief Adeleke"
-                              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none"
+                              className="w-full min-h-[44px] px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none"
                             />
                           </div>
                           <div className="space-y-1">
@@ -2797,7 +3065,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             <select
                               value={adminPupilParentRel}
                               onChange={(e) => setAdminPupilParentRel(e.target.value as any)}
-                              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none"
+                              className="w-full min-h-[44px] px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none"
                             >
                               <option value="Father">Father</option>
                               <option value="Mother">Mother</option>
@@ -2809,21 +3077,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       )}
                     </div>
 
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-950">
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-950 break-words whitespace-normal">
                       ⚡ Accounts generated with secure temporary credentials. Users can update their passwords upon login.
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-2">
+                    <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-2">
                       <button
                         type="button"
                         onClick={() => setShowAdminAddStudentModal(false)}
-                        className="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800"
+                        className="min-h-[44px] px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 rounded-xl border border-slate-200"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
-                        className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95"
+                        className="min-h-[44px] px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all"
                       >
                         ✓ Create & Synchronize Pupil
                       </button>
@@ -2833,7 +3101,153 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             )}
 
-            <div className="bg-white rounded-[2rem] border-2 border-slate-100 overflow-x-auto shadow-sm">
+            {/* Mobile Stacked Card Ledger (<768px) */}
+            <div className="md:hidden space-y-4">
+              {students.length === 0 ? (
+                <div className="bg-white rounded-3xl border-2 border-slate-100 py-14 px-6 text-center text-slate-400 font-bold uppercase tracking-widest text-xs shadow-sm">
+                  No students or pupils registered
+                </div>
+              ) : (
+                students.map(student => {
+                  const studentPayments = payments.filter(p => p.studentName === student.name);
+                  const totalPaid = studentPayments.reduce((acc, p) => acc + p.amount, 0);
+                  const targetFee = fees[student.grade] || 0;
+                  const hasCustomBalance = student.balance !== undefined && student.balance !== null;
+                  const effectiveBalance = hasCustomBalance ? student.balance! : Math.max(0, targetFee - totalPaid);
+                  const isPaid = effectiveBalance <= 0;
+                  const isEditingThisStudent = editingBalanceStudentId === student.id;
+
+                  return (
+                    <div key={student.id} className="bg-white rounded-2xl border-2 border-slate-100 p-4 shadow-sm space-y-3">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-black text-blue-900 text-base break-words whitespace-normal">{student.name}</p>
+                          <p className="text-[11px] text-slate-400 font-bold break-all">ID: {student.id} • {student.email}</p>
+                        </div>
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-[10px] font-black uppercase shrink-0">
+                          {student.grade}
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Fee Clearance</span>
+                          {isPaid ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-black text-[10px] uppercase tracking-wider tabular-nums">
+                              ✓ Cleared (₦0)
+                            </span>
+                          ) : (
+                            <span className="text-red-600 font-black text-xs uppercase tracking-wide tabular-nums">
+                              ₦{effectiveBalance.toLocaleString()} Outstanding
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-500 break-words whitespace-normal">
+                          {hasCustomBalance
+                            ? (isPaid ? 'Admin Bursar Waiver Set' : '⭐ Admin Override Active')
+                            : `Standard (Paid ₦${totalPaid.toLocaleString()})`}
+                        </p>
+
+                        {isEditingThisStudent ? (
+                          <div className="p-3 bg-blue-50 border-2 border-blue-300 rounded-2xl space-y-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-black text-sm text-blue-950">₦</span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="500"
+                                value={inputBalanceValue}
+                                onChange={(e) => setInputBalanceValue(e.target.value)}
+                                placeholder="Enter balance"
+                                className="flex-1 min-h-[44px] px-3 py-2 text-sm font-mono font-bold bg-white border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-900 focus:outline-hidden text-blue-950"
+                                autoFocus
+                              />
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setInputBalanceValue('0')}
+                                className="flex-1 min-h-[44px] px-3 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-xl text-xs font-black uppercase"
+                              >
+                                ₦0 (Clear)
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const num = parseFloat(inputBalanceValue);
+                                  if (isNaN(num) || num < 0) {
+                                    alert('Please enter a valid non-negative balance amount.');
+                                    return;
+                                  }
+                                  if (onUpdateStudentBalance) {
+                                    onUpdateStudentBalance(student.id, num);
+                                  }
+                                  setBalanceSaveSuccessId(student.id);
+                                  setEditingBalanceStudentId(null);
+                                  setTimeout(() => setBalanceSaveSuccessId(null), 3000);
+                                }}
+                                className="flex-1 min-h-[44px] px-4 py-2 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl text-xs font-black uppercase shadow-xs"
+                              >
+                                Save
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingBalanceStudentId(null)}
+                                aria-label="Cancel Balance Edit"
+                                className="min-w-[44px] min-h-[44px] px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-black"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                            {balanceSaveSuccessId === student.id ? (
+                              <span className="px-3 py-1.5 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-wider">
+                                ✓ Saved & Synced!
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingBalanceStudentId(student.id);
+                                  setInputBalanceValue(effectiveBalance.toString());
+                                }}
+                                className="w-full min-h-[44px] px-3.5 py-2 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm flex items-center justify-center gap-1.5 border border-yellow-500"
+                              >
+                                <span>✍️</span>
+                                <span>Write / Edit Balance (₦{effectiveBalance.toLocaleString()})</span>
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedStudentForIDCard(student)}
+                          className="min-h-[44px] px-3 py-2 rounded-xl text-xs font-black uppercase transition-all shadow-sm bg-blue-50 text-blue-900 border border-blue-200 hover:bg-blue-900 hover:text-yellow-400 flex items-center justify-center gap-1.5"
+                        >
+                          <span>🪪</span>
+                          <span>ID Card</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onToggleStudentEntry(student.id, !student.entryAllowed)}
+                          className={`min-h-[44px] px-3 py-2 rounded-xl text-xs font-black uppercase transition-all shadow-sm ${student.entryAllowed ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-green-100 text-green-600 hover:bg-green-200'}`}
+                        >
+                          {student.entryAllowed ? 'Revoke Access' : 'Allow Entry'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Tablet & Desktop Table Ledger (>=768px) */}
+            <div className="hidden md:block bg-white rounded-[2rem] border-2 border-slate-100 overflow-x-auto w-full shadow-sm">
               <table className="w-full text-left min-w-[850px]">
                 <thead>
                   <tr className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
@@ -2860,8 +3274,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       return (
                         <tr key={student.id} className="hover:bg-blue-50/30 transition-colors">
                           <td className="px-6 py-5">
-                            <p className="font-black text-blue-900">{student.name}</p>
-                            <p className="text-[10px] text-slate-400 font-bold">ID: {student.id} • {student.email}</p>
+                            <p className="font-black text-blue-900 break-words whitespace-normal">{student.name}</p>
+                            <p className="text-[10px] text-slate-400 font-bold break-all">ID: {student.id} • {student.email}</p>
                           </td>
                           <td className="px-5 py-5">
                             <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-[10px] font-black uppercase">{student.grade}</span>
@@ -2869,7 +3283,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           <td className="px-6 py-5">
                             {isPaid ? (
                               <div className="flex flex-col items-start gap-1">
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-black text-[10px] uppercase tracking-wider">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-black text-[10px] uppercase tracking-wider tabular-nums">
                                   ✓ Cleared (₦0)
                                 </span>
                                 {hasCustomBalance && (
@@ -2878,10 +3292,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               </div>
                             ) : (
                               <div className="flex flex-col items-start gap-0.5">
-                                <span className="text-red-600 font-black text-xs uppercase tracking-wide">
+                                <span className="text-red-600 font-black text-xs uppercase tracking-wide tabular-nums">
                                   ₦{effectiveBalance.toLocaleString()} Outstanding
                                 </span>
-                                <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${
+                                <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md tabular-nums ${
                                   hasCustomBalance ? 'bg-amber-100 text-amber-800' : 'text-slate-400'
                                 }`}>
                                   {hasCustomBalance ? '⭐ Admin Override' : `Standard (Paid ₦${totalPaid.toLocaleString()})`}
@@ -2901,15 +3315,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                     value={inputBalanceValue}
                                     onChange={(e) => setInputBalanceValue(e.target.value)}
                                     placeholder="Enter balance"
-                                    className="w-32 px-3 py-1.5 text-xs font-mono font-bold bg-white border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:outline-hidden text-blue-950"
+                                    className="w-32 min-h-[44px] px-3 py-1.5 text-xs font-mono font-bold bg-white border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:outline-hidden text-blue-950"
                                     autoFocus
                                   />
                                 </div>
-                                <div className="flex items-center gap-1">
+                                <div className="flex flex-wrap items-center justify-center gap-1.5">
                                   <button
                                     type="button"
                                     onClick={() => setInputBalanceValue('0')}
-                                    className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded text-[9px] font-black uppercase"
+                                    className="min-h-[44px] px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-lg text-[10px] font-black uppercase"
                                     title="Set balance to ₦0 (Cleared/Scholarship)"
                                   >
                                     ₦0 (Clear)
@@ -2929,14 +3343,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                       setEditingBalanceStudentId(null);
                                       setTimeout(() => setBalanceSaveSuccessId(null), 3000);
                                     }}
-                                    className="px-3 py-1 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-lg text-[10px] font-black uppercase shadow-xs"
+                                    className="min-h-[44px] px-4 py-1.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-lg text-[10px] font-black uppercase shadow-xs"
                                   >
                                     Save
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => setEditingBalanceStudentId(null)}
-                                    className="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-[10px] font-bold"
+                                    className="min-w-[44px] min-h-[44px] px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold"
                                   >
                                     ✕
                                   </button>
@@ -2955,32 +3369,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                       setEditingBalanceStudentId(student.id);
                                       setInputBalanceValue(effectiveBalance.toString());
                                     }}
-                                    className="px-3 py-1.5 bg-yellow-400 hover:bg-yellow-300 active:scale-95 text-blue-950 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-sm flex items-center gap-1 border border-yellow-500"
+                                    className="min-h-[44px] px-3.5 py-2 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-sm flex items-center gap-1 border border-yellow-500"
                                     title="Directly write or override pupil balance in real-time"
                                   >
                                     <span>✍️</span> Write / Edit Balance
                                   </button>
                                 )}
-                                <span className="text-[9px] text-slate-400 font-mono">
+                                <span className="text-[9px] text-slate-400 font-mono tabular-nums">
                                   Current: ₦{effectiveBalance.toLocaleString()}
                                 </span>
                               </div>
                             )}
                           </td>
                           <td className="px-6 py-5 text-right">
-                            <div className="flex items-center justify-end gap-2">
+                            <div className="flex flex-wrap items-center justify-end gap-2">
                               <button 
                                 type="button"
                                 onClick={() => setSelectedStudentForIDCard(student)}
-                                className="px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm bg-blue-50 text-blue-900 border border-blue-200 hover:bg-blue-900 hover:text-yellow-400 flex items-center gap-1 shrink-0"
+                                className="min-h-[44px] px-3.5 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm bg-blue-50 text-blue-900 border border-blue-200 hover:bg-blue-900 hover:text-yellow-400 flex items-center gap-1 shrink-0"
                                 title="Generate and Download Official Student ID Card PDF"
                               >
                                 <span>🪪</span>
                                 <span>ID Card</span>
                               </button>
                               <button 
+                                type="button"
                                 onClick={() => onToggleStudentEntry(student.id, !student.entryAllowed)}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-md shrink-0 ${student.entryAllowed ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-green-100 text-green-600 hover:bg-green-200'}`}
+                                className={`min-h-[44px] px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-md shrink-0 ${student.entryAllowed ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-green-100 text-green-600 hover:bg-green-200'}`}
                               >
                                 {student.entryAllowed ? 'Revoke Access' : 'Allow Entry'}
                               </button>
@@ -3000,21 +3415,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           <div className="space-y-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-2 border-slate-100 pb-6">
               <div>
-                <h3 className="text-3xl font-black text-blue-900 font-serif">Parent Accounts & Family Links</h3>
-                <p className="text-slate-500 text-sm font-medium mt-1">
+                <h3 className="text-2xl sm:text-3xl font-black text-blue-900 font-serif break-words whitespace-normal">Parent Accounts & Family Links</h3>
+                <p className="text-slate-500 text-sm font-medium mt-1 break-words whitespace-normal">
                   Authoritative registry of registered parents and guardians. Public self-registration is closed; accounts are provisioned exclusively by Admin & Class Teachers.
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                 <button
                   type="button"
                   onClick={() => setShowAdminAddParentModal(true)}
-                  className="px-6 py-3.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl transition-all flex items-center gap-2 active:scale-95 shrink-0"
+                  className="w-full sm:w-auto min-h-[44px] px-6 py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 shrink-0"
                 >
                   <span>➕</span>
                   <span>Provision Parent Account</span>
                 </button>
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-2xl text-[11px] text-blue-900 max-w-sm">
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-2xl text-[11px] text-blue-900 max-w-sm break-words whitespace-normal">
                   🔒 <strong>Delinking Authority Notice:</strong> For student safety, parents cannot self-unlink children. Only the School Administrator can authorize a family link removal.
                 </div>
               </div>
@@ -3022,23 +3437,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
             {/* Modal: Admin Provision Parent */}
             {showAdminAddParentModal && (
-              <div className="fixed inset-0 z-50 bg-blue-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-                <div className="max-w-xl w-full bg-white rounded-3xl shadow-2xl border-4 border-blue-900 overflow-hidden">
-                  <div className="bg-blue-900 text-white p-6 flex justify-between items-center">
+              <div className="fixed inset-0 z-50 bg-blue-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+                <div className="max-w-xl w-full max-h-[92vh] flex flex-col bg-white rounded-3xl shadow-2xl border-2 sm:border-4 border-blue-900">
+                  <div className="bg-blue-900 text-white p-4 sm:p-6 rounded-t-[1.35rem] flex justify-between items-start gap-3 shrink-0">
                     <div>
-                      <h3 className="font-serif font-black text-xl">Admin Parent Account Provisioning</h3>
-                      <p className="text-xs text-blue-200 font-medium">Create and link a parent or guardian portal account</p>
+                      <h3 className="font-serif font-black text-lg sm:text-xl break-words whitespace-normal">Admin Parent Account Provisioning</h3>
+                      <p className="text-xs text-blue-200 font-medium break-words whitespace-normal">Create and link a parent or guardian portal account</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => setShowAdminAddParentModal(false)}
-                      className="text-white hover:text-yellow-400 font-black text-xl p-1"
+                      className="min-w-[44px] min-h-[44px] rounded-xl bg-white/10 hover:bg-white/20 text-white hover:text-yellow-400 font-black text-xl flex items-center justify-center shrink-0"
                     >
                       ✕
                     </button>
                   </div>
 
-                  <form onSubmit={handleAdminCreateParent} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                  <form onSubmit={handleAdminCreateParent} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
                     <div className="space-y-1">
                       <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider block">
                         Parent / Guardian Full Name *
@@ -3049,7 +3464,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         value={adminParentName}
                         onChange={(e) => setAdminParentName(e.target.value)}
                         placeholder="e.g. Mrs. Funke Adeyemi"
-                        className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+                        className="w-full min-h-[44px] px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-blue-950 outline-none focus:bg-white focus:border-blue-900"
                       />
                     </div>
 
@@ -3064,7 +3479,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           value={adminParentEmail}
                           onChange={(e) => setAdminParentEmail(e.target.value)}
                           placeholder="parent@example.com"
-                          className="w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+                          className="w-full min-h-[44px] px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
                         />
                       </div>
 
@@ -3078,7 +3493,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           value={adminParentPhone}
                           onChange={(e) => setAdminParentPhone(e.target.value)}
                           placeholder="08034567890"
-                          className="w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+                          className="w-full min-h-[44px] px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
                         />
                       </div>
                     </div>
@@ -3091,7 +3506,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <select
                           value={adminParentRel}
                           onChange={(e) => setAdminParentRel(e.target.value as any)}
-                          className="w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+                          className="w-full min-h-[44px] px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
                         >
                           <option value="Father">Father</option>
                           <option value="Mother">Mother</option>
@@ -3109,7 +3524,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           value={adminParentAddress}
                           onChange={(e) => setAdminParentAddress(e.target.value)}
                           placeholder="e.g. 15 Ikoyi Crescent, Lagos"
-                          className="w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-medium text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+                          className="w-full min-h-[44px] px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-medium text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
                         />
                       </div>
                     </div>
@@ -3120,15 +3535,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         Attach Enrolled Pupil(s) to this Parent
                       </label>
                       <p className="text-[11px] text-slate-500">Select any pupils who belong to this family:</p>
-                      <div className="max-h-40 overflow-y-auto divide-y divide-slate-100 bg-white rounded-xl border border-slate-200 p-2">
+                      <div className="max-h-44 overflow-y-auto divide-y divide-slate-100 bg-white rounded-xl border border-slate-200 p-2">
                         {students.length === 0 ? (
                           <p className="text-xs text-slate-400 p-2 text-center">No enrolled pupils in registry yet.</p>
                         ) : (
                           students.map(s => {
                             const isChecked = adminParentSelectedPupils.includes(s.id);
                             return (
-                              <label key={s.id} className="flex items-center justify-between p-2 hover:bg-blue-50/50 rounded-lg cursor-pointer">
-                                <div className="flex items-center gap-2">
+                              <label key={s.id} className="flex flex-wrap items-center justify-between gap-2 p-2.5 min-h-[44px] hover:bg-blue-50/50 rounded-lg cursor-pointer">
+                                <div className="flex items-center gap-2.5">
                                   <input
                                     type="checkbox"
                                     checked={isChecked}
@@ -3139,11 +3554,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                         setAdminParentSelectedPupils(adminParentSelectedPupils.filter(id => id !== s.id));
                                       }
                                     }}
-                                    className="w-4 h-4 rounded text-blue-900 focus:ring-blue-900"
+                                    className="w-5 h-5 rounded text-blue-900 focus:ring-blue-900 shrink-0"
                                   />
-                                  <span className="text-xs font-bold text-blue-950">{s.name}</span>
+                                  <span className="text-xs font-bold text-blue-950 break-words whitespace-normal">{s.name}</span>
                                 </div>
-                                <span className="text-[10px] font-mono text-slate-500 font-bold">{s.id} ({s.grade})</span>
+                                <span className="text-[10px] font-mono text-slate-500 font-bold break-all">{s.id} ({s.grade})</span>
                               </label>
                             );
                           })
@@ -3151,21 +3566,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       </div>
                     </div>
 
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-950">
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-950 break-words whitespace-normal">
                       ⚡ Parent account provisioned with secure temporary credentials. The parent can sign in using their email or phone number.
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-2">
+                    <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-2">
                       <button
                         type="button"
                         onClick={() => setShowAdminAddParentModal(false)}
-                        className="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800"
+                        className="min-h-[44px] px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 rounded-xl border border-slate-200"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
-                        className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95"
+                        className="min-h-[44px] px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all"
                       >
                         ✓ Create & Link Parent
                       </button>
@@ -3176,7 +3591,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             )}
 
             {parents.length === 0 ? (
-              <div className="p-12 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+              <div className="p-8 sm:p-12 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
                 <p className="text-slate-400 font-bold text-sm">No parent accounts registered in the portal yet.</p>
               </div>
             ) : (
@@ -3187,27 +3602,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   );
 
                   return (
-                    <div key={p.id} className="p-6 bg-white border-2 border-slate-100 rounded-3xl shadow-sm hover:border-blue-200 transition-all space-y-4">
+                    <div key={p.id} className="p-4 sm:p-6 bg-white border-2 border-slate-100 rounded-3xl shadow-sm hover:border-blue-200 transition-all space-y-4">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-2xl bg-yellow-400 text-blue-900 flex items-center justify-center font-black text-xl shadow-md">
+                        <div className="flex items-start sm:items-center gap-3">
+                          <div className="w-12 h-12 rounded-2xl bg-yellow-400 text-blue-900 flex items-center justify-center font-black text-xl shadow-md shrink-0">
                             👨‍👩‍👧
                           </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-serif font-black text-blue-900 text-lg">{p.fullName}</h4>
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h4 className="font-serif font-black text-blue-900 text-lg break-words whitespace-normal">{p.fullName}</h4>
                               <span className="px-2.5 py-0.5 bg-blue-50 text-blue-900 font-black text-[10px] uppercase rounded-full">
                                 {p.relationship || 'Guardian'}
                               </span>
                             </div>
-                            <p className="text-xs text-slate-500 font-medium">
+                            <p className="text-xs text-slate-500 font-medium break-all">
                               ID: <span className="font-bold text-slate-700">{p.id}</span> • Email: <span className="font-bold text-slate-700">{p.email}</span> • Phone: <span className="font-bold text-slate-700">{p.phone}</span>
                             </p>
-                            {p.address && <p className="text-[11px] text-slate-400 font-medium">📍 {p.address}</p>}
+                            {p.address && <p className="text-[11px] text-slate-400 font-medium break-words whitespace-normal">📍 {p.address}</p>}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <span className="text-xs font-black text-blue-900 bg-yellow-100 px-3 py-1 rounded-full uppercase tracking-wider">
+                        <div className="sm:text-right shrink-0">
+                          <span className="inline-block text-xs font-black text-blue-900 bg-yellow-100 px-3 py-1.5 rounded-full uppercase tracking-wider">
                             {linkedStudentObjs.length} Linked {linkedStudentObjs.length === 1 ? 'Pupil' : 'Pupils'}
                           </span>
                         </div>
@@ -3221,12 +3636,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         {linkedStudentObjs.length === 0 ? (
                           <p className="text-xs text-slate-400 italic bg-slate-50 p-3 rounded-xl">No children linked to this parent account yet.</p>
                         ) : (
-                          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                             {linkedStudentObjs.map(student => (
-                              <div key={student.id} className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between gap-3">
-                                <div>
-                                  <p className="font-black text-blue-900 text-xs">{student.name}</p>
-                                  <p className="text-[10px] text-slate-500 font-bold uppercase">{student.grade} • ID: {student.id}</p>
+                              <div key={student.id} className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex flex-wrap items-center justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="font-black text-blue-900 text-xs break-words whitespace-normal">{student.name}</p>
+                                  <p className="text-[10px] text-slate-500 font-bold uppercase break-all">{student.grade} • ID: {student.id}</p>
                                 </div>
                                 {onAdminUnlinkChild && (
                                   <button
@@ -3236,7 +3651,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                         onAdminUnlinkChild(p.id, student.id);
                                       }
                                     }}
-                                    className="px-2.5 py-1.5 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-all border border-red-200 shrink-0"
+                                    className="min-h-[44px] px-3 py-2 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-all border border-red-200 shrink-0"
                                     title="Authorized administrator delinking"
                                   >
                                     Delink Child
@@ -3259,14 +3674,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           <div className="space-y-10">
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b-2 border-slate-100 pb-6">
               <div>
-                <h3 className="text-3xl font-black text-blue-900 font-serif">Data Export & Backup Hub</h3>
-                <p className="text-slate-500 text-sm font-medium mt-1">
+                <h3 className="text-2xl sm:text-3xl font-black text-blue-900 font-serif break-words whitespace-normal">Data Export & Backup Hub</h3>
+                <p className="text-slate-500 text-sm font-medium mt-1 break-words whitespace-normal">
                   Proprietor's central data extraction system. Download all school records, pupil rosters, fee ledgers, results, and staff registries in PDF and Excel formats.
                 </p>
               </div>
 
               {/* Master Download Action Buttons */}
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
                 <button
                   onClick={() => {
                     const statePayload: AppState = {
@@ -3283,7 +3698,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     };
                     exportCompleteSchoolDataBoth(statePayload);
                   }}
-                  className="px-5 py-3.5 bg-yellow-400 text-blue-900 font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl hover:bg-yellow-300 transition-all flex items-center space-x-2 hover:scale-105 active:scale-95 border-2 border-yellow-300"
+                  className="w-full sm:w-auto min-h-[44px] px-5 py-3 bg-yellow-400 text-blue-900 font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl hover:bg-yellow-300 transition-all flex items-center justify-center gap-2 border-2 border-yellow-300"
                   title="Download all school records in both Excel and PDF formats simultaneously"
                 >
                   <span className="text-base">⚡</span>
@@ -3306,7 +3721,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     };
                     exportCompleteSchoolDataExcel(statePayload);
                   }}
-                  className="px-5 py-3.5 bg-emerald-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg hover:bg-emerald-600 transition-all flex items-center space-x-2 hover:scale-105 active:scale-95"
+                  className="w-full sm:w-auto min-h-[44px] px-5 py-3 bg-emerald-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg hover:bg-emerald-600 transition-all flex items-center justify-center gap-2"
                   title="Download all school records as a multi-sheet Microsoft Excel (.XLSX) workbook"
                 >
                   <span className="text-base">📊</span>
@@ -3329,7 +3744,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     };
                     exportCompleteSchoolDataPDF(statePayload);
                   }}
-                  className="px-5 py-3.5 bg-rose-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg hover:bg-rose-600 transition-all flex items-center space-x-2 hover:scale-105 active:scale-95"
+                  className="w-full sm:w-auto min-h-[44px] px-5 py-3 bg-rose-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg hover:bg-rose-600 transition-all flex items-center justify-center gap-2"
                   title="Download official multi-page comprehensive institutional ledger as PDF"
                 >
                   <span className="text-base">📑</span>
@@ -3339,7 +3754,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             {/* Live Database Metrics */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="p-5 bg-blue-50 border-2 border-blue-100 rounded-2xl text-center">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Students & Pupils</p>
                 <p className="text-2xl font-black text-blue-900">{students.length}</p>
@@ -3367,21 +3782,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             {/* Master Export Formats Grid */}
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* 1. Master Excel Card */}
-              <div className="p-7 bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900 text-white rounded-3xl shadow-xl relative overflow-hidden flex flex-col justify-between border-2 border-emerald-700/50">
+              <div className="p-4 sm:p-7 bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900 text-white rounded-3xl shadow-xl flex flex-col justify-between gap-4 border-2 border-emerald-700/50">
                 <div>
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                     <span className="px-3 py-1 bg-emerald-400 text-emerald-950 rounded-full text-[10px] font-black uppercase tracking-widest">
                       Spreadsheet (.XLSX)
                     </span>
                     <span className="text-2xl">📊</span>
                   </div>
-                  <h4 className="text-xl font-black font-serif text-emerald-300 mb-2">Complete School Database (Excel)</h4>
-                  <p className="text-emerald-100 text-xs leading-relaxed mb-4">
+                  <h4 className="text-lg sm:text-xl font-black font-serif text-emerald-300 mb-2 break-words whitespace-normal">Complete School Database (Excel)</h4>
+                  <p className="text-emerald-100 text-xs leading-relaxed mb-4 break-words whitespace-normal">
                     Authoritative multi-sheet workbook containing 7 formatted worksheets: Executive Summary, Students & Pupils Roster, Fee Payments Ledger, Academic Results, Attendance Log, Staff Faculty, and Admissions.
                   </p>
-                  <ul className="text-[11px] text-emerald-200/90 space-y-1 mb-6 list-disc list-inside">
+                  <ul className="text-[11px] text-emerald-200/90 space-y-1 mb-6 list-disc list-inside break-words whitespace-normal">
                     <li>Multi-tab Microsoft Excel (.xlsx) file</li>
                     <li>Compatible with Excel, Google Sheets & Numbers</li>
                     <li>Formatted numeric figures & fee balances</li>
@@ -3403,7 +3818,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     };
                     exportCompleteSchoolDataExcel(statePayload);
                   }}
-                  className="w-full py-3.5 bg-emerald-400 text-emerald-950 hover:bg-emerald-300 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2 active:scale-95"
+                  className="w-full min-h-[44px] py-3 px-4 bg-emerald-400 text-emerald-950 hover:bg-emerald-300 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
                 >
                   <span>📊</span>
                   <span>Download Excel (.XLSX)</span>
@@ -3411,19 +3826,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
 
               {/* 2. Master PDF Card */}
-              <div className="p-7 bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-950 text-white rounded-3xl shadow-xl relative overflow-hidden flex flex-col justify-between border-2 border-blue-700/50">
+              <div className="p-4 sm:p-7 bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-950 text-white rounded-3xl shadow-xl flex flex-col justify-between gap-4 border-2 border-blue-700/50">
                 <div>
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                     <span className="px-3 py-1 bg-yellow-400 text-blue-950 rounded-full text-[10px] font-black uppercase tracking-widest">
                       Official Document (.PDF)
                     </span>
                     <span className="text-2xl">📑</span>
                   </div>
-                  <h4 className="text-xl font-black font-serif text-yellow-400 mb-2">Master Institutional Ledger (PDF)</h4>
-                  <p className="text-blue-100 text-xs leading-relaxed mb-4">
+                  <h4 className="text-lg sm:text-xl font-black font-serif text-yellow-400 mb-2 break-words whitespace-normal">Master Institutional Ledger (PDF)</h4>
+                  <p className="text-blue-100 text-xs leading-relaxed mb-4 break-words whitespace-normal">
                     Official multi-page institutional report featuring God's Hand International Model School crest, tuition tables, pupil rosters, payment settlement ledger, examination results, staff roster, and tri-signature endorsement blocks.
                   </p>
-                  <ul className="text-[11px] text-blue-200/90 space-y-1 mb-6 list-disc list-inside">
+                  <ul className="text-[11px] text-blue-200/90 space-y-1 mb-6 list-disc list-inside break-words whitespace-normal">
                     <li>Official school letterhead & header banner</li>
                     <li>Tri-signatory block (Proprietor, Principal, Registrar)</li>
                     <li>Formatted tables, statistics & page numbers</li>
@@ -3445,7 +3860,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     };
                     exportCompleteSchoolDataPDF(statePayload);
                   }}
-                  className="w-full py-3.5 bg-yellow-400 text-blue-950 hover:bg-yellow-300 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2 active:scale-95"
+                  className="w-full min-h-[44px] py-3 px-4 bg-yellow-400 text-blue-950 hover:bg-yellow-300 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
                 >
                   <span>📑</span>
                   <span>Download PDF Report</span>
@@ -3453,19 +3868,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
 
               {/* 3. Combined & JSON Card */}
-              <div className="p-7 bg-gradient-to-br from-slate-900 via-slate-800 to-zinc-900 text-white rounded-3xl shadow-xl relative overflow-hidden flex flex-col justify-between border-2 border-slate-700/60">
+              <div className="p-4 sm:p-7 bg-gradient-to-br from-slate-900 via-slate-800 to-zinc-900 text-white rounded-3xl shadow-xl flex flex-col justify-between gap-4 border-2 border-slate-700/60">
                 <div>
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                     <span className="px-3 py-1 bg-purple-400 text-purple-950 rounded-full text-[10px] font-black uppercase tracking-widest">
                       Complete Archive
                     </span>
                     <span className="text-2xl">⚡</span>
                   </div>
-                  <h4 className="text-xl font-black font-serif text-purple-300 mb-2">Combined Backup & Raw Snapshot</h4>
-                  <p className="text-slate-200 text-xs leading-relaxed mb-4">
+                  <h4 className="text-lg sm:text-xl font-black font-serif text-purple-300 mb-2 break-words whitespace-normal">Combined Backup & Raw Snapshot</h4>
+                  <p className="text-slate-200 text-xs leading-relaxed mb-4 break-words whitespace-normal">
                     Download both the Excel spreadsheet and the signed PDF document simultaneously in one click, or export the raw technical JSON database snapshot.
                   </p>
-                  <ul className="text-[11px] text-slate-300 space-y-1 mb-6 list-disc list-inside">
+                  <ul className="text-[11px] text-slate-300 space-y-1 mb-6 list-disc list-inside break-words whitespace-normal">
                     <li>One-click simultaneous PDF + Excel download</li>
                     <li>Includes raw JSON schema backup for developer import</li>
                     <li>Complete institutional preservation</li>
@@ -3488,7 +3903,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       };
                       exportCompleteSchoolDataBoth(statePayload);
                     }}
-                    className="w-full py-3.5 bg-purple-500 hover:bg-purple-400 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2 active:scale-95"
+                    className="w-full min-h-[44px] py-3 px-4 bg-purple-500 hover:bg-purple-400 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
                   >
                     <span>⚡</span>
                     <span>Download Both (PDF & Excel)</span>
@@ -3509,7 +3924,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       };
                       exportCompleteSchoolDatabaseJSON(statePayload);
                     }}
-                    className="w-full py-2.5 bg-slate-700/80 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-[11px] uppercase tracking-wider rounded-xl transition-all flex items-center justify-center space-x-2"
+                    className="w-full min-h-[44px] py-2.5 px-4 bg-slate-700/80 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-[11px] uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2"
                   >
                     <span>💾</span>
                     <span>Download Raw JSON Backup</span>
@@ -3520,32 +3935,32 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
             {/* Individual Specific Tables */}
             <div className="space-y-4">
-              <h4 className="text-xl font-black text-blue-900 font-serif">Export Specific Tables (Excel & CSV Formats)</h4>
-              <p className="text-slate-500 text-xs font-medium">Download individual school data tables formatted directly for Microsoft Excel, Google Sheets, or database imports.</p>
+              <h4 className="text-xl font-black text-blue-900 font-serif break-words whitespace-normal">Export Specific Tables (Excel & CSV Formats)</h4>
+              <p className="text-slate-500 text-xs font-medium break-words whitespace-normal">Download individual school data tables formatted directly for Microsoft Excel, Google Sheets, or database imports.</p>
 
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
                 {/* 1. Students & Pupils */}
-                <div className="p-6 bg-white border-2 border-slate-100 rounded-3xl shadow-sm hover:border-blue-200 transition-all flex flex-col justify-between">
+                <div className="p-4 sm:p-6 bg-white border-2 border-slate-100 rounded-3xl shadow-sm hover:border-blue-200 transition-all flex flex-col justify-between gap-4">
                   <div>
                     <div className="w-12 h-12 bg-blue-100 text-blue-900 rounded-2xl flex items-center justify-center text-xl mb-4 font-black">
                       👨‍🎓
                     </div>
-                    <h5 className="font-black text-blue-900 text-lg mb-1">Students & Pupils Roster</h5>
-                    <p className="text-slate-500 text-xs leading-relaxed mb-4">
+                    <h5 className="font-black text-blue-900 text-lg mb-1 break-words whitespace-normal">Students & Pupils Roster</h5>
+                    <p className="text-slate-500 text-xs leading-relaxed mb-4 break-words whitespace-normal">
                       Names, grades, entry permissions, fee requirements, total paid, balances, and registration timestamps ({students.length} records).
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <button
                       onClick={() => exportStudentsAndPupilsExcel(students, payments, fees)}
-                      className="py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                      className="min-h-[44px] py-2.5 px-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1"
                     >
                       <span>📊</span>
                       <span>Excel (.xlsx)</span>
                     </button>
                     <button
                       onClick={() => exportStudentsAndPupilsCSV(students, payments, fees)}
-                      className="py-2.5 bg-blue-50 text-blue-900 hover:bg-blue-900 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                      className="min-h-[44px] py-2.5 px-2 bg-blue-50 text-blue-900 hover:bg-blue-900 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1"
                     >
                       <span>📄</span>
                       <span>CSV</span>
@@ -3554,27 +3969,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
 
                 {/* 2. Fee Payments */}
-                <div className="p-6 bg-white border-2 border-slate-100 rounded-3xl shadow-sm hover:border-green-200 transition-all flex flex-col justify-between">
+                <div className="p-4 sm:p-6 bg-white border-2 border-slate-100 rounded-3xl shadow-sm hover:border-green-200 transition-all flex flex-col justify-between gap-4">
                   <div>
                     <div className="w-12 h-12 bg-green-100 text-green-800 rounded-2xl flex items-center justify-center text-xl mb-4 font-black">
                       💳
                     </div>
-                    <h5 className="font-black text-blue-900 text-lg mb-1">Fee Payments Ledger</h5>
-                    <p className="text-slate-500 text-xs leading-relaxed mb-4">
+                    <h5 className="font-black text-blue-900 text-lg mb-1 break-words whitespace-normal">Fee Payments Ledger</h5>
+                    <p className="text-slate-500 text-xs leading-relaxed mb-4 break-words whitespace-normal">
                       Receipt numbers, payer names, student IDs, payment types, amounts, and settlement dates ({payments.length} transactions).
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <button
                       onClick={() => exportFeePaymentsExcel(payments)}
-                      className="py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                      className="min-h-[44px] py-2.5 px-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1"
                     >
                       <span>📊</span>
                       <span>Excel (.xlsx)</span>
                     </button>
                     <button
                       onClick={() => exportFeePaymentsCSV(payments)}
-                      className="py-2.5 bg-green-50 text-green-800 hover:bg-green-700 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                      className="min-h-[44px] py-2.5 px-2 bg-green-50 text-green-800 hover:bg-green-700 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1"
                     >
                       <span>📄</span>
                       <span>CSV</span>
@@ -3583,27 +3998,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
 
                 {/* 3. Academic Results */}
-                <div className="p-6 bg-white border-2 border-slate-100 rounded-3xl shadow-sm hover:border-purple-200 transition-all flex flex-col justify-between">
+                <div className="p-4 sm:p-6 bg-white border-2 border-slate-100 rounded-3xl shadow-sm hover:border-purple-200 transition-all flex flex-col justify-between gap-4">
                   <div>
                     <div className="w-12 h-12 bg-purple-100 text-purple-900 rounded-2xl flex items-center justify-center text-xl mb-4 font-black">
                       📝
                     </div>
-                    <h5 className="font-black text-blue-900 text-lg mb-1">Academic Results</h5>
-                    <p className="text-slate-500 text-xs leading-relaxed mb-4">
+                    <h5 className="font-black text-blue-900 text-lg mb-1 break-words whitespace-normal">Academic Results</h5>
+                    <p className="text-slate-500 text-xs leading-relaxed mb-4 break-words whitespace-normal">
                       Student names, classes, subject scores, WAEC/standard grading remarks, assessment terms, and teachers ({results.length} scores).
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <button
                       onClick={() => exportAcademicResultsExcel(results)}
-                      className="py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                      className="min-h-[44px] py-2.5 px-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1"
                     >
                       <span>📊</span>
                       <span>Excel (.xlsx)</span>
                     </button>
                     <button
                       onClick={() => exportAcademicResultsCSV(results)}
-                      className="py-2.5 bg-purple-50 text-purple-900 hover:bg-purple-900 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                      className="min-h-[44px] py-2.5 px-2 bg-purple-50 text-purple-900 hover:bg-purple-900 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1"
                     >
                       <span>📄</span>
                       <span>CSV</span>
@@ -3612,27 +4027,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
 
                 {/* 4. Attendance Registry */}
-                <div className="p-6 bg-white border-2 border-slate-100 rounded-3xl shadow-sm hover:border-rose-200 transition-all flex flex-col justify-between">
+                <div className="p-4 sm:p-6 bg-white border-2 border-slate-100 rounded-3xl shadow-sm hover:border-rose-200 transition-all flex flex-col justify-between gap-4">
                   <div>
                     <div className="w-12 h-12 bg-rose-100 text-rose-900 rounded-2xl flex items-center justify-center text-xl mb-4 font-black">
                       📅
                     </div>
-                    <h5 className="font-black text-blue-900 text-lg mb-1">Attendance Registry</h5>
-                    <p className="text-slate-500 text-xs leading-relaxed mb-4">
+                    <h5 className="font-black text-blue-900 text-lg mb-1 break-words whitespace-normal">Attendance Registry</h5>
+                    <p className="text-slate-500 text-xs leading-relaxed mb-4 break-words whitespace-normal">
                       Daily and term attendance logs, scanned student IDs, names, dates, active terms, and verifying staff ({attendance.length} logs).
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <button
                       onClick={() => exportAttendanceExcel(attendance, students)}
-                      className="py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                      className="min-h-[44px] py-2.5 px-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1"
                     >
                       <span>📊</span>
                       <span>Excel (.xlsx)</span>
                     </button>
                     <button
                       onClick={() => exportAttendanceCSV(attendance, students)}
-                      className="py-2.5 bg-rose-50 text-rose-900 hover:bg-rose-900 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                      className="min-h-[44px] py-2.5 px-2 bg-rose-50 text-rose-900 hover:bg-rose-900 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1"
                     >
                       <span>📄</span>
                       <span>CSV</span>
@@ -3641,27 +4056,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
 
                 {/* 5. Admissions Applications */}
-                <div className="p-6 bg-white border-2 border-slate-100 rounded-3xl shadow-sm hover:border-indigo-200 transition-all flex flex-col justify-between">
+                <div className="p-4 sm:p-6 bg-white border-2 border-slate-100 rounded-3xl shadow-sm hover:border-indigo-200 transition-all flex flex-col justify-between gap-4">
                   <div>
                     <div className="w-12 h-12 bg-indigo-100 text-indigo-900 rounded-2xl flex items-center justify-center text-xl mb-4 font-black">
                       📋
                     </div>
-                    <h5 className="font-black text-blue-900 text-lg mb-1">Admissions Applications</h5>
-                    <p className="text-slate-500 text-xs leading-relaxed mb-4">
+                    <h5 className="font-black text-blue-900 text-lg mb-1 break-words whitespace-normal">Admissions Applications</h5>
+                    <p className="text-slate-500 text-xs leading-relaxed mb-4 break-words whitespace-normal">
                       Incoming student and pupil applications, parent emails, target grades, deposit status, and dates ({applications.length} applications).
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <button
                       onClick={() => exportAdmissionsExcel(applications)}
-                      className="py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                      className="min-h-[44px] py-2.5 px-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1"
                     >
                       <span>📊</span>
                       <span>Excel (.xlsx)</span>
                     </button>
                     <button
                       onClick={() => exportAdmissionsCSV(applications)}
-                      className="py-2.5 bg-indigo-50 text-indigo-900 hover:bg-indigo-900 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                      className="min-h-[44px] py-2.5 px-2 bg-indigo-50 text-indigo-900 hover:bg-indigo-900 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1"
                     >
                       <span>📄</span>
                       <span>CSV</span>
@@ -3670,27 +4085,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
 
                 {/* 6. Staff Roster */}
-                <div className="p-6 bg-white border-2 border-slate-100 rounded-3xl shadow-sm hover:border-amber-200 transition-all flex flex-col justify-between">
+                <div className="p-4 sm:p-6 bg-white border-2 border-slate-100 rounded-3xl shadow-sm hover:border-amber-200 transition-all flex flex-col justify-between gap-4">
                   <div>
                     <div className="w-12 h-12 bg-amber-100 text-amber-900 rounded-2xl flex items-center justify-center text-xl mb-4 font-black">
                       👨‍🏫
                     </div>
-                    <h5 className="font-black text-blue-900 text-lg mb-1">Staff & Teachers Roster</h5>
-                    <p className="text-slate-500 text-xs leading-relaxed mb-4">
+                    <h5 className="font-black text-blue-900 text-lg mb-1 break-words whitespace-normal">Staff & Teachers Roster</h5>
+                    <p className="text-slate-500 text-xs leading-relaxed mb-4 break-words whitespace-normal">
                       Staff accounts, assigned classes, curriculum assignments, configured module permissions, and join dates ({teachers.length} staff).
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <button
                       onClick={() => exportStaffRosterExcel(teachers)}
-                      className="py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                      className="min-h-[44px] py-2.5 px-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1"
                     >
                       <span>📊</span>
                       <span>Excel (.xlsx)</span>
                     </button>
                     <button
                       onClick={() => exportStaffRosterCSV(teachers)}
-                      className="py-2.5 bg-amber-50 text-amber-900 hover:bg-amber-900 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                      className="min-h-[44px] py-2.5 px-2 bg-amber-50 text-amber-900 hover:bg-amber-900 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1"
                     >
                       <span>📄</span>
                       <span>CSV</span>
@@ -3701,11 +4116,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             {/* Supabase Database SQL Synchronization Card */}
-            <div className="p-8 bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 text-white rounded-3xl shadow-2xl border border-blue-800/40 relative overflow-hidden">
-              <div className="relative z-10 space-y-6">
+            <div className="p-4 sm:p-8 bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 text-white rounded-3xl shadow-2xl border border-blue-800/40">
+              <div className="space-y-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-blue-800/40 pb-5">
                   <div>
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
                       <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[10px] font-black uppercase tracking-widest">
                         ⚡ Supabase PostgreSQL Schema
                       </span>
@@ -3713,21 +4128,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         16 Tables & Realtime
                       </span>
                     </div>
-                    <h4 className="text-2xl font-black font-serif text-white tracking-wide">
+                    <h4 className="text-xl sm:text-2xl font-black font-serif text-white tracking-wide break-words whitespace-normal">
                       Sync Database with Supabase SQL Editor
                     </h4>
-                    <p className="text-blue-200/80 text-xs sm:text-sm mt-1 max-w-2xl">
+                    <p className="text-blue-200/80 text-xs sm:text-sm mt-1 max-w-2xl break-words whitespace-normal">
                       Instantly copy or download the master idempotent PostgreSQL script. Paste it into your Supabase SQL Editor to create or update all tables, realtime listeners, Row Level Security policies, and fee structures.
                     </p>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                     <button
                       onClick={handleCopySupabaseSql}
-                      className={`px-5 py-3 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center space-x-2 shadow-lg ${
+                      className={`min-h-[44px] px-5 py-3 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg ${
                         sqlCopied
-                          ? 'bg-emerald-500 text-white shadow-emerald-500/30 scale-105'
-                          : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/40 active:scale-95'
+                          ? 'bg-emerald-500 text-white shadow-emerald-500/30'
+                          : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/40'
                       }`}
                     >
                       <span>{sqlCopied ? '✓' : '📋'}</span>
@@ -3736,7 +4151,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                     <button
                       onClick={downloadSupabaseSchemaSql}
-                      className="px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center space-x-2 shadow-lg shadow-blue-900/40 active:scale-95"
+                      className="min-h-[44px] px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/40"
                     >
                       <span>💾</span>
                       <span>Download .SQL File</span>
@@ -3744,7 +4159,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                     <button
                       onClick={() => setShowSqlPreview(!showSqlPreview)}
-                      className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center space-x-2"
+                      className="min-h-[44px] px-4 py-3 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2"
                     >
                       <span>{showSqlPreview ? '▲' : '👁️'}</span>
                       <span>{showSqlPreview ? 'Hide SQL' : 'View SQL'}</span>
@@ -3753,33 +4168,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
 
                 {/* 3-Step Setup Quick Guide */}
-                <div className="grid sm:grid-cols-3 gap-4 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                   <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
                     <div className="flex items-center gap-2 font-bold text-yellow-400 mb-1">
-                      <span className="w-5 h-5 rounded-full bg-yellow-400 text-slate-900 flex items-center justify-center text-[10px] font-black">1</span>
+                      <span className="w-5 h-5 rounded-full bg-yellow-400 text-slate-900 flex items-center justify-center text-[10px] font-black shrink-0">1</span>
                       <span>Open SQL Editor</span>
                     </div>
-                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                    <p className="text-slate-300 text-[11px] leading-relaxed break-words whitespace-normal">
                       Log in to your <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-yellow-400 underline hover:text-yellow-300 font-semibold">Supabase Dashboard</a>, pick your project, and click <strong>SQL Editor</strong> on the left.
                     </p>
                   </div>
 
                   <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
                     <div className="flex items-center gap-2 font-bold text-yellow-400 mb-1">
-                      <span className="w-5 h-5 rounded-full bg-yellow-400 text-slate-900 flex items-center justify-center text-[10px] font-black">2</span>
+                      <span className="w-5 h-5 rounded-full bg-yellow-400 text-slate-900 flex items-center justify-center text-[10px] font-black shrink-0">2</span>
                       <span>Paste Master SQL</span>
                     </div>
-                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                    <p className="text-slate-300 text-[11px] leading-relaxed break-words whitespace-normal">
                       Click <strong>+ New query</strong>, paste the script using the Copy button above (or from <code className="text-yellow-300 font-mono text-[10px]">supabase_schema.sql</code>).
                     </p>
                   </div>
 
                   <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
                     <div className="flex items-center gap-2 font-bold text-yellow-400 mb-1">
-                      <span className="w-5 h-5 rounded-full bg-yellow-400 text-slate-900 flex items-center justify-center text-[10px] font-black">3</span>
+                      <span className="w-5 h-5 rounded-full bg-yellow-400 text-slate-900 flex items-center justify-center text-[10px] font-black shrink-0">3</span>
                       <span>Click Run</span>
                     </div>
-                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                    <p className="text-slate-300 text-[11px] leading-relaxed break-words whitespace-normal">
                       Click the green <strong>Run</strong> button. All 16 tables, performance indexes, RLS security policies, and live channels will be activated.
                     </p>
                   </div>
@@ -3788,17 +4203,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 {/* Optional SQL Viewer */}
                 {showSqlPreview && (
                   <div className="mt-4 pt-4 border-t border-white/10">
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                       <span className="text-xs font-mono text-slate-400">supabase_schema.sql preview (ready to copy)</span>
                       <button
                         onClick={handleCopySupabaseSql}
-                        className="text-xs text-yellow-400 hover:text-yellow-300 font-bold flex items-center gap-1"
+                        className="min-h-[44px] px-3 text-xs text-yellow-400 hover:text-yellow-300 font-bold flex items-center gap-1"
                       >
                         <span>📋</span>
                         <span>{sqlCopied ? 'Copied!' : 'Copy Code'}</span>
                       </button>
                     </div>
-                    <pre className="max-h-80 overflow-y-auto bg-slate-950/80 border border-white/10 rounded-2xl p-4 text-[11px] font-mono text-emerald-300 select-all leading-relaxed whitespace-pre-wrap">
+                    <pre className="max-h-80 overflow-y-auto overflow-x-auto bg-slate-950/80 border border-white/10 rounded-2xl p-4 text-[11px] font-mono text-emerald-300 select-all leading-relaxed whitespace-pre-wrap break-all">
                       {SUPABASE_MASTER_SQL_SCHEMA}
                     </pre>
                   </div>
@@ -3807,13 +4222,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             {/* Database & Backend Connectivity Reference Card */}
-            <div className="p-8 bg-slate-50 border-2 border-slate-200 rounded-3xl">
+            <div className="p-4 sm:p-8 bg-slate-50 border-2 border-slate-200 rounded-3xl">
               <h5 className="font-black text-blue-900 uppercase text-xs tracking-widest mb-2 flex items-center gap-2">
                 <span>🔌</span>
                 <span>Backend Database Transition Notice</span>
               </h5>
-              <p className="text-slate-600 text-xs leading-relaxed">
-                All downloaded files match the SQL schema defined in <code className="px-2 py-0.5 bg-white border border-slate-200 rounded font-mono text-blue-900">services/backendConnector.ts</code>. You can import these CSVs or JSON directly into PostgreSQL, MySQL, Supabase, or SQLite once the server backend is connected.
+              <p className="text-slate-600 text-xs leading-relaxed break-words whitespace-normal">
+                All downloaded files match the SQL schema defined in <code className="px-2 py-0.5 bg-white border border-slate-200 rounded font-mono text-blue-900 break-all">services/backendConnector.ts</code>. You can import these CSVs or JSON directly into PostgreSQL, MySQL, Supabase, or SQLite once the server backend is connected.
               </p>
             </div>
           </div>
@@ -3869,28 +4284,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             onBatchSaveResults={onBatchSaveResults}
           />
         )}
+        </div>
       </div>
 
       {/* Edit Staff Role & Subject/Class Assignment Modal */}
       {editingTeacherForAssignment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-[2.5rem] max-w-2xl w-full p-8 shadow-2xl border-2 border-blue-900/20 max-h-[90vh] overflow-y-auto space-y-6">
-            <div className="flex items-start justify-between border-b border-slate-100 pb-4">
-              <div>
-                <div className="flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl sm:rounded-[2.5rem] max-w-2xl w-full p-4 sm:p-8 shadow-2xl border-2 border-blue-900/20 max-h-[92vh] overflow-y-auto space-y-6">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-2xl">✏️</span>
-                  <h3 className="text-2xl font-black text-blue-900 font-serif">
+                  <h3 className="text-xl sm:text-2xl font-black text-blue-900 font-serif break-words whitespace-normal">
                     Modify Staff Assignment
                   </h3>
                 </div>
-                <p className="text-xs text-slate-500 font-bold mt-1">
+                <p className="text-xs text-slate-500 font-bold mt-1 break-words whitespace-normal">
                   Editing assignment for <strong className="text-blue-900">{editingTeacherForAssignment.username}</strong>
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setEditingTeacherForAssignment(null)}
-                className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-black transition-all"
+                className="min-w-[44px] min-h-[44px] rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-black transition-all shrink-0"
               >
                 ✕
               </button>
@@ -3902,47 +4318,47 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <label className="text-xs font-black text-blue-900 uppercase tracking-widest block">
                   Select Assignment Type
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => setEditAssignmentRole('class_teacher')}
-                    className={`p-3 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                    className={`min-h-[56px] p-3 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center gap-1 ${
                       editAssignmentRole === 'class_teacher'
-                        ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md scale-[1.02]'
+                        ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md'
                         : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
                     <span className="text-lg">🏫</span>
-                    <span className="text-xs font-black uppercase">Class Teacher</span>
-                    <span className={`text-[9px] font-bold ${editAssignmentRole === 'class_teacher' ? 'text-yellow-200' : 'text-slate-400'}`}>Assign Class</span>
+                    <span className="text-xs font-black uppercase break-words whitespace-normal">Class Teacher</span>
+                    <span className={`text-[10px] font-bold ${editAssignmentRole === 'class_teacher' ? 'text-yellow-200' : 'text-slate-400'}`}>Assign Class</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setEditAssignmentRole('subject_teacher')}
-                    className={`p-3 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                    className={`min-h-[56px] p-3 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center gap-1 ${
                       editAssignmentRole === 'subject_teacher'
-                        ? 'bg-indigo-900 text-yellow-400 border-indigo-900 shadow-md scale-[1.02]'
+                        ? 'bg-indigo-900 text-yellow-400 border-indigo-900 shadow-md'
                         : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
                     <span className="text-lg">📚</span>
-                    <span className="text-xs font-black uppercase">Subject Teacher</span>
-                    <span className={`text-[9px] font-bold ${editAssignmentRole === 'subject_teacher' ? 'text-yellow-200' : 'text-slate-400'}`}>Assign Subject</span>
+                    <span className="text-xs font-black uppercase break-words whitespace-normal">Subject Teacher</span>
+                    <span className={`text-[10px] font-bold ${editAssignmentRole === 'subject_teacher' ? 'text-yellow-200' : 'text-slate-400'}`}>Assign Subject</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setEditAssignmentRole('both')}
-                    className={`p-3 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                    className={`min-h-[56px] p-3 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center gap-1 ${
                       editAssignmentRole === 'both'
-                        ? 'bg-purple-900 text-yellow-400 border-purple-900 shadow-md scale-[1.02]'
+                        ? 'bg-purple-900 text-yellow-400 border-purple-900 shadow-md'
                         : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
                     <span className="text-lg">🌟</span>
-                    <span className="text-xs font-black uppercase">Both (Dual)</span>
-                    <span className={`text-[9px] font-bold ${editAssignmentRole === 'both' ? 'text-yellow-200' : 'text-slate-400'}`}>Class & Subj</span>
+                    <span className="text-xs font-black uppercase break-words whitespace-normal">Both (Dual)</span>
+                    <span className={`text-[10px] font-bold ${editAssignmentRole === 'both' ? 'text-yellow-200' : 'text-slate-400'}`}>Class & Subj</span>
                   </button>
                 </div>
               </div>
@@ -3952,11 +4368,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <label className="text-xs font-black text-blue-950 uppercase tracking-wider block">
                   Designated Class Teacher (e.g. JSS 1)
                 </label>
-                <p className="text-[11px] text-slate-500 font-medium">Designate the specific class where this staff is the primary Class Teacher / Form Tutor:</p>
+                <p className="text-[11px] text-slate-500 font-medium break-words whitespace-normal">Designate the specific class where this staff is the primary Class Teacher / Form Tutor:</p>
                 <select
                   value={editClassTeacherGrade}
                   onChange={(e) => setEditClassTeacherGrade(e.target.value as GradeLevel | '')}
-                  className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:border-blue-900"
+                  className="w-full min-h-[44px] px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:border-blue-900"
                 >
                   <option value="">-- None / Subject Specialist Only --</option>
                   {GRADE_GROUPS.flatMap(g => g.levels).map(lvl => (
@@ -3967,15 +4383,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
               {/* All Classes Taught */}
               <div className="space-y-2 pt-2 border-t border-slate-100">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-black text-slate-600 uppercase tracking-widest block">
+                <div className="flex flex-wrap justify-between items-center gap-2">
+                  <label className="text-xs font-black text-slate-600 uppercase tracking-widest block break-words whitespace-normal">
                     Classes Taught (e.g. JSS 1, JSS 2, JSS 3, SS 1, SS 2) ({editAssignedGrades.length} selected)
                   </label>
-                  <div className="flex space-x-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     <button
                       type="button"
                       onClick={() => setEditAssignedGrades(GRADE_GROUPS.flatMap(g => g.levels) as GradeLevel[])}
-                      className="text-[10px] font-black text-blue-900 hover:underline uppercase"
+                      className="min-h-[36px] px-2 text-[10px] font-black text-blue-900 hover:underline uppercase"
                     >
                       All Classes
                     </button>
@@ -3983,13 +4399,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <button
                       type="button"
                       onClick={() => setEditAssignedGrades([])}
-                      className="text-[10px] font-black text-red-600 hover:underline uppercase"
+                      className="min-h-[36px] px-2 text-[10px] font-black text-red-600 hover:underline uppercase"
                     >
                       Clear
                     </button>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                <div className="flex flex-wrap gap-2 max-h-44 overflow-y-auto p-3 bg-slate-50 rounded-2xl border border-slate-200">
                   {GRADE_GROUPS.flatMap(g => g.levels).map(lvl => {
                     const isSelected = editAssignedGrades.includes(lvl as GradeLevel);
                     return (
@@ -3997,7 +4413,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         type="button"
                         key={lvl}
                         onClick={() => toggleEditGrade(lvl as GradeLevel)}
-                        className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase transition-all ${
+                        className={`min-h-[44px] px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${
                           isSelected 
                             ? 'bg-blue-900 text-yellow-400 border border-blue-900 shadow-sm' 
                             : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'
@@ -4012,15 +4428,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
               {/* Assigned Subjects */}
               <div className="space-y-2 pt-2 border-t border-slate-100">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-black text-indigo-950 uppercase tracking-widest block">
+                <div className="flex flex-wrap justify-between items-center gap-2">
+                  <label className="text-xs font-black text-indigo-950 uppercase tracking-widest block break-words whitespace-normal">
                     Assigned Subjects (e.g. CRS, Yoruba) ({editAssignedSubjects.length} selected)
                   </label>
-                    <div className="flex space-x-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       <button
                         type="button"
                         onClick={() => setEditAssignedSubjects([...STANDARD_SUBJECTS])}
-                        className="text-[10px] font-black text-indigo-900 hover:underline uppercase"
+                        className="min-h-[36px] px-2 text-[10px] font-black text-indigo-900 hover:underline uppercase"
                       >
                         All Standard
                       </button>
@@ -4028,14 +4444,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <button
                         type="button"
                         onClick={() => setEditAssignedSubjects([])}
-                        className="text-[10px] font-black text-red-600 hover:underline uppercase"
+                        className="min-h-[36px] px-2 text-[10px] font-black text-red-600 hover:underline uppercase"
                       >
                         Clear
                       </button>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                  <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-3 bg-slate-50 rounded-2xl border border-slate-200">
                     {STANDARD_SUBJECTS.map(subj => {
                       const isSelected = editAssignedSubjects.includes(subj);
                       return (
@@ -4043,7 +4459,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           type="button"
                           key={subj}
                           onClick={() => toggleEditSubject(subj)}
-                          className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase transition-all ${
+                          className={`min-h-[44px] px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${
                             isSelected
                               ? 'bg-indigo-900 text-yellow-400 border border-indigo-900 shadow-sm'
                               : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'
@@ -4058,26 +4474,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         type="button"
                         key={customSubj}
                         onClick={() => toggleEditSubject(customSubj)}
-                        className="px-2.5 py-1 rounded-xl text-[10px] font-black uppercase bg-purple-900 text-yellow-300 border border-purple-900 shadow-sm"
+                        className="min-h-[44px] px-3 py-2 rounded-xl text-[10px] font-black uppercase bg-purple-900 text-yellow-300 border border-purple-900 shadow-sm"
                       >
                         ✓ {customSubj} ✕
                       </button>
                     ))}
                   </div>
 
-                  <div className="flex items-center gap-2 pt-1">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
                     <input
                       type="text"
                       value={editCustomSubject}
                       onChange={(e) => setEditCustomSubject(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddEditCustomSubject(); } }}
                       placeholder="Add custom subject (e.g. French, Phonics)..."
-                      className="flex-1 px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl font-medium outline-none focus:border-indigo-900"
+                      className="flex-1 min-h-[44px] px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl font-medium outline-none focus:border-indigo-900"
                     />
                     <button
                       type="button"
                       onClick={handleAddEditCustomSubject}
-                      className="px-3 py-2 bg-indigo-900 text-yellow-400 text-xs font-black rounded-xl hover:bg-indigo-800"
+                      className="min-h-[44px] px-4 py-2 bg-indigo-900 text-yellow-400 text-xs font-black rounded-xl hover:bg-indigo-800 shrink-0"
                     >
                       + Add Subject
                     </button>
@@ -4086,35 +4502,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
               {/* Student Creation Permission */}
               <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200">
-                <label className="flex items-start gap-3 cursor-pointer">
+                <label className="flex items-start gap-3 min-h-[44px] cursor-pointer">
                   <input
                     type="checkbox"
                     checked={editCanCreateStudents}
                     onChange={(e) => setEditCanCreateStudents(e.target.checked)}
-                    className="mt-1 w-4 h-4 rounded text-blue-900 border-slate-300 focus:ring-blue-900"
+                    className="mt-1 w-5 h-5 rounded text-blue-900 border-slate-300 focus:ring-blue-900 shrink-0"
                   />
                   <div>
                     <span className="text-xs font-black text-blue-950 uppercase tracking-wider block">
                       Allow Teacher to Open Pupil Accounts
                     </span>
-                    <p className="text-[11px] text-amber-900 leading-snug mt-0.5">
+                    <p className="text-[11px] text-amber-900 leading-snug mt-0.5 break-words whitespace-normal">
                       Teacher will be permitted to register new pupils strictly for their assigned class(es).
                     </p>
                   </div>
                 </label>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setEditingTeacherForAssignment(null)}
-                  className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs uppercase tracking-wider rounded-xl transition-all"
+                  className="min-h-[44px] px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs uppercase tracking-wider rounded-xl transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all active:scale-95"
+                  className="min-h-[44px] px-6 py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all"
                 >
                   Save Assignment Changes →
                 </button>

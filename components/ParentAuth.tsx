@@ -138,30 +138,27 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center px-4 py-12 bg-slate-50/50">
-      <div className="max-w-xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden border-2 border-slate-200 relative">
-        {/* Top Decorative School Accent */}
-        <div className="h-3 w-full bg-gradient-to-r from-blue-900 via-yellow-400 to-blue-900"></div>
-
-        <div className="p-8 sm:p-10">
+    <div className="min-h-[85vh] w-full max-w-full overflow-x-hidden flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12 bg-slate-50/50">
+      <div className="max-w-xl w-full bg-white rounded-3xl shadow-2xl border-2 border-slate-200 border-t-8 border-t-blue-900">
+        <div className="p-4 sm:p-10">
           {/* Header Navigation & School Identity */}
-          <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-100">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-6 sm:mb-8 pb-4 border-b border-slate-100">
             <button
               type="button"
               onClick={onBack}
-              className="inline-flex items-center gap-1.5 text-xs font-black text-slate-500 hover:text-blue-900 transition-colors uppercase tracking-wider"
+              className="min-h-[44px] px-2 inline-flex items-center gap-1.5 text-xs font-black text-slate-500 hover:text-blue-900 transition-colors uppercase tracking-wider"
             >
               <span>←</span>
               <span>Back to Home</span>
             </button>
 
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-yellow-100 text-blue-900 rounded-full text-[10px] font-black uppercase tracking-wider border border-yellow-300">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-yellow-100 text-blue-900 rounded-full text-[10px] font-black uppercase tracking-wider border border-yellow-300 break-words">
               <span>👨‍👩‍👧‍👦 Parent & Guardian Portal</span>
             </div>
           </div>
 
-          <div className="text-center mb-8">
-            <div className="w-24 h-24 sm:w-28 sm:h-28 mx-auto bg-white rounded-3xl border-3 border-yellow-400 shadow-xl ring-4 ring-blue-900/10 overflow-hidden flex items-center justify-center mb-4">
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="w-24 h-24 sm:w-28 sm:h-28 mx-auto bg-white rounded-3xl border-2 border-yellow-400 shadow-xl ring-4 ring-blue-900/10 overflow-hidden flex items-center justify-center mb-4">
               <img
                 src="/logo.png"
                 alt="God's Hand International Model School"
@@ -170,11 +167,11 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
                 onError={(e) => { e.currentTarget.src = 'hands.jpg'; }}
               />
             </div>
-            <h2 className="text-2xl sm:text-3xl font-serif font-black text-blue-900 leading-tight">
+            <h2 className="text-2xl sm:text-3xl font-serif font-black text-blue-900 leading-tight break-words">
               {mode === 'login' && 'Parent & Guardian Login'}
               {mode === 'forgot' && 'Reset Parent Password'}
             </h2>
-            <p className="text-xs text-slate-500 font-medium mt-1">
+            <p className="text-xs text-slate-500 font-medium mt-1 break-words">
               {mode === 'login' && 'Official Parent Portal • Accounts provisioned strictly by Admin & Class Teacher.'}
               {mode === 'forgot' && 'Enter your registered email to reset your parent password.'}
             </p>
@@ -183,8 +180,8 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
           {/* Security Alert Banner */}
           {securityAlert && (
             <div className="mb-6 p-3.5 bg-red-50 border-2 border-red-200 rounded-2xl text-red-700 text-xs font-bold flex items-start gap-2">
-              <span className="text-base leading-none">🛡️</span>
-              <span className="leading-snug">{securityAlert}</span>
+              <span className="text-base leading-none shrink-0">🛡️</span>
+              <span className="leading-snug break-words">{securityAlert}</span>
             </div>
           )}
 
@@ -198,8 +195,8 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
 
           {/* Mode Switcher Banner */}
           {mode !== 'forgot' && (
-            <div className="p-3 bg-slate-100 rounded-2xl mb-8 flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-wider text-blue-900 px-3">
+            <div className="p-3 bg-slate-100 rounded-2xl mb-6 sm:mb-8 flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-black uppercase tracking-wider text-blue-900 px-2 break-words">
                 Parent & Guardian Portal Login
               </span>
               <span className="text-[10px] font-black uppercase tracking-wider bg-white text-slate-500 px-3 py-1.5 rounded-xl shadow-xs flex items-center gap-1">
@@ -211,8 +208,8 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
 
           {/* Error Message Display */}
           {error && (
-            <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-3">
-              <span className="text-base">⚠️</span>
+            <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-3 break-words">
+              <span className="text-base shrink-0">⚠️</span>
               <span>{error}</span>
             </div>
           )}
@@ -230,7 +227,10 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
                 <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2">
                   Email Address or Phone Number
                 </label>
-                <div className="relative">
+                <div className="flex items-center gap-3 px-4 bg-slate-50 border-2 border-slate-200 rounded-2xl focus-within:bg-white focus-within:border-blue-900 transition-all">
+                  <span className="text-slate-400 text-base shrink-0" aria-hidden="true">
+                    ✉️
+                  </span>
                   <input
                     type="text"
                     name="parent_identifier"
@@ -240,38 +240,38 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
                     onChange={(e) => handleInputFilter(e.target.value, setLoginIdentifier)}
                     placeholder="e.g. parent@Godshand.sch.ng or 08034567890"
                     autoComplete="username"
-                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm text-blue-950 focus:bg-white focus:border-blue-900 outline-none transition-all disabled:opacity-50"
+                    className="w-full min-w-0 min-h-[44px] py-3 bg-transparent font-bold text-sm text-blue-950 outline-none disabled:opacity-50"
                   />
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-base">
-                    ✉️
-                  </span>
                 </div>
               </div>
 
               <div>
-                <div className="flex justify-between items-center mb-2">
+                <div className="flex flex-wrap justify-between items-center gap-2 mb-2">
                   <label className="text-xs font-black text-slate-500 uppercase tracking-wider">
                     Password
                   </label>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button 
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="text-[10px] font-black uppercase tracking-wider text-blue-900 hover:text-yellow-600 transition-colors"
+                      className="min-h-[44px] px-2 text-xs font-black uppercase tracking-wider text-blue-900 hover:text-yellow-600 transition-colors"
                     >
                       {showPassword ? 'Hide' : 'Show'}
                     </button>
                     <button
                       type="button"
                       onClick={() => { setMode('forgot'); setLocalError(''); setSecurityAlert(null); }}
-                      className="text-[11px] font-black text-yellow-600 hover:text-yellow-700 uppercase tracking-wide inline-flex items-center gap-1"
+                      className="min-h-[44px] px-2 text-xs font-black text-yellow-600 hover:text-yellow-700 uppercase tracking-wide inline-flex items-center gap-1"
                     >
                       <span>🔑</span>
                       <span className="underline decoration-yellow-400 underline-offset-2">Forgot Password?</span>
                     </button>
                   </div>
                 </div>
-                <div className="relative">
+                <div className="flex items-center gap-3 px-4 bg-slate-50 border-2 border-slate-200 rounded-2xl focus-within:bg-white focus-within:border-blue-900 transition-all">
+                  <span className="text-slate-400 text-base shrink-0" aria-hidden="true">
+                    🔒
+                  </span>
                   <input
                     type={showPassword ? 'text' : 'password'}
                     name="parent_password"
@@ -284,18 +284,15 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
                     spellCheck="false"
                     autoCorrect="off"
                     autoCapitalize="off"
-                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm text-blue-950 focus:bg-white focus:border-blue-900 outline-none transition-all disabled:opacity-50"
+                    className="w-full min-w-0 min-h-[44px] py-3 bg-transparent font-bold text-sm text-blue-950 outline-none disabled:opacity-50"
                   />
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-base">
-                    🔒
-                  </span>
                 </div>
               </div>
 
               <button
                 type="submit"
                 disabled={lockoutRemaining > 0}
-                className="w-full py-4 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-sm uppercase tracking-wider rounded-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
+                className="w-full min-h-[44px] py-4 px-4 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-sm uppercase tracking-wider rounded-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
               >
                 <span>Login to Parent Portal</span>
                 <span>→</span>
@@ -303,10 +300,10 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
 
               <div className="pt-2 border-t border-slate-100 space-y-3">
                 {/* Official Enrollment Policy Card */}
-                <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-2xl text-[11px] text-blue-950 font-medium flex items-start gap-2.5 text-left">
+                <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-2xl text-xs text-blue-950 font-medium flex items-start gap-2.5 text-left">
                   <span className="text-base shrink-0">🛡️</span>
-                  <div>
-                    <strong className="font-black text-blue-900 uppercase block text-[10px]">Official Account Notice</strong>
+                  <div className="min-w-0 break-words">
+                    <strong className="font-black text-blue-900 uppercase block text-[11px]">Official Account Notice</strong>
                     <span>Parent accounts cannot be self-registered. Your account is created and linked to your children exclusively by the School Administrator or your child's assigned Class Teacher.</span>
                   </div>
                 </div>
@@ -315,11 +312,11 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
                   <button
                     type="button"
                     onClick={handleFillDemo}
-                    className="px-4 py-2 bg-yellow-50 hover:bg-yellow-100 text-blue-900 border border-yellow-300 rounded-xl text-xs font-bold transition-all"
+                    className="w-full sm:w-auto min-h-[44px] px-4 py-2.5 bg-yellow-50 hover:bg-yellow-100 text-blue-900 border border-yellow-300 rounded-xl text-xs font-bold transition-all break-words whitespace-normal"
                   >
                     ⚡ Quick Demo: Use Sample Parent Account
                   </button>
-                  <p className="text-[10px] text-slate-400 mt-1">
+                  <p className="text-[11px] text-slate-400 mt-1 break-words">
                     Prefills Mrs. Adebayo's account with 2 linked children and attendance data.
                   </p>
                 </div>
@@ -357,13 +354,13 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
                       value={resetEmail}
                       onChange={(e) => handleInputFilter(e.target.value, setResetEmail)}
                       placeholder="parent@example.com"
-                      className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm text-blue-950 focus:bg-white focus:border-blue-900 outline-none transition-all"
+                      className="w-full min-h-[44px] px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm text-blue-950 focus:bg-white focus:border-blue-900 outline-none transition-all"
                     />
                   </div>
 
-                  <div className="grid sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">
+                      <label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">
                         New Password
                       </label>
                       <input
@@ -372,11 +369,11 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
                         value={newParentPass}
                         onChange={(e) => handleInputFilter(e.target.value, setNewParentPass)}
                         placeholder="••••••••"
-                        className="w-full px-3.5 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:bg-white focus:border-blue-900 outline-none transition-all"
+                        className="w-full min-h-[44px] px-3.5 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:bg-white focus:border-blue-900 outline-none transition-all"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">
+                      <label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">
                         Confirm Password
                       </label>
                       <input
@@ -385,28 +382,28 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
                         value={confirmParentPass}
                         onChange={(e) => handleInputFilter(e.target.value, setConfirmParentPass)}
                         placeholder="••••••••"
-                        className="w-full px-3.5 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:bg-white focus:border-blue-900 outline-none transition-all"
+                        className="w-full min-h-[44px] px-3.5 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:bg-white focus:border-blue-900 outline-none transition-all"
                       />
                     </div>
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full py-4 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-sm uppercase tracking-wider rounded-2xl shadow-xl transition-all"
+                    className="w-full min-h-[44px] py-4 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-sm uppercase tracking-wider rounded-2xl shadow-xl transition-all"
                   >
                     Update Parent Password
                   </button>
 
                   {/* Immediate School Support via WhatsApp */}
                   <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-center space-y-1.5">
-                    <p className="text-[11px] text-emerald-800 font-bold">
+                    <p className="text-[11px] text-emerald-800 font-bold break-words">
                       Can't remember your registered email? Contact the School Parent Helpdesk:
                     </p>
                     <a
                       href={`https://wa.me/2347085596586?text=Hello%20God's%20Hand%20Model%20School%20Helpdesk,%20I%20am%20a%20parent%20(${encodeURIComponent(resetEmail || 'Parent')})%20requesting%20assistance%20with%20my%20portal%20account%20password.`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center gap-1.5 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+                      className="inline-flex items-center justify-center gap-1.5 w-full min-h-[44px] py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all break-words whitespace-normal"
                     >
                       <span>💬</span>
                       <span>Request Reset on WhatsApp: 07085596586</span>
@@ -416,7 +413,7 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
                   <button
                     type="button"
                     onClick={() => { setMode('login'); setLocalError(''); setSecurityAlert(null); }}
-                    className="w-full py-2 text-xs font-black text-slate-500 hover:text-blue-900 uppercase tracking-wider text-center block"
+                    className="w-full min-h-[44px] py-2 text-xs font-black text-slate-500 hover:text-blue-900 uppercase tracking-wider text-center block"
                   >
                     Return to Login
                   </button>
@@ -426,7 +423,7 @@ export const ParentAuth: React.FC<ParentAuthProps> = ({
           )}
 
           {/* School Guarantee Footer */}
-          <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 font-bold">
+          <div className="mt-8 pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400 font-bold">
             <span>God's Hand International Model School</span>
             <span>Apata, Ibadan, Oyo State</span>
           </div>

@@ -445,23 +445,23 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto rounded-3xl shadow-2xl border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden flex flex-col transition-colors duration-200">
+    <div className="w-full max-w-7xl mx-auto rounded-3xl shadow-2xl border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-x-hidden flex flex-col transition-colors duration-200">
       {/* Toast Feedback */}
       {toastMessage && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] px-4 py-2.5 bg-slate-900/95 text-white dark:bg-yellow-400 dark:text-blue-950 font-black text-xs rounded-full shadow-2xl flex items-center gap-2 border border-yellow-400/40 animate-in fade-in slide-in-from-top-4 duration-200">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] px-4 py-2.5 bg-slate-900/95 text-white dark:bg-yellow-400 dark:text-blue-950 font-black text-xs rounded-full shadow-2xl flex items-center gap-2 border border-yellow-400/40 animate-in fade-in slide-in-from-top-4 duration-200 max-w-[90vw] text-center break-words">
           <span>{toastMessage}</span>
         </div>
       )}
 
       {/* Top School Portal Bar with WhatsApp Gateway Status */}
       <div className="bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-950 text-white px-4 py-3 border-b-2 border-yellow-400 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-9 h-9 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-lg font-black shadow-md shrink-0">
             💬
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="font-serif font-black text-sm sm:text-base text-yellow-300">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="font-serif font-black text-sm sm:text-base text-yellow-300 break-words">
                 Parent-Teacher WhatsApp Chat
               </h2>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[9px] font-black uppercase tracking-wider border border-emerald-500/30">
@@ -469,7 +469,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                 Active Gateway
               </span>
             </div>
-            <p className="text-[10px] text-slate-300">
+            <p className="text-[10px] text-slate-300 break-words">
               {isParent 
                 ? `Logged in as Guardian: ${currentParent?.fullName || currentUserName || 'Parent'}` 
                 : isTeacher 
@@ -479,21 +479,21 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {onGoToCommunityHub && (
             <button
               type="button"
               onClick={onGoToCommunityHub}
-              className="px-3 py-1.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all flex items-center gap-1 active:scale-95 shadow-sm"
+              className="px-3.5 py-2 min-h-[44px] bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all flex items-center gap-1.5 active:scale-95 shadow-sm"
             >
               <span>📞</span>
-              <span className="hidden sm:inline">Community Meetings</span>
+              <span>Community Meetings</span>
             </button>
           )}
           <button
             type="button"
             onClick={onBack}
-            className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-black text-[11px] uppercase tracking-wider transition-all"
+            className="px-3.5 py-2 min-h-[44px] bg-white/10 hover:bg-white/20 text-white rounded-xl font-black text-[11px] uppercase tracking-wider transition-all"
           >
             ← Back
           </button>
@@ -501,14 +501,14 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
       </div>
 
       {/* Main WhatsApp Split Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-12 min-h-[640px] max-h-[780px]">
+      <div className="grid grid-cols-1 md:grid-cols-12 min-h-[500px] md:h-[75vh] md:max-h-[820px]">
         {/* LEFT COLUMN: WhatsApp Contacts / Chat Threads */}
-        <div className={`md:col-span-4 lg:col-span-4 border-r border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#111b21] flex flex-col ${
+        <div className={`md:col-span-4 lg:col-span-4 border-r border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#111b21] flex flex-col min-h-0 ${
           mobileView === 'chat' ? 'hidden md:flex' : 'flex'
         }`}>
           {/* Contacts Header & Search */}
           <div className="p-3.5 bg-slate-100 dark:bg-[#202c33] border-b border-slate-200 dark:border-slate-800 space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
                 {isParent ? 'Chats with Staff' : 'Parent Enquiries'}
               </span>
@@ -523,7 +523,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                 <label className="block text-[9px] font-black uppercase text-slate-500 dark:text-slate-400 mb-1">
                   Regarding Pupil:
                 </label>
-                <div className="flex gap-1 overflow-x-auto pb-1 no-scrollbar">
+                <div className="flex flex-wrap gap-1.5 pb-1">
                   {linkedChildren.map(c => (
                     <button
                       key={c.id}
@@ -533,7 +533,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                         const match = staffDirectory.find(s => s.grades.includes(c.grade));
                         if (match) setSelectedStaffId(match.id);
                       }}
-                      className={`px-2.5 py-1 rounded-xl text-[10px] font-bold whitespace-nowrap transition-all border ${
+                      className={`px-3 py-1.5 min-h-[44px] rounded-xl text-[10px] font-bold transition-all border ${
                         selectedChild?.id === c.id
                           ? 'bg-blue-900 text-yellow-400 border-blue-900 dark:bg-yellow-400 dark:text-blue-950 dark:border-yellow-400 shadow-xs'
                           : 'bg-white dark:bg-[#111b21] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
@@ -546,15 +546,15 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
               </div>
             )}
 
-            {/* Search Input */}
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+            {/* Search Input (Flex Wrapper, zero absolute icon) */}
+            <div className="flex items-center gap-2 bg-white dark:bg-[#111b21] border border-slate-200 dark:border-slate-700 rounded-xl px-3 min-h-[44px] focus-within:ring-2 focus-within:ring-emerald-500">
+              <span className="text-slate-400 text-xs shrink-0">🔍</span>
               <input
                 type="text"
                 value={searchContact}
                 onChange={e => setSearchContact(e.target.value)}
                 placeholder="Search or start new chat..."
-                className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-[#111b21] border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                className="w-full py-2 bg-transparent text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none"
               />
             </div>
           </div>
@@ -583,17 +583,17 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="relative shrink-0">
+                        <div className="shrink-0">
                           <div className="w-11 h-11 rounded-full bg-blue-900 dark:bg-slate-800 text-yellow-400 flex items-center justify-center text-lg font-black border border-yellow-400/50 shadow-xs">
                             {staff.avatar}
                           </div>
-                          <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-[#111b21]"></span>
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-1 mb-0.5">
-                            <p className="font-bold text-xs text-slate-900 dark:text-slate-100 truncate">
-                              {staff.name}
+                          <div className="flex flex-wrap items-center justify-between gap-1 mb-0.5">
+                            <p className="font-bold text-xs text-slate-900 dark:text-slate-100 break-words whitespace-normal flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                              <span>{staff.name}</span>
                             </p>
                             {lastMsg && (
                               <span className="text-[10px] text-slate-400 shrink-0 font-medium">
@@ -602,23 +602,23 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                             )}
                           </div>
 
-                          <div className="flex items-center justify-between gap-1">
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 break-words whitespace-normal flex items-center gap-1 min-w-0">
                               {lastMsg ? (
                                 <>
                                   {isMessageTransmitter(lastMsg) && (
                                     <span className={lastMsg.status === 'read' ? 'text-[#53bdeb]' : 'text-slate-400'}>
-                                      {lastMsg.status === 'read' ? '✓✓' : '✓✓'}
+                                      ✓✓
                                     </span>
                                   )}
-                                  <span>{lastMsg.message}</span>
+                                  <span className="break-words">{lastMsg.message}</span>
                                 </>
                               ) : (
                                 <span>{isChildTeacher ? 'Class Educator' : staff.roleDesc}</span>
                               )}
                             </p>
                             {staff.unreadCount > 0 && (
-                              <span className="px-1.5 py-0.2 rounded-full bg-emerald-500 text-white text-[9px] font-black shrink-0">
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[9px] font-black shrink-0">
                                 {staff.unreadCount}
                               </span>
                             )}
@@ -650,17 +650,17 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="relative shrink-0">
+                        <div className="shrink-0">
                           <div className="w-11 h-11 rounded-full bg-indigo-950 dark:bg-slate-800 text-yellow-400 flex items-center justify-center text-lg font-black border border-yellow-400/50 shadow-xs">
                             👨‍👩‍👧‍👦
                           </div>
-                          <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-[#111b21]"></span>
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-1 mb-0.5">
-                            <p className="font-bold text-xs text-slate-900 dark:text-slate-100 truncate">
-                              {parentItem.fullName}
+                          <div className="flex flex-wrap items-center justify-between gap-1 mb-0.5">
+                            <p className="font-bold text-xs text-slate-900 dark:text-slate-100 break-words whitespace-normal flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                              <span>{parentItem.fullName}</span>
                             </p>
                             {lastMsg && (
                               <span className="text-[10px] text-slate-400 shrink-0 font-medium">
@@ -669,23 +669,23 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                             )}
                           </div>
 
-                          <div className="flex items-center justify-between gap-1">
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 break-words whitespace-normal flex items-center gap-1 min-w-0">
                               {lastMsg ? (
                                 <>
                                   {isMessageTransmitter(lastMsg) && (
                                     <span className={lastMsg.status === 'read' ? 'text-[#53bdeb]' : 'text-slate-400'}>
-                                      {lastMsg.status === 'read' ? '✓✓' : '✓✓'}
+                                      ✓✓
                                     </span>
                                   )}
-                                  <span>{lastMsg.message}</span>
+                                  <span className="break-words">{lastMsg.message}</span>
                                 </>
                               ) : (
                                 <span>Children: {parentChildren.map(c => c.name).join(', ') || 'Pupil'}</span>
                               )}
                             </p>
                             {parentItem.unreadCount > 0 && (
-                              <span className="px-1.5 py-0.2 rounded-full bg-emerald-500 text-white text-[9px] font-black shrink-0">
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[9px] font-black shrink-0">
                                 {parentItem.unreadCount}
                               </span>
                             )}
@@ -700,38 +700,37 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
         </div>
 
         {/* RIGHT COLUMN: WhatsApp Active Conversation Window */}
-        <div className={`md:col-span-8 lg:col-span-8 flex flex-col bg-[#efeae2] dark:bg-[#0b141a] whatsapp-chat-bg ${
+        <div className={`md:col-span-8 lg:col-span-8 flex flex-col min-h-0 bg-[#efeae2] dark:bg-[#0b141a] whatsapp-chat-bg ${
           mobileView === 'list' ? 'hidden md:flex' : 'flex'
         }`}>
           {/* WhatsApp Chat Header */}
-          <div className="px-4 py-2.5 bg-slate-100 dark:bg-[#202c33] border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 shadow-xs">
-            <div className="flex items-center gap-3 min-w-0">
+          <div className="px-4 py-2.5 bg-slate-100 dark:bg-[#202c33] border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
               {/* Mobile Back Button */}
               <button
                 type="button"
                 onClick={() => setMobileView('list')}
-                className="md:hidden p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300"
+                className="md:hidden min-h-[44px] min-w-[44px] rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 font-black"
                 title="Back to contacts"
               >
                 ←
               </button>
 
-              <div className="relative shrink-0">
+              <div className="shrink-0">
                 <div className="w-10 h-10 rounded-full bg-blue-900 dark:bg-slate-800 text-yellow-400 flex items-center justify-center text-lg font-black border border-yellow-400 shadow-xs">
                   {isParent ? (activeStaffObj?.avatar || '👔') : '👨‍👩‍👧‍👦'}
                 </div>
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-[#202c33]"></span>
               </div>
 
-              <div className="min-w-0">
-                <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate">
+              <div className="min-w-0 flex-1">
+                <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 break-words whitespace-normal">
                   {isParent ? activeStaffObj?.name : activeParentObj?.fullName}
                 </h3>
-                <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold truncate flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold break-words flex flex-wrap items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
                   <span>online</span>
                   <span className="text-slate-400 font-normal hidden sm:inline">•</span>
-                  <span className="text-slate-500 dark:text-slate-400 font-normal hidden sm:inline">
+                  <span className="text-slate-500 dark:text-slate-400 font-normal hidden sm:inline break-words">
                     {isParent ? activeStaffObj?.roleDesc : `Phone: ${activeParentObj?.phone || 'On file'}`}
                   </span>
                 </p>
@@ -739,7 +738,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
             </div>
 
             {/* Header Action Buttons (Voice Call, Video Call, Search) */}
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex flex-wrap items-center gap-1.5 shrink-0">
               {onInitiateCall && (
                 <>
                   <button
@@ -750,7 +749,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                       const targetRole = isParent ? (activeStaffObj.id === 'admin' ? UserRole.ADMIN : UserRole.TEACHER) : UserRole.PARENT;
                       onInitiateCall(targetId, targetName, targetRole, 'voice');
                     }}
-                    className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-[#2a3942] text-slate-700 dark:text-slate-200 transition-all"
+                    className="min-h-[44px] min-w-[44px] rounded-full hover:bg-slate-200 dark:hover:bg-[#2a3942] text-slate-700 dark:text-slate-200 transition-all flex items-center justify-center"
                     title="Make WhatsApp Voice Call"
                   >
                     📞
@@ -764,7 +763,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                       const targetRole = isParent ? (activeStaffObj.id === 'admin' ? UserRole.ADMIN : UserRole.TEACHER) : UserRole.PARENT;
                       onInitiateCall(targetId, targetName, targetRole, 'video');
                     }}
-                    className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-[#2a3942] text-slate-700 dark:text-slate-200 transition-all"
+                    className="min-h-[44px] min-w-[44px] rounded-full hover:bg-slate-200 dark:hover:bg-[#2a3942] text-slate-700 dark:text-slate-200 transition-all flex items-center justify-center"
                     title="Make WhatsApp Video Call"
                   >
                     📹
@@ -775,7 +774,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
               <button
                 type="button"
                 onClick={() => setShowSearchInChat(!showSearchInChat)}
-                className={`p-2 rounded-full transition-all ${
+                className={`min-h-[44px] min-w-[44px] rounded-full transition-all flex items-center justify-center ${
                   showSearchInChat ? 'bg-yellow-400 text-blue-950' : 'hover:bg-slate-200 dark:hover:bg-[#2a3942] text-slate-700 dark:text-slate-200'
                 }`}
                 title="Search messages in conversation"
@@ -789,7 +788,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                   setIsSelectionMode(!isSelectionMode);
                   if (isSelectionMode) setSelectedMessageIds([]);
                 }}
-                className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
+                className={`px-3 py-2 min-h-[44px] rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
                   isSelectionMode 
                     ? 'bg-rose-600 text-white shadow-sm ring-2 ring-rose-400' 
                     : 'bg-slate-200 dark:bg-[#2a3942] hover:bg-slate-300 dark:hover:bg-[#32424b] text-slate-700 dark:text-slate-200'
@@ -803,7 +802,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
 
           {/* Search bar inside conversation */}
           {showSearchInChat && (
-            <div className="px-4 py-2 bg-yellow-50 dark:bg-slate-900 border-b border-yellow-200 dark:border-slate-800 flex items-center gap-2">
+            <div className="px-4 py-2 bg-yellow-50 dark:bg-slate-900 border-b border-yellow-200 dark:border-slate-800 flex items-center gap-2 min-h-[44px]">
               <span className="text-xs text-slate-500">🔍</span>
               <input
                 type="text"
@@ -811,13 +810,13 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                 value={searchInChat}
                 onChange={e => setSearchInChat(e.target.value)}
                 placeholder="Search text in this chat..."
-                className="flex-1 bg-transparent text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 outline-none"
+                className="flex-1 py-1.5 bg-transparent text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 outline-none"
               />
               {searchInChat && (
                 <button
                   type="button"
                   onClick={() => setSearchInChat('')}
-                  className="text-xs text-slate-400 hover:text-slate-600"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center text-xs text-slate-400 hover:text-slate-600"
                 >
                   ✕
                 </button>
@@ -828,14 +827,14 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
           {/* Multi-Message Selection Action Bar */}
           {isSelectionMode && (
             <div className="px-4 py-2.5 bg-blue-950 text-white border-b-2 border-yellow-400 flex flex-wrap items-center justify-between gap-2 shadow-lg sticky top-0 z-20 animate-in slide-in-from-top-2 duration-150">
-              <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <span className="font-serif font-black text-xs sm:text-sm text-yellow-300">
                   {selectedMessageIds.length} message(s) selected
                 </span>
                 <button
                   type="button"
                   onClick={handleSelectAllMine}
-                  className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold transition-all"
+                  className="px-3 py-1.5 min-h-[44px] bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold transition-all"
                 >
                   Select All Mine ({threadMessages.filter(isMessageTransmitter).length})
                 </button>
@@ -843,19 +842,19 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                   <button
                     type="button"
                     onClick={() => setSelectedMessageIds([])}
-                    className="px-2 py-1 text-slate-300 hover:text-white text-xs underline"
+                    className="px-3 py-1.5 min-h-[44px] text-slate-300 hover:text-white text-xs underline"
                   >
                     Clear
                   </button>
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={handleDeleteSelected}
                   disabled={selectedMessageIds.length === 0}
-                  className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:hover:bg-rose-600 text-white rounded-xl text-xs font-black shadow-md flex items-center gap-1.5 transition-all"
+                  className="px-3.5 py-2 min-h-[44px] bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:hover:bg-rose-600 text-white rounded-xl text-xs font-black shadow-md flex items-center gap-1.5 transition-all"
                 >
                   <span>🗑️</span>
                   <span>Delete Selected ({selectedMessageIds.length})</span>
@@ -863,7 +862,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                 <button
                   type="button"
                   onClick={handleClearSelection}
-                  className="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all"
+                  className="px-3 py-2 min-h-[44px] bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all"
                 >
                   Done
                 </button>
@@ -883,7 +882,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
 
             {/* Date separator pill */}
             <div className="flex justify-center my-3">
-              <span className="px-3 py-1 bg-white/80 dark:bg-[#182229]/90 backdrop-blur-xs text-slate-600 dark:text-slate-300 text-[10px] font-black uppercase rounded-lg shadow-xs border border-slate-200/50 dark:border-slate-800">
+              <span className="px-3 py-1 bg-white/80 dark:bg-[#182229]/90 backdrop-blur-sm text-slate-600 dark:text-slate-300 text-[10px] font-black uppercase rounded-lg shadow-sm border border-slate-200/50 dark:border-slate-800">
                 TODAY
               </span>
             </div>
@@ -923,27 +922,27 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                           checked={isSelected}
                           onChange={() => handleToggleSelectMessage(msg.id)}
                           disabled={!isSentByMe}
-                          className="w-4 h-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="w-5 h-5 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                           title={isSentByMe ? "Select message to delete" : "Only transmitter can delete their own message"}
                         />
                       </div>
                     )}
 
-                    <div className={`flex flex-col relative ${isSentByMe ? 'items-end' : 'items-start'} max-w-[85%] sm:max-w-[70%]`}>
-                    {/* Floating Action Menu for Long-Press / Click */}
+                    <div className={`flex flex-col gap-1.5 ${isSentByMe ? 'items-end' : 'items-start'} max-w-[90%] sm:max-w-[75%]`}>
+                    {/* Inline Context Action Menu (zero overlapping absolute menu) */}
                     {isContextMenuOpen && (
                       <div 
-                        className={`absolute z-30 -top-14 ${isSentByMe ? 'right-0' : 'left-0'} bg-white dark:bg-[#202c33] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-1.5 flex items-center gap-1 animate-in zoom-in-95 duration-150`}
+                        className="bg-white dark:bg-[#202c33] rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-2 flex flex-wrap items-center gap-1.5 animate-in zoom-in-95 duration-150"
                         onClick={e => e.stopPropagation()}
                       >
                         {/* Quick Reactions Bar */}
-                        <div className="flex items-center gap-0.5 pr-1.5 border-r border-slate-200 dark:border-slate-700">
+                        <div className="flex flex-wrap items-center gap-1 pr-1.5 border-r border-slate-200 dark:border-slate-700">
                           {POPULAR_EMOJIS.slice(0, 6).map(emoji => (
                             <button
                               key={emoji}
                               type="button"
                               onClick={() => handleToggleReaction(msg.id, emoji)}
-                              className="w-7 h-7 rounded-xl hover:bg-slate-100 dark:hover:bg-[#2a3942] flex items-center justify-center text-sm transition-transform hover:scale-125"
+                              className="min-w-[44px] min-h-[44px] rounded-xl hover:bg-slate-100 dark:hover:bg-[#2a3942] flex items-center justify-center text-sm transition-transform hover:scale-110"
                               title={`React ${emoji}`}
                             >
                               {emoji}
@@ -955,7 +954,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                         <button
                           type="button"
                           onClick={() => handleCopyMessage(msg.message)}
-                          className="px-2 py-1 hover:bg-slate-100 dark:hover:bg-[#2a3942] text-slate-700 dark:text-slate-200 rounded-lg text-[10px] font-black uppercase flex items-center gap-1"
+                          className="px-3 py-2 min-h-[44px] hover:bg-slate-100 dark:hover:bg-[#2a3942] text-slate-700 dark:text-slate-200 rounded-lg text-[10px] font-black uppercase flex items-center gap-1"
                           title="Copy message text"
                         >
                           <span>📋</span>
@@ -970,7 +969,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                               setEditingMessageText(msg.message);
                               setActiveContextMenuMsgId(null);
                             }}
-                            className="px-2 py-1 hover:bg-slate-100 dark:hover:bg-[#2a3942] text-slate-700 dark:text-slate-200 rounded-lg text-[10px] font-black uppercase flex items-center gap-1"
+                            className="px-3 py-2 min-h-[44px] hover:bg-slate-100 dark:hover:bg-[#2a3942] text-slate-700 dark:text-slate-200 rounded-lg text-[10px] font-black uppercase flex items-center gap-1"
                             title="Edit message"
                           >
                             <span>✏️</span>
@@ -982,7 +981,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                           <button
                             type="button"
                             onClick={() => handleDeleteMessage(msg)}
-                            className="px-2 py-1 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900 text-rose-600 dark:text-rose-300 rounded-lg text-[10px] font-black uppercase flex items-center gap-1"
+                            className="px-3 py-2 min-h-[44px] bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900 text-rose-600 dark:text-rose-300 rounded-lg text-[10px] font-black uppercase flex items-center gap-1"
                             title="Delete message for everyone"
                           >
                             <span>🗑️</span>
@@ -1000,7 +999,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                         <button
                           type="button"
                           onClick={() => setInfoMessageId(infoMessageId === msg.id ? null : msg.id)}
-                          className="px-1.5 py-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold"
+                          className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold"
                           title="Message Info"
                         >
                           ℹ️
@@ -1009,7 +1008,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                         <button
                           type="button"
                           onClick={() => setActiveContextMenuMsgId(null)}
-                          className="px-1.5 py-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold"
+                          className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold"
                           title="Close menu"
                         >
                           ✕
@@ -1027,30 +1026,74 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                       onTouchStart={() => handleTouchStart(msg.id)}
                       onTouchEnd={handleTouchEnd}
                       onTouchMove={handleTouchEnd}
-                      className={`relative max-w-[85%] sm:max-w-[70%] px-3.5 py-2 rounded-2xl shadow-sm transition-all select-text cursor-pointer ${
+                      className={`w-full px-3.5 py-2.5 rounded-2xl shadow-sm transition-all select-text cursor-pointer ${
                         isSentByMe
                           ? 'bg-[#d9fdd3] dark:bg-[#005c4b] text-[#111b21] dark:text-[#e9edef] rounded-tr-xs'
                           : 'bg-white dark:bg-[#202c33] text-[#111b21] dark:text-[#e9edef] rounded-tl-xs border border-slate-200/40 dark:border-slate-800'
                       } ${isContextMenuOpen ? 'ring-2 ring-emerald-500 shadow-md' : ''}`}
                       title="Long press on mobile or click '•••' for WhatsApp options (Edit, Delete, React, Copy)"
                     >
-                      {/* Sender Name in group/multiway contexts */}
-                      {!isSentByMe && (
-                        <p className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 mb-0.5">
-                          {msg.senderRole === 'parent' ? msg.parentName : msg.staffName}
-                        </p>
-                      )}
+                      {/* Bubble Top Meta & Non-overlapping Actions Bar */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+                        {!isSentByMe ? (
+                          <p className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 break-words">
+                            {msg.senderRole === 'parent' ? msg.parentName : msg.staffName}
+                          </p>
+                        ) : <span />}
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          {canEdit && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingMessageId(msg.id);
+                                setEditingMessageText(msg.message);
+                                setActiveContextMenuMsgId(null);
+                              }}
+                              className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 text-xs rounded-lg"
+                              title="Edit message"
+                            >
+                              ✏️
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteMessage(msg);
+                              }}
+                              className="p-1.5 hover:bg-rose-100 dark:hover:bg-rose-950 text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 text-xs rounded-lg"
+                              title="Delete message"
+                            >
+                              🗑️
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveContextMenuMsgId(isContextMenuOpen ? null : msg.id);
+                            }}
+                            className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 text-slate-400 hover:text-slate-700 dark:hover:text-white text-xs font-bold rounded-lg"
+                            title="Options / Reactions"
+                          >
+                            •••
+                          </button>
+                        </div>
+                      </div>
 
                       {/* Optional Subject */}
                       {msg.subject && (
-                        <p className="text-[10px] font-black uppercase tracking-wider mb-1 text-blue-900 dark:text-yellow-300">
+                        <p className="text-[10px] font-black uppercase tracking-wider mb-1 text-blue-900 dark:text-yellow-300 break-words">
                           {msg.subject}
                         </p>
                       )}
 
                       {/* Optional Student Ref */}
                       {msg.studentName && (
-                        <p className="text-[9px] font-bold mb-1 opacity-75 border-b border-black/5 dark:border-white/5 pb-0.5">
+                        <p className="text-[9px] font-bold mb-1 opacity-75 border-b border-black/5 dark:border-white/5 pb-0.5 break-words">
                           Pupil: {msg.studentName} ({msg.studentGrade || 'Class'})
                         </p>
                       )}
@@ -1062,34 +1105,34 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                             rows={3}
                             value={editingMessageText}
                             onChange={e => setEditingMessageText(e.target.value)}
-                            className="w-full p-2 bg-white dark:bg-[#111b21] text-slate-900 dark:text-white rounded-xl text-xs font-medium border-2 border-emerald-500 outline-none"
+                            className="w-full p-2.5 bg-white dark:bg-[#111b21] text-slate-900 dark:text-white rounded-xl text-xs font-medium border-2 border-emerald-500 outline-none"
                             autoFocus
                           />
-                          <div className="flex items-center justify-end gap-1.5">
+                          <div className="flex flex-wrap items-center justify-end gap-1.5">
                             <button
                               type="button"
                               onClick={() => setEditingMessageId(null)}
-                              className="px-2.5 py-1 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-[10px] font-black uppercase"
+                              className="px-3 py-2 min-h-[44px] bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-[10px] font-black uppercase"
                             >
                               Cancel
                             </button>
                             <button
                               type="button"
                               onClick={() => handleSaveEdit(msg.id)}
-                              className="px-3 py-1 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase shadow-xs hover:bg-emerald-500"
+                              className="px-3.5 py-2 min-h-[44px] bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase shadow-xs hover:bg-emerald-500"
                             >
                               Save
                             </button>
                           </div>
                         </div>
                       ) : (
-                        <div className="flex flex-col">
-                          <p className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed font-normal pr-14 break-words">
+                        <div className="flex flex-col gap-1">
+                          <p className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed font-normal break-words">
                             {msg.message}
                           </p>
 
                           {/* Footer row with time, edited badge & delivery check ticks */}
-                          <div className="self-end -mt-1 flex items-center gap-1 select-none">
+                          <div className="self-end flex items-center gap-1 select-none">
                             {msg.isEdited && (
                               <span className="text-[9px] italic opacity-60">
                                 edited
@@ -1121,54 +1164,11 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                           </div>
                         </div>
                       )}
-
-                      {/* Desktop hover direct action triggers */}
-                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 bg-white/95 dark:bg-[#111b21]/95 rounded-lg p-0.5 shadow-sm border border-slate-200 dark:border-slate-700">
-                        {canEdit && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingMessageId(msg.id);
-                              setEditingMessageText(msg.message);
-                              setActiveContextMenuMsgId(null);
-                            }}
-                            className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 text-xs rounded"
-                            title="Edit message"
-                          >
-                            ✏️
-                          </button>
-                        )}
-                        {canDelete && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteMessage(msg);
-                            }}
-                            className="p-1 hover:bg-rose-100 dark:hover:bg-rose-950 text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 text-xs rounded"
-                            title="Delete message"
-                          >
-                            🗑️
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveContextMenuMsgId(isContextMenuOpen ? null : msg.id);
-                          }}
-                          className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white text-xs font-bold rounded"
-                          title="Options / Reactions"
-                        >
-                          •••
-                        </button>
-                      </div>
                     </div>
 
                     {/* Applied Emoji Reactions Pill */}
                     {appliedReactions.length > 0 && (
-                      <div className={`flex flex-wrap items-center gap-1 -mt-1 z-10 ${isSentByMe ? 'mr-2' : 'ml-2'}`}>
+                      <div className={`flex flex-wrap items-center gap-1 z-10 ${isSentByMe ? 'mr-2' : 'ml-2'}`}>
                         {appliedReactions.map(([emoji, users]) => {
                           const count = (users || []).length;
                           return (
@@ -1176,7 +1176,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                               key={emoji}
                               type="button"
                               onClick={() => handleToggleReaction(msg.id, emoji)}
-                              className="px-2 py-0.5 bg-white dark:bg-[#202c33] border border-slate-200 dark:border-slate-700 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-xs hover:scale-105 transition-transform"
+                              className="px-2.5 py-1 bg-white dark:bg-[#202c33] border border-slate-200 dark:border-slate-700 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-xs hover:scale-105 transition-transform"
                               title={`${(users || []).join(', ')} reacted ${emoji}`}
                             >
                               <span>{emoji}</span>
@@ -1189,20 +1189,20 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
 
                     {/* Info Modal / Drawer (Timestamp breakdown) */}
                     {infoMessageId === msg.id && (
-                      <div className="mt-1 p-2.5 bg-white dark:bg-[#202c33] border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg text-[10px] space-y-1">
-                        <div className="flex justify-between font-bold border-b pb-1 dark:border-slate-700">
+                      <div className="mt-1 p-2.5 bg-white dark:bg-[#202c33] border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg text-[10px] space-y-1 w-full">
+                        <div className="flex justify-between items-center font-bold border-b pb-1 dark:border-slate-700">
                           <span>Message Delivery Info</span>
-                          <button type="button" onClick={() => setInfoMessageId(null)}>✕</button>
+                          <button type="button" onClick={() => setInfoMessageId(null)} className="px-2 py-1">✕</button>
                         </div>
-                        <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-slate-500 dark:text-slate-400">
                           <span>Sent:</span>
                           <span className="font-mono">{new Date(msg.timestamp).toLocaleString()}</span>
                         </div>
-                        <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-slate-500 dark:text-slate-400">
                           <span>Delivered:</span>
                           <span className="font-mono">{msg.deliveredAt ? new Date(msg.deliveredAt).toLocaleString() : 'Delivered'}</span>
                         </div>
-                        <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-slate-500 dark:text-slate-400">
                           <span>Read / Seen:</span>
                           <span className="font-mono text-[#53bdeb] font-bold">
                             {msg.readAt ? new Date(msg.readAt).toLocaleString() : (msg.read ? 'Read by recipient' : 'Not yet read')}
@@ -1219,7 +1219,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
           </div>
 
           {/* Quick Message Chips */}
-          <div className="px-3 py-1.5 bg-slate-100/90 dark:bg-[#202c33]/90 border-t border-slate-200 dark:border-slate-800 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+          <div className="px-3 py-2 bg-slate-100/90 dark:bg-[#202c33]/90 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center gap-1.5">
             <span className="text-[9px] font-black uppercase text-slate-400 shrink-0">
               ⚡ Quick:
             </span>
@@ -1228,7 +1228,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                 key={idx}
                 type="button"
                 onClick={() => setMessageText(preset)}
-                className="px-2.5 py-1 bg-white dark:bg-[#111b21] hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-[10px] font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap transition-all shadow-xs shrink-0"
+                className="px-3 py-1.5 min-h-[44px] bg-white dark:bg-[#111b21] hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-[10px] font-medium text-slate-700 dark:text-slate-300 transition-all shadow-xs text-left break-words"
               >
                 {preset.slice(0, 28)}...
               </button>
@@ -1243,7 +1243,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                   key={emoji}
                   type="button"
                   onClick={() => setMessageText(prev => prev + emoji)}
-                  className="w-8 h-8 rounded-xl hover:bg-slate-100 dark:hover:bg-[#2a3942] flex items-center justify-center text-lg hover:scale-125 transition-transform"
+                  className="min-w-[44px] min-h-[44px] rounded-xl hover:bg-slate-100 dark:hover:bg-[#2a3942] flex items-center justify-center text-lg hover:scale-110 transition-transform"
                 >
                   {emoji}
                 </button>
@@ -1254,13 +1254,13 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
           {/* WhatsApp Message Composer */}
           <form 
             onSubmit={handleSend}
-            className="p-3 bg-slate-100 dark:bg-[#202c33] border-t border-slate-200 dark:border-slate-800 flex items-end gap-2"
+            className="p-3 bg-slate-100 dark:bg-[#202c33] border-t border-slate-200 dark:border-slate-800 flex flex-wrap sm:flex-nowrap items-end gap-2"
           >
             {/* Emoji Button */}
             <button
               type="button"
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className="p-2.5 rounded-full hover:bg-slate-200 dark:hover:bg-[#2a3942] text-slate-600 dark:text-slate-300 transition-colors text-lg"
+              className="min-w-[44px] min-h-[44px] rounded-full hover:bg-slate-200 dark:hover:bg-[#2a3942] text-slate-600 dark:text-slate-300 transition-colors text-lg flex items-center justify-center shrink-0"
               title="Add Emoji"
             >
               😊
@@ -1275,21 +1275,21 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
                   setMessageText(prev => (prev ? `${prev}\n[Attachment Ref: ${choice}]` : `[Attachment Ref: ${choice}]`));
                 }
               }}
-              className="p-2.5 rounded-full hover:bg-slate-200 dark:hover:bg-[#2a3942] text-slate-600 dark:text-slate-300 transition-colors text-lg"
+              className="min-w-[44px] min-h-[44px] rounded-full hover:bg-slate-200 dark:hover:bg-[#2a3942] text-slate-600 dark:text-slate-300 transition-colors text-lg flex items-center justify-center shrink-0"
               title="Attach Document or Receipt Reference"
             >
               📎
             </button>
 
             {/* Input Box */}
-            <div className="flex-1 bg-white dark:bg-[#2a3942] rounded-2xl border border-slate-200 dark:border-slate-700 px-3 py-1.5 focus-within:ring-2 focus-within:ring-emerald-500 shadow-xs">
+            <div className="flex-1 min-w-[160px] bg-white dark:bg-[#2a3942] rounded-2xl border border-slate-200 dark:border-slate-700 px-3 py-1.5 focus-within:ring-2 focus-within:ring-emerald-500 shadow-xs">
               <textarea
                 ref={messageInputRef}
                 rows={1}
                 value={messageText}
                 onChange={e => setMessageText(e.target.value)}
-                placeholder="Type a message (Press Enter to send, Shift+Enter for new line)..."
-                className="w-full bg-transparent text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none resize-none max-h-24 py-1"
+                placeholder="Type a message..."
+                className="w-full bg-transparent text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none resize-none max-h-24 py-1.5"
                 onKeyDown={e => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -1303,7 +1303,7 @@ export const ParentStaffMessaging: React.FC<ParentStaffMessagingProps> = ({
             <button
               type="submit"
               disabled={!messageText.trim()}
-              className={`w-11 h-11 rounded-full flex items-center justify-center text-lg font-black transition-all shadow-md shrink-0 ${
+              className={`min-w-[44px] min-h-[44px] w-11 h-11 rounded-full flex items-center justify-center text-lg font-black transition-all shadow-md shrink-0 ${
                 messageText.trim()
                   ? 'bg-emerald-500 hover:bg-emerald-600 text-white active:scale-95'
                   : 'bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'

@@ -19,9 +19,9 @@ export const UserOnlineStatusBadge: React.FC<UserOnlineStatusBadgeProps> = ({
   showName = true,
 }) => {
   return (
-    <span className={`inline-flex items-center gap-1.5 align-middle ${className}`}>
+    <span className={`inline-flex flex-wrap items-center gap-1.5 align-middle max-w-full ${className}`}>
       {showName && name && (
-        <span className="font-bold">{name}</span>
+        <span className="font-bold break-words">{name}</span>
       )}
       
       {isOnline ? (

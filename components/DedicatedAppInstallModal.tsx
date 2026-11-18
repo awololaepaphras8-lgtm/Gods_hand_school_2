@@ -172,19 +172,19 @@ export const DedicatedAppInstallModal: React.FC<DedicatedAppInstallModalProps> =
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 border-4 border-yellow-400 rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden text-slate-900 dark:text-white">
+      <div className="bg-white dark:bg-slate-900 border-4 border-yellow-400 rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto overflow-x-hidden text-slate-900 dark:text-white flex flex-col">
         
         {/* Header */}
-        <div className="bg-blue-900 text-white p-5 sm:p-6 flex items-center justify-between border-b-2 border-yellow-400">
-          <div className="flex items-center gap-3">
-            <span className="w-12 h-12 rounded-2xl bg-yellow-400 text-blue-950 flex items-center justify-center text-2xl font-black shrink-0 shadow-md">
+        <div className="bg-blue-900 text-white p-4 sm:p-6 flex items-center justify-between gap-3 border-b-2 border-yellow-400 rounded-t-[1.25rem]">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-yellow-400 text-blue-950 flex items-center justify-center text-2xl font-black shrink-0 shadow-md">
               {isAdmin ? '👑' : '👔'}
             </span>
-            <div>
-              <h3 className="font-serif font-black text-lg sm:text-xl leading-tight">
+            <div className="min-w-0">
+              <h3 className="font-serif font-black text-base sm:text-xl leading-tight break-words">
                 Download {roleTitle}
               </h3>
-              <p className="text-xs text-yellow-300 font-bold">
+              <p className="text-xs text-yellow-300 font-bold break-words">
                 Direct Gateway to {targetName}
               </p>
             </div>
@@ -192,24 +192,25 @@ export const DedicatedAppInstallModal: React.FC<DedicatedAppInstallModalProps> =
           <button 
             type="button" 
             onClick={onClose}
-            className="text-white hover:text-yellow-400 text-2xl font-black p-1 transition"
+            className="min-h-[44px] min-w-[44px] rounded-full hover:bg-blue-800 text-white hover:text-yellow-400 text-xl font-black flex items-center justify-center transition shrink-0"
+            aria-label="Close modal"
           >
             ✕
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-5 sm:p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 space-y-4">
           
           {/* Notification banner */}
           {statusMessage && (
-            <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/50 border-2 border-emerald-400 rounded-2xl text-xs font-bold text-emerald-900 dark:text-emerald-200 animate-in fade-in">
+            <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/50 border-2 border-emerald-400 rounded-2xl text-xs font-bold text-emerald-900 dark:text-emerald-200 animate-in fade-in break-words">
               {statusMessage}
             </div>
           )}
 
           {/* Description */}
-          <div className="bg-blue-50 dark:bg-slate-800 p-4 rounded-2xl border border-blue-200 dark:border-slate-700 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+          <div className="bg-blue-50 dark:bg-slate-800 p-4 rounded-2xl border border-blue-200 dark:border-slate-700 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed break-words">
             <strong className="text-blue-950 dark:text-yellow-300 font-black block mb-1">
               ⚡ How Direct App Access Works:
             </strong>
@@ -222,7 +223,7 @@ export const DedicatedAppInstallModal: React.FC<DedicatedAppInstallModalProps> =
           <button
             type="button"
             onClick={handleActivateAndInstall}
-            className="w-full py-3.5 px-4 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer border-2 border-yellow-500"
+            className="w-full min-h-[44px] py-3.5 px-4 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer border-2 border-yellow-500 break-words whitespace-normal text-center"
           >
             <span>📲</span>
             <span>Install {roleTitle} on this Device</span>
@@ -232,14 +233,14 @@ export const DedicatedAppInstallModal: React.FC<DedicatedAppInstallModalProps> =
           <button
             type="button"
             onClick={handleDownloadLauncher}
-            className="w-full py-3 px-4 bg-blue-900 hover:bg-blue-800 text-yellow-300 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider shadow-md flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer border border-blue-800"
+            className="w-full min-h-[44px] py-3 px-4 bg-blue-900 hover:bg-blue-800 text-yellow-300 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider shadow-md flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer border border-blue-800 break-words whitespace-normal text-center"
           >
             <span>📥</span>
             <span>Download Direct Web Launcher File (.html)</span>
           </button>
 
           {/* Installation Instructions Guide */}
-          <div className="border border-slate-200 dark:border-slate-700 rounded-2xl p-4 bg-slate-50 dark:bg-slate-800/60 space-y-2 text-xs">
+          <div className="border border-slate-200 dark:border-slate-700 rounded-2xl p-4 bg-slate-50 dark:bg-slate-800/60 space-y-2 text-xs break-words">
             <span className="font-black uppercase tracking-wider text-[11px] text-slate-500 dark:text-slate-400 block">
               Platform Instructions:
             </span>
@@ -263,7 +264,7 @@ export const DedicatedAppInstallModal: React.FC<DedicatedAppInstallModalProps> =
             <button
               type="button"
               onClick={handleResetToStandard}
-              className="text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 underline cursor-pointer"
+              className="min-h-[44px] px-3 text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 underline cursor-pointer break-words whitespace-normal"
             >
               Reset to open school homepage next time
             </button>
@@ -271,11 +272,11 @@ export const DedicatedAppInstallModal: React.FC<DedicatedAppInstallModalProps> =
         </div>
 
         {/* Footer */}
-        <div className="bg-slate-100 dark:bg-slate-800/80 px-6 py-3 flex justify-end border-t border-slate-200 dark:border-slate-700">
+        <div className="bg-slate-100 dark:bg-slate-800/80 px-4 sm:px-6 py-3 flex justify-end border-t border-slate-200 dark:border-slate-700 rounded-b-[1.25rem]">
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 bg-slate-300 hover:bg-slate-400 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-black uppercase tracking-wider transition"
+            className="min-h-[44px] px-5 py-2.5 bg-slate-300 hover:bg-slate-400 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-black uppercase tracking-wider transition"
           >
             Close
           </button>

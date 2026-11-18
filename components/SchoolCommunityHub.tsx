@@ -886,14 +886,12 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto py-8 sm:py-12 px-3 sm:px-6">
+    <div className="w-full max-w-full overflow-x-hidden">
       {/* Top Banner */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-2 border-slate-100 mb-8 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-2.5 bg-gradient-to-r from-blue-900 via-yellow-400 to-indigo-600"></div>
-
+      <div className="bg-white rounded-3xl p-4 sm:p-8 shadow-xl border-2 border-slate-100 border-t-8 border-t-blue-900 mb-6 sm:mb-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="px-3 py-1 bg-blue-900 text-yellow-400 font-black text-[10px] sm:text-xs uppercase tracking-widest rounded-full shadow-xs">
                 God's Hand School Community Hub
               </span>
@@ -902,10 +900,10 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                 WebRTC & Supabase Realtime Active
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-blue-950 font-serif leading-tight">
+            <h1 className="text-xl sm:text-3xl lg:text-4xl font-black text-blue-950 font-serif leading-tight break-words">
               Live School Chat, Virtual Meetings & Calls
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1 break-words">
               Connect in real-time with parents, teachers, pupils, and administration across voice, video, and group channels.
             </p>
           </div>
@@ -915,7 +913,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
               <button
                 type="button"
                 onClick={onGoToParentMessaging}
-                className="px-4 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5 active:scale-95"
+                className="px-4 py-2.5 min-h-[44px] bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5 active:scale-95"
               >
                 <span>💬</span>
                 <span>Parent-Staff Messaging →</span>
@@ -924,7 +922,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
             <button
               type="button"
               onClick={onBack}
-              className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-black text-xs uppercase tracking-wider transition-all"
+              className="px-4 py-2.5 min-h-[44px] bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-black text-xs uppercase tracking-wider transition-all"
             >
               ← Back to Portal
             </button>
@@ -932,11 +930,11 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
         </div>
 
         {/* Tab Switcher: Chat Channels / Virtual Meetings / Live Calls */}
-        <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 overflow-x-auto">
+        <div className="mt-6 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setActiveMainTab('chat')}
-            className={`px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-xs shrink-0 ${
+            className={`px-4 sm:px-5 py-2.5 min-h-[44px] rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-xs ${
               activeMainTab === 'chat'
                 ? 'bg-blue-900 text-yellow-400 shadow-md'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -951,7 +949,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveMainTab('meetings')}
-                className={`px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-xs shrink-0 ${
+                className={`px-4 sm:px-5 py-2.5 min-h-[44px] rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-xs ${
                   activeMainTab === 'meetings'
                     ? 'bg-blue-900 text-yellow-400 shadow-md'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -964,7 +962,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveMainTab('calls')}
-                className={`px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-xs shrink-0 ${
+                className={`px-4 sm:px-5 py-2.5 min-h-[44px] rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-xs ${
                   activeMainTab === 'calls'
                     ? 'bg-blue-900 text-yellow-400 shadow-md'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -985,8 +983,8 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Channels Sidebar */}
           <div className="lg:col-span-4 space-y-4">
-            <div className="bg-white rounded-3xl p-5 border-2 border-slate-100 shadow-lg space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="bg-white rounded-3xl p-4 sm:p-5 border-2 border-slate-100 shadow-lg space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
                 <h3 className="font-serif font-black text-blue-950 text-sm">
                   Community Channels
                 </h3>
@@ -1005,19 +1003,19 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                       key={channel.id}
                       type="button"
                       onClick={() => setSelectedChannelId(channel.id)}
-                      className={`w-full text-left p-3.5 rounded-2xl border-2 transition-all flex items-start justify-between ${
+                      className={`w-full min-h-[44px] text-left p-3.5 rounded-2xl border-2 transition-all flex items-start justify-between gap-2 ${
                         isSelected
                           ? 'bg-blue-900 text-white border-blue-900 shadow-md'
                           : 'bg-slate-50 text-slate-800 border-slate-200 hover:border-blue-300 hover:bg-white'
                       }`}
                     >
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-3 min-w-0 flex-1">
                         <span className="text-xl shrink-0 mt-0.5">{channel.icon}</span>
-                        <div>
-                          <p className={`font-serif font-black text-xs sm:text-sm leading-snug ${isSelected ? 'text-white' : 'text-blue-950'}`}>
+                        <div className="min-w-0 flex-1">
+                          <p className={`font-serif font-black text-xs sm:text-sm leading-snug break-words ${isSelected ? 'text-white' : 'text-blue-950'}`}>
                             #{channel.name}
                           </p>
-                          <p className={`text-[10px] mt-0.5 line-clamp-1 ${isSelected ? 'text-blue-200' : 'text-slate-500'}`}>
+                          <p className={`text-[10px] mt-0.5 break-words whitespace-normal ${isSelected ? 'text-blue-200' : 'text-slate-500'}`}>
                             {channel.description}
                           </p>
                         </div>
@@ -1037,7 +1035,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
               <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-2xl text-center space-y-1 mt-4">
                 <span className="text-lg">🙏</span>
                 <p className="font-serif font-black text-blue-950 text-xs">Motto: Have Faith In God</p>
-                <p className="text-[10px] text-blue-900/80 font-medium">
+                <p className="text-[10px] text-blue-900/80 font-medium break-words">
                   Respectful, Godly communication is encouraged in all school discussion channels.
                 </p>
               </div>
@@ -1047,16 +1045,16 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
           {/* Active Channel Chat Window */}
           <div className="lg:col-span-8 flex flex-col space-y-4">
             {/* Channel Info Header */}
-            <div className="bg-white rounded-3xl p-5 border-2 border-slate-100 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-blue-900 text-yellow-400 flex items-center justify-center font-black text-2xl border-2 border-yellow-400 shadow-xs">
+            <div className="bg-white rounded-3xl p-4 sm:p-5 border-2 border-slate-100 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-12 h-12 rounded-2xl bg-blue-900 text-yellow-400 flex items-center justify-center font-black text-2xl border-2 border-yellow-400 shadow-xs shrink-0">
                   {activeChannel?.icon || '💬'}
                 </div>
-                <div>
-                  <h3 className="font-serif font-black text-blue-950 text-base leading-tight">
+                <div className="min-w-0">
+                  <h3 className="font-serif font-black text-blue-950 text-base leading-tight break-words">
                     #{activeChannel?.name}
                   </h3>
-                  <p className="text-[11px] text-slate-500 font-bold">
+                  <p className="text-[11px] text-slate-500 font-bold break-words">
                     {activeChannel?.topic || activeChannel?.description}
                   </p>
                 </div>
@@ -1070,7 +1068,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                     value={searchChat}
                     onChange={e => setSearchChat(e.target.value)}
                     placeholder="Search messages..."
-                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                    className="w-full min-h-[44px] px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900"
                   />
                 </div>
 
@@ -1083,7 +1081,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                       setIsSelectionMode(true);
                     }
                   }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all border flex items-center gap-1 cursor-pointer ${
+                  className={`px-3.5 py-2 min-h-[44px] rounded-xl text-xs font-black uppercase tracking-wider transition-all border flex items-center gap-1 cursor-pointer ${
                     isSelectionMode
                       ? 'bg-amber-400 text-blue-950 border-amber-500 shadow-sm'
                       : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
@@ -1098,25 +1096,25 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
             {/* Floating Selection Bar for Multi-Delete */}
             {isSelectionMode && (
               <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-md animate-in fade-in">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs font-black text-amber-950 uppercase tracking-wide">
                     📌 {selectedMessageIds.length} message(s) selected
                   </span>
                   <button
                     type="button"
                     onClick={handleSelectAllMyMessages}
-                    className="text-[11px] font-bold text-blue-900 underline hover:text-blue-700 cursor-pointer ml-1"
+                    className="min-h-[44px] px-2.5 text-[11px] font-bold text-blue-900 underline hover:text-blue-700 cursor-pointer"
                   >
                     Select All Mine
                   </button>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     disabled={selectedMessageIds.length === 0}
                     onClick={handleDeleteSelectedMessages}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5 ${
+                    className={`px-3.5 py-2 min-h-[44px] rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5 ${
                       selectedMessageIds.length > 0
                         ? 'bg-red-600 hover:bg-red-700 text-white cursor-pointer active:scale-95'
                         : 'bg-slate-200 text-slate-400 cursor-not-allowed'
@@ -1128,7 +1126,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                   <button
                     type="button"
                     onClick={handleClearSelection}
-                    className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 cursor-pointer"
+                    className="px-3 py-2 min-h-[44px] rounded-xl text-xs font-bold bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 cursor-pointer"
                   >
                     Done
                   </button>
@@ -1137,7 +1135,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
             )}
 
             {/* Chat Stream Window */}
-            <div className="bg-slate-50 rounded-3xl p-5 sm:p-6 border-2 border-slate-200/80 shadow-inner min-h-[420px] max-h-[500px] overflow-y-auto space-y-4">
+            <div className="bg-slate-50 rounded-3xl p-4 sm:p-6 border-2 border-slate-200/80 shadow-inner min-h-[380px] max-h-[60vh] overflow-y-auto space-y-4">
               {channelMessages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-8 text-slate-400 space-y-2">
                   <span className="text-5xl">{activeChannel?.icon || '💬'}</span>
@@ -1168,19 +1166,19 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                   return (
                     <div
                       key={msg.id}
-                      className={`flex flex-col ${isSentByMe ? 'items-end' : 'items-start'} space-y-1 relative group`}
+                      className={`flex flex-col ${isSentByMe ? 'items-end' : 'items-start'} space-y-1.5 group`}
                     >
-                      <div className="flex items-center gap-2 mb-0.5 text-[10px] font-bold text-slate-400">
+                      <div className="flex flex-wrap items-center gap-2 mb-0.5 text-[10px] font-bold text-slate-400">
                         {isSelectionMode && canManage && (
                           <input
                             type="checkbox"
                             checked={isSelected}
                             onChange={() => handleToggleSelectMessage(msg.id)}
-                            className="w-4 h-4 rounded text-blue-900 accent-blue-900 cursor-pointer"
+                            className="w-5 h-5 rounded text-blue-900 accent-blue-900 cursor-pointer"
                             title="Select message"
                           />
                         )}
-                        <span className={`px-1.5 py-0.2 rounded-md font-black uppercase text-[8px] border ${roleBadgeColor}`}>
+                        <span className={`px-1.5 py-0.5 rounded-md font-black uppercase text-[8px] border ${roleBadgeColor}`}>
                           {msg.senderRole}
                         </span>
                         
@@ -1188,21 +1186,21 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                         <UserOnlineStatusBadge
                           isOnline={senderOnline}
                           name={msg.senderName}
-                          className="text-slate-700 font-bold"
+                          className="text-slate-700 font-bold break-words"
                         />
 
                         <span>•</span>
                         <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
 
-                      {/* Floating Reactions & Actions Popover - ONLY triggered by Long Press or Right Click */}
+                      {/* Inline Context Reactions & Actions Bar (Zero overlap) */}
                       {isContextMenuOpen && (
                         <div 
                           onClick={e => e.stopPropagation()}
-                          className={`absolute z-30 -top-12 ${isSentByMe ? 'right-0' : 'left-0'} bg-slate-950/95 backdrop-blur-md text-white p-1.5 rounded-2xl shadow-2xl border border-yellow-400/50 flex items-center gap-1.5 animate-in fade-in zoom-in-95`}
+                          className="bg-slate-950/95 backdrop-blur-md text-white p-2 rounded-2xl shadow-xl border border-yellow-400/50 flex flex-wrap items-center gap-1.5 animate-in fade-in zoom-in-95 max-w-full"
                         >
                           {/* Quick Emoji Reactions */}
-                          <div className="flex items-center gap-1 pr-1 border-r border-slate-700">
+                          <div className="flex flex-wrap items-center gap-1 pr-1.5 border-r border-slate-700">
                             {['👍', '❤️', '🙏', '👏', '🎉', '💡', '😂', '🔥'].map(emoji => {
                               const users = msgReactions[emoji] || [];
                               const hasReacted = users.includes(currentUserName || currentUserId || 'User');
@@ -1214,7 +1212,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                                     handleToggleReaction(msg.id, emoji);
                                     setActiveContextMenuMsgId(null);
                                   }}
-                                  className={`w-7 h-7 rounded-xl flex items-center justify-center text-sm transition-all hover:scale-125 ${
+                                  className={`min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-sm transition-all hover:scale-110 ${
                                     hasReacted ? 'bg-yellow-400 text-blue-950 shadow-xs' : 'hover:bg-white/20'
                                   }`}
                                   title={`React ${emoji}`}
@@ -1227,7 +1225,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
 
                           {/* Edit / Delete actions for author or Admin */}
                           {canManage && (
-                            <div className="flex items-center gap-1 pl-1">
+                            <div className="flex flex-wrap items-center gap-1 pl-1">
                               <button
                                 type="button"
                                 onClick={() => {
@@ -1235,11 +1233,11 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                                   setEditingMessageText(msg.message);
                                   setActiveContextMenuMsgId(null);
                                 }}
-                                className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1"
+                                className="px-3 py-2 min-h-[44px] bg-white/10 hover:bg-white/20 text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1"
                                 title="Edit message"
                               >
                                 <span>✏️</span>
-                                <span className="hidden sm:inline">Edit</span>
+                                <span>Edit</span>
                               </button>
 
                               <button
@@ -1250,11 +1248,11 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                                     setActiveContextMenuMsgId(null);
                                   }
                                 }}
-                                className="px-2 py-1 bg-red-600/80 hover:bg-red-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1"
+                                className="px-3 py-2 min-h-[44px] bg-red-600/80 hover:bg-red-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1"
                                 title="Delete message"
                               >
                                 <span>🗑️</span>
-                                <span className="hidden sm:inline">Delete</span>
+                                <span>Delete</span>
                               </button>
                             </div>
                           )}
@@ -1262,7 +1260,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                           <button
                             type="button"
                             onClick={() => setActiveContextMenuMsgId(null)}
-                            className="px-1.5 py-0.5 text-slate-400 hover:text-white text-xs font-bold"
+                            className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-white text-xs font-bold"
                             title="Close"
                           >
                             ✕
@@ -1293,7 +1291,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                         onTouchMove={() => {
                           if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
                         }}
-                        className={`p-4 rounded-3xl max-w-[85%] sm:max-w-[75%] shadow-sm relative transition-all cursor-pointer ${
+                        className={`p-4 rounded-3xl max-w-[90%] sm:max-w-[75%] shadow-sm transition-all cursor-pointer ${
                           isSentByMe
                             ? 'bg-blue-900 text-white rounded-tr-xs'
                             : 'bg-white text-slate-800 border border-slate-200 rounded-tl-xs'
@@ -1306,14 +1304,14 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                               rows={2}
                               value={editingMessageText}
                               onChange={e => setEditingMessageText(e.target.value)}
-                              className="w-full p-2 bg-white text-slate-900 rounded-xl text-xs sm:text-sm font-medium border-2 border-yellow-400 outline-none"
+                              className="w-full p-2.5 bg-white text-slate-900 rounded-xl text-xs sm:text-sm font-medium border-2 border-yellow-400 outline-none"
                               autoFocus
                             />
-                            <div className="flex items-center justify-end gap-2">
+                            <div className="flex flex-wrap items-center justify-end gap-2">
                               <button
                                 type="button"
                                 onClick={() => setEditingMessageId(null)}
-                                className="px-2.5 py-1 bg-white/20 hover:bg-white/30 text-white text-[10px] font-black uppercase rounded-lg"
+                                className="px-3 py-2 min-h-[44px] bg-white/20 hover:bg-white/30 text-white text-[10px] font-black uppercase rounded-lg"
                               >
                                 Cancel
                               </button>
@@ -1325,20 +1323,20 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                                     setEditingMessageId(null);
                                   }
                                 }}
-                                className="px-3 py-1 bg-yellow-400 hover:bg-yellow-300 text-blue-950 text-[10px] font-black uppercase rounded-lg shadow-sm"
+                                className="px-3.5 py-2 min-h-[44px] bg-yellow-400 hover:bg-yellow-300 text-blue-950 text-[10px] font-black uppercase rounded-lg shadow-sm"
                               >
                                 Save Edit
                               </button>
                             </div>
                           </div>
                         ) : (
-                          <>
-                            <p className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed font-medium">
+                          <div className="space-y-2">
+                            <p className="text-xs sm:text-sm whitespace-pre-wrap break-words leading-relaxed font-medium">
                               {msg.message}
                             </p>
-                            {/* Desktop hover action trigger with direct Edit and Delete */}
+                            {/* Non-overlapping inline footer action trigger */}
                             {!isSelectionMode && (
-                              <div className={`absolute top-2 ${isSentByMe ? 'left-2' : 'right-2'} opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-black/60 backdrop-blur-xs rounded-xl px-1.5 py-0.5 shadow-md`}>
+                              <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-black/10 dark:border-white/10">
                                 {canManage && (
                                   <>
                                     <button
@@ -1349,7 +1347,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                                         setEditingMessageText(msg.message);
                                         setActiveContextMenuMsgId(null);
                                       }}
-                                      className="p-1 text-yellow-300 hover:text-yellow-100 text-xs transition-transform hover:scale-110"
+                                      className="p-1.5 text-yellow-500 hover:text-yellow-400 text-xs transition-transform hover:scale-110"
                                       title="Edit message"
                                     >
                                       ✏️
@@ -1362,7 +1360,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                                           if (onDeleteChatMessage) onDeleteChatMessage(msg.id);
                                         }
                                       }}
-                                      className="p-1 text-red-300 hover:text-red-100 text-xs transition-transform hover:scale-110"
+                                      className="p-1.5 text-red-400 hover:text-red-300 text-xs transition-transform hover:scale-110"
                                       title="Delete message"
                                     >
                                       🗑️
@@ -1375,14 +1373,14 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                                     e.stopPropagation();
                                     setActiveContextMenuMsgId(isContextMenuOpen ? null : msg.id);
                                   }}
-                                  className="p-1 text-slate-200 hover:text-yellow-400 text-xs transition-transform hover:scale-110"
+                                  className={`px-2 py-1 text-xs font-bold rounded-lg ${isSentByMe ? 'text-slate-200 hover:text-yellow-400' : 'text-slate-500 hover:text-blue-900'}`}
                                   title="Reaction / Options"
                                 >
                                   •••
                                 </button>
                               </div>
                             )}
-                          </>
+                          </div>
                         )}
                       </div>
 
@@ -1396,7 +1394,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                                 key={emoji}
                                 type="button"
                                 onClick={() => handleToggleReaction(msg.id, emoji)}
-                                className={`px-2 py-0.5 rounded-full text-xs transition-all flex items-center gap-1 border ${
+                                className={`px-2.5 py-1 rounded-full text-xs transition-all flex items-center gap-1 border ${
                                   hasReacted
                                     ? 'bg-yellow-100 border-yellow-400 text-blue-950 font-black shadow-xs'
                                     : 'bg-white border-slate-200 text-slate-600'
@@ -1418,14 +1416,14 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
 
             {/* Quick Emoji Bar for composer */}
             {canPostInActiveChannel && (
-              <div className="flex items-center gap-2 px-2">
+              <div className="flex flex-wrap items-center gap-2 px-2">
                 <span className="text-xs text-slate-400 font-bold">Quick Reactions:</span>
                 {['👍', '🙏', '❤️', '👏', '🎉', '📚', '🌟'].map(emoji => (
                   <button
                     key={emoji}
                     type="button"
                     onClick={() => setChatInput(prev => prev + ' ' + emoji)}
-                    className="w-8 h-8 rounded-full bg-white hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-sm shadow-xs transition-all active:scale-95"
+                    className="min-w-[44px] min-h-[44px] rounded-full bg-white hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-sm shadow-xs transition-all active:scale-95"
                   >
                     {emoji}
                   </button>
@@ -1435,19 +1433,19 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
 
             {/* Message Composer or Administrative Notice */}
             {canPostInActiveChannel ? (
-              <form onSubmit={handleSendChat} className="bg-white rounded-3xl p-4 border-2 border-slate-100 shadow-lg flex items-center gap-3">
+              <form onSubmit={handleSendChat} className="bg-white rounded-3xl p-4 border-2 border-slate-100 shadow-lg flex flex-wrap sm:flex-nowrap items-center gap-3">
                 <input
                   type="text"
                   value={chatInput}
                   onChange={e => setChatInput(e.target.value)}
                   placeholder={`Message #${activeChannel?.name}...`}
-                  className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-900 focus:bg-white transition-all"
+                  className="flex-1 w-full sm:w-auto min-h-[44px] px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-900 focus:bg-white transition-all"
                 />
 
                 <button
                   type="submit"
                   disabled={!chatInput.trim()}
-                  className={`px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-2 shrink-0 ${
+                  className={`w-full sm:w-auto min-h-[44px] px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-2 shrink-0 ${
                     chatInput.trim()
                       ? 'bg-blue-900 hover:bg-blue-800 text-yellow-400 active:scale-95'
                       : 'bg-slate-200 text-slate-400 cursor-not-allowed'
@@ -1485,12 +1483,12 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
         <div className="space-y-6">
           {/* Active Meeting Room Modal / In-Conference View */}
           {activeMeetingRoom ? (
-            <div className="bg-slate-900 rounded-[2.5rem] p-6 sm:p-8 text-white shadow-2xl border-4 border-yellow-400 relative overflow-hidden">
+            <div className="bg-slate-900 rounded-[2.5rem] p-4 sm:p-8 text-white shadow-2xl border-4 border-yellow-400">
               {/* Meeting Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-800 gap-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+              <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-slate-800 gap-4">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shrink-0"></span>
                     <span className="text-[10px] font-black uppercase tracking-widest text-red-400">
                       LIVE VIRTUAL CONFERENCE
                     </span>
@@ -1499,15 +1497,15 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                       ⏱️ {formatTimer(meetingTimer)}
                     </span>
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-serif font-black text-white">
+                  <h2 className="text-lg sm:text-2xl font-serif font-black text-white break-words whitespace-normal">
                     {activeMeetingRoom.title}
                   </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Room Code: <span className="font-mono text-yellow-400 font-bold">{activeMeetingRoom.roomCode}</span> • Host: {activeMeetingRoom.hostName}
+                  <p className="text-xs text-slate-400 mt-0.5 break-words whitespace-normal">
+                    Room Code: <span className="font-mono text-yellow-400 font-bold break-all">{activeMeetingRoom.roomCode}</span> • Host: {activeMeetingRoom.hostName}
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => {
@@ -1516,7 +1514,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                         alert('Meeting invite link copied to clipboard!');
                       }
                     }}
-                    className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                    className="min-h-[44px] px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
                   >
                     <span>📋</span>
                     <span>Copy Link</span>
@@ -1524,7 +1522,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                   <button
                     type="button"
                     onClick={() => setActiveMeetingRoom(null)}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95"
+                    className="min-h-[44px] px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95"
                   >
                     Leave Meeting 🔴
                   </button>
@@ -1534,11 +1532,11 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
               {/* Main Conference Video Grid: Admin Broadcast + 3 Picked User Video Tiles */}
               <div className="space-y-6 my-6">
                 {/* 1. Primary Spotlight: School Admin / Proprietor Video Broadcast (Visible to all users in real-time) */}
-                <div className="bg-slate-950 rounded-3xl border-2 border-yellow-400/60 relative overflow-hidden shadow-2xl p-2 sm:p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between px-3 py-2 border-b border-slate-800 mb-3 gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>
-                      <span className="font-serif font-black text-xs sm:text-sm text-yellow-400 uppercase tracking-wider">
+                <div className="bg-slate-950 rounded-3xl border-2 border-yellow-400/60 shadow-2xl p-3 sm:p-4 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between px-2 py-2 border-b border-slate-800 gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-3 h-3 rounded-full bg-red-500 animate-pulse shrink-0"></span>
+                      <span className="font-serif font-black text-xs sm:text-sm text-yellow-400 uppercase tracking-wider break-words whitespace-normal">
                         ★ School Admin & Proprietor Video Broadcast (Live Stream)
                       </span>
                     </div>
@@ -1546,15 +1544,15 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                     <div className="flex items-center gap-2 flex-wrap">
                       {/* Admin Camera Recording Controls */}
                       {activeRecordings['admin']?.isRecording ? (
-                        <div className="flex items-center gap-1.5">
-                          <span className="px-2.5 py-1 bg-red-600 text-white font-mono font-black text-xs uppercase rounded-xl animate-pulse flex items-center gap-1.5 shadow-md">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="min-h-[36px] px-2.5 py-1 bg-red-600 text-white font-mono font-black text-xs uppercase rounded-xl animate-pulse flex items-center gap-1.5 shadow-md">
                             <span className="w-2 h-2 rounded-full bg-white animate-ping"></span>
                             REC {formatTimer(activeRecordings['admin']?.timer || 0)}
                           </span>
                           <button
                             type="button"
                             onClick={() => handleStopRecordingCamera('admin')}
-                            className="px-3 py-1 bg-red-700 hover:bg-red-800 text-white font-black text-xs uppercase rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1"
+                            className="min-h-[44px] px-3 py-2 bg-red-700 hover:bg-red-800 text-white font-black text-xs uppercase rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1"
                             title="Stop recording Admin camera stream"
                           >
                             <span>⏹️</span>
@@ -1565,7 +1563,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                         <button
                           type="button"
                           onClick={() => handleStartRecordingCamera('admin', `${activeMeetingRoom?.hostName || 'Admin'} (Main Broadcast)`, 'admin')}
-                          className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white font-black text-xs uppercase rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5"
+                          className="min-h-[44px] px-3 py-2 bg-red-600 hover:bg-red-700 text-white font-black text-xs uppercase rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5"
                           title="Record Admin / Proprietor camera stream"
                         >
                           <span>⏺️</span>
@@ -1577,7 +1575,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                         <a
                           href={activeRecordings['admin']?.blobUrl}
                           download={activeRecordings['admin']?.fileName || 'admin_camera.webm'}
-                          className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase rounded-xl shadow-md flex items-center gap-1 transition-all"
+                          className="min-h-[44px] px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase rounded-xl shadow-md flex items-center gap-1 transition-all"
                           title="Download recorded admin camera video"
                         >
                           <span>⬇️</span>
@@ -1585,13 +1583,13 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                         </a>
                       )}
 
-                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase">
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase">
                         Real-Time Video Active
                       </span>
                     </div>
                   </div>
 
-                  <div className="aspect-video w-full max-h-[380px] bg-slate-900 rounded-2xl relative overflow-hidden flex items-center justify-center">
+                  <div className="aspect-video w-full max-h-[380px] bg-slate-900 rounded-2xl overflow-hidden flex items-center justify-center">
                     {/* If current user is Admin: show their WebRTC camera */}
                     {currentUserRole === UserRole.ADMIN ? (
                       hasCameraPermission && !isCameraOff ? (
@@ -1603,15 +1601,15 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                           className="w-full h-full object-cover rounded-2xl"
                         />
                       ) : (
-                        <div className="flex flex-col items-center justify-center space-y-3 p-6 text-center">
-                          <div className="w-24 h-24 rounded-full bg-blue-900 border-4 border-yellow-400 flex items-center justify-center text-4xl shadow-xl">
+                        <div className="flex flex-col items-center justify-center space-y-3 p-4 sm:p-6 text-center">
+                          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-blue-900 border-4 border-yellow-400 flex items-center justify-center text-3xl sm:text-4xl shadow-xl">
                             👔
                           </div>
                           <div>
-                            <p className="font-serif font-black text-xl text-yellow-400">
+                            <p className="font-serif font-black text-lg sm:text-xl text-yellow-400 break-words whitespace-normal">
                               {currentUserName || 'Proprietor / Admin'} (Broadcasting Live)
                             </p>
-                            <p className="text-xs text-slate-400 font-mono mt-1">
+                            <p className="text-xs text-slate-400 font-mono mt-1 break-words whitespace-normal">
                               {isCameraOff ? 'Camera turned off - Broadcasting Voice Audio' : 'Webcam connected • All participants viewing feed'}
                             </p>
                           </div>
@@ -1619,23 +1617,23 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                       )
                     ) : (
                       /* Non-admin users see the live administrator stream */
-                      <div className="flex flex-col items-center justify-center space-y-3 p-6 text-center w-full h-full bg-gradient-to-b from-blue-950/70 to-slate-950">
-                        <div className="relative">
-                          <div className="w-28 h-28 rounded-full bg-blue-900 border-4 border-yellow-400 flex items-center justify-center text-5xl shadow-2xl animate-pulse">
+                      <div className="flex flex-col items-center justify-center space-y-3 p-4 sm:p-6 text-center w-full h-full bg-gradient-to-b from-blue-950/70 to-slate-950">
+                        <div className="flex flex-col items-center gap-1.5">
+                          <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-blue-900 border-4 border-yellow-400 flex items-center justify-center text-4xl sm:text-5xl shadow-2xl animate-pulse">
                             👔
                           </div>
-                          <span className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-emerald-500 border-2 border-slate-950 flex items-center justify-center text-[10px]">
-                            🟢
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-[10px] font-black uppercase">
+                            🟢 Live
                           </span>
                         </div>
                         <div>
-                          <p className="font-serif font-black text-xl text-white">
+                          <p className="font-serif font-black text-lg sm:text-xl text-white break-words whitespace-normal">
                             {activeMeetingRoom.hostName || "Proprietor's Desk"}
                           </p>
-                          <p className="text-xs text-yellow-300 font-bold uppercase tracking-wider mt-0.5">
+                          <p className="text-xs text-yellow-300 font-bold uppercase tracking-wider mt-0.5 break-words whitespace-normal">
                             School Administration • Live Video Broadcast
                           </p>
-                          <p className="text-[11px] text-slate-400 mt-1 font-mono">
+                          <p className="text-[11px] text-slate-400 mt-1 font-mono break-words whitespace-normal">
                             Receiving real-time administrative video stream • Audio synched
                           </p>
                         </div>
@@ -1651,11 +1649,13 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                         </div>
                       </div>
                     )}
+                  </div>
 
-                    {/* Admin Status Pill */}
-                    <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-                      <span className="text-[11px] font-black text-yellow-400 uppercase tracking-wider">
+                  {/* Admin Status Bar (Below Video Frame - Zero Overlap) */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-slate-900 rounded-xl border border-slate-800">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping shrink-0"></span>
+                      <span className="text-[11px] font-black text-yellow-400 uppercase tracking-wider break-words whitespace-normal">
                         Admin: {activeMeetingRoom.hostName} (Host)
                       </span>
                     </div>
@@ -1736,10 +1736,36 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                         return (
                           <div
                             key={userId}
-                            className="bg-slate-900 rounded-3xl p-4 border-2 border-slate-800 hover:border-yellow-400/50 transition-all flex flex-col justify-between space-y-3 relative overflow-hidden group shadow-lg"
+                            className="bg-slate-900 rounded-3xl p-4 border-2 border-slate-800 hover:border-yellow-400/50 transition-all flex flex-col justify-between space-y-3 group shadow-lg"
                           >
+                            {/* Top Slot Metadata Bar */}
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="px-2 py-0.5 bg-black/70 rounded-md text-[10px] font-black text-yellow-400 uppercase">
+                                Camera {slotIdx + 1}/3
+                              </span>
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {camRec?.isRecording && (
+                                  <span className="px-2 py-0.5 bg-red-600 text-white font-mono font-black text-[10px] uppercase rounded-md animate-pulse flex items-center gap-1 shadow-md">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                                    REC {formatTimer(camRec.timer || 0)}
+                                  </span>
+                                )}
+                                {camRec?.blobUrl && !camRec?.isRecording && (
+                                  <a
+                                    href={camRec.blobUrl}
+                                    download={camRec.fileName || `camera_${slotIdx + 1}.webm`}
+                                    className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase rounded-md shadow-xs flex items-center gap-1"
+                                    title="Download camera recording"
+                                  >
+                                    <span>⬇️</span>
+                                    <span>Rec</span>
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+
                             {/* Video Tile Frame */}
-                            <div className="aspect-video bg-slate-950 rounded-2xl relative overflow-hidden flex items-center justify-center border border-slate-800">
+                            <div className="aspect-video bg-slate-950 rounded-2xl overflow-hidden flex items-center justify-center border border-slate-800">
                               {/* Local Camera feed if participant is the current user */}
                               {isMe && hasCameraPermission && !isCameraOff ? (
                                 <video
@@ -1755,11 +1781,11 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                                   className="w-full h-full object-cover rounded-2xl"
                                 />
                               ) : (
-                                <div className="flex flex-col items-center justify-center space-y-2 p-4 text-center">
-                                  <div className="w-16 h-16 rounded-full bg-blue-900 border-2 border-yellow-400 flex items-center justify-center text-2xl shadow-md">
+                                <div className="flex flex-col items-center justify-center space-y-2 p-4 text-center w-full">
+                                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-blue-900 border-2 border-yellow-400 flex items-center justify-center text-2xl shadow-md">
                                     {matchedUser.icon}
                                   </div>
-                                  <p className="font-serif font-black text-sm text-white truncate max-w-[180px]">
+                                  <p className="font-serif font-black text-sm text-white break-words whitespace-normal w-full">
                                     {matchedUser.name}
                                   </p>
                                   <span className="text-[10px] text-yellow-400 font-bold uppercase tracking-wider">
@@ -1767,67 +1793,39 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                                   </span>
                                 </div>
                               )}
+                            </div>
 
-                              {/* Slot Tag & Camera Indicator */}
-                              <div className="absolute top-2 left-2 flex items-center gap-1.5">
-                                <span className="px-2 py-0.5 bg-black/70 rounded-md text-[9px] font-black text-yellow-400 uppercase">
-                                  Camera {slotIdx + 1}/3
-                                </span>
-                              </div>
-
-                              {/* Camera Recording Status Badge */}
-                              <div className="absolute top-2 right-2 flex items-center gap-1">
-                                {camRec?.isRecording && (
-                                  <span className="px-2 py-0.5 bg-red-600 text-white font-mono font-black text-[9px] uppercase rounded-md animate-pulse flex items-center gap-1 shadow-md">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
-                                    REC {formatTimer(camRec.timer || 0)}
-                                  </span>
-                                )}
-                                {camRec?.blobUrl && !camRec?.isRecording && (
-                                  <a
-                                    href={camRec.blobUrl}
-                                    download={camRec.fileName || `camera_${slotIdx + 1}.webm`}
-                                    className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[9px] uppercase rounded-md shadow-xs flex items-center gap-1"
-                                    title="Download camera recording"
-                                  >
-                                    <span>⬇️</span>
-                                    <span>Rec</span>
-                                  </a>
-                                )}
-                              </div>
-
-                              {/* Live Audio Status Badge */}
-                              <div className="absolute bottom-2 left-2 flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-xs text-[10px] font-bold">
-                                {isUnmuted ? (
-                                  <>
-                                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                                    <span className="text-emerald-400 font-black">🎙️ Unmuted (Speaking)</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                                    <span className="text-red-400 font-black">🔇 Muted by Admin</span>
-                                  </>
-                                )}
-                              </div>
+                            {/* Live Audio Status Pill Bar */}
+                            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-[10px] font-bold">
+                              {isUnmuted ? (
+                                <>
+                                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+                                  <span className="text-emerald-400 font-black break-words whitespace-normal">🎙️ Unmuted (Speaking)</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="w-2 h-2 rounded-full bg-red-500 shrink-0"></span>
+                                  <span className="text-red-400 font-black break-words whitespace-normal">🔇 Muted by Admin</span>
+                                </>
+                              )}
                             </div>
 
                             {/* Participant Name & Status */}
                             <div className="space-y-1">
-                              <div className="flex items-center justify-between">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
                                 <UserOnlineStatusBadge
                                   isOnline={true}
                                   name={matchedUser.name}
-                                  className="text-white font-bold text-xs"
+                                  className="text-white font-bold text-xs break-words whitespace-normal"
                                 />
-                                <span className="text-[10px] text-slate-400 font-medium">
+                                <span className="text-[10px] text-slate-400 font-medium break-words whitespace-normal">
                                   {matchedUser.sub}
                                 </span>
                               </div>
 
                               {/* Notice to the user if they are on stage */}
                               {isMe && (
-                                <p className={`text-[10px] font-bold p-1.5 rounded-lg text-center ${
+                                <p className={`text-[10px] font-bold p-2 rounded-lg text-center break-words whitespace-normal ${
                                   isUnmuted ? 'bg-emerald-950 text-emerald-300 border border-emerald-700' : 'bg-amber-950 text-amber-300 border border-amber-700'
                                 }`}>
                                   {isUnmuted
@@ -1838,12 +1836,12 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                             </div>
 
                             {/* Camera Recording Controls for this Participant Camera */}
-                            <div className="pt-2 border-t border-slate-800 flex items-center gap-2">
+                            <div className="pt-2 border-t border-slate-800 flex flex-wrap items-center gap-2">
                               {camRec?.isRecording ? (
                                 <button
                                   type="button"
                                   onClick={() => handleStopRecordingCamera(camKey)}
-                                  className="flex-1 py-1.5 px-2 bg-red-700 hover:bg-red-800 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1 shadow-md active:scale-95"
+                                  className="flex-1 min-h-[44px] py-2 px-3 bg-red-700 hover:bg-red-800 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1 shadow-md active:scale-95"
                                   title="Stop recording this camera feed"
                                 >
                                   <span>⏹️ Stop Camera {slotIdx + 1} Rec</span>
@@ -1852,7 +1850,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleStartRecordingCamera(camKey, `${matchedUser.name} (Camera Slot ${slotIdx + 1}/3)`, camRole)}
-                                  className="flex-1 py-1.5 px-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1 shadow-md active:scale-95"
+                                  className="flex-1 min-h-[44px] py-2 px-3 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1 shadow-md active:scale-95"
                                   title="Record this camera stream"
                                 >
                                   <span>⏺️ Record Cam {slotIdx + 1}</span>
@@ -1863,7 +1861,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                                 <a
                                   href={camRec.blobUrl}
                                   download={camRec.fileName || `camera_${slotIdx + 1}.webm`}
-                                  className="py-1.5 px-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1 shadow-md"
+                                  className="min-h-[44px] py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1 shadow-md"
                                   title="Download recorded camera video"
                                 >
                                   <span>⬇️ Save</span>
@@ -1873,11 +1871,11 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
 
                             {/* Admin-only Controls: Mute/Unmute & Remove from stage */}
                             {currentUserRole === UserRole.ADMIN && (
-                              <div className="pt-1.5 grid grid-cols-2 gap-2">
+                              <div className="pt-1.5 grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <button
                                   type="button"
                                   onClick={() => handleToggleMutePickedUser(userId)}
-                                  className={`py-1.5 px-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1 active:scale-95 ${
+                                  className={`min-h-[44px] py-2 px-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1 active:scale-95 ${
                                     isUnmuted
                                       ? 'bg-red-600 hover:bg-red-700 text-white'
                                       : 'bg-emerald-600 hover:bg-emerald-500 text-white'
@@ -1890,7 +1888,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleToggleSpotlightUser(userId)}
-                                  className="py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1 active:scale-95"
+                                  className="min-h-[44px] py-2 px-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1 active:scale-95"
                                   title="Remove participant video from stage"
                                 >
                                   <span>✕ Remove</span>
@@ -1953,19 +1951,19 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                       return (
                         <div
                           key={user.id}
-                          className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-2 ${
+                          className={`p-3 rounded-2xl border transition-all flex flex-wrap items-center justify-between gap-2 ${
                             isPicked ? 'bg-blue-950/70 border-yellow-400 shadow-sm' : 'bg-slate-900 border-slate-800'
                           }`}
                         >
-                          <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
                             <span className="text-lg shrink-0">{user.icon}</span>
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                               <UserOnlineStatusBadge
                                 isOnline={isOnline}
                                 name={user.name}
-                                className="text-white font-bold text-xs truncate block"
+                                className="text-white font-bold text-xs break-words whitespace-normal"
                               />
-                              <p className="text-[9px] text-slate-400 truncate">{user.desc}</p>
+                              <p className="text-[10px] text-slate-400 break-words whitespace-normal">{user.desc}</p>
                             </div>
                           </div>
 
@@ -1977,7 +1975,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => handleToggleMutePickedUser(user.id)}
-                                    className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+                                    className={`min-h-[44px] min-w-[44px] px-2.5 py-2 rounded-lg text-xs font-black uppercase tracking-wider ${
                                       isUnmuted ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'
                                     }`}
                                     title={isUnmuted ? "Mute participant" : "Unmute participant"}
@@ -1987,7 +1985,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => handleToggleSpotlightUser(user.id)}
-                                    className="px-2.5 py-1 bg-yellow-400 hover:bg-yellow-300 text-blue-950 font-black text-[10px] uppercase rounded-lg shadow-xs"
+                                    className="min-h-[44px] px-3 py-2 bg-yellow-400 hover:bg-yellow-300 text-blue-950 font-black text-[10px] uppercase rounded-lg shadow-xs"
                                     title="Remove from video stage"
                                   >
                                     ✓ On Stage
@@ -1998,7 +1996,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                                   type="button"
                                   onClick={() => handleToggleSpotlightUser(user.id)}
                                   disabled={pickedSpotlightUserIds.length >= 3}
-                                  className={`px-2.5 py-1 rounded-lg font-black text-[10px] uppercase tracking-wider transition-all ${
+                                  className={`min-h-[44px] px-3 py-2 rounded-lg font-black text-[10px] uppercase tracking-wider transition-all ${
                                     pickedSpotlightUserIds.length >= 3
                                       ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
                                       : 'bg-blue-900 hover:bg-blue-800 text-yellow-400 active:scale-95'
@@ -2011,7 +2009,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                             </div>
                           ) : (
                             isPicked && (
-                              <span className="px-2 py-0.5 bg-yellow-400/20 text-yellow-300 text-[9px] font-black uppercase rounded-lg shrink-0">
+                              <span className="px-2 py-1 bg-yellow-400/20 text-yellow-300 text-[10px] font-black uppercase rounded-lg shrink-0">
                                 {isUnmuted ? '🎙️ Speaking' : '🔇 On Stage'}
                               </span>
                             )
@@ -2027,12 +2025,12 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                   <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">
                     In-Meeting Messages
                   </p>
-                  <div className="bg-slate-900/90 rounded-2xl p-3 h-28 overflow-y-auto space-y-2 text-xs border border-slate-800">
+                  <div className="bg-slate-900/90 rounded-2xl p-3 max-h-36 overflow-y-auto space-y-2 text-xs border border-slate-800">
                     {meetingChatHistory.length === 0 ? (
                       <p className="text-[10px] text-slate-500 italic">No in-meeting messages yet.</p>
                     ) : (
                       meetingChatHistory.map((m, idx) => (
-                        <div key={idx} className="leading-tight">
+                        <div key={idx} className="leading-tight break-words whitespace-normal">
                           <span className="font-black text-yellow-400">{m.sender}: </span>
                           <span className="text-slate-300">{m.text}</span>
                         </div>
@@ -2040,7 +2038,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 mt-2">
+                  <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 mt-2">
                     <input
                       type="text"
                       value={meetingChatText}
@@ -2056,7 +2054,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                         }
                       }}
                       placeholder="Say something to room..."
-                      className="flex-1 px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                      className="flex-1 w-full sm:w-auto min-h-[44px] px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-yellow-400"
                     />
                     <button
                       type="button"
@@ -2070,7 +2068,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                           setMeetingChatText('');
                         }
                       }}
-                      className="px-3 py-1.5 bg-yellow-400 text-blue-950 font-black rounded-xl text-xs"
+                      className="w-full sm:w-auto min-h-[44px] px-4 py-2 bg-yellow-400 text-blue-950 font-black rounded-xl text-xs"
                     >
                       Send
                     </button>
@@ -2083,7 +2081,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsMicMuted(!isMicMuted)}
-                  className={`px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all shadow-md active:scale-95 ${
+                  className={`min-h-[44px] px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all shadow-md active:scale-95 ${
                     isMicMuted ? 'bg-red-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-white'
                   }`}
                 >
@@ -2094,7 +2092,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsCameraOff(!isCameraOff)}
-                  className={`px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all shadow-md active:scale-95 ${
+                  className={`min-h-[44px] px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all shadow-md active:scale-95 ${
                     isCameraOff ? 'bg-red-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-white'
                   }`}
                 >
@@ -2105,7 +2103,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsScreenSharing(!isScreenSharing)}
-                  className={`px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all shadow-md active:scale-95 ${
+                  className={`min-h-[44px] px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all shadow-md active:scale-95 ${
                     isScreenSharing ? 'bg-indigo-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-white'
                   }`}
                 >
@@ -2116,7 +2114,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsHandRaised(!isHandRaised)}
-                  className={`px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all shadow-md active:scale-95 ${
+                  className={`min-h-[44px] px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all shadow-md active:scale-95 ${
                     isHandRaised ? 'bg-yellow-400 text-blue-950 font-black' : 'bg-slate-800 hover:bg-slate-700 text-white'
                   }`}
                 >
@@ -2127,7 +2125,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveMeetingRoom(null)}
-                  className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl transition-all active:scale-95"
+                  className="min-h-[44px] px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl transition-all active:scale-95"
                 >
                   End Session 🔴
                 </button>
@@ -2136,12 +2134,12 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
           ) : (
             <>
               {/* Meeting List Top Controls */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border-2 border-slate-100 shadow-lg">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-6 rounded-3xl border-2 border-slate-100 shadow-lg">
                 <div>
-                  <h3 className="font-serif font-black text-blue-950 text-xl">
+                  <h3 className="font-serif font-black text-blue-950 text-lg sm:text-xl break-words whitespace-normal">
                     Active & Scheduled Virtual Assemblies
                   </h3>
-                  <p className="text-xs text-slate-500 font-medium">
+                  <p className="text-xs text-slate-500 font-medium break-words whitespace-normal">
                     Join ongoing class tutorials, PTA conferences, or schedule a new meeting room.
                   </p>
                 </div>
@@ -2150,15 +2148,15 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowCreateMeetingModal(true)}
-                    className="px-5 py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-2 active:scale-95 shrink-0"
+                    className="min-h-[44px] px-5 py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-2 active:scale-95 shrink-0"
                   >
                     <span>➕</span>
                     <span>Schedule Virtual Meeting</span>
                   </button>
                 ) : (
-                  <div className="px-4 py-2 bg-yellow-50 border border-yellow-300 rounded-2xl text-xs text-blue-950 font-bold flex items-center gap-2 shrink-0">
+                  <div className="px-4 py-2.5 bg-yellow-50 border border-yellow-300 rounded-2xl text-xs text-blue-950 font-bold flex items-center gap-2">
                     <span>🛡️</span>
-                    <span>Parent Portal: Join live conferences hosted by School Admin</span>
+                    <span className="break-words whitespace-normal">Parent Portal: Join live conferences hosted by School Admin</span>
                   </div>
                 )}
               </div>
@@ -2171,10 +2169,10 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                   return (
                     <div
                       key={meeting.id}
-                      className="bg-white rounded-3xl p-6 sm:p-7 border-2 border-slate-100 shadow-xl space-y-4 hover:border-blue-300 transition-all flex flex-col justify-between"
+                      className="bg-white rounded-3xl p-4 sm:p-7 border-2 border-slate-100 shadow-xl space-y-4 hover:border-blue-300 transition-all flex flex-col justify-between"
                     >
                       <div>
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
                           <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
                             meeting.status === 'active'
                               ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
@@ -2184,35 +2182,35 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                             <span>{meeting.status === 'active' ? 'Live In-Session' : 'Upcoming Schedule'}</span>
                           </span>
 
-                          <span className="font-mono text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-lg">
+                          <span className="font-mono text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-lg break-all">
                             {meeting.roomCode}
                           </span>
                         </div>
 
-                        <h4 className="font-serif font-black text-blue-950 text-lg mt-3">
+                        <h4 className="font-serif font-black text-blue-950 text-base sm:text-lg mt-3 break-words whitespace-normal">
                           {meeting.title}
                         </h4>
-                        <p className="text-xs text-slate-600 font-medium leading-relaxed mt-1">
+                        <p className="text-xs text-slate-600 font-medium leading-relaxed mt-1 break-words whitespace-normal">
                           {meeting.description}
                         </p>
 
                         <div className="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs">
-                          <div className="text-slate-500 font-bold flex items-center gap-1">
+                          <div className="text-slate-500 font-bold flex flex-wrap items-center gap-1">
                             <span>Host:</span>
                             <UserOnlineStatusBadge
                               isOnline={isUserOnline(meeting.hostName, meeting.hostRole)}
                               name={meeting.hostName}
-                              className="text-blue-950 font-black"
+                              className="text-blue-950 font-black break-words whitespace-normal"
                             />
                             <span className="text-slate-400">({meeting.hostRole})</span>
                           </div>
-                          <p className="text-slate-500 font-bold">
+                          <p className="text-slate-500 font-bold break-words whitespace-normal">
                             Schedule: <span className="text-blue-950 font-black">{meeting.scheduledTime || 'TBD'}</span>
                           </p>
                         </div>
                       </div>
 
-                      <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
                         <span className="text-[11px] font-bold text-slate-400">
                           👥 {meeting.participantsCount || 1} Expected Attendees
                         </span>
@@ -2221,7 +2219,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                           <button
                             type="button"
                             onClick={() => setActiveMeetingRoom(meeting)}
-                            className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-2 active:scale-95"
+                            className="min-h-[44px] px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-2 active:scale-95"
                           >
                             <span>Join Room</span>
                             <span>➔</span>
@@ -2231,7 +2229,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                             <button
                               type="button"
                               disabled
-                              className="px-4 py-2 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl font-bold text-xs cursor-not-allowed flex items-center gap-1.5"
+                              className="min-h-[44px] px-4 py-2 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl font-bold text-xs cursor-not-allowed flex items-center gap-1.5"
                               title="Parents can only join meetings created or hosted by the School Administration / Proprietor."
                             >
                               <span>🔒</span>
@@ -2251,21 +2249,25 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
           {/* Schedule Meeting Modal */}
           {showCreateMeetingModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-              <div className="bg-white rounded-[2.5rem] p-6 sm:p-8 max-w-lg w-full shadow-2xl border-4 border-slate-100 relative">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateMeetingModal(false)}
-                  className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 font-black text-xl"
-                >
-                  ✕
-                </button>
-
-                <h3 className="font-serif font-black text-2xl text-blue-950 mb-1">
-                  Schedule Virtual Meeting
-                </h3>
-                <p className="text-xs text-slate-500 font-medium mb-6">
-                  Create a virtual room for classroom tutorials, staff assemblies, or PTA meetings.
-                </p>
+              <div className="bg-white rounded-[2.5rem] p-5 sm:p-8 max-w-lg w-full max-h-[92vh] overflow-y-auto shadow-2xl border-4 border-slate-100">
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div>
+                    <h3 className="font-serif font-black text-xl sm:text-2xl text-blue-950 mb-1 break-words whitespace-normal">
+                      Schedule Virtual Meeting
+                    </h3>
+                    <p className="text-xs text-slate-500 font-medium break-words whitespace-normal">
+                      Create a virtual room for classroom tutorials, staff assemblies, or PTA meetings.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateMeetingModal(false)}
+                    aria-label="Close modal"
+                    className="min-w-[44px] min-h-[44px] rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 font-black text-lg flex items-center justify-center shrink-0"
+                  >
+                    ✕
+                  </button>
+                </div>
 
                 <form onSubmit={handleCreateMeeting} className="space-y-4">
                   <div>
@@ -2278,7 +2280,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                       value={newMeetingTitle}
                       onChange={e => setNewMeetingTitle(e.target.value)}
                       placeholder="e.g. Primary 4 Continuous Assessment Review"
-                      className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:border-blue-900"
+                      className="w-full min-h-[44px] px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:border-blue-900"
                     />
                   </div>
 
@@ -2291,7 +2293,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                       value={newMeetingDescription}
                       onChange={e => setNewMeetingDescription(e.target.value)}
                       placeholder="Reviewing term syllabus, answering questions, and briefing parents on assessment dates."
-                      className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-900 focus:outline-none focus:border-blue-900 resize-none"
+                      className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-900 focus:outline-none focus:border-blue-900 resize-y"
                     />
                   </div>
 
@@ -2304,21 +2306,21 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                       value={newMeetingTime}
                       onChange={e => setNewMeetingTime(e.target.value)}
                       placeholder="e.g. Saturday at 10:00 AM or Immediate"
-                      className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:border-blue-900"
+                      className="w-full min-h-[44px] px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:border-blue-900"
                     />
                   </div>
 
-                  <div className="pt-2 flex items-center justify-end gap-3">
+                  <div className="pt-2 flex flex-wrap items-center justify-end gap-3">
                     <button
                       type="button"
                       onClick={() => setShowCreateMeetingModal(false)}
-                      className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs"
+                      className="min-h-[44px] px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl font-black text-xs uppercase tracking-wider shadow-md"
+                      className="min-h-[44px] px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl font-black text-xs uppercase tracking-wider shadow-md"
                     >
                       Create Meeting Room
                     </button>
@@ -2340,38 +2342,38 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
 
           {/* Incoming Call Notification Banner */}
           {incomingCall && !activeCallSession && (
-            <div className="p-6 bg-gradient-to-r from-blue-950 to-indigo-900 border-4 border-yellow-400 rounded-3xl text-white shadow-2xl animate-bounce flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-yellow-400 text-blue-950 flex items-center justify-center text-3xl font-black shadow-lg">
+            <div className="p-4 sm:p-6 bg-gradient-to-r from-blue-950 to-indigo-900 border-4 border-yellow-400 rounded-3xl text-white shadow-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="w-14 h-14 rounded-2xl bg-yellow-400 text-blue-950 flex items-center justify-center text-3xl font-black shadow-lg shrink-0">
                   📞
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="px-2.5 py-0.5 bg-yellow-400 text-blue-950 font-black text-[10px] uppercase rounded-full">
                       Incoming {incomingCall.type === 'video' ? 'Video' : 'Voice'} Call
                     </span>
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
                   </div>
-                  <h4 className="font-serif font-black text-xl text-white mt-1">
+                  <h4 className="font-serif font-black text-lg sm:text-xl text-white mt-1 break-words whitespace-normal">
                     {incomingCall.callerName}
                   </h4>
-                  <p className="text-xs text-yellow-300 font-bold">
+                  <p className="text-xs text-yellow-300 font-bold break-words whitespace-normal">
                     Role: {incomingCall.callerRole} • Real-Time Voice Transmission Ready
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"
                   onClick={() => handleAnswerCall(incomingCall)}
-                  className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-lg flex items-center gap-2 active:scale-95"
+                  className="min-h-[44px] px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-lg flex items-center gap-2 active:scale-95"
                 >
                   <span>📞</span> Accept Voice Call
                 </button>
                 <button
                   type="button"
                   onClick={() => handleDeclineCall(incomingCall)}
-                  className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95"
+                  className="min-h-[44px] px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95"
                 >
                   Decline
                 </button>
@@ -2381,7 +2383,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
 
           {/* Active Call Overlay */}
           {activeCallSession && (
-            <div className="bg-slate-950 rounded-[2.5rem] p-8 text-white border-4 border-yellow-400 shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-slate-950 rounded-[2.5rem] p-5 sm:p-8 text-white border-4 border-yellow-400 shadow-2xl animate-in zoom-in-95 duration-200">
               <div className="flex flex-col items-center justify-center text-center space-y-4">
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></span>
@@ -2390,15 +2392,15 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                   </span>
                 </div>
 
-                <div className="w-24 h-24 rounded-full bg-blue-900 border-4 border-yellow-400 flex items-center justify-center text-5xl shadow-2xl">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-blue-900 border-4 border-yellow-400 flex items-center justify-center text-4xl sm:text-5xl shadow-2xl">
                   {activeCallSession.type === 'video' ? '📹' : '📞'}
                 </div>
 
                 <div>
-                  <h3 className="font-serif font-black text-2xl text-white">
+                  <h3 className="font-serif font-black text-xl sm:text-2xl text-white break-words whitespace-normal">
                     {activeCallSession.type === 'video' ? 'Video Call with' : 'Voice Call with'} {activeCallSession.receiverName}
                   </h3>
-                  <p className="text-xs text-yellow-400 uppercase tracking-widest font-black mt-1">
+                  <p className="text-xs text-yellow-400 uppercase tracking-widest font-black mt-1 break-words whitespace-normal">
                     Role: {activeCallSession.receiverRole} • Connected (Encrypted Voice Audio)
                   </p>
                   <p className="text-lg font-mono font-black text-slate-300 mt-2">
@@ -2425,13 +2427,13 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                 </div>
 
                 {callMicError && (
-                  <div className="p-3 bg-red-950/80 border border-red-500 rounded-xl text-xs text-red-300 max-w-md">
+                  <div className="p-3 bg-red-950/80 border border-red-500 rounded-xl text-xs text-red-300 max-w-md break-words whitespace-normal">
                     ⚠️ {callMicError}
                   </div>
                 )}
 
                 {/* Dynamic Web Audio Reactive Waveform */}
-                <div className="flex items-center justify-center gap-1.5 h-10 w-64 bg-slate-900/80 rounded-2xl px-4 border border-slate-800">
+                <div className="flex items-center justify-center gap-1.5 h-10 w-full max-w-xs bg-slate-900/80 rounded-2xl px-4 border border-slate-800">
                   {[20, 45, 80, 100, 65, 85, 40, 95, 60, 30].map((baseH, i) => {
                     const dynamicH = isCallMuted 
                       ? 15 
@@ -2453,7 +2455,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                   <button
                     type="button"
                     onClick={() => setAudioLoopbackTest(!audioLoopbackTest)}
-                    className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all ${
+                    className={`min-h-[44px] px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${
                       audioLoopbackTest 
                         ? 'bg-emerald-500 text-white shadow-sm' 
                         : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
@@ -2465,7 +2467,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                 </div>
 
                 {/* In-Call Controls */}
-                <div className="pt-4 flex items-center gap-4">
+                <div className="pt-4 flex flex-wrap items-center justify-center gap-4">
                   <button
                     type="button"
                     onClick={() => setIsCallMuted(!isCallMuted)}
@@ -2509,13 +2511,13 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
           )}
 
           {/* User Directory to Place Calls */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-slate-100 shadow-xl space-y-6">
+          <div className="bg-white rounded-3xl p-4 sm:p-8 border-2 border-slate-100 shadow-xl space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
               <div>
-                <h3 className="font-serif font-black text-blue-950 text-xl">
+                <h3 className="font-serif font-black text-blue-950 text-lg sm:text-xl break-words whitespace-normal">
                   Community Directory & Instant Calling
                 </h3>
-                <p className="text-xs text-slate-500 font-medium">
+                <p className="text-xs text-slate-500 font-medium break-words whitespace-normal">
                   Select any staff educator, parent, or pupil to initiate a direct voice or video call.
                 </p>
               </div>
@@ -2526,7 +2528,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                   value={callSearchQuery}
                   onChange={e => setCallSearchQuery(e.target.value)}
                   placeholder="Search user name or role..."
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                  className="w-full min-h-[44px] px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900"
                 />
               </div>
             </div>
@@ -2535,32 +2537,32 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
               {filteredCommunityUsers.map(user => (
                 <div
                   key={user.id}
-                  className="p-5 rounded-3xl border-2 border-slate-100 bg-slate-50 hover:bg-white hover:border-blue-300 hover:shadow-lg transition-all flex flex-col justify-between space-y-4"
+                  className="p-4 sm:p-5 rounded-3xl border-2 border-slate-100 bg-slate-50 hover:bg-white hover:border-blue-300 hover:shadow-lg transition-all flex flex-col justify-between space-y-4"
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-3 min-w-0">
                     <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-900 flex items-center justify-center text-xl shrink-0 font-black">
                       {user.icon}
                     </div>
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <UserOnlineStatusBadge
                         isOnline={isUserOnline(user.id, user.role)}
                         name={user.name}
-                        className="text-blue-950 font-serif font-black text-sm leading-snug"
+                        className="text-blue-950 font-serif font-black text-sm leading-snug break-words whitespace-normal"
                       />
-                      <p className="text-[10px] text-slate-500 font-medium mt-0.5">
+                      <p className="text-[11px] text-slate-500 font-medium mt-0.5 break-words whitespace-normal">
                         {user.subtitle}
                       </p>
-                      <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-900 text-[9px] font-black uppercase rounded-full mt-1.5">
+                      <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-900 text-[10px] font-black uppercase rounded-full mt-1.5">
                         {user.role}
                       </span>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/60">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-200/60">
                     <button
                       type="button"
                       onClick={() => handleLaunchCall(user, 'voice')}
-                      className="w-full py-2 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-95"
+                      className="w-full min-h-[44px] py-2 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-95"
                     >
                       <span>📞</span>
                       <span>Call</span>
@@ -2568,7 +2570,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                     <button
                       type="button"
                       onClick={() => handleLaunchCall(user, 'video')}
-                      className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-[11px] uppercase tracking-wider transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-95"
+                      className="w-full min-h-[44px] py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-95"
                     >
                       <span>📹</span>
                       <span>Video</span>

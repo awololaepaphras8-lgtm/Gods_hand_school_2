@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { StudentAccount, ParentAccount, UserRole } from '../types';
 import { downloadQrCodeImage } from '../utils/exportService';
@@ -28,6 +28,12 @@ export const QuickQrHubModal: React.FC<QuickQrHubModalProps> = ({
   const [selectedChildId, setSelectedChildId] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
   const qrRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   if (!isOpen) return null;
 
@@ -135,27 +141,27 @@ export const QuickQrHubModal: React.FC<QuickQrHubModalProps> = ({
         aria-modal="true"
         aria-labelledby="quick-qr-title"
       >
-        {/* Close Button */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-5 right-5 w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95 z-10"
-          aria-label="Close modal"
-        >
-          ✕
-        </button>
-
-        {/* Modal Header */}
-        <div className="text-center space-y-1.5 pr-8">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-900 text-yellow-400 rounded-full text-[10px] font-black uppercase tracking-wider">
-            <span>Official Instant QR Hub</span>
+        {/* Modal Header with Relative Flex Close Button */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="text-left space-y-1.5 min-w-0 flex-1">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-900 text-yellow-400 rounded-full text-[10px] font-black uppercase tracking-wider">
+              <span>Official Instant QR Hub</span>
+            </div>
+            <h3 id="quick-qr-title" className="font-serif font-black text-xl sm:text-2xl text-blue-950 break-words">
+              Quick Scan & Mobile Access Passes
+            </h3>
+            <p className="text-xs text-slate-500 font-medium break-words">
+              Scan with any phone camera or share instant access passes for Portals, Fees, and Results.
+            </p>
           </div>
-          <h3 id="quick-qr-title" className="font-serif font-black text-2xl text-blue-950">
-            Quick Scan & Mobile Access Passes
-          </h3>
-          <p className="text-xs text-slate-500 font-medium">
-            Scan with any phone camera or share instant access passes for Portals, Fees, and Results.
-          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="min-w-[44px] min-h-[44px] rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 shrink-0"
+            aria-label="Close modal"
+          >
+            ✕
+          </button>
         </div>
 
         {/* Quick Tabs */}
@@ -228,12 +234,12 @@ export const QuickQrHubModal: React.FC<QuickQrHubModalProps> = ({
 
         {/* Parent child selector when in Gate Pass tab */}
         {activeTab === 'gate' && linkedChildren.length > 1 && (
-          <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-2xl flex items-center justify-between text-xs">
+          <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-2xl flex flex-wrap items-center justify-between gap-2 text-xs">
             <span className="font-black text-indigo-950 uppercase tracking-wide">Select Child Pass:</span>
             <select
               value={selectedChildId || linkedChildren[0]?.id}
               onChange={(e) => setSelectedChildId(e.target.value)}
-              className="px-3 py-1.5 bg-white border border-indigo-300 rounded-xl font-black text-xs text-blue-950 outline-none"
+              className="w-full sm:w-auto max-w-full min-h-[44px] px-3 py-1.5 bg-white border border-indigo-300 rounded-xl font-black text-xs text-blue-950 outline-none"
             >
               {linkedChildren.map(c => (
                 <option key={c.id} value={c.id}>{c.name} ({c.grade})</option>
@@ -296,11 +302,11 @@ export const QuickQrHubModal: React.FC<QuickQrHubModalProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
           <button
             type="button"
             onClick={handleDownload}
-            className="py-3 px-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl font-black text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+            className="min-h-[44px] py-3 px-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl font-black text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
             title="Download QR code image as PNG"
           >
             <span>📥</span>
@@ -310,7 +316,7 @@ export const QuickQrHubModal: React.FC<QuickQrHubModalProps> = ({
           <button
             type="button"
             onClick={handleShareWhatsApp}
-            className="py-3 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+            className="min-h-[44px] py-3 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
             title="Share direct QR pass link on WhatsApp"
           >
             <span>💬</span>
@@ -328,7 +334,7 @@ export const QuickQrHubModal: React.FC<QuickQrHubModalProps> = ({
                 onClose();
               }
             }}
-            className="col-span-2 sm:col-span-1 py-3 px-3 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+            className="min-h-[44px] py-3 px-3 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
           >
             <span>🚀</span>
             <span>Open View</span>

@@ -108,21 +108,19 @@ export const PaystackResultFeeModal: React.FC<PaystackResultFeeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[120] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border-4 border-yellow-400 space-y-6 my-auto">
+    <div className="fixed inset-0 z-[120] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl max-w-lg w-full max-h-[92vh] overflow-y-auto overflow-x-hidden p-4 sm:p-8 shadow-2xl border-4 border-yellow-400 space-y-5 my-auto">
         {/* Header */}
-        <div className="flex items-start justify-between border-b border-slate-100 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center font-black text-2xl shadow-md">
+        <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center font-black text-2xl shadow-md shrink-0">
               💳
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-serif font-black text-xl text-blue-950">
-                  Terminal Result Fee Clearance
-                </h3>
-              </div>
-              <p className="text-xs text-slate-500 font-bold">
+            <div className="min-w-0">
+              <h3 className="font-serif font-black text-lg sm:text-xl text-blue-950 break-words">
+                Terminal Result Fee Clearance
+              </h3>
+              <p className="text-xs text-slate-500 font-bold break-words">
                 God's Hand Int'l Model School • Paystack Gateway
               </p>
             </div>
@@ -131,8 +129,9 @@ export const PaystackResultFeeModal: React.FC<PaystackResultFeeModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 font-black text-base flex items-center justify-center transition-all"
+            className="min-h-[44px] min-w-[44px] rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 font-black text-base flex items-center justify-center transition-all shrink-0"
             title="Close"
+            aria-label="Close modal"
           >
             ✕
           </button>
@@ -140,16 +139,16 @@ export const PaystackResultFeeModal: React.FC<PaystackResultFeeModalProps> = ({
 
         {/* Student & Term Identification Card */}
         <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50/60 border-2 border-blue-100 rounded-2xl space-y-2.5">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-[10px] font-black uppercase text-blue-900 tracking-wider">Candidate Dossier</span>
-            <span className="px-2.5 py-0.5 bg-blue-900 text-yellow-300 font-black text-[10px] rounded-full uppercase">
+            <span className="px-2.5 py-0.5 bg-blue-900 text-yellow-300 font-black text-[10px] rounded-full uppercase shrink-0">
               {student.grade}
             </span>
           </div>
 
           <div>
-            <h4 className="font-serif font-black text-blue-950 text-base">{student.name}</h4>
-            <p className="text-xs text-slate-500 font-mono font-bold">ID: {student.id}</p>
+            <h4 className="font-serif font-black text-blue-950 text-base break-words">{student.name}</h4>
+            <p className="text-xs text-slate-500 font-mono font-bold break-all">ID: {student.id}</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-blue-200/50 text-xs">
@@ -163,40 +162,40 @@ export const PaystackResultFeeModal: React.FC<PaystackResultFeeModalProps> = ({
         </div>
 
         {/* Amount & Policy Information */}
-        <div className="p-5 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white rounded-2xl border border-yellow-400/40 space-y-3">
-          <div className="flex items-center justify-between">
+        <div className="p-4 sm:p-5 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white rounded-2xl border border-yellow-400/40 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <span className="text-[11px] font-black uppercase tracking-wider text-yellow-300 block">
                 Official Result Access Fee
               </span>
               <span className="text-[10px] text-slate-300">One-time per academic term</span>
             </div>
-            <div className="text-right">
-              <span className="font-mono font-black text-3xl text-yellow-400">
+            <div className="sm:text-right">
+              <span className="font-mono font-black text-2xl sm:text-3xl text-yellow-400">
                 ₦{finalFeeAmount.toLocaleString()}
               </span>
               <span className="text-[10px] text-slate-400 block font-mono">{(finalFeeAmount * 100).toLocaleString()} Kobo</span>
             </div>
           </div>
 
-          <p className="text-xs text-slate-300 leading-relaxed font-medium">
+          <p className="text-xs text-slate-300 leading-relaxed font-medium break-words">
             Paying this <strong>₦{finalFeeAmount.toLocaleString()}</strong> fee grants <strong>instant, unlimited permanent access</strong> to view, print, and download official signed terminal report cards with positions for <strong>{term}</strong>.
           </p>
 
-          <div className="flex items-center gap-2 text-[11px] text-emerald-400 font-black pt-1">
-            <span>🔒</span>
-            <span>Secured via Paystack: Debit Card, Bank Transfer, USSD & OPay</span>
+          <div className="flex items-start sm:items-center gap-2 text-[11px] text-emerald-400 font-black pt-1">
+            <span className="shrink-0">🔒</span>
+            <span className="break-words">Secured via Paystack: Debit Card, Bank Transfer, USSD & OPay</span>
           </div>
         </div>
 
         {/* Vacation Hard Copy Assurance Banner */}
         <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl flex items-start gap-3 text-amber-950 shadow-xs">
           <span className="text-2xl shrink-0 mt-0.5">📜</span>
-          <div className="space-y-0.5">
+          <div className="space-y-0.5 min-w-0">
             <span className="font-serif font-black text-xs uppercase tracking-wider block text-blue-950">
               Vacation Hard-Copy Guarantee:
             </span>
-            <p className="text-xs text-amber-900 leading-snug font-medium">
+            <p className="text-xs text-amber-900 leading-snug font-medium break-words">
               {VACATION_HARD_COPY_ASSURANCE_NOTE}
             </p>
           </div>
@@ -205,7 +204,7 @@ export const PaystackResultFeeModal: React.FC<PaystackResultFeeModalProps> = ({
         {/* Payer Email / Contact Info */}
         <div className="space-y-3">
           <div>
-            <label className="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1">
+            <label className="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1 break-words">
               Payer Email (For Official Paystack Transaction Receipt)
             </label>
             <input
@@ -213,12 +212,12 @@ export const PaystackResultFeeModal: React.FC<PaystackResultFeeModalProps> = ({
               value={customEmail}
               onChange={(e) => setCustomEmail(e.target.value)}
               placeholder="e.g. parent@example.com"
-              className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-xs font-bold text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+              className="w-full min-h-[44px] px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-xs font-bold text-blue-950 outline-none focus:bg-white focus:border-blue-900"
             />
           </div>
 
           <div>
-            <label className="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1">
+            <label className="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1 break-words">
               Payer / Sponsor Full Name
             </label>
             <input
@@ -226,7 +225,7 @@ export const PaystackResultFeeModal: React.FC<PaystackResultFeeModalProps> = ({
               value={customPayerName}
               onChange={(e) => setCustomPayerName(e.target.value)}
               placeholder="e.g. Mr. & Mrs. Adeleke"
-              className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-xs font-bold text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+              className="w-full min-h-[44px] px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-xs font-bold text-blue-950 outline-none focus:bg-white focus:border-blue-900"
             />
           </div>
         </div>
@@ -240,7 +239,7 @@ export const PaystackResultFeeModal: React.FC<PaystackResultFeeModalProps> = ({
             onSuccess={handlePaystackSuccess}
             onClose={() => setIsProcessing(false)}
             disabled={isProcessing}
-            className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-sm uppercase tracking-wider shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+            className="w-full min-h-[48px] py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
           />
 
           {/* Fallback Simulation Button for sandbox / offline testing */}
@@ -248,17 +247,17 @@ export const PaystackResultFeeModal: React.FC<PaystackResultFeeModalProps> = ({
             type="button"
             onClick={handleSimulateInstantPayment}
             disabled={isProcessing}
-            className="w-full py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-2xl font-black text-xs uppercase tracking-wider shadow transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+            className="w-full min-h-[44px] py-3 px-4 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-2xl font-black text-xs uppercase tracking-wider shadow transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
             title="Instant authorization for testing & evaluation"
           >
             <span>✓</span>
-            <span>Instant Clearance Test Mode (Record Payment & Unlock)</span>
+            <span className="break-words whitespace-normal">Instant Clearance Test Mode (Record Payment & Unlock)</span>
           </button>
 
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
+            className="w-full min-h-[44px] py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
           >
             Cancel & Return
           </button>

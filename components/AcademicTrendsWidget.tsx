@@ -155,23 +155,23 @@ export const AcademicTrendsWidget: React.FC<AcademicTrendsWidgetProps> = ({
   }, [filteredResults, chartData]);
 
   return (
-    <div className={`bg-white rounded-[2.5rem] p-6 sm:p-8 border-2 border-slate-100 shadow-xl space-y-6 ${className}`}>
+    <div className={`w-full max-w-full bg-white rounded-3xl sm:rounded-[2.5rem] p-4 sm:p-8 border-2 border-slate-100 shadow-xl space-y-6 ${className}`}>
       {/* Top Header & Interactive Filters */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-slate-100">
-        <div className="flex items-center gap-3">
+        <div className="flex items-start sm:items-center gap-3 min-w-0">
           <div className="w-12 h-12 rounded-2xl bg-blue-900 text-yellow-400 flex items-center justify-center font-black text-xl shadow-md border-2 border-yellow-400 shrink-0">
             📊
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-serif font-black text-blue-950 text-xl sm:text-2xl">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-serif font-black text-blue-950 text-lg sm:text-xl lg:text-2xl break-words">
                 Academic Performance Trends by Grade
               </h3>
               <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 text-[10px] font-black uppercase tracking-wider">
                 Recharts Analytics
               </span>
             </div>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
+            <p className="text-xs text-slate-500 font-medium mt-0.5 break-words">
               Comparative average student scores across academic terms ({currentTerm} active)
             </p>
           </div>
@@ -183,7 +183,7 @@ export const AcademicTrendsWidget: React.FC<AcademicTrendsWidgetProps> = ({
           <select
             value={selectedDivision}
             onChange={e => setSelectedDivision(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-900"
+            className="min-h-[44px] w-full sm:w-auto px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-900"
           >
             <option value="ALL">All School Divisions</option>
             {GRADE_GROUPS.map(g => (
@@ -195,7 +195,7 @@ export const AcademicTrendsWidget: React.FC<AcademicTrendsWidgetProps> = ({
           <select
             value={selectedSubject}
             onChange={e => setSelectedSubject(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-900"
+            className="min-h-[44px] w-full sm:w-auto px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-900"
           >
             <option value="ALL">All Recorded Subjects</option>
             {availableSubjects.map(sub => (
@@ -204,11 +204,11 @@ export const AcademicTrendsWidget: React.FC<AcademicTrendsWidgetProps> = ({
           </select>
 
           {/* Bar / Line Switcher */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+          <div className="flex flex-wrap items-center bg-slate-100 p-1 rounded-xl border border-slate-200 gap-1">
             <button
               type="button"
               onClick={() => setChartType('bar')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
+              className={`min-h-[44px] px-3.5 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
                 chartType === 'bar' ? 'bg-blue-900 text-yellow-400 shadow-sm' : 'text-slate-600 hover:text-blue-900'
               }`}
             >
@@ -217,7 +217,7 @@ export const AcademicTrendsWidget: React.FC<AcademicTrendsWidgetProps> = ({
             <button
               type="button"
               onClick={() => setChartType('line')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
+              className={`min-h-[44px] px-3.5 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
                 chartType === 'line' ? 'bg-blue-900 text-yellow-400 shadow-sm' : 'text-slate-600 hover:text-blue-900'
               }`}
             >
@@ -228,12 +228,12 @@ export const AcademicTrendsWidget: React.FC<AcademicTrendsWidgetProps> = ({
       </div>
 
       {/* KPI Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-100">
-          <p className="text-[10px] font-black uppercase tracking-widest text-blue-900/70">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-100 min-w-0">
+          <p className="text-[10px] font-black uppercase tracking-widest text-blue-900/70 break-words">
             Overall Academic Average
           </p>
-          <div className="flex items-baseline gap-2 mt-1">
+          <div className="flex flex-wrap items-baseline gap-2 mt-1">
             <span className="font-serif font-black text-2xl text-blue-950">
               {stats.overallSchoolAvg}%
             </span>
@@ -247,29 +247,29 @@ export const AcademicTrendsWidget: React.FC<AcademicTrendsWidgetProps> = ({
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-100">
-          <p className="text-[10px] font-black uppercase tracking-widest text-emerald-900/70">
+        <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-100 min-w-0">
+          <p className="text-[10px] font-black uppercase tracking-widest text-emerald-900/70 break-words">
             Top Performing Class
           </p>
-          <p className="font-serif font-black text-base sm:text-lg text-emerald-950 mt-1 truncate" title={stats.bestGrade}>
+          <p className="font-serif font-black text-sm sm:text-base text-emerald-950 mt-1 break-words whitespace-normal" title={stats.bestGrade}>
             🏆 {stats.bestGrade}
           </p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-100">
-          <p className="text-[10px] font-black uppercase tracking-widest text-amber-900/70">
+        <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-100 min-w-0">
+          <p className="text-[10px] font-black uppercase tracking-widest text-amber-900/70 break-words">
             Needs Academic Support
           </p>
-          <p className="font-serif font-black text-base sm:text-lg text-amber-950 mt-1 truncate" title={stats.lowestGrade}>
+          <p className="font-serif font-black text-sm sm:text-base text-amber-950 mt-1 break-words whitespace-normal" title={stats.lowestGrade}>
             🎯 {stats.lowestGrade}
           </p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-100">
-          <p className="text-[10px] font-black uppercase tracking-widest text-purple-900/70">
+        <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-100 min-w-0">
+          <p className="text-[10px] font-black uppercase tracking-widest text-purple-900/70 break-words">
             Logged Assessments
           </p>
-          <p className="font-serif font-black text-2xl text-purple-950 mt-1">
+          <p className="font-serif font-black text-2xl text-purple-950 mt-1 break-words">
             {stats.totalAssessments} records
           </p>
         </div>

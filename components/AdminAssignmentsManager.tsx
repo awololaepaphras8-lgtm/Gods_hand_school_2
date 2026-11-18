@@ -11,7 +11,7 @@ interface AdminAssignmentsManagerProps {
 }
 
 // Target grades requested: Basic 5 to SS 3
-export const ELIGIBLE_ASSIGNMENT_GRADES: GradeLevel[] = [
+const ELIGIBLE_ASSIGNMENT_GRADES: GradeLevel[] = [
   'Basic 5',
   'JSS 1',
   'JSS 2',
@@ -333,19 +333,18 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-200 text-xs font-bold uppercase tracking-wider">
+      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-3xl p-4 sm:p-8 text-white shadow-xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2 min-w-0">
+            <div className="inline-flex flex-wrap items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-200 text-xs font-bold uppercase tracking-wider">
               <span>📚 Academic Assignments Hub</span>
               <span>•</span>
               <span>Basic 5 to SS 3</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-serif font-black tracking-tight text-white">
+            <h2 className="text-xl sm:text-3xl font-serif font-black tracking-tight text-white break-words whitespace-normal">
               Official Homework & Assignment Gateway
             </h2>
-            <p className="text-blue-200/90 text-sm max-w-2xl">
+            <p className="text-blue-200/90 text-xs sm:text-sm max-w-2xl break-words whitespace-normal">
               Publish and administer curriculum assignments in <strong>written questions</strong>, <strong>downloadable document worksheets (PDF/Word)</strong>, or <strong>picture illustrations & photo exercises</strong> directly to senior primary & secondary pupils.
             </p>
           </div>
@@ -356,7 +355,7 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
                 setEditingAssignment(null);
                 setShowCreateModal(true);
               }}
-              className="px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 active:scale-95 text-blue-950 font-black text-sm transition-all shadow-lg hover:shadow-amber-400/30 flex items-center gap-2 cursor-pointer"
+              className="min-h-[44px] px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 active:scale-95 text-blue-950 font-black text-sm transition-all shadow-lg hover:shadow-amber-400/30 flex items-center gap-2 cursor-pointer"
             >
               <span className="text-lg">➕</span>
               <span>Create New Assignment</span>
@@ -369,31 +368,31 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
           <span className="text-blue-300 font-bold mr-1">Quick Presets:</span>
           <button
             onClick={() => handleApplyPreset('math_basic5')}
-            className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium border border-white/15 transition cursor-pointer"
+            className="min-h-[44px] px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium border border-white/15 transition cursor-pointer"
           >
             ✏️ Basic 5 Math
           </button>
           <button
             onClick={() => handleApplyPreset('eng_jss2')}
-            className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium border border-white/15 transition cursor-pointer"
+            className="min-h-[44px] px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium border border-white/15 transition cursor-pointer"
           >
             📖 JSS 2 English
           </button>
           <button
             onClick={() => handleApplyPreset('sci_jss3')}
-            className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium border border-white/15 transition cursor-pointer"
+            className="min-h-[44px] px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium border border-white/15 transition cursor-pointer"
           >
             🖼️ JSS 3 Basic Tech (Picture)
           </button>
           <button
             onClick={() => handleApplyPreset('phys_ss1')}
-            className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium border border-white/15 transition cursor-pointer"
+            className="min-h-[44px] px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium border border-white/15 transition cursor-pointer"
           >
             📄 SS 1 Physics (Doc)
           </button>
           <button
             onClick={() => handleApplyPreset('ss3_waec')}
-            className="px-3 py-1.5 rounded-xl bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 font-bold border border-amber-400/40 transition cursor-pointer"
+            className="min-h-[44px] px-3 py-2 rounded-xl bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 font-bold border border-amber-400/40 transition cursor-pointer"
           >
             ⭐ SS 3 WAEC Prep (Hybrid)
           </button>
@@ -401,25 +400,25 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
-        <div className="flex-1 relative">
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
+        <div className="flex-1 flex items-center gap-2.5 bg-slate-50 border border-slate-200 rounded-xl px-3.5 min-h-[44px] focus-within:ring-2 focus-within:ring-blue-500">
+          <span className="text-slate-400 text-sm shrink-0">🔍</span>
           <input
             type="text"
             placeholder="Search assignments by title, subject or instructions..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+            className="w-full py-2.5 bg-transparent text-sm focus:outline-none font-medium text-slate-800"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600">
-            <span>Class:</span>
+          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600 flex-1 sm:flex-none">
+            <span className="shrink-0">Class:</span>
             <select
               value={filterGrade}
               onChange={(e) => setFilterGrade(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full sm:w-auto min-h-[44px] px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Classes (Basic 5 - SS 3)</option>
               {ELIGIBLE_ASSIGNMENT_GRADES.map(g => (
@@ -428,12 +427,12 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
             </select>
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600">
-            <span>Subject:</span>
+          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600 flex-1 sm:flex-none">
+            <span className="shrink-0">Subject:</span>
             <select
               value={filterSubject}
               onChange={(e) => setFilterSubject(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full sm:w-auto min-h-[44px] px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Subjects</option>
               {SECONDARY_SUBJECTS.map(s => (
@@ -442,7 +441,7 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
             </select>
           </div>
 
-          <div className="text-xs text-slate-500 font-bold bg-slate-100 px-3 py-2 rounded-xl">
+          <div className="text-xs text-slate-500 font-bold bg-slate-100 px-3 py-2.5 rounded-xl">
             {filteredAssignments.length} Assignment{filteredAssignments.length !== 1 ? 's' : ''}
           </div>
         </div>
@@ -450,19 +449,19 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
 
       {/* Assignments Grid */}
       {filteredAssignments.length === 0 ? (
-        <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-slate-300 space-y-4">
+        <div className="bg-white rounded-3xl p-6 sm:p-12 text-center border border-dashed border-slate-300 space-y-4">
           <div className="w-16 h-16 bg-blue-50 text-blue-900 rounded-2xl flex items-center justify-center text-3xl mx-auto">
             📝
           </div>
           <div className="space-y-1">
             <h3 className="text-lg font-bold text-slate-800">No Assignments Found</h3>
-            <p className="text-sm text-slate-500 max-w-md mx-auto">
+            <p className="text-sm text-slate-500 max-w-md mx-auto break-words whitespace-normal">
               There are currently no assignments matching your filter criteria. Click "Create New Assignment" or use one of the quick presets above to publish homework for Basic 5 to SS 3 students.
             </p>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-sm font-bold shadow transition cursor-pointer"
+            className="min-h-[44px] px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-sm font-bold shadow transition cursor-pointer"
           >
             Create Assignment Now
           </button>
@@ -476,11 +475,11 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
             return (
               <div
                 key={asn.id}
-                className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4 relative group"
+                className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4 group"
               >
-                <div className="space-y-3">
+                <div className="space-y-3 min-w-0">
                   {/* Badges row */}
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="px-3 py-1 bg-blue-100 text-blue-900 rounded-xl text-xs font-black uppercase tracking-wide">
                       {asn.grade}
                     </span>
@@ -501,17 +500,17 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
                   </div>
 
                   {/* Title & Subject */}
-                  <div>
-                    <span className="text-xs font-black text-slate-500 uppercase tracking-wider block">
+                  <div className="min-w-0">
+                    <span className="text-xs font-black text-slate-500 uppercase tracking-wider block break-words whitespace-normal">
                       {asn.subject}
                     </span>
-                    <h3 className="text-base font-bold text-slate-900 line-clamp-2 mt-0.5">
+                    <h3 className="text-base font-bold text-slate-900 mt-0.5 break-words whitespace-normal">
                       {asn.title}
                     </h3>
                   </div>
 
                   {/* Description preview */}
-                  <div className={`bg-slate-50 rounded-2xl p-3.5 border border-slate-100 text-xs leading-relaxed font-sans max-h-32 overflow-y-auto whitespace-pre-wrap ${
+                  <div className={`bg-slate-50 rounded-2xl p-3.5 border border-slate-100 text-xs leading-relaxed font-sans max-h-36 overflow-y-auto whitespace-pre-wrap break-words ${
                     asn.assignmentType === 'written' ? 'text-black font-medium' : 'text-slate-700'
                   }`}>
                     {asn.description}
@@ -522,19 +521,20 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
                     <div className="space-y-2 pt-1">
                       {/* Picture preview */}
                       {(asn.attachmentType === 'picture' || asn.additionalAttachments?.some(a => a.type === 'picture')) && (
-                        <div 
+                        <button
+                          type="button"
                           onClick={() => setPreviewImage(asn.attachmentUrl || asn.additionalAttachments?.find(a => a.type === 'picture')?.url || null)}
-                          className="relative h-28 rounded-2xl overflow-hidden border border-slate-200 cursor-pointer group/img bg-slate-900/5"
+                          className="w-full rounded-2xl overflow-hidden border border-slate-200 cursor-pointer group/img bg-slate-900/5 text-left"
                         >
                           <img
                             src={asn.attachmentUrl || asn.additionalAttachments?.find(a => a.type === 'picture')?.url}
                             alt="Assignment Diagram"
-                            className="w-full h-full object-cover group-hover/img:scale-105 transition duration-300"
+                            className="w-full h-32 object-cover group-hover/img:scale-105 transition duration-300"
                           />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition flex items-center justify-center text-white text-xs font-bold gap-1.5">
+                          <div className="px-3 py-2 bg-slate-900 text-white text-xs font-bold flex items-center justify-center gap-1.5">
                             <span>🔍 Click to View Full Image</span>
                           </div>
-                        </div>
+                        </button>
                       )}
 
                       {/* Document download link */}
@@ -542,12 +542,14 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
                         <a
                           href={asn.attachmentUrl || asn.additionalAttachments?.find(a => a.type === 'document')?.url}
                           download={asn.attachmentName || 'Assignment_Document.pdf'}
-                          className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition text-emerald-900 text-xs font-bold"
+                          className="min-h-[44px] flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition text-emerald-900 text-xs font-bold"
                         >
-                          <span className="text-base">📄</span>
-                          <span className="truncate flex-1">
-                            {asn.attachmentName || 'Attached Document / Worksheet'}
-                          </span>
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="text-base shrink-0">📄</span>
+                            <span className="break-all whitespace-normal">
+                              {asn.attachmentName || 'Attached Document / Worksheet'}
+                            </span>
+                          </div>
                           <span className="text-[10px] bg-emerald-200 px-2 py-0.5 rounded-lg shrink-0">Download</span>
                         </a>
                       )}
@@ -555,12 +557,12 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
                   )}
 
                   {/* Metadata: Due date & marks */}
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
+                  <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 font-medium">
                     <span className="flex items-center gap-1 font-bold text-slate-700">
                       <span>🎯 Total Marks:</span>
                       <span className="text-blue-900">{asn.totalPoints} pts</span>
                     </span>
-                    <span className={`font-bold flex items-center gap-1 ${
+                    <span className={`font-bold flex flex-wrap items-center gap-1 ${
                       isPastDue ? 'text-rose-600' : isDueSoon ? 'text-amber-600' : 'text-slate-600'
                     }`}>
                       <span>📅 Due:</span>
@@ -571,10 +573,10 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
                 </div>
 
                 {/* Actions footer */}
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
                   <button
                     onClick={() => handleOpenEdit(asn)}
-                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                    className="min-h-[44px] px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer"
                   >
                     <span>✏️ Edit</span>
                   </button>
@@ -585,7 +587,7 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
                         onDeleteAssignment(asn.id);
                       }
                     }}
-                    className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                    className="min-h-[44px] px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer"
                   >
                     <span>🗑️ Delete</span>
                   </button>
@@ -599,22 +601,23 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
       {/* CREATE / EDIT ASSIGNMENT MODAL */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6 my-8 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
-              <div className="space-y-0.5">
-                <span className="text-xs font-black text-blue-900 uppercase tracking-widest">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-4 sm:p-8 shadow-2xl border border-slate-200 space-y-6 my-4 max-h-[92vh] overflow-y-auto">
+            <div className="flex items-start justify-between gap-3 pb-4 border-b border-slate-200">
+              <div className="space-y-0.5 min-w-0">
+                <span className="text-xs font-black text-blue-900 uppercase tracking-widest block">
                   Academic Curriculum Gateway
                 </span>
-                <h3 className="text-xl font-serif font-black text-slate-900">
+                <h3 className="text-lg sm:text-xl font-serif font-black text-slate-900 break-words whitespace-normal">
                   {editingAssignment ? 'Edit Homework Assignment' : 'Create & Publish New Assignment'}
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 break-words whitespace-normal">
                   Target students from <strong>Basic 5 to SS 3</strong>. Choose written questions, document uploads, or picture exercises.
                 </p>
               </div>
               <button
                 onClick={handleResetForm}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 font-bold transition cursor-pointer"
+                aria-label="Close modal"
+                className="min-w-[44px] min-h-[44px] rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 font-bold transition cursor-pointer shrink-0"
               >
                 ✕
               </button>
@@ -630,7 +633,7 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
                   <select
                     value={targetGrade}
                     onChange={(e) => setTargetGrade(e.target.value as GradeLevel)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full min-h-[44px] px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   >
                     {ELIGIBLE_ASSIGNMENT_GRADES.map(g => (
@@ -646,7 +649,7 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
                   <select
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full min-h-[44px] px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   >
                     {SECONDARY_SUBJECTS.map(s => (
@@ -667,7 +670,7 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
                     placeholder="e.g. Technical Drawing, Yoruba, French"
                     value={customSubject}
                     onChange={(e) => setCustomSubject(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full min-h-[44px] px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               )}
@@ -682,7 +685,7 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
                   placeholder="e.g. Chapter 4 Fractions, Geometry Theorem Proof, Chemical Bonding Quiz"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full min-h-[44px] px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
@@ -692,11 +695,11 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
                 <label className="text-xs font-black text-slate-700 uppercase tracking-wider">
                   Assignment Delivery Format *
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
                   <button
                     type="button"
                     onClick={() => setFormatType('written')}
-                    className={`p-3 rounded-2xl border text-center transition flex flex-col items-center gap-1 cursor-pointer ${
+                    className={`min-h-[44px] p-3 rounded-2xl border text-center transition flex flex-col items-center gap-1 cursor-pointer ${
                       formatType === 'written'
                         ? 'bg-yellow-400 text-black border-yellow-500 shadow-md ring-2 ring-black/20'
                         : 'bg-slate-50 text-black border-slate-200 hover:bg-slate-100'
@@ -710,7 +713,7 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
                   <button
                     type="button"
                     onClick={() => setFormatType('document')}
-                    className={`p-3 rounded-2xl border text-center transition flex flex-col items-center gap-1 cursor-pointer ${
+                    className={`min-h-[44px] p-3 rounded-2xl border text-center transition flex flex-col items-center gap-1 cursor-pointer ${
                       formatType === 'document'
                         ? 'bg-emerald-800 text-white border-emerald-800 shadow-md'
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -724,7 +727,7 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
                   <button
                     type="button"
                     onClick={() => setFormatType('picture')}
-                    className={`p-3 rounded-2xl border text-center transition flex flex-col items-center gap-1 cursor-pointer ${
+                    className={`min-h-[44px] p-3 rounded-2xl border text-center transition flex flex-col items-center gap-1 cursor-pointer ${
                       formatType === 'picture'
                         ? 'bg-purple-900 text-white border-purple-900 shadow-md'
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -738,7 +741,7 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
                   <button
                     type="button"
                     onClick={() => setFormatType('hybrid')}
-                    className={`p-3 rounded-2xl border text-center transition flex flex-col items-center gap-1 cursor-pointer ${
+                    className={`min-h-[44px] p-3 rounded-2xl border text-center transition flex flex-col items-center gap-1 cursor-pointer ${
                       formatType === 'hybrid'
                         ? 'bg-amber-600 text-white border-amber-600 shadow-md'
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -753,7 +756,7 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
 
               {/* Written Instructions / Questions Textarea */}
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <label className={`text-xs font-black uppercase tracking-wider ${
                     formatType === 'written' ? 'text-black' : 'text-slate-700'
                   }`}>
@@ -776,7 +779,7 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
               {/* Document Upload Area (Shown for Document & Hybrid formats) */}
               {(formatType === 'document' || formatType === 'hybrid') && (
                 <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <label className="text-xs font-black text-emerald-950 uppercase tracking-wider flex items-center gap-1.5">
                       <span>📄</span>
                       <span>Attach Document (PDF, Word, Worksheets)</span>
@@ -792,16 +795,16 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
                     type="file"
                     accept=".pdf,.doc,.docx,.txt"
                     onChange={handleDocumentUpload}
-                    className="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer"
+                    className="block w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer"
                   />
 
                   {docName && (
-                    <div className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-emerald-200 text-xs">
-                      <span className="font-bold text-emerald-900 truncate">✓ {docName}</span>
+                    <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-white rounded-xl border border-emerald-200 text-xs">
+                      <span className="font-bold text-emerald-900 break-all whitespace-normal">✓ {docName}</span>
                       <button
                         type="button"
                         onClick={() => { setDocName(''); setDocUrl(''); setDocSizeBytes(0); }}
-                        className="text-rose-600 hover:text-rose-800 font-bold ml-2 cursor-pointer"
+                        className="min-h-[44px] px-3 text-rose-600 hover:text-rose-800 font-bold cursor-pointer"
                       >
                         Remove
                       </button>
@@ -813,7 +816,7 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
               {/* Picture Upload Area (Shown for Picture & Hybrid formats) */}
               {(formatType === 'picture' || formatType === 'hybrid') && (
                 <div className="p-4 bg-purple-50/70 border border-purple-200 rounded-2xl space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <label className="text-xs font-black text-purple-950 uppercase tracking-wider flex items-center gap-1.5">
                       <span>🖼️</span>
                       <span>Attach Picture / Photo (Handwritten Sheet, Diagram, Textbook Snapshot)</span>
@@ -829,24 +832,26 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
                     type="file"
                     accept="image/*"
                     onChange={handlePictureUpload}
-                    className="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-600 file:text-white hover:file:bg-purple-700 cursor-pointer"
+                    className="block w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-600 file:text-white hover:file:bg-purple-700 cursor-pointer"
                   />
 
                   {picUrl && (
-                    <div className="relative rounded-xl overflow-hidden border border-purple-200 max-h-48 group">
-                      <img src={picUrl} alt="Assignment Preview" className="w-full h-48 object-cover" />
-                      <div className="absolute top-2 right-2 flex items-center gap-2">
+                    <div className="rounded-xl border border-purple-200 bg-white p-2 space-y-2">
+                      <div className="rounded-lg overflow-hidden max-h-48">
+                        <img src={picUrl} alt="Assignment Preview" className="w-full h-48 object-cover" />
+                      </div>
+                      <div className="flex flex-wrap items-center justify-end gap-2">
                         <button
                           type="button"
                           onClick={() => setPreviewImage(picUrl)}
-                          className="px-2.5 py-1 bg-black/70 hover:bg-black text-white rounded-lg text-xs font-bold transition cursor-pointer"
+                          className="min-h-[44px] px-3.5 py-2 bg-slate-800 hover:bg-black text-white rounded-lg text-xs font-bold transition cursor-pointer"
                         >
                           Zoom 🔍
                         </button>
                         <button
                           type="button"
                           onClick={() => { setPicName(''); setPicUrl(''); setPicSizeBytes(0); }}
-                          className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition cursor-pointer"
+                          className="min-h-[44px] px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition cursor-pointer"
                         >
                           Remove ✕
                         </button>
@@ -866,7 +871,7 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
                     type="date"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full min-h-[44px] px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -881,23 +886,23 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
                     max={200}
                     value={totalPoints}
                     onChange={(e) => setTotalPoints(parseInt(e.target.value) || 100)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full min-h-[44px] px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               {/* Submit Buttons */}
-              <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3">
+              <div className="pt-4 border-t border-slate-200 flex flex-wrap items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={handleResetForm}
-                  className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-bold transition cursor-pointer"
+                  className="min-h-[44px] px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-bold transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 active:scale-95 text-white rounded-xl text-sm font-black shadow-lg hover:shadow-blue-900/30 transition cursor-pointer"
+                  className="min-h-[44px] px-6 py-2.5 bg-blue-900 hover:bg-blue-800 active:scale-95 text-white rounded-xl text-sm font-black shadow-lg hover:shadow-blue-900/30 transition cursor-pointer"
                 >
                   {editingAssignment ? 'Save Changes' : '🚀 Publish Assignment to Students'}
                 </button>
@@ -913,17 +918,24 @@ export const AdminAssignmentsManager: React.FC<AdminAssignmentsManagerProps> = (
           onClick={() => setPreviewImage(null)}
           className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 cursor-pointer animate-in fade-in"
         >
-          <div className="relative max-w-4xl max-h-[90vh] bg-white rounded-2xl overflow-hidden p-2">
-            <button
-              onClick={() => setPreviewImage(null)}
-              className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-black/70 hover:bg-black text-white font-bold flex items-center justify-center text-sm"
-            >
-              ✕
-            </button>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-4xl w-full max-h-[92vh] overflow-y-auto bg-white rounded-2xl p-3 sm:p-4 space-y-3 cursor-default"
+          >
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+              <span className="text-xs font-black uppercase text-slate-600">Assignment Diagram Full View</span>
+              <button
+                onClick={() => setPreviewImage(null)}
+                aria-label="Close image preview"
+                className="min-w-[44px] min-h-[44px] rounded-full bg-slate-900 hover:bg-black text-white font-bold flex items-center justify-center text-sm"
+              >
+                ✕
+              </button>
+            </div>
             <img
               src={previewImage}
               alt="Assignment Full View"
-              className="max-h-[85vh] w-auto mx-auto rounded-xl object-contain"
+              className="max-h-[75vh] w-auto mx-auto rounded-xl object-contain"
             />
           </div>
         </div>

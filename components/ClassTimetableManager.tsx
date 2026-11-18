@@ -298,19 +298,19 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
 
   if (!assignedGrades || assignedGrades.length === 0) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-3 border-b-2 border-slate-100 pb-4">
-          <span className="text-3xl">🗓️</span>
-          <div>
-            <h3 className="text-2xl font-black text-blue-900 font-serif">Class Timetable Manager</h3>
-            <p className="text-xs text-slate-500 font-medium">Build, edit, and publish weekly lesson schedules.</p>
+      <div className="space-y-6 w-full max-w-full">
+        <div className="flex items-start gap-3 border-b-2 border-slate-100 pb-4">
+          <span className="text-2xl sm:text-3xl shrink-0">🗓️</span>
+          <div className="min-w-0">
+            <h3 className="text-xl sm:text-2xl font-black text-blue-900 font-serif break-words whitespace-normal">Class Timetable Manager</h3>
+            <p className="text-xs text-slate-500 font-medium break-words whitespace-normal">Build, edit, and publish weekly lesson schedules.</p>
           </div>
         </div>
-        <div className="bg-amber-50 border-2 border-amber-300 rounded-3xl p-8 text-amber-950 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
-          <span className="text-4xl">🔒</span>
-          <div>
-            <h4 className="font-serif font-black text-base uppercase">Assigned Class Required to Write Timetable</h4>
-            <p className="text-xs text-amber-800 mt-1 max-w-xl">
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-3xl p-4 sm:p-8 text-amber-950 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+          <span className="text-4xl shrink-0">🔒</span>
+          <div className="min-w-0">
+            <h4 className="font-serif font-black text-base uppercase break-words whitespace-normal">Assigned Class Required to Write Timetable</h4>
+            <p className="text-xs text-amber-800 mt-1 max-w-xl break-words whitespace-normal">
               Staff members can only write and edit lesson timetables for their assigned class. You currently have no class assigned to your staff account. Please request the School Administrator to assign your class in Staff Management.
             </p>
           </div>
@@ -320,46 +320,46 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8 w-full max-w-full">
       {/* Header & Description */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b-2 border-slate-100 pb-6">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-3xl">🗓️</span>
-            <h3 className="text-2xl sm:text-3xl font-black text-blue-900 font-serif">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b-2 border-slate-100 pb-6">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start gap-2">
+            <span className="text-2xl sm:text-3xl shrink-0">🗓️</span>
+            <h3 className="text-xl sm:text-2xl lg:text-3xl font-black text-blue-900 font-serif break-words whitespace-normal">
               Class Timetable Manager
             </h3>
           </div>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1 break-words whitespace-normal">
             Build and edit your weekly lesson timetable in tabular form with custom period times for each day (Monday to Friday).
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
           {/* View Layout Tabs */}
-          <div className="bg-slate-100 p-1 rounded-2xl flex items-center gap-1 border border-slate-200">
+          <div className="bg-slate-100 p-1 rounded-2xl flex flex-wrap items-center gap-1 border border-slate-200 w-full sm:w-auto">
             <button
               type="button"
               onClick={() => setViewLayout('tabularMatrix')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+              className={`flex-1 sm:flex-initial min-h-[44px] px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
                 viewLayout === 'tabularMatrix' ? 'bg-blue-900 text-yellow-400 shadow-sm' : 'text-slate-600 hover:text-blue-900'
               }`}
             >
-              📊 Tabular Matrix
+              📊 Matrix
             </button>
             <button
               type="button"
               onClick={() => setViewLayout('tabularEditor')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+              className={`flex-1 sm:flex-initial min-h-[44px] px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
                 viewLayout === 'tabularEditor' ? 'bg-blue-900 text-yellow-400 shadow-sm' : 'text-slate-600 hover:text-blue-900'
               }`}
             >
-              ✏️ Tabular Editor
+              ✏️ Editor
             </button>
             <button
               type="button"
               onClick={() => setViewLayout('dayCards')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+              className={`flex-1 sm:flex-initial min-h-[44px] px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
                 viewLayout === 'dayCards' ? 'bg-blue-900 text-yellow-400 shadow-sm' : 'text-slate-600 hover:text-blue-900'
               }`}
             >
@@ -370,7 +370,7 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
           <button
             type="button"
             onClick={handlePrintTimetable}
-            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-blue-950 font-black text-xs uppercase rounded-xl transition-all shadow-xs flex items-center gap-1"
+            className="min-h-[44px] px-4 py-2 bg-slate-100 hover:bg-slate-200 text-blue-950 font-black text-xs uppercase rounded-xl transition-all shadow-xs flex items-center justify-center gap-1.5"
             title="Print or save timetable"
           >
             <span>🖨️</span>
@@ -379,25 +379,26 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
           <button
             type="button"
             onClick={handleSaveAndBroadcast}
-            className="px-5 py-2 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-2"
+            className="flex-1 sm:flex-initial min-h-[44px] px-5 py-2 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
           >
             <span>💾</span>
-            <span>Save & Broadcast Timetable</span>
+            <span className="break-words whitespace-normal">Save & Broadcast Timetable</span>
           </button>
         </div>
       </div>
 
       {/* Success Confirmation Toast */}
       {saveSuccessMsg && (
-        <div className="p-4 bg-emerald-50 border-2 border-emerald-300 text-emerald-950 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-between shadow-sm animate-in fade-in">
-          <div className="flex items-center gap-2.5">
-            <span className="text-xl">✅</span>
-            <span>{saveSuccessMsg}</span>
+        <div className="p-4 bg-emerald-50 border-2 border-emerald-300 text-emerald-950 rounded-2xl text-xs sm:text-sm font-black flex flex-wrap items-center justify-between gap-2 shadow-sm animate-in fade-in">
+          <div className="flex items-start gap-2.5 min-w-0 flex-1">
+            <span className="text-xl shrink-0">✅</span>
+            <span className="break-words whitespace-normal">{saveSuccessMsg}</span>
           </div>
           <button
             type="button"
             onClick={() => setSaveSuccessMsg(null)}
-            className="text-emerald-700 hover:text-emerald-950 text-xs font-black px-2 py-1"
+            className="min-w-[44px] min-h-[44px] text-emerald-700 hover:text-emerald-950 text-sm font-black flex items-center justify-center rounded-xl hover:bg-emerald-100 shrink-0"
+            aria-label="Dismiss notification"
           >
             ✕
           </button>
@@ -405,7 +406,7 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
       )}
 
       {/* Selector & Day Time Changer Toolbar */}
-      <div className="bg-slate-50 border-2 border-slate-200 rounded-3xl p-6 shadow-xs space-y-5">
+      <div className="bg-slate-50 border-2 border-slate-200 rounded-3xl p-4 sm:p-6 shadow-xs space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
           {/* Class Grade */}
           <div className="space-y-1.5">
@@ -415,7 +416,7 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
             <select
               value={selectedGrade}
               onChange={(e) => handleGradeOrTermChange(e.target.value as GradeLevel, selectedTerm)}
-              className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-2xl font-black text-xs text-blue-950 outline-none focus:border-blue-900 transition-all"
+              className="w-full min-h-[44px] px-4 py-3 bg-white border-2 border-slate-200 rounded-2xl font-black text-xs sm:text-sm text-blue-950 outline-none focus:border-blue-900 transition-all"
             >
               {assignedGrades.map(g => (
                 <option key={g} value={g}>{g}</option>
@@ -431,7 +432,7 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
             <select
               value={selectedTerm}
               onChange={(e) => handleGradeOrTermChange(selectedGrade, e.target.value)}
-              className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-2xl font-black text-xs text-blue-950 outline-none focus:border-blue-900 transition-all"
+              className="w-full min-h-[44px] px-4 py-3 bg-white border-2 border-slate-200 rounded-2xl font-black text-xs sm:text-sm text-blue-950 outline-none focus:border-blue-900 transition-all"
             >
               <option value="First Term">First Term</option>
               <option value="Second Term">Second Term</option>
@@ -440,7 +441,7 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
           </div>
 
           {/* Quick Actions */}
-          <div className="flex gap-2 sm:col-span-2">
+          <div className="flex flex-col sm:flex-row gap-2 sm:col-span-2">
             <button
               type="button"
               onClick={() => {
@@ -451,7 +452,7 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
                 setPeriodEndTime('08:45');
                 setIsAddingPeriod(true);
               }}
-              className="flex-1 py-3 px-4 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+              className="flex-1 min-h-[44px] py-3 px-4 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
             >
               <span>➕</span>
               <span>Add Lesson / Period</span>
@@ -459,7 +460,7 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
             <button
               type="button"
               onClick={handleResetToStandardSchedule}
-              className="py-3 px-4 bg-blue-100 hover:bg-blue-200 text-blue-950 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-xs active:scale-95"
+              className="min-h-[44px] py-3 px-4 bg-blue-100 hover:bg-blue-200 text-blue-950 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-xs active:scale-95 flex items-center justify-center gap-1.5"
               title="Reset or autofill standard 8-period timetable"
             >
               <span>⚡ Autofill Standard</span>
@@ -470,22 +471,22 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
         {/* Change Day's Times Quick Bar: Monday to Friday */}
         <div className="pt-4 border-t border-slate-200">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div>
-              <span className="text-[11px] font-black text-blue-900 uppercase tracking-wider block">
+            <div className="min-w-0 flex-1">
+              <span className="text-[11px] font-black text-blue-900 uppercase tracking-wider block break-words whitespace-normal">
                 ⏰ Change Day's Schedule Times (Monday — Friday):
               </span>
-              <p className="text-[11px] text-slate-500 font-medium">
+              <p className="text-[11px] text-slate-500 font-medium break-words whitespace-normal">
                 Customize opening hours, lesson durations, and interval times independently for each day of the week (e.g. Friday early closure).
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-2">
               {DAYS_OF_WEEK.map(day => (
                 <button
                   key={day}
                   type="button"
                   onClick={() => handleOpenDayTimesModal(day)}
-                  className="px-3 py-1.5 bg-white hover:bg-blue-900 hover:text-yellow-400 text-slate-700 border-2 border-slate-200 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all shadow-2xs flex items-center gap-1"
+                  className="min-h-[44px] px-3 py-2 bg-white hover:bg-blue-900 hover:text-yellow-400 text-slate-700 border-2 border-slate-200 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-2xs flex items-center gap-1"
                   title={`Change start/end times and period duration for ${day}`}
                 >
                   <span>⏰</span>
@@ -497,14 +498,14 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
         </div>
 
         {/* Day Filter Pills */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-3 border-t border-slate-200">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mr-2">Filter Day:</span>
+        <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-200">
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mr-1">Filter Day:</span>
           {(['All', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] as const).map(day => (
             <button
               key={day}
               type="button"
               onClick={() => setActiveDayView(day)}
-              className={`px-3.5 py-1.5 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all ${
+              className={`min-h-[44px] px-3.5 py-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all ${
                 activeDayView === day
                   ? 'bg-blue-900 text-yellow-400 shadow-sm'
                   : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200'
@@ -513,7 +514,7 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
               {day}
             </button>
           ))}
-          <span className="ml-auto text-[11px] font-bold text-slate-500">
+          <span className="sm:ml-auto text-xs font-bold text-slate-500">
             {localPeriods.length} total periods scheduled
           </span>
         </div>
@@ -521,22 +522,23 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
 
       {/* CHANGE DAY TIMES MODAL */}
       {isDayTimeModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl space-y-6 border-2 border-yellow-400 relative">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-              <div>
-                <h4 className="font-serif font-black text-blue-950 text-xl flex items-center gap-2">
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-4 sm:p-8 shadow-2xl space-y-6 border-2 border-yellow-400 max-h-[92vh] overflow-y-auto">
+            <div className="flex justify-between items-start gap-3 border-b border-slate-100 pb-4">
+              <div className="min-w-0 flex-1">
+                <h4 className="font-serif font-black text-blue-950 text-lg sm:text-xl flex flex-wrap items-center gap-2 break-words whitespace-normal">
                   <span>⏰</span>
                   <span>Change Schedule Times for {targetDayForTimes}</span>
                 </h4>
-                <p className="text-xs text-slate-500 font-medium">
+                <p className="text-xs text-slate-500 font-medium break-words whitespace-normal mt-0.5">
                   Set custom period times and duration specifically for {targetDayForTimes} in {selectedGrade}.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsDayTimeModalOpen(false)}
-                className="text-slate-400 hover:text-rose-600 font-black text-xl p-1"
+                className="min-w-[44px] min-h-[44px] rounded-full bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 font-black text-xl flex items-center justify-center shrink-0"
+                aria-label="Close modal"
               >
                 ✕
               </button>
@@ -544,21 +546,21 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
 
             <div className="space-y-4">
               <div className="p-4 bg-blue-50 rounded-2xl border border-blue-200 space-y-3">
-                <span className="font-black text-xs text-blue-900 uppercase tracking-wider block">
+                <span className="font-black text-xs text-blue-900 uppercase tracking-wider block break-words whitespace-normal">
                   ⚡ Quick Auto-Recalculate {targetDayForTimes} Periods
                 </span>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase">Day Start Time</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase block mb-1">Day Start Time</label>
                     <input
                       type="time"
                       value={dayOpeningTime}
                       onChange={(e) => setDayOpeningTime(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl font-mono text-xs font-bold text-blue-950"
+                      className="w-full min-h-[44px] px-3 py-2 bg-white border border-slate-300 rounded-xl font-mono text-xs sm:text-sm font-bold text-blue-950"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase">Lesson Duration (Mins)</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase block mb-1">Lesson Duration (Mins)</label>
                     <input
                       type="number"
                       min={20}
@@ -566,14 +568,14 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
                       step={5}
                       value={dayLessonDurationMins}
                       onChange={(e) => setDayLessonDurationMins(Number(e.target.value))}
-                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl font-mono text-xs font-bold text-blue-950"
+                      className="w-full min-h-[44px] px-3 py-2 bg-white border border-slate-300 rounded-xl font-mono text-xs sm:text-sm font-bold text-blue-950"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase">Short Break Duration (Mins)</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase block mb-1">Short Break Duration (Mins)</label>
                     <input
                       type="number"
                       min={10}
@@ -581,11 +583,11 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
                       step={5}
                       value={dayBreakDurationMins}
                       onChange={(e) => setDayBreakDurationMins(Number(e.target.value))}
-                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl font-mono text-xs font-bold text-blue-950"
+                      className="w-full min-h-[44px] px-3 py-2 bg-white border border-slate-300 rounded-xl font-mono text-xs sm:text-sm font-bold text-blue-950"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase">Lunch Break Duration (Mins)</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase block mb-1">Lunch Break Duration (Mins)</label>
                     <input
                       type="number"
                       min={20}
@@ -593,7 +595,7 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
                       step={5}
                       value={dayLunchDurationMins}
                       onChange={(e) => setDayLunchDurationMins(Number(e.target.value))}
-                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl font-mono text-xs font-bold text-blue-950"
+                      className="w-full min-h-[44px] px-3 py-2 bg-white border border-slate-300 rounded-xl font-mono text-xs sm:text-sm font-bold text-blue-950"
                     />
                   </div>
                 </div>
@@ -601,16 +603,16 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
                 <button
                   type="button"
                   onClick={handleApplyDayTimingBatch}
-                  className="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md mt-2 flex items-center justify-center gap-1.5"
+                  className="w-full min-h-[44px] py-3 px-4 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md mt-2 flex items-center justify-center gap-1.5"
                 >
                   <span>⚡</span>
-                  <span>Recalculate & Apply to All {targetDayForTimes} Lessons</span>
+                  <span className="break-words whitespace-normal">Recalculate & Apply to All {targetDayForTimes} Lessons</span>
                 </button>
               </div>
 
               {/* Individual Period Time Adjustment Table for this Day */}
               <div className="space-y-2">
-                <span className="font-black text-xs text-slate-700 uppercase tracking-wider block">
+                <span className="font-black text-xs text-slate-700 uppercase tracking-wider block break-words whitespace-normal">
                   Or Manually Adjust Each Period's Time for {targetDayForTimes}:
                 </span>
                 <div className="max-h-60 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
@@ -618,24 +620,24 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
                     .filter(p => p.day === targetDayForTimes)
                     .sort((a, b) => a.startTime.localeCompare(b.startTime))
                     .map((p, idx) => (
-                      <div key={p.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2">
-                        <div className="truncate max-w-[160px]">
+                      <div key={p.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="min-w-0 flex-1">
                           <span className="text-[10px] font-black text-slate-400 uppercase block">Period {idx + 1}</span>
-                          <strong className="text-xs text-blue-950">{p.subject}</strong>
+                          <strong className="text-xs text-blue-950 break-words whitespace-normal">{p.subject}</strong>
                         </div>
-                        <div className="flex items-center gap-1.5 font-mono">
+                        <div className="flex flex-wrap items-center gap-1.5 font-mono">
                           <input
                             type="time"
                             value={p.startTime}
                             onChange={(e) => handleUpdatePeriodTimes(p.id, e.target.value, p.endTime)}
-                            className="px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-blue-950"
+                            className="min-h-[44px] px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-blue-950"
                           />
                           <span className="text-xs text-slate-400">-</span>
                           <input
                             type="time"
                             value={p.endTime}
                             onChange={(e) => handleUpdatePeriodTimes(p.id, p.startTime, e.target.value)}
-                            className="px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-blue-950"
+                            className="min-h-[44px] px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-blue-950"
                           />
                         </div>
                       </div>
@@ -648,7 +650,7 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
               <button
                 type="button"
                 onClick={() => setIsDayTimeModalOpen(false)}
-                className="px-6 py-2.5 bg-blue-900 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md"
+                className="w-full sm:w-auto min-h-[44px] px-6 py-2.5 bg-blue-900 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md"
               >
                 Done Adjusting Times
               </button>
@@ -659,11 +661,11 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
 
       {/* Add / Edit Period Modal */}
       {isAddingPeriod && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-6 border-2 border-yellow-400 relative">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-              <div>
-                <h4 className="font-serif font-black text-blue-950 text-lg sm:text-xl">
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-4 sm:p-8 shadow-2xl space-y-6 border-2 border-yellow-400 max-h-[92vh] overflow-y-auto">
+            <div className="flex justify-between items-start gap-3 border-b border-slate-100 pb-4">
+              <div className="min-w-0 flex-1">
+                <h4 className="font-serif font-black text-blue-950 text-lg sm:text-xl break-words whitespace-normal">
                   {editingPeriodId ? 'Edit Period in Schedule' : `Add Period to ${selectedGrade}`}
                 </h4>
                 <p className="text-xs text-slate-400 font-bold">{selectedTerm} Timetable</p>
@@ -671,7 +673,8 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
               <button
                 type="button"
                 onClick={() => setIsAddingPeriod(false)}
-                className="text-slate-400 hover:text-rose-600 font-black text-xl p-1"
+                className="min-w-[44px] min-h-[44px] rounded-full bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 font-black text-xl flex items-center justify-center shrink-0"
+                aria-label="Close modal"
               >
                 ✕
               </button>
@@ -680,11 +683,11 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
             <form onSubmit={handleAddPeriodSubmit} className="space-y-4">
               {/* Day of Week */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Day of Week</label>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Day of Week</label>
                 <select
                   value={periodDay}
                   onChange={(e) => setPeriodDay(e.target.value as any)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:border-blue-900"
+                  className="w-full min-h-[44px] px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs sm:text-sm text-blue-950 outline-none focus:border-blue-900"
                 >
                   {DAYS_OF_WEEK.map(d => (
                     <option key={d} value={d}>{d}</option>
@@ -693,36 +696,36 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
               </div>
 
               {/* Time Interval: Start & End */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Start Time</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Start Time</label>
                   <input
                     type="time"
                     required
                     value={periodStartTime}
                     onChange={(e) => setPeriodStartTime(e.target.value)}
-                    className="w-full px-4 py-2 bg-slate-50 border-2 border-slate-200 rounded-xl font-mono font-bold text-xs text-blue-950 outline-none focus:border-blue-900"
+                    className="w-full min-h-[44px] px-4 py-2 bg-slate-50 border-2 border-slate-200 rounded-xl font-mono font-bold text-xs sm:text-sm text-blue-950 outline-none focus:border-blue-900"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">End Time</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">End Time</label>
                   <input
                     type="time"
                     required
                     value={periodEndTime}
                     onChange={(e) => setPeriodEndTime(e.target.value)}
-                    className="w-full px-4 py-2 bg-slate-50 border-2 border-slate-200 rounded-xl font-mono font-bold text-xs text-blue-950 outline-none focus:border-blue-900"
+                    className="w-full min-h-[44px] px-4 py-2 bg-slate-50 border-2 border-slate-200 rounded-xl font-mono font-bold text-xs sm:text-sm text-blue-950 outline-none focus:border-blue-900"
                   />
                 </div>
               </div>
 
               {/* Subject */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Subject / Activity</label>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Subject / Activity</label>
                 <select
                   value={periodSubject}
                   onChange={(e) => setPeriodSubject(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:border-blue-900"
+                  className="w-full min-h-[44px] px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs sm:text-sm text-blue-950 outline-none focus:border-blue-900"
                 >
                   <option value="">-- Choose Subject / Activity --</option>
                   <optgroup label="Class Curriculum Subjects">
@@ -745,46 +748,46 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
                     placeholder="Enter custom subject / activity name"
                     value={customSubject}
                     onChange={(e) => setCustomSubject(e.target.value)}
-                    className="mt-2 w-full px-4 py-2 bg-yellow-50 border-2 border-yellow-400 rounded-xl font-bold text-xs text-blue-950 outline-none"
+                    className="mt-2 w-full min-h-[44px] px-4 py-2 bg-yellow-50 border-2 border-yellow-400 rounded-xl font-bold text-xs sm:text-sm text-blue-950 outline-none"
                   />
                 )}
               </div>
 
               {/* Teacher & Room */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Instructor / Note</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Instructor / Note</label>
                   <input
                     type="text"
                     value={periodTeacher}
                     onChange={(e) => setPeriodTeacher(e.target.value)}
                     placeholder="e.g. Mr. Ade or Class Teacher"
-                    className="w-full px-4 py-2 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:border-blue-900"
+                    className="w-full min-h-[44px] px-4 py-2 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs sm:text-sm text-blue-950 outline-none focus:border-blue-900"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Venue / Classroom</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Venue / Classroom</label>
                   <input
                     type="text"
                     value={periodRoom}
                     onChange={(e) => setPeriodRoom(e.target.value)}
                     placeholder="e.g. Primary 4 Classroom"
-                    className="w-full px-4 py-2 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:border-blue-900"
+                    className="w-full min-h-[44px] px-4 py-2 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs sm:text-sm text-blue-950 outline-none focus:border-blue-900"
                   />
                 </div>
               </div>
 
-              <div className="pt-4 flex gap-3">
+              <div className="pt-4 flex flex-col sm:flex-row gap-3">
                 <button
                   type="button"
                   onClick={() => setIsAddingPeriod(false)}
-                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs uppercase rounded-xl transition-all"
+                  className="flex-1 min-h-[44px] py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs uppercase rounded-xl transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase rounded-xl transition-all shadow-md"
+                  className="flex-1 min-h-[44px] py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase rounded-xl transition-all shadow-md"
                 >
                   {editingPeriodId ? 'Update Period' : 'Add to Schedule'}
                 </button>
@@ -799,22 +802,22 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2">
             <div>
-              <h4 className="font-serif font-black text-blue-950 text-base sm:text-lg">
+              <h4 className="font-serif font-black text-blue-950 text-base sm:text-lg break-words whitespace-normal">
                 Weekly Tabular Timetable Matrix (Monday to Friday)
               </h4>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-xs text-slate-500 font-medium break-words whitespace-normal">
                 Structured tabular timetable overview showing time, period, and scheduled subject across Monday to Friday.
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <span className="text-xs font-bold text-slate-500">
                 Class: <strong className="text-blue-900">{selectedGrade}</strong> ({selectedTerm})
               </span>
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-3xl border-2 border-slate-200 shadow-xs bg-white">
-            <table className="w-full border-collapse text-left text-xs min-w-[760px]">
+          <div className="overflow-x-auto w-full rounded-3xl border-2 border-slate-200 shadow-xs bg-white">
+            <table className="w-full border-collapse text-left text-xs min-w-[820px]">
               <thead>
                 <tr className="bg-blue-900 text-white border-b-2 border-blue-950">
                   <th className="py-3.5 px-3 font-black text-[11px] uppercase tracking-wider text-yellow-400 w-24 text-center">
@@ -825,12 +828,12 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
                   </th>
                   {DAYS_OF_WEEK.map(day => (
                     <th key={day} className="py-3.5 px-3 font-black text-[11px] uppercase tracking-wider text-white">
-                      <div className="flex items-center justify-between gap-1">
+                      <div className="flex flex-wrap items-center justify-between gap-1.5">
                         <span>{day}</span>
                         <button
                           type="button"
                           onClick={() => handleOpenDayTimesModal(day)}
-                          className="px-1.5 py-0.5 bg-blue-800 hover:bg-yellow-400 hover:text-blue-950 text-[9px] font-black rounded uppercase transition-colors"
+                          className="min-h-[36px] px-2.5 py-1 bg-blue-800 hover:bg-yellow-400 hover:text-blue-950 text-[10px] font-black rounded-lg uppercase transition-colors"
                           title={`Adjust times for ${day}`}
                         >
                           ⏰ Times
@@ -867,7 +870,7 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
                         )}
                       </td>
 
-                      <td className="py-3 px-3 text-center border-r border-slate-200 font-mono text-[11px] font-bold text-slate-600 bg-slate-50/50 whitespace-nowrap">
+                      <td className="py-3 px-3 text-center border-r border-slate-200 font-mono text-[11px] font-bold text-slate-600 bg-slate-50/50 whitespace-normal">
                         ⏰ {samplePeriod.startTime} - {samplePeriod.endTime}
                       </td>
 
@@ -888,38 +891,38 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
                         return (
                           <td 
                             key={day} 
-                            className={`py-3 px-3 align-top transition-colors group relative ${
+                            className={`py-3 px-3 align-top transition-colors ${
                               isBreak ? 'bg-amber-50/80 text-amber-950' : ''
                             }`}
                           >
-                            <div className="space-y-1">
+                            <div className="space-y-1.5">
                               {hasCustomTime && (
-                                <span className="inline-block px-1.5 py-0.5 bg-yellow-100 text-yellow-900 font-mono text-[9px] font-black rounded">
+                                <span className="inline-block px-1.5 py-0.5 bg-yellow-100 text-yellow-900 font-mono text-[10px] font-black rounded">
                                   ⏰ {p.startTime} - {p.endTime}
                                 </span>
                               )}
-                              <div className={`font-black text-xs leading-snug ${
+                              <div className={`font-black text-xs leading-snug break-words whitespace-normal ${
                                 isBreak ? 'text-amber-900 italic' : isDevotion ? 'text-purple-900' : 'text-blue-950'
                               }`}>
                                 {p.subject}
                               </div>
                               {p.teacherName && !isBreak && (
-                                <p className="text-[10px] text-slate-500 font-medium truncate max-w-[110px]">
+                                <p className="text-[11px] text-slate-500 font-medium break-words whitespace-normal">
                                   👨‍🏫 {p.teacherName}
                                 </p>
                               )}
-                              <div className="pt-1 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5">
+                              <div className="pt-1 flex flex-wrap items-center gap-1.5">
                                 <button
                                   type="button"
                                   onClick={() => handleEditPeriodClick(p)}
-                                  className="text-[10px] font-bold text-blue-800 hover:underline"
+                                  className="min-h-[36px] px-2 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-[10px] font-bold text-blue-800"
                                 >
                                   ✏️ Edit
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleDeletePeriod(p.id)}
-                                  className="text-[10px] font-bold text-rose-600 hover:underline"
+                                  className="min-h-[36px] px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-[10px] font-bold text-rose-600"
                                 >
                                   ✕ Del
                                 </button>
@@ -940,27 +943,27 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
       {/* VIEW 2: TABULAR EDITOR (Interactive table with inline Time, Subject & Teacher editing) */}
       {viewLayout === 'tabularEditor' && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-2">
             <div>
-              <h4 className="font-serif font-black text-blue-950 text-base sm:text-lg">
+              <h4 className="font-serif font-black text-blue-950 text-base sm:text-lg break-words whitespace-normal">
                 Interactive Tabular Schedule Editor
               </h4>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-xs text-slate-500 font-medium break-words whitespace-normal">
                 Change each day's start and end times, update subjects, and adjust periods directly in this tabular form.
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => setIsAddingPeriod(true)}
-                className="px-3.5 py-1.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 font-black text-xs uppercase rounded-xl transition-all shadow-xs"
+                className="min-h-[44px] px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-blue-950 font-black text-xs uppercase rounded-xl transition-all shadow-xs"
               >
                 + Add Period
               </button>
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-3xl border-2 border-slate-200 shadow-xs bg-white">
+          <div className="overflow-x-auto w-full rounded-3xl border-2 border-slate-200 shadow-xs bg-white">
             <table className="w-full border-collapse text-left text-xs min-w-[740px]">
               <thead>
                 <tr className="bg-blue-900 text-white">
@@ -970,7 +973,7 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
                   <th className="py-3 px-3 font-black text-[10px] uppercase tracking-wider text-blue-200 w-20">
                     Period
                   </th>
-                  <th className="py-3 px-3 font-black text-[10px] uppercase tracking-wider text-yellow-400 w-52">
+                  <th className="py-3 px-3 font-black text-[10px] uppercase tracking-wider text-yellow-400 w-56">
                     Time Interval (Start — End)
                   </th>
                   <th className="py-3 px-4 font-black text-[10px] uppercase tracking-wider text-white">
@@ -1013,7 +1016,7 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
                               type="time"
                               value={period.startTime}
                               onChange={(e) => handleUpdatePeriodTimes(period.id, e.target.value, period.endTime)}
-                              className="px-2 py-1 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-blue-950 focus:border-blue-900 outline-none w-24"
+                              className="min-h-[44px] px-2 py-1 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-blue-950 focus:border-blue-900 outline-none w-28"
                               title="Change start time for this period"
                             />
                             <span className="text-slate-400 font-bold">-</span>
@@ -1021,7 +1024,7 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
                               type="time"
                               value={period.endTime}
                               onChange={(e) => handleUpdatePeriodTimes(period.id, period.startTime, e.target.value)}
-                              className="px-2 py-1 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-blue-950 focus:border-blue-900 outline-none w-24"
+                              className="min-h-[44px] px-2 py-1 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-blue-950 focus:border-blue-900 outline-none w-28"
                               title="Change end time for this period"
                             />
                           </div>
@@ -1032,15 +1035,15 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
                             type="text"
                             value={period.subject}
                             onChange={(e) => handleUpdatePeriodSubject(period.id, e.target.value)}
-                            className="w-full px-2 py-1 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-slate-300 rounded-lg font-black text-blue-950 text-xs outline-none"
+                            className="w-full min-h-[44px] px-2.5 py-1 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-slate-300 rounded-lg font-black text-blue-950 text-xs outline-none"
                           />
                         </td>
                         {/* Instructor */}
-                        <td className="py-3 px-3 text-slate-600 font-medium">
+                        <td className="py-3 px-3 text-slate-600 font-medium break-words whitespace-normal">
                           {period.teacherName || 'Class Teacher'}
                         </td>
                         {/* Room */}
-                        <td className="py-3 px-3 text-slate-500 font-mono text-[11px]">
+                        <td className="py-3 px-3 text-slate-500 font-mono text-[11px] break-words whitespace-normal">
                           {period.room || `Room ${selectedGrade}`}
                         </td>
                         {/* Actions */}
@@ -1048,8 +1051,9 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
                           <button
                             type="button"
                             onClick={() => handleDeletePeriod(period.id)}
-                            className="text-rose-500 hover:text-rose-700 font-black text-xs p-1"
+                            className="min-w-[44px] min-h-[44px] text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-xl font-black text-sm inline-flex items-center justify-center"
                             title="Delete period"
+                            aria-label="Delete period"
                           >
                             ✕
                           </button>
@@ -1065,7 +1069,7 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
 
       {/* VIEW 3: DAY CARDS VIEW */}
       {viewLayout === 'dayCards' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {DAYS_OF_WEEK.filter(d => activeDayView === 'All' || activeDayView === d).map(day => {
             const dayPeriods = localPeriods
               .filter(p => p.day === day)
@@ -1074,19 +1078,19 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
             return (
               <div
                 key={day}
-                className="bg-white rounded-3xl border-2 border-slate-200 overflow-hidden shadow-xs flex flex-col transition-all hover:border-blue-200"
+                className="bg-white rounded-3xl border-2 border-slate-200 shadow-xs flex flex-col transition-all hover:border-blue-200"
               >
                 {/* Day Header */}
-                <div className="bg-gradient-to-r from-blue-900 to-indigo-950 text-white px-4 py-3 flex items-center justify-between">
+                <div className="bg-gradient-to-r from-blue-900 to-indigo-950 text-white px-4 py-3 rounded-t-[1.35rem] flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <h4 className="font-serif font-black text-sm tracking-wide text-yellow-400">{day}</h4>
                     <span className="text-[10px] text-blue-200 font-bold">{dayPeriods.length} Lessons</span>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5">
                     <button
                       type="button"
                       onClick={() => handleOpenDayTimesModal(day)}
-                      className="px-2 py-1 rounded-lg bg-blue-800 hover:bg-yellow-400 hover:text-blue-950 text-white font-black text-[10px] transition-all"
+                      className="min-h-[44px] px-2.5 py-1.5 rounded-lg bg-blue-800 hover:bg-yellow-400 hover:text-blue-950 text-white font-black text-[10px] transition-all"
                       title={`Change schedule times for ${day}`}
                     >
                       ⏰ Times
@@ -1097,7 +1101,7 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
                         setPeriodDay(day);
                         setIsAddingPeriod(true);
                       }}
-                      className="w-7 h-7 rounded-lg bg-yellow-400 hover:bg-yellow-300 text-blue-950 font-black text-xs flex items-center justify-center transition-all shadow-xs"
+                      className="min-w-[44px] min-h-[44px] rounded-lg bg-yellow-400 hover:bg-yellow-300 text-blue-950 font-black text-sm flex items-center justify-center transition-all shadow-xs"
                       title={`Add period to ${day}`}
                     >
                       +
@@ -1106,9 +1110,9 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
                 </div>
 
                 {/* Day Periods List */}
-                <div className="p-3 space-y-2.5 flex-1 divide-y divide-slate-100 overflow-y-auto max-h-[580px] custom-scrollbar">
+                <div className="p-3 space-y-2.5 flex-1 overflow-y-auto max-h-[580px] custom-scrollbar">
                   {dayPeriods.length === 0 ? (
-                    <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-xs font-bold">
+                    <div className="p-6 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-xs font-bold">
                       No periods set for {day}.
                       <button
                         type="button"
@@ -1116,7 +1120,7 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
                           setPeriodDay(day);
                           setIsAddingPeriod(true);
                         }}
-                        className="mt-2 block mx-auto text-[10px] text-blue-800 font-black underline"
+                        className="mt-2 min-h-[44px] px-3 block mx-auto text-xs text-blue-800 font-black underline"
                       >
                         + Add Period
                       </button>
@@ -1129,7 +1133,7 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
                       return (
                         <div
                           key={period.id || idx}
-                          className={`pt-2.5 first:pt-0 group relative p-2.5 rounded-xl transition-all ${
+                          className={`p-3 rounded-xl transition-all ${
                             isBreak
                               ? 'bg-amber-50/70 border border-amber-200'
                               : isDevotion
@@ -1137,40 +1141,42 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
                                 : 'bg-slate-50/80 border border-slate-200 hover:bg-blue-50/60 hover:border-blue-200'
                           }`}
                         >
-                          <div className="flex items-start justify-between gap-1">
-                            <div>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
                               <span className="font-mono text-[10px] font-black text-slate-500 block">
                                 {period.startTime} - {period.endTime}
                               </span>
-                              <p className="font-black text-xs text-blue-950 mt-0.5 leading-snug">
+                              <p className="font-black text-xs text-blue-950 mt-0.5 leading-snug break-words whitespace-normal">
                                 {period.subject}
                               </p>
                               {period.teacherName && (
-                                <p className="text-[10px] text-slate-500 font-medium">
+                                <p className="text-[11px] text-slate-500 font-medium break-words whitespace-normal">
                                   👨‍🏫 {period.teacherName}
                                 </p>
                               )}
                               {period.room && (
-                                <span className="text-[9px] text-slate-400 font-medium">
+                                <span className="text-[10px] text-slate-400 font-medium break-words whitespace-normal block">
                                   📍 {period.room}
                                 </span>
                               )}
                             </div>
 
-                            <div className="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center gap-1 shrink-0">
                               <button
                                 type="button"
                                 onClick={() => handleEditPeriodClick(period)}
-                                className="text-blue-700 hover:text-blue-900 p-1 text-xs font-black"
+                                className="min-w-[44px] min-h-[44px] rounded-lg hover:bg-blue-100 text-blue-700 hover:text-blue-900 text-xs font-black flex items-center justify-center"
                                 title="Edit period"
+                                aria-label="Edit period"
                               >
                                 ✏️
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleDeletePeriod(period.id)}
-                                className="text-rose-500 hover:text-rose-700 p-1 text-xs font-black"
+                                className="min-w-[44px] min-h-[44px] rounded-lg hover:bg-rose-100 text-rose-500 hover:text-rose-700 text-xs font-black flex items-center justify-center"
                                 title="Delete period"
+                                aria-label="Delete period"
                               >
                                 ✕
                               </button>
@@ -1188,8 +1194,8 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
       )}
 
       {/* Class Notes / Instructions */}
-      <div className="bg-white rounded-3xl border-2 border-slate-200 p-6 shadow-xs space-y-3">
-        <label className="text-xs font-black text-blue-950 uppercase tracking-wider block">
+      <div className="bg-white rounded-3xl border-2 border-slate-200 p-4 sm:p-6 shadow-xs space-y-3">
+        <label className="text-xs font-black text-blue-950 uppercase tracking-wider block break-words whitespace-normal">
           Class Instructions & Assembly Notices for {selectedGrade} ({selectedTerm})
         </label>
         <textarea
@@ -1199,14 +1205,14 @@ export const ClassTimetableManager: React.FC<ClassTimetableManagerProps> = ({
           placeholder="e.g. Please ensure all pupils arrive before 7:45 AM for morning devotion. Friday sports wear required."
           className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-blue-950 outline-none focus:border-blue-900 transition-all resize-none"
         />
-        <div className="flex justify-between items-center pt-2">
-          <span className="text-[11px] text-slate-400 font-bold">
+        <div className="flex flex-col sm:flex-row flex-wrap justify-between items-stretch sm:items-center gap-3 pt-2">
+          <span className="text-xs text-slate-400 font-bold break-words whitespace-normal">
             Notes will appear directly on the student portal and report cards.
           </span>
           <button
             type="button"
             onClick={handleSaveAndBroadcast}
-            className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-2"
+            className="w-full sm:w-auto min-h-[44px] px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
           >
             <span>💾</span>
             <span>Save & Broadcast Timetable</span>

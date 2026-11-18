@@ -92,12 +92,12 @@ export const ProphDatabaseAuditorModal: React.FC<ProphDatabaseAuditorModalProps>
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 max-w-2xl w-full shadow-2xl border-4 border-yellow-400 relative overflow-hidden max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
+      <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-4 sm:p-8 max-w-2xl w-full shadow-2xl border-4 border-yellow-400 max-h-[92vh] overflow-y-auto flex flex-col">
         {/* Header */}
-        <div className="flex items-start justify-between pb-4 border-b border-slate-100 shrink-0">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-start justify-between gap-3 pb-4 border-b border-slate-100 shrink-0">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
               <span className="px-2.5 py-0.5 rounded-full bg-blue-900 text-yellow-400 text-[10px] font-black uppercase tracking-wider">
                 External App Verification
               </span>
@@ -105,10 +105,10 @@ export const ProphDatabaseAuditorModal: React.FC<ProphDatabaseAuditorModalProps>
                 Target: proph
               </span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-blue-950 font-serif">
+            <h2 className="text-lg sm:text-2xl font-black text-blue-950 font-serif break-words whitespace-normal">
               Proph App Database Checker
             </h2>
-            <p className="text-xs text-slate-500 font-medium">
+            <p className="text-xs text-slate-500 font-medium break-words whitespace-normal mt-1">
               Enter the unique Admin ID (<code className="bg-slate-100 px-1.5 py-0.5 rounded font-black text-blue-900 font-mono">pro01</code>) to inspect and verify the entire school database.
             </p>
           </div>
@@ -116,7 +116,8 @@ export const ProphDatabaseAuditorModal: React.FC<ProphDatabaseAuditorModalProps>
           <button
             type="button"
             onClick={onClose}
-            className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-lg flex items-center justify-center transition-all shrink-0"
+            className="min-w-[44px] min-h-[44px] rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-lg flex items-center justify-center transition-all shrink-0"
+            aria-label="Close modal"
           >
             ✕
           </button>
@@ -127,9 +128,9 @@ export const ProphDatabaseAuditorModal: React.FC<ProphDatabaseAuditorModalProps>
           <label className="block text-xs font-black text-blue-950 uppercase tracking-wider">
             Enter Admin Unique ID:
           </label>
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-sm font-black">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-1 min-h-[44px] px-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl focus-within:border-blue-900 focus-within:bg-white transition-all">
+              <span className="text-slate-400 font-mono text-sm font-black shrink-0" aria-hidden="true">
                 🔑
               </span>
               <input
@@ -140,21 +141,21 @@ export const ProphDatabaseAuditorModal: React.FC<ProphDatabaseAuditorModalProps>
                   setErrorMsg('');
                 }}
                 placeholder="e.g. pro01"
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl text-sm font-mono font-black text-blue-950 focus:outline-none focus:border-blue-900 transition-all uppercase"
+                className="w-full min-h-[40px] py-2 bg-transparent text-sm font-mono font-black text-blue-950 focus:outline-none uppercase"
               />
             </div>
 
             <button
               type="button"
               onClick={handleVerify}
-              className="px-6 py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-2xl shadow-md transition-all active:scale-95 shrink-0"
+              className="w-full sm:w-auto min-h-[44px] px-6 py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-2xl shadow-md transition-all active:scale-95 shrink-0"
             >
               Verify Database
             </button>
           </div>
 
           {errorMsg && (
-            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold animate-in fade-in">
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold break-words whitespace-normal animate-in fade-in">
               ⚠️ {errorMsg}
             </div>
           )}
@@ -164,14 +165,14 @@ export const ProphDatabaseAuditorModal: React.FC<ProphDatabaseAuditorModalProps>
         <div className="flex-1 overflow-y-auto pr-1 space-y-4">
           {isChecked ? (
             <div className="space-y-4 animate-in fade-in duration-300">
-              <div className="p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-emerald-950 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-2xl">✅</span>
-                  <div>
-                    <p className="font-serif font-black text-sm text-emerald-950">
+              <div className="p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-emerald-950 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                  <span className="text-2xl shrink-0">✅</span>
+                  <div className="min-w-0">
+                    <p className="font-serif font-black text-sm text-emerald-950 break-words whitespace-normal">
                       Proph Verification Successful: Admin ID [pro01] Authenticated
                     </p>
-                    <p className="text-[11px] text-emerald-800 font-medium">
+                    <p className="text-xs text-emerald-800 font-medium break-words whitespace-normal mt-0.5">
                       All 23 tables and relations are active, synchronized, and ready for external app inspection.
                     </p>
                   </div>
@@ -182,28 +183,28 @@ export const ProphDatabaseAuditorModal: React.FC<ProphDatabaseAuditorModalProps>
               </div>
 
               {/* Metrics Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Students</p>
                   <p className="text-xl font-black text-blue-950 mt-1">{totalStudents}</p>
                 </div>
-                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Parents</p>
                   <p className="text-xl font-black text-blue-950 mt-1">{totalParents}</p>
                 </div>
-                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Teachers & Staff</p>
                   <p className="text-xl font-black text-blue-950 mt-1">{totalTeachers}</p>
                 </div>
-                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Payments</p>
                   <p className="text-xl font-black text-blue-950 mt-1">{totalPayments}</p>
                 </div>
-                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Results</p>
                   <p className="text-xl font-black text-blue-950 mt-1">{totalResults}</p>
                 </div>
-                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Attendance Logs</p>
                   <p className="text-xl font-black text-blue-950 mt-1">{totalAttendance}</p>
                 </div>
@@ -211,26 +212,26 @@ export const ProphDatabaseAuditorModal: React.FC<ProphDatabaseAuditorModalProps>
 
               {/* JSON preview */}
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-[11px] font-black uppercase text-slate-500">
                     Proph Ingestion Payload (JSON):
                   </span>
-                  <span className="text-[10px] font-mono text-slate-400">
+                  <span className="text-[10px] font-mono text-slate-400 break-all">
                     Signature: {auditPayload.integrity_checksum}
                   </span>
                 </div>
-                <pre className="p-3.5 bg-slate-900 text-yellow-400 rounded-2xl text-[11px] font-mono overflow-x-auto max-h-40 border border-slate-800">
+                <pre className="p-3.5 bg-slate-900 text-yellow-400 rounded-2xl text-[11px] font-mono overflow-x-auto max-h-48 border border-slate-800 w-full">
                   {JSON.stringify(auditPayload, null, 2)}
                 </pre>
               </div>
             </div>
           ) : (
             <div className="py-8 text-center text-slate-400 space-y-2">
-              <span className="text-4xl">🛡️</span>
-              <p className="font-serif font-black text-blue-950 text-base">
+              <span className="text-4xl block">🛡️</span>
+              <p className="font-serif font-black text-blue-950 text-base break-words whitespace-normal">
                 Proph External Database Audit Engine
               </p>
-              <p className="text-xs text-slate-500 max-w-md mx-auto">
+              <p className="text-xs text-slate-500 max-w-md mx-auto break-words whitespace-normal">
                 Confirm your unique Admin ID (<code className="font-mono font-bold text-blue-900">pro01</code>) above to verify all tables, relations, and synchronization states across all devices.
               </p>
             </div>
@@ -239,24 +240,24 @@ export const ProphDatabaseAuditorModal: React.FC<ProphDatabaseAuditorModalProps>
 
         {/* Footer Actions */}
         <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 shrink-0">
-          <span className="text-[11px] text-slate-400 font-bold">
+          <span className="text-xs text-slate-500 font-bold">
             Admin Identifier: <span className="font-mono text-blue-900 font-black">pro01</span>
           </span>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             {isChecked && (
               <>
                 <button
                   type="button"
                   onClick={handleCopyPayload}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-black text-xs uppercase tracking-wider transition-all"
+                  className="flex-1 sm:flex-initial min-h-[44px] px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-black text-xs uppercase tracking-wider transition-all"
                 >
                   {copied ? '✓ Payload Copied' : '📋 Copy JSON'}
                 </button>
                 <button
                   type="button"
                   onClick={handleDownloadPayload}
-                  className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-sm"
+                  className="flex-1 sm:flex-initial min-h-[44px] px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-sm"
                 >
                   📥 Download Report
                 </button>
@@ -265,7 +266,7 @@ export const ProphDatabaseAuditorModal: React.FC<ProphDatabaseAuditorModalProps>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all"
+              className="flex-1 sm:flex-initial min-h-[44px] px-5 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all"
             >
               Done
             </button>

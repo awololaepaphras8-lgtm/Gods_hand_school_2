@@ -1814,7 +1814,7 @@ const App: React.FC = () => {
   const closedStatus = getPageClosedStatus(view);
 
   return (
-    <div className="min-h-screen flex flex-col font-sans bg-slate-50">
+    <div className="min-h-screen w-full max-w-full overflow-x-clip flex flex-col font-sans bg-slate-50">
       <Header 
         role={role} 
         setRole={setRole} 
@@ -1833,9 +1833,10 @@ const App: React.FC = () => {
       {/* Offline Service Worker Network Status & Cached Academic Records Bar */}
       <OfflineModeBanner currentStudentId={currentStudentObj?.id} />
 
-      <main className="flex-grow pb-24 md:pb-0">
+      <main className="flex-grow w-full max-w-full overflow-x-clip pb-24 md:pb-0">
         {closedStatus.isClosed ? (
-          <div className="max-w-3xl mx-auto py-16 px-4">
+          <div className="w-full max-w-full overflow-x-hidden px-4 sm:px-6 py-12 sm:py-16">
+            <div className="max-w-3xl mx-auto">
             <div className="bg-white rounded-[2.5rem] border-4 border-amber-300 p-8 sm:p-12 shadow-2xl text-center space-y-6">
               <div className="w-20 h-20 bg-amber-100 text-amber-900 rounded-3xl flex items-center justify-center text-4xl mx-auto border-2 border-amber-200 shadow-inner">
                 🔒
@@ -1869,7 +1870,7 @@ const App: React.FC = () => {
                     setView('home');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="w-full sm:w-auto px-8 py-4 bg-blue-950 hover:bg-blue-900 text-yellow-400 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl transition-all hover:scale-105 active:scale-95"
+                  className="min-h-[44px] w-full sm:w-auto px-8 py-4 bg-blue-950 hover:bg-blue-900 text-yellow-400 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl transition-all hover:scale-105 active:scale-95"
                 >
                   Return to Homepage
                 </button>
@@ -1878,12 +1879,13 @@ const App: React.FC = () => {
                   href="https://wa.me/2348000000000?text=Hello%20God's%20Heritage%20Schools,%20I%20need%20inquiry%20regarding%20closed%20portal%20page"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full sm:w-auto px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+                  className="min-h-[44px] w-full sm:w-auto px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
                 >
                   <span>💬</span>
                   <span>Contact School Admin</span>
                 </a>
               </div>
+            </div>
             </div>
           </div>
         ) : (
@@ -1963,17 +1965,19 @@ const App: React.FC = () => {
         )}
 
         {view === 'apply' && (
-          <div className="max-w-4xl mx-auto py-12 px-4">
-            <StudentPortal 
-              fees={state.fees} 
-              existingPayments={studentPayments}
-              currentStudentId={currentStudentObj?.id || null}
-              currentStudentName={currentStudentObj?.name || null}
-              currentStudentGrade={currentStudentObj?.grade || null}
-              onSubmit={addPayment} 
-              onBack={() => setView(role === UserRole.STUDENT ? 'portal' : 'home')} 
-              bankAccountConfig={state.bankAccountConfig}
-            />
+          <div className="w-full max-w-full overflow-x-hidden px-4 sm:px-6 py-8 sm:py-12">
+            <div className="max-w-4xl mx-auto">
+              <StudentPortal 
+                fees={state.fees} 
+                existingPayments={studentPayments}
+                currentStudentId={currentStudentObj?.id || null}
+                currentStudentName={currentStudentObj?.name || null}
+                currentStudentGrade={currentStudentObj?.grade || null}
+                onSubmit={addPayment} 
+                onBack={() => setView(role === UserRole.STUDENT ? 'portal' : 'home')} 
+                bankAccountConfig={state.bankAccountConfig}
+              />
+            </div>
           </div>
         )}
 
@@ -1989,14 +1993,14 @@ const App: React.FC = () => {
 
         {view === 'portal' && (
           (role === UserRole.STUDENT && currentStudentObj) ? (
-            <div className="max-w-4xl mx-auto py-12 px-4 text-center">
-              <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl border-2 border-slate-50 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-2 bg-yellow-400"></div>
+            <div className="w-full max-w-full overflow-x-hidden px-4 sm:px-6 py-8 sm:py-12 text-center">
+              <div className="max-w-4xl mx-auto">
+                <div className="bg-white p-4 sm:p-8 md:p-10 rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl border-2 border-slate-100 border-t-8 border-t-yellow-400">
                   
-                  <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-10 text-left gap-4">
-                    <div className="flex items-center gap-4">
-                      {/* Student Photo Avatar with Quick Photo Update */}
-                      <div className="relative group shrink-0">
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 sm:mb-10 text-left gap-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 min-w-0">
+                      {/* Student Photo Avatar */}
+                      <div className="shrink-0">
                         <div className="w-20 h-20 rounded-2xl bg-slate-100 border-2 border-yellow-400 overflow-hidden flex items-center justify-center shadow-md">
                           {currentStudentObj.photo ? (
                             <img src={currentStudentObj.photo} alt={currentStudentObj.name} className="w-full h-full object-cover" />
@@ -2006,23 +2010,15 @@ const App: React.FC = () => {
                             </span>
                           )}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setShowStudentIDCardModal(true)}
-                          className="absolute -bottom-1 -right-1 w-7 h-7 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-lg flex items-center justify-center text-xs font-black shadow-md transition-transform hover:scale-110"
-                          title="Update passport picture or NIN"
-                        >
-                          📷
-                        </button>
                       </div>
 
-                      <div>
-                        <h2 className="text-3xl sm:text-4xl font-black text-blue-900 mb-1 font-serif">Welcome, {currentStudentObj.name || currentUser}</h2>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      <div className="min-w-0 flex-1">
+                        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-blue-900 mb-1 font-serif break-words whitespace-normal">Welcome, {currentStudentObj.name || currentUser}</h2>
+                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider break-words whitespace-normal">
                           Grade: {currentStudentObj.grade || 'N/A'} • Student ID: {currentStudentObj.id || 'N/A'}
                         </p>
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold flex items-center gap-1 ${
+                        <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                          <span className={`px-3 py-1.5 rounded-full text-[11px] font-mono font-bold flex items-center gap-1 break-words ${
                             currentStudentObj.nin 
                               ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
                               : 'bg-amber-100 text-amber-800 border border-amber-300'
@@ -2033,51 +2029,60 @@ const App: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setShowStudentIDCardModal(true)}
-                            className="px-2.5 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-full text-[10px] font-black uppercase tracking-wider transition-colors"
+                            className="min-h-[44px] px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-xl text-[11px] font-black uppercase tracking-wider transition-colors"
                           >
                             {currentStudentObj.nin ? 'Edit NIN' : '+ Add NIN'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowStudentIDCardModal(true)}
+                            className="min-h-[44px] px-3.5 py-2 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl text-[11px] font-black uppercase tracking-wider shadow-xs transition-colors flex items-center gap-1.5"
+                            title="Update passport picture or NIN"
+                          >
+                            <span>📷</span>
+                            <span>Update Photo</span>
                           </button>
                         </div>
                       </div>
                     </div>
 
-                    <div className="mt-4 md:mt-0 bg-blue-50 p-4 rounded-2xl border border-blue-100 min-w-[220px]">
+                    <div className="mt-2 md:mt-0 bg-blue-50 p-4 rounded-2xl border border-blue-100 w-full md:w-auto md:min-w-[220px]">
                       <div className="flex justify-between text-[10px] font-black text-blue-900 uppercase tracking-widest mb-2">
                         <span>Payment Status</span>
                         <span>{paymentProgress}%</span>
                       </div>
-                      <div className="w-full h-3 bg-white rounded-full overflow-hidden border border-blue-100 mb-2">
-                        <div className="h-full bg-blue-900 transition-all duration-1000" style={{ width: `${paymentProgress}%` }}></div>
+                      <div className="w-full h-3 bg-white rounded-full border border-blue-100 mb-2 p-0.5">
+                        <div className="h-full bg-blue-900 rounded-full transition-all duration-1000" style={{ width: `${paymentProgress}%` }}></div>
                       </div>
                       <button 
                         onClick={() => {
                           setView('feeChecker');
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
-                        className="text-[10px] font-black text-blue-800 hover:text-blue-950 uppercase tracking-wider underline flex items-center gap-1"
+                        className="min-h-[44px] px-2 py-1 text-[11px] font-black text-blue-800 hover:text-blue-950 uppercase tracking-wider underline flex items-center gap-1"
                       >
                         💳 Check Fee Statement →
                       </button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 sm:gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {/* Official Student ID Card PDF Trigger */}
                     <button 
                       onClick={() => setShowStudentIDCardModal(true)}
-                      className="p-5 sm:p-6 bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-950 text-white rounded-[2rem] hover:from-blue-900 hover:to-indigo-900 transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1 border-2 border-yellow-400"
+                      className="min-h-[44px] p-4 sm:p-5 bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-950 text-white rounded-2xl sm:rounded-[2rem] hover:from-blue-900 hover:to-indigo-900 transition-all flex flex-col items-center justify-center group shadow-xl hover:-translate-y-1 border-2 border-yellow-400"
                       title="Download Official Student Identity Card as a high-resolution PDF"
                     >
-                      <span className="block text-3xl sm:text-4xl mb-2 group-hover:scale-110 transition-transform">🪪</span>
-                      <span className="font-black uppercase text-[11px] tracking-wider text-yellow-300">ID Card (PDF)</span>
+                      <span className="block text-2xl sm:text-3xl mb-1.5 group-hover:scale-110 transition-transform">🪪</span>
+                      <span className="font-black uppercase text-[11px] tracking-wider text-yellow-300 break-words whitespace-normal">ID Card (PDF)</span>
                     </button>
 
                     <button 
                       onClick={() => setShowQRModal(true)}
-                      className="p-5 sm:p-6 bg-yellow-400 text-blue-900 rounded-[2rem] hover:bg-yellow-500 transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1"
+                      className="min-h-[44px] p-4 sm:p-5 bg-yellow-400 text-blue-900 rounded-2xl sm:rounded-[2rem] hover:bg-yellow-500 transition-all flex flex-col items-center justify-center group shadow-xl hover:-translate-y-1"
                     >
-                      <span className="block text-3xl sm:text-4xl mb-2 group-hover:scale-110 transition-transform">🆔</span>
-                      <span className="font-black uppercase text-[11px] tracking-wider">Attendance QR</span>
+                      <span className="block text-2xl sm:text-3xl mb-1.5 group-hover:scale-110 transition-transform">🆔</span>
+                      <span className="font-black uppercase text-[11px] tracking-wider break-words whitespace-normal">Attendance QR</span>
                     </button>
 
                     <button 
@@ -2085,10 +2090,10 @@ const App: React.FC = () => {
                         const el = document.getElementById('student-timetable-section');
                         if (el) el.scrollIntoView({ behavior: 'smooth' });
                       }}
-                      className="p-5 sm:p-6 bg-blue-900 text-white rounded-[2rem] hover:bg-blue-800 transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1 border-2 border-yellow-400/40"
+                      className="min-h-[44px] p-4 sm:p-5 bg-blue-900 text-white rounded-2xl sm:rounded-[2rem] hover:bg-blue-800 transition-all flex flex-col items-center justify-center group shadow-xl hover:-translate-y-1 border-2 border-yellow-400/40"
                     >
-                      <span className="block text-3xl sm:text-4xl mb-2 text-yellow-400 group-hover:scale-110 transition-transform">🗓️</span>
-                      <span className="font-black uppercase text-[11px] tracking-wider">Timetable</span>
+                      <span className="block text-2xl sm:text-3xl mb-1.5 text-yellow-400 group-hover:scale-110 transition-transform">🗓️</span>
+                      <span className="font-black uppercase text-[11px] tracking-wider break-words whitespace-normal">Timetable</span>
                     </button>
 
                     <button 
@@ -2096,10 +2101,10 @@ const App: React.FC = () => {
                         const el = document.getElementById('student-assignments-section');
                         if (el) el.scrollIntoView({ behavior: 'smooth' });
                       }}
-                      className="p-5 sm:p-6 bg-amber-500 text-blue-950 rounded-[2rem] hover:bg-amber-400 transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1 border-2 border-amber-600/30"
+                      className="min-h-[44px] p-4 sm:p-5 bg-amber-500 text-blue-950 rounded-2xl sm:rounded-[2rem] hover:bg-amber-400 transition-all flex flex-col items-center justify-center group shadow-xl hover:-translate-y-1 border-2 border-amber-600/30"
                     >
-                      <span className="block text-3xl sm:text-4xl mb-2 group-hover:scale-110 transition-transform">📝</span>
-                      <span className="font-black uppercase text-[11px] tracking-wider">Assignments</span>
+                      <span className="block text-2xl sm:text-3xl mb-1.5 group-hover:scale-110 transition-transform">📝</span>
+                      <span className="font-black uppercase text-[11px] tracking-wider break-words whitespace-normal">Assignments</span>
                     </button>
 
                     <button 
@@ -2107,20 +2112,20 @@ const App: React.FC = () => {
                         const el = document.getElementById('student-timetable-section');
                         if (el) el.scrollIntoView({ behavior: 'smooth' });
                       }}
-                      className="p-5 sm:p-6 bg-slate-800 text-white rounded-[2rem] hover:bg-slate-700 transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1"
+                      className="min-h-[44px] p-4 sm:p-5 bg-slate-800 text-white rounded-2xl sm:rounded-[2rem] hover:bg-slate-700 transition-all flex flex-col items-center justify-center group shadow-xl hover:-translate-y-1"
                     >
-                      <span className="block text-3xl sm:text-4xl mb-2 text-yellow-400 group-hover:scale-110 transition-transform">📚</span>
-                      <span className="font-black uppercase text-[11px] tracking-wider">Subjects</span>
+                      <span className="block text-2xl sm:text-3xl mb-1.5 text-yellow-400 group-hover:scale-110 transition-transform">📚</span>
+                      <span className="font-black uppercase text-[11px] tracking-wider break-words whitespace-normal">Subjects</span>
                     </button>
 
                     <button 
                       onClick={() => setView('apply')}
-                      className={`p-5 sm:p-6 rounded-[2rem] transition-all flex flex-col items-center group shadow-xl hover:-translate-y-1 ${paymentProgress < 100 ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-green-50 text-green-700 border-2 border-green-200 cursor-default'}`}
+                      className={`min-h-[44px] p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] transition-all flex flex-col items-center justify-center group shadow-xl hover:-translate-y-1 ${paymentProgress < 100 ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-green-50 text-green-700 border-2 border-green-200 cursor-default'}`}
                     >
-                      <span className="block text-3xl sm:text-4xl mb-2 group-hover:scale-110 transition-transform">
+                      <span className="block text-2xl sm:text-3xl mb-1.5 group-hover:scale-110 transition-transform">
                         {paymentProgress < 100 ? '₦' : '✅'}
                       </span>
-                      <span className="font-black uppercase text-[11px] tracking-wider">
+                      <span className="font-black uppercase text-[11px] tracking-wider break-words whitespace-normal">
                         {paymentProgress < 100 ? 'Pay Fees' : 'Fees Settled'}
                       </span>
                     </button>
@@ -2131,27 +2136,34 @@ const App: React.FC = () => {
                   const activeQrValue = termInfo.qrCodeValue || `GHS-ATT|${currentStudentObj.id}|${selectedTermForQR}|default`;
 
                   return (
-                  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-blue-900/80 backdrop-blur-sm">
-                    <div className="bg-white rounded-[3rem] p-8 max-w-md w-full text-center relative shadow-2xl animate-in zoom-in duration-300">
-                      <button 
-                        onClick={() => setShowQRModal(false)}
-                        className="absolute top-6 right-6 text-slate-400 hover:text-red-500 font-black text-xl"
-                      >
-                        ✕
-                      </button>
-                      <h3 className="text-2xl font-black text-blue-900 mb-1 font-serif">Term QR Code Pass</h3>
-                      <p className="text-xs font-bold text-slate-400 mb-6 uppercase tracking-wider">Generate & Scan for Daily Attendance</p>
+                  <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-blue-900/80 backdrop-blur-sm">
+                    <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 max-w-md w-full max-h-[90vh] overflow-y-auto text-center shadow-2xl animate-in zoom-in duration-300 space-y-4">
+                      <div className="flex items-start justify-between gap-3 text-left">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-xl sm:text-2xl font-black text-blue-900 font-serif break-words">Term QR Code Pass</h3>
+                          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider break-words">Generate & Scan for Daily Attendance</p>
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => setShowQRModal(false)}
+                          className="min-h-[44px] min-w-[44px] rounded-full bg-slate-100 hover:bg-red-50 text-slate-500 hover:text-red-600 font-black text-lg flex items-center justify-center shrink-0"
+                          aria-label="Close QR Modal"
+                        >
+                          ✕
+                        </button>
+                      </div>
 
                       {(paymentProgress === 100 || currentStudentObj.entryAllowed) ? (
                         <>
-                          <div className="mb-6 bg-slate-50 p-3 rounded-2xl border border-slate-100 flex items-center justify-between">
-                            <span className="text-xs font-black text-blue-900 uppercase tracking-widest pl-2">Select Term:</span>
-                            <div className="flex gap-1">
+                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <span className="text-xs font-black text-blue-900 uppercase tracking-widest pl-1 text-left">Select Term:</span>
+                            <div className="flex flex-wrap gap-1.5">
                               {['First Term', 'Second Term', 'Third Term'].map(t => (
                                 <button
                                   key={t}
+                                  type="button"
                                   onClick={() => setSelectedTermForQR(t)}
-                                  className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${selectedTermForQR === t ? 'bg-blue-900 text-yellow-400 shadow-md' : 'bg-white text-slate-500 hover:bg-slate-200'}`}
+                                  className={`min-h-[44px] px-3 py-2 rounded-xl text-[11px] font-black uppercase transition-all ${selectedTermForQR === t ? 'bg-blue-900 text-yellow-400 shadow-md' : 'bg-white text-slate-500 hover:bg-slate-200 border border-slate-200'}`}
                                 >
                                   {t.replace(' Term', '')}
                                 </button>
@@ -2159,22 +2171,23 @@ const App: React.FC = () => {
                             </div>
                           </div>
 
-                          <div className="mb-4 bg-blue-50 p-4 rounded-2xl border border-blue-100 flex items-center justify-between">
-                            <div className="text-left">
+                          <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex flex-wrap items-center justify-between gap-3">
+                            <div className="text-left min-w-0">
                               <p className="text-[10px] font-black text-blue-900 uppercase">Term Allowance</p>
-                              <p className="text-xs font-bold text-slate-600">{termInfo.count}/2 Generations Used</p>
+                              <p className="text-xs font-bold text-slate-600 break-words">{termInfo.count}/2 Generations Used</p>
                             </div>
                             <button
+                              type="button"
                               onClick={() => generateTermQrCode(currentStudentObj.id, selectedTermForQR)}
                               disabled={termInfo.count >= 2}
-                              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-md ${termInfo.count >= 2 ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-yellow-400 text-blue-900 hover:bg-yellow-500'}`}
+                              className={`min-h-[44px] px-4 py-2 rounded-xl text-[11px] font-black uppercase transition-all shadow-md ${termInfo.count >= 2 ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-yellow-400 text-blue-900 hover:bg-yellow-500'}`}
                             >
                               {termInfo.count === 0 ? 'Generate QR Code' : termInfo.count === 1 ? 'Generate 2nd QR Code' : 'Max Limit (2/2)'}
                             </button>
                           </div>
 
                           {termInfo.count === 0 && !termInfo.qrCodeValue ? (
-                            <div className="bg-amber-50 border-2 border-dashed border-amber-200 p-8 rounded-3xl my-6 text-amber-800">
+                            <div className="bg-amber-50 border-2 border-dashed border-amber-200 p-6 sm:p-8 rounded-3xl text-amber-800">
                               <span className="text-4xl block mb-2">⚡</span>
                               <p className="font-black text-xs uppercase mb-1">No QR Code Generated Yet</p>
                               <p className="text-[11px] font-medium text-amber-700">Click the "Generate QR Code" button above to create your attendance pass for {selectedTermForQR}. (Max 2 times per term)</p>
@@ -2216,7 +2229,7 @@ const App: React.FC = () => {
                                   <span>Download For Printing / Storage:</span>
                                   <span className="text-emerald-700 font-bold">✓ Ready</span>
                                 </div>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                   <button
                                     type="button"
                                     onClick={() => {
@@ -2232,7 +2245,7 @@ const App: React.FC = () => {
                                         }
                                       );
                                     }}
-                                    className="py-3 px-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5"
+                                    className="min-h-[44px] py-3 px-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5"
                                     title="Download your active QR code pass as a high-resolution PNG image file"
                                   >
                                     <span>📥</span>
@@ -2254,7 +2267,7 @@ const App: React.FC = () => {
                                         }
                                       );
                                     }}
-                                    className="py-3 px-3 bg-slate-800 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5"
+                                    className="min-h-[44px] py-3 px-3 bg-slate-800 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5"
                                     title="Download your active QR code pass as a JPEG image file"
                                   >
                                     <span>🖼️</span>
@@ -2265,7 +2278,7 @@ const App: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => window.print()}
-                                  className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-[11px] uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5"
+                                  className="min-h-[44px] w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5"
                                   title="Print attendance gate pass card"
                                 >
                                   <span>🖨️</span>
@@ -2283,8 +2296,9 @@ const App: React.FC = () => {
                             Your QR code is locked. Please settle your school fees or contact the administrator for entry clearance.
                           </p>
                           <button 
+                            type="button"
                             onClick={() => { setShowQRModal(false); setView('apply'); }}
-                            className="mt-8 w-full py-4 bg-blue-900 text-yellow-400 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg"
+                            className="min-h-[44px] mt-8 w-full py-4 bg-blue-900 text-yellow-400 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg"
                           >
                             Pay Fees Now
                           </button>
@@ -2318,16 +2332,16 @@ const App: React.FC = () => {
                   </div>
                 )}
 
-                <div className="mt-16 grid md:grid-cols-2 gap-10 text-left">
+                <div className="mt-12 sm:mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-10 text-left">
                    <div>
-                    <div className="flex justify-between items-center mb-6 border-b-2 border-slate-50 pb-2">
+                    <div className="flex flex-wrap justify-between items-center gap-2 mb-6 border-b-2 border-slate-50 pb-2">
                       <h3 className="text-xl font-black text-blue-900 font-serif">Academic Record</h3>
                       <button
                         onClick={() => {
                           setView('resultChecker');
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
-                        className="px-3 py-1 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all shadow-xs"
+                        className="min-h-[44px] px-3.5 py-2 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all shadow-xs"
                       >
                         📄 Download Result PDF →
                       </button>
@@ -2345,12 +2359,12 @@ const App: React.FC = () => {
 
                       if (!hasTermPaid) {
                         return (
-                          <div className="p-6 bg-amber-50 rounded-2xl border-2 border-amber-200 text-center space-y-3">
+                          <div className="p-5 sm:p-6 bg-amber-50 rounded-2xl border-2 border-amber-200 text-center space-y-3">
                             <div className="text-3xl">🔒</div>
-                            <h4 className="font-serif font-black text-blue-900 text-sm">
+                            <h4 className="font-serif font-black text-blue-900 text-sm break-words">
                               {activeTermForStudent} Report Card Locked
                             </h4>
-                            <p className="text-xs text-amber-900 leading-relaxed font-medium">
+                            <p className="text-xs text-amber-900 leading-relaxed font-medium break-words">
                               {pendingResultPayment 
                                 ? "Your proof of payment (₦1,000) has been uploaded and is currently awaiting confirmation from the administrator."
                                 : "To view your official report card dossier, pay the one-time result fee of ₦1,000 via Paystack for instant automated unlock."
@@ -2361,7 +2375,7 @@ const App: React.FC = () => {
                                 setView('resultChecker');
                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                               }}
-                              className="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md inline-block cursor-pointer"
+                              className="min-h-[44px] px-4 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md inline-flex items-center justify-center cursor-pointer"
                             >
                               {pendingResultPayment ? "Check Payment Status" : "Pay ₦1,000 with Paystack →"}
                             </button>
@@ -2376,25 +2390,25 @@ const App: React.FC = () => {
                               setView('resultChecker');
                               window.scrollTo({ top: 0, behavior: 'smooth' });
                             }}
-                            className="w-full py-2.5 px-4 bg-blue-900 hover:bg-blue-800 text-yellow-300 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-between shadow-sm"
+                            className="min-h-[44px] w-full py-2.5 px-4 bg-blue-900 hover:bg-blue-800 text-yellow-300 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex flex-wrap items-center justify-between gap-2 shadow-sm"
                           >
-                            <span className="flex items-center gap-2">
+                            <span className="flex items-center gap-2 text-left break-words whitespace-normal">
                               <span>📥</span>
                               <span>Download Standard Result Sheet (PDF)</span>
                             </span>
-                            <span className="text-[10px] bg-yellow-400 text-blue-950 px-2 py-0.5 rounded font-black">Official Crest</span>
+                            <span className="text-[10px] bg-yellow-400 text-blue-950 px-2 py-0.5 rounded font-black shrink-0">Official Crest</span>
                           </button>
 
                           {state.results.filter(r => r.studentName === currentUser).length === 0 ? (
                             <p className="p-8 text-center text-slate-300 font-black uppercase text-[10px] bg-slate-50 rounded-2xl border-2 border-dashed">No scores uploaded yet</p>
                           ) : (
                             state.results.filter(r => r.studentName === currentUser).map(result => (
-                              <div key={result.id} className="p-5 border border-slate-100 rounded-2xl flex justify-between items-center bg-slate-50 hover:bg-white hover:shadow-md transition-all">
-                                <div>
-                                  <p className="font-black text-blue-900">{result.subject}</p>
-                                  <p className="text-[10px] text-slate-400 font-black uppercase">{result.term}</p>
+                              <div key={result.id} className="p-4 sm:p-5 border border-slate-100 rounded-2xl flex flex-wrap justify-between items-center gap-2 bg-slate-50 hover:bg-white hover:shadow-md transition-all">
+                                <div className="min-w-0">
+                                  <p className="font-black text-blue-900 break-words whitespace-normal">{result.subject}</p>
+                                  <p className="text-[10px] text-slate-400 font-black uppercase break-words">{result.term}</p>
                                 </div>
-                                <div className={`text-xl font-black ${result.score >= 50 ? 'text-green-600' : 'text-red-500'}`}>
+                                <div className={`text-xl font-black shrink-0 ${result.score >= 50 ? 'text-green-600' : 'text-red-500'}`}>
                                   {result.score}%
                                 </div>
                               </div>
@@ -2411,12 +2425,12 @@ const App: React.FC = () => {
                         <p className="p-8 text-center text-slate-300 font-black uppercase text-[10px] bg-slate-50 rounded-2xl border-2 border-dashed">No attendance records yet</p>
                       ) : (
                         state.attendance.filter(a => a.studentId === currentStudentObj?.id).map((record, i) => (
-                          <div key={i} className="p-5 border border-slate-100 rounded-2xl flex justify-between items-center bg-green-50 border-green-100">
-                             <div>
+                          <div key={i} className="p-4 sm:p-5 border border-slate-100 rounded-2xl flex flex-wrap justify-between items-center gap-2 bg-green-50 border-green-100">
+                             <div className="min-w-0">
                                <p className="font-black text-green-700">Present</p>
-                               <p className="text-[10px] text-green-600/60 font-black uppercase">Verified by {record.markedBy}</p>
+                               <p className="text-[10px] text-green-600/80 font-black uppercase break-words">Verified by {record.markedBy}</p>
                              </div>
-                             <p className="text-xs font-bold text-green-700">{record.date}</p>
+                             <p className="text-xs font-bold text-green-700 shrink-0">{record.date}</p>
                           </div>
                         ))
                       )}
@@ -2425,19 +2439,19 @@ const App: React.FC = () => {
                 </div>
 
                 {/* Live Academic Calendar & Bulletins in Student Portal */}
-                <div className="mt-12 pt-8 border-t border-slate-100 grid md:grid-cols-2 gap-8 text-left">
-                  <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
-                    <div className="flex items-center justify-between">
+                <div className="mt-12 pt-8 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 text-left">
+                  <div className="p-4 sm:p-6 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <span className="text-xl">📅</span>
                         <h4 className="font-serif font-black text-blue-900 text-base">Academic Calendar</h4>
                       </div>
-                      <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-black uppercase">
+                      <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-black uppercase shrink-0">
                         ● Live Sync
                       </span>
                     </div>
                     {state.academicCalendar ? (
-                      <div className="p-4 bg-white rounded-xl font-mono text-xs text-slate-700 whitespace-pre-wrap leading-relaxed border border-slate-200">
+                      <div className="p-4 bg-white rounded-xl font-mono text-xs text-slate-700 whitespace-pre-wrap break-words leading-relaxed border border-slate-200">
                         {state.academicCalendar}
                       </div>
                     ) : (
@@ -2445,13 +2459,13 @@ const App: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
-                    <div className="flex items-center justify-between">
+                  <div className="p-4 sm:p-6 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <span className="text-xl">📢</span>
                         <h4 className="font-serif font-black text-blue-900 text-base">School Bulletins</h4>
                       </div>
-                      <span className="text-[10px] font-black uppercase text-blue-900 bg-blue-100 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-black uppercase text-blue-900 bg-blue-100 px-2 py-0.5 rounded-full shrink-0">
                         {state.announcements.length} Live
                       </span>
                     </div>
@@ -2461,11 +2475,11 @@ const App: React.FC = () => {
                       <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1">
                         {state.announcements.map(ann => (
                           <div key={ann.id} className="p-3.5 bg-white rounded-xl border border-slate-200 space-y-1">
-                            <div className="flex justify-between items-start">
-                              <h5 className="font-serif font-black text-blue-950 text-xs">{ann.title}</h5>
-                              <span className="text-[10px] text-slate-400 font-bold uppercase">{ann.date}</span>
+                            <div className="flex flex-wrap justify-between items-start gap-2">
+                              <h5 className="font-serif font-black text-blue-950 text-xs break-words">{ann.title}</h5>
+                              <span className="text-[10px] text-slate-400 font-bold uppercase shrink-0">{ann.date}</span>
                             </div>
-                            <p className="text-xs text-slate-600 whitespace-pre-wrap leading-relaxed">{ann.content}</p>
+                            <p className="text-xs text-slate-600 whitespace-pre-wrap break-words leading-relaxed">{ann.content}</p>
                           </div>
                         ))}
                       </div>
@@ -2482,6 +2496,7 @@ const App: React.FC = () => {
                     onUpdateStudent={handleUpdateStudent}
                   />
                 )}
+              </div>
               </div>
             </div>
           ) : (
@@ -2507,22 +2522,24 @@ const App: React.FC = () => {
               onResetPassword={handleResetTeacherPassword}
             />
           ) : (
-            <div className="max-w-md mx-auto py-20 px-4 text-center">
-              <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-200">
-                <span className="text-4xl block mb-3">🔒</span>
-                <h3 className="text-xl font-black text-blue-900 mb-2 font-serif">Staff Portal Restricted</h3>
-                <p className="text-xs text-slate-500 mb-6 font-medium leading-relaxed">
-                  The staff and faculty portal gateway is strictly restricted to authorized school teachers.
-                </p>
-                <button
-                  onClick={() => {
-                    setView('home');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black rounded-xl text-xs uppercase tracking-wider shadow-md cursor-pointer"
-                >
-                  Return to School Home
-                </button>
+            <div className="w-full max-w-full overflow-x-hidden px-4 sm:px-6 py-16 sm:py-20 text-center">
+              <div className="max-w-md mx-auto">
+                <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-200">
+                  <span className="text-4xl block mb-3">🔒</span>
+                  <h3 className="text-xl font-black text-blue-900 mb-2 font-serif">Staff Portal Restricted</h3>
+                  <p className="text-xs text-slate-500 mb-6 font-medium leading-relaxed">
+                    The staff and faculty portal gateway is strictly restricted to authorized school teachers.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setView('home');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="min-h-[44px] px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black rounded-xl text-xs uppercase tracking-wider shadow-md cursor-pointer"
+                  >
+                    Return to School Home
+                  </button>
+                </div>
               </div>
             </div>
           )
@@ -2530,7 +2547,8 @@ const App: React.FC = () => {
 
         {view === 'teacher' && (
           role === UserRole.TEACHER ? (
-            <div className="max-w-6xl mx-auto py-12 px-4">
+            <div className="w-full max-w-full overflow-x-hidden px-4 sm:px-6 py-8 sm:py-12">
+              <div className="max-w-6xl mx-auto">
               <TeacherDashboard 
                 username={currentUser || 'Staff'} 
                 assignedGrades={currentTeacherObj?.assignedGrades || []}
@@ -2572,7 +2590,10 @@ const App: React.FC = () => {
                 onAddStudent={handleAddStudentAccount}
                 onAddParentAccount={handleAddParentAccount}
                 onUpdateStudent={handleUpdateStudent}
+                gradingCriteria={state.gradingCriteria}
+                currentTerm={state.activeTerm || 'First Term'}
               />
+              </div>
             </div>
           ) : (
             <TeacherLoginGateway 
@@ -2588,84 +2609,91 @@ const App: React.FC = () => {
         )}
 
         {view === 'feeChecker' && (
-          <div className="max-w-5xl mx-auto py-12 px-4">
-            <StudentFeeChecker 
-              fees={state.fees}
-              students={state.studentAccounts}
-              payments={state.payments}
-              currentStudent={currentStudentObj || null}
-              isLoggedIn={role === UserRole.STUDENT && !!currentStudentObj}
-              onLogin={(emailOrId, pass) => {
-                return handleStudentLogin(emailOrId, pass);
-              }}
-              onPayFees={() => {
-                setView('apply');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              onBack={() => {
-                setView(role === UserRole.STUDENT ? 'portal' : 'home');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              onGoToRegister={() => {
-                setView('studentAuth');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              bankAccountConfig={state.bankAccountConfig}
-            />
+          <div className="w-full max-w-full overflow-x-hidden px-4 sm:px-6 py-8 sm:py-12">
+            <div className="max-w-5xl mx-auto">
+              <StudentFeeChecker 
+                fees={state.fees}
+                students={state.studentAccounts}
+                payments={state.payments}
+                currentStudent={currentStudentObj || null}
+                isLoggedIn={role === UserRole.STUDENT && !!currentStudentObj}
+                onLogin={(emailOrId, pass) => {
+                  return handleStudentLogin(emailOrId, pass);
+                }}
+                onPayFees={() => {
+                  setView('apply');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onBack={() => {
+                  setView(role === UserRole.STUDENT ? 'portal' : 'home');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onGoToRegister={() => {
+                  setView('studentAuth');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                bankAccountConfig={state.bankAccountConfig}
+              />
+            </div>
           </div>
         )}
 
         {view === 'resultChecker' && (
-          <div className="max-w-5xl mx-auto py-12 px-4">
-            <StudentResultChecker 
-              students={state.studentAccounts}
-              results={state.results}
-              payments={state.payments}
-              currentStudent={currentStudentObj || null}
-              isLoggedIn={role === UserRole.STUDENT && !!currentStudentObj}
-              onLogin={(emailOrId, pass) => {
-                return handleStudentLogin(emailOrId, pass);
-              }}
-              onSubmitResultPayment={(paymentData) => {
-                return handleSubmitParentPayment(paymentData);
-              }}
-              onBack={() => {
-                setView(role === UserRole.STUDENT ? 'portal' : 'home');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              onGoToStudentAuth={() => {
-                setView('studentAuth');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              bankAccountConfig={state.bankAccountConfig}
-              resultCheckerFees={state.resultCheckerFees}
-            />
+          <div className="w-full max-w-full overflow-x-hidden px-4 sm:px-6 py-8 sm:py-12">
+            <div className="max-w-5xl mx-auto">
+              <StudentResultChecker 
+                students={state.studentAccounts}
+                results={state.results}
+                payments={state.payments}
+                currentStudent={currentStudentObj || null}
+                isLoggedIn={role === UserRole.STUDENT && !!currentStudentObj}
+                onLogin={(emailOrId, pass) => {
+                  return handleStudentLogin(emailOrId, pass);
+                }}
+                onSubmitResultPayment={(paymentData) => {
+                  return handleSubmitParentPayment(paymentData);
+                }}
+                onBack={() => {
+                  setView(role === UserRole.STUDENT ? 'portal' : 'home');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onGoToStudentAuth={() => {
+                  setView('studentAuth');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                bankAccountConfig={state.bankAccountConfig}
+                resultCheckerFees={state.resultCheckerFees}
+              />
+            </div>
           </div>
         )}
 
         {view === 'studentReceipts' && (
-          <div className="max-w-6xl mx-auto py-12 px-4">
-            <StudentReceiptsDownload 
-              payments={state.payments}
-              students={state.studentAccounts}
-              currentStudent={currentStudentObj || null}
-              isLoggedIn={role === UserRole.STUDENT && !!currentStudentObj}
-              onLogin={(emailOrId, pass) => handleStudentLogin(emailOrId, pass)}
-              onBack={() => {
-                setView(role === UserRole.STUDENT ? 'portal' : role === UserRole.PARENT ? 'parentPortal' : 'home');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              onPayFees={() => {
-                setView('apply');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            />
+          <div className="w-full max-w-full overflow-x-hidden px-4 sm:px-6 py-8 sm:py-12">
+            <div className="max-w-6xl mx-auto">
+              <StudentReceiptsDownload 
+                payments={state.payments}
+                students={state.studentAccounts}
+                currentStudent={currentStudentObj || null}
+                isLoggedIn={role === UserRole.STUDENT && !!currentStudentObj}
+                onLogin={(emailOrId, pass) => handleStudentLogin(emailOrId, pass)}
+                onBack={() => {
+                  setView(role === UserRole.STUDENT ? 'portal' : role === UserRole.PARENT ? 'parentPortal' : 'home');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onPayFees={() => {
+                  setView('apply');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              />
+            </div>
           </div>
         )}
 
         {view === 'admin' && (
           role === UserRole.ADMIN ? (
-            <div className="max-w-6xl mx-auto py-12 px-4">
+            <div className="w-full max-w-full overflow-x-hidden px-4 sm:px-6 py-8 sm:py-12">
+              <div className="max-w-6xl mx-auto">
               <AdminPanel 
                 fees={state.fees} 
                 applications={state.applications}
@@ -2726,9 +2754,11 @@ const App: React.FC = () => {
                 onDeleteResult={handleDeleteResult}
                 onBatchSaveResults={handleBatchSaveResults}
               />
+              </div>
             </div>
           ) : (role === UserRole.TEACHER && activeTeacherDelegation) ? (
-            <div className="max-w-6xl mx-auto py-12 px-4">
+            <div className="w-full max-w-full overflow-x-hidden px-4 sm:px-6 py-8 sm:py-12">
+              <div className="max-w-6xl mx-auto">
               <AdminPanel 
                 fees={state.fees} 
                 applications={state.applications}
@@ -2792,6 +2822,7 @@ const App: React.FC = () => {
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
               />
+              </div>
             </div>
           ) : (isSecretAdminUnlocked || activeTeacherDelegation || getDedicatedAppMode() === 'admin') ? (
             <AdminLoginGateway 
@@ -2804,22 +2835,24 @@ const App: React.FC = () => {
               onResetKey={handleResetAdminKey}
             />
           ) : (
-            <div className="max-w-md mx-auto py-20 px-4 text-center">
-              <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-200">
-                <span className="text-4xl block mb-3">🔒</span>
-                <h3 className="text-xl font-black text-blue-900 mb-2 font-serif">Proprietor Access Restricted</h3>
-                <p className="text-xs text-slate-500 mb-6 font-medium leading-relaxed">
-                  The proprietor portal gateway is restricted and can only be accessed through designated administrative authorization.
-                </p>
-                <button
-                  onClick={() => {
-                    setView('home');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black rounded-xl text-xs uppercase tracking-wider shadow-md cursor-pointer"
-                >
-                  Return to School Home
-                </button>
+            <div className="w-full max-w-full overflow-x-hidden px-4 sm:px-6 py-16 sm:py-20 text-center">
+              <div className="max-w-md mx-auto">
+                <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-200">
+                  <span className="text-4xl block mb-3">🔒</span>
+                  <h3 className="text-xl font-black text-blue-900 mb-2 font-serif">Proprietor Access Restricted</h3>
+                  <p className="text-xs text-slate-500 mb-6 font-medium leading-relaxed">
+                    The proprietor portal gateway is restricted and can only be accessed through designated administrative authorization.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setView('home');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="min-h-[44px] px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black rounded-xl text-xs uppercase tracking-wider shadow-md cursor-pointer"
+                  >
+                    Return to School Home
+                  </button>
+                </div>
               </div>
             </div>
           )
@@ -2828,7 +2861,8 @@ const App: React.FC = () => {
         {/* ATTENDANCE CAMERA SCANNING: STRICTLY FOR ADMIN & STAFF ONLY */}
         {view === 'attendanceScanning' && (
           (role === UserRole.ADMIN || (role === UserRole.TEACHER && activeTeacherDelegation)) ? (
-            <div className="max-w-6xl mx-auto py-12 px-4">
+            <div className="w-full max-w-full overflow-x-hidden px-4 sm:px-6 py-8 sm:py-12">
+              <div className="max-w-6xl mx-auto">
               <AdminPanel 
                 fees={state.fees} 
                 applications={state.applications}
@@ -2882,12 +2916,16 @@ const App: React.FC = () => {
                 onDeleteAssignment={handleDeleteAssignment}
                 initialTab="attendanceScanning"
               />
+              </div>
             </div>
           ) : role === UserRole.TEACHER ? (
-            <div className="max-w-6xl mx-auto py-12 px-4">
+            <div className="w-full max-w-full overflow-x-hidden px-4 sm:px-6 py-8 sm:py-12">
+              <div className="max-w-6xl mx-auto">
               <TeacherDashboard 
                 username={currentUser || 'Staff'} 
                 assignedGrades={currentTeacherObj?.assignedGrades || []}
+                assignmentRole={currentTeacherObj?.assignmentRole || 'class_teacher'}
+                assignedSubjects={currentTeacherObj?.assignedSubjects || []}
                 allStudents={state.studentAccounts}
                 courses={state.courses}
                 results={state.results}
@@ -2923,12 +2961,17 @@ const App: React.FC = () => {
                 canCreateStudents={currentTeacherObj?.canCreateStudents}
                 onAddStudent={handleAddStudentAccount}
                 onAddParentAccount={handleAddParentAccount}
+                onUpdateStudent={handleUpdateStudent}
+                gradingCriteria={state.gradingCriteria}
+                currentTerm={state.activeTerm || 'First Term'}
                 initialTab="attendanceScanning"
               />
+              </div>
             </div>
           ) : (
             /* ACCESS RESTRICTED FOR STUDENTS, PARENTS, AND PUBLIC */
-            <div className="max-w-2xl mx-auto py-20 px-4 text-center">
+            <div className="w-full max-w-full overflow-x-hidden px-4 sm:px-6 py-16 sm:py-20 text-center">
+              <div className="max-w-2xl mx-auto">
               <div className="bg-white rounded-3xl p-10 border-4 border-rose-200 shadow-2xl space-y-4">
                 <div className="w-20 h-20 mx-auto rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-4xl font-black">
                   🔒
@@ -2972,13 +3015,15 @@ const App: React.FC = () => {
                   </button>
                 </div>
               </div>
+              </div>
             </div>
           )
         )}
 
         {view === 'parentStaffChat' && (
           (role === UserRole.PARENT || role === UserRole.TEACHER || role === UserRole.ADMIN) ? (
-            <div className="max-w-6xl mx-auto py-8 sm:py-12 px-3 sm:px-6">
+            <div className="w-full max-w-full overflow-x-hidden px-4 sm:px-6 py-8 sm:py-12">
+              <div className="max-w-6xl mx-auto">
               <ParentStaffMessaging
                 currentUserRole={role}
                 currentUserName={currentUser || (role === UserRole.PARENT ? (currentParentObj?.fullName || 'Parent') : 'User')}
@@ -3004,29 +3049,33 @@ const App: React.FC = () => {
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
               />
+              </div>
             </div>
           ) : (
-            <div className="max-w-xl mx-auto py-16 px-4 text-center">
-              <div className="bg-white p-8 rounded-3xl border-2 border-slate-200 shadow-xl space-y-4">
-                <span className="text-5xl block">🔒</span>
-                <h3 className="font-serif font-black text-2xl text-blue-950">Direct Calls & Messaging Restricted</h3>
-                <p className="text-xs text-slate-500 font-medium">
-                  Direct voice/video calls and parent-staff communications are reserved strictly for registered parents, faculty teachers, and school administrators.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setView(role === UserRole.STUDENT ? 'portal' : 'home')}
-                  className="px-6 py-3 bg-blue-900 text-yellow-400 rounded-xl font-black text-xs uppercase shadow-md"
-                >
-                  Return to Dashboard
-                </button>
+            <div className="w-full max-w-full overflow-x-hidden px-4 sm:px-6 py-16 text-center">
+              <div className="max-w-xl mx-auto">
+                <div className="bg-white p-8 rounded-3xl border-2 border-slate-200 shadow-xl space-y-4">
+                  <span className="text-5xl block">🔒</span>
+                  <h3 className="font-serif font-black text-2xl text-blue-950">Direct Calls & Messaging Restricted</h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Direct voice/video calls and parent-staff communications are reserved strictly for registered parents, faculty teachers, and school administrators.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setView(role === UserRole.STUDENT ? 'portal' : 'home')}
+                    className="min-h-[44px] px-6 py-3 bg-blue-900 text-yellow-400 rounded-xl font-black text-xs uppercase shadow-md"
+                  >
+                    Return to Dashboard
+                  </button>
+                </div>
               </div>
             </div>
           )
         )}
 
         {view === 'communityHub' && (
-          <div className="max-w-7xl mx-auto py-6 sm:py-10 px-2.5 sm:px-6">
+          <div className="w-full max-w-full overflow-x-hidden px-4 sm:px-6 py-6 sm:py-10">
+            <div className="max-w-7xl mx-auto">
             <SchoolCommunityHub
               currentUserRole={role}
               currentUserId={currentUser || (currentParentObj?.id) || 'usr-' + Date.now()}
@@ -3068,6 +3117,7 @@ const App: React.FC = () => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
             />
+            </div>
           </div>
         )}
           </>

@@ -150,14 +150,12 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
+    <div className="min-h-[80vh] w-full max-w-full overflow-x-hidden flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
       <div className="max-w-md w-full">
-        <div className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-4 border-blue-900 relative">
-          <div className="absolute top-0 left-0 w-full h-2 bg-yellow-400"></div>
-          
-          <div className="px-6 sm:px-10 py-10 sm:py-12">
-            <div className="flex justify-center mb-8">
-              <div className="w-28 h-28 sm:w-32 sm:h-32 bg-white rounded-3xl border-4 border-yellow-400 shadow-2xl ring-4 ring-blue-900/20 flex items-center justify-center overflow-hidden">
+        <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl border-4 border-blue-900 border-t-8 border-t-yellow-400">
+          <div className="px-4 sm:px-10 py-8 sm:py-12">
+            <div className="flex justify-center mb-6 sm:mb-8">
+              <div className="w-24 h-24 sm:w-32 sm:h-32 bg-white rounded-3xl border-4 border-yellow-400 shadow-2xl ring-4 ring-blue-900/20 flex items-center justify-center overflow-hidden">
                 <img 
                   src="/logo.png" 
                   alt="God's Hand International Model School Logo" 
@@ -176,17 +174,17 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
               </div>
             </div>
 
-            <div className="text-center mb-8">
-              <h2 className="text-2xl sm:text-3xl font-black text-blue-900 uppercase tracking-tighter font-serif">Proprietor Gateway</h2>
+            <div className="text-center mb-6 sm:mb-8">
+              <h2 className="text-2xl sm:text-3xl font-black text-blue-900 uppercase tracking-tighter font-serif break-words">Proprietor Gateway</h2>
               <div className="h-1.5 w-16 bg-yellow-400 rounded-full mx-auto mt-2 mb-2"></div>
-              <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Authorized School Management Only</p>
+              <p className="text-slate-500 font-bold text-xs uppercase tracking-widest break-words">Authorized School Management Only</p>
             </div>
 
             {/* Security Guard Active Banner */}
             {securityAlert && (
               <div className="p-3.5 mb-6 bg-red-50 border-2 border-red-200 rounded-2xl text-red-700 text-xs font-bold flex items-start gap-2 animate-shake">
-                <span className="text-base leading-none">🛡️</span>
-                <span className="leading-snug">{securityAlert}</span>
+                <span className="text-base leading-none shrink-0">🛡️</span>
+                <span className="leading-snug break-words">{securityAlert}</span>
               </div>
             )}
 
@@ -207,11 +205,11 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
               autoComplete="off"
             >
               <div className="space-y-1.5">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] px-1">
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-[0.15em] px-1 break-words">
                   Admin Identity (Email or Unique ID: pro01)
                 </label>
-                <div className="relative group">
-                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-900 opacity-50">
+                <div className="flex items-center gap-3 px-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus-within:ring-4 focus-within:ring-blue-900/10 focus-within:bg-white focus-within:border-blue-900 transition-all shadow-inner">
+                  <span className="text-blue-900 opacity-50 shrink-0" aria-hidden="true">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                       <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
@@ -226,24 +224,24 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
                     onChange={(e) => handleEmailChange(e.target.value)}
                     placeholder="e.g. pro01 or Godshandschool70@gmail.com"
                     autoComplete="username"
-                    className="w-full pl-14 pr-6 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold text-sm text-blue-900 focus:ring-4 focus:ring-blue-900/10 focus:bg-white outline-none transition-all shadow-inner disabled:opacity-50"
+                    className="w-full min-w-0 min-h-[44px] py-3 bg-transparent font-bold text-sm text-blue-900 outline-none disabled:opacity-50"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between px-1">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Security Key</label>
+                <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-[0.15em]">Security Key</label>
                   <button 
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="text-[10px] font-black uppercase tracking-wider text-blue-900 hover:text-yellow-600 transition-colors"
+                    className="min-h-[44px] px-2 text-xs font-black uppercase tracking-wider text-blue-900 hover:text-yellow-600 transition-colors"
                   >
                     {showPassword ? 'Hide Key' : 'Show Key'}
                   </button>
                 </div>
-                <div className="relative group">
-                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-900 opacity-50">
+                <div className={`flex items-center gap-3 px-4 bg-slate-50 border-2 rounded-2xl focus-within:ring-4 focus-within:ring-blue-900/10 focus-within:bg-white transition-all shadow-inner ${error ? 'border-red-300' : 'border-slate-100 focus-within:border-blue-900'}`}>
+                  <span className="text-blue-900 opacity-50 shrink-0" aria-hidden="true">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                     </svg>
@@ -260,29 +258,29 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
                     spellCheck="false"
                     autoCorrect="off"
                     autoCapitalize="off"
-                    className={`w-full pl-14 pr-12 py-3.5 bg-slate-50 border-2 rounded-2xl font-black text-lg tracking-widest text-center text-blue-900 focus:ring-4 focus:ring-blue-900/10 focus:bg-white outline-none transition-all shadow-inner disabled:opacity-50 ${error ? 'border-red-300' : 'border-slate-100 focus:border-blue-900'}`}
+                    className="w-full min-w-0 min-h-[44px] py-3 bg-transparent font-black text-base sm:text-lg tracking-widest text-blue-900 outline-none disabled:opacity-50"
                   />
                 </div>
 
                 {/* Forgotten Password / Key Action Button */}
-                <div className="flex items-center justify-between pt-1 px-1">
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1 px-1">
                   <button
                     type="button"
                     onClick={() => setIsForgotModalOpen(true)}
-                    className="text-[11px] font-black uppercase tracking-wider text-blue-900 hover:text-yellow-600 transition-colors inline-flex items-center gap-1"
+                    className="min-h-[44px] text-xs font-black uppercase tracking-wider text-blue-900 hover:text-yellow-600 transition-colors inline-flex items-center gap-1"
                   >
                     <span>🔑</span>
                     <span className="underline decoration-yellow-400 underline-offset-2">Forgot Security Key?</span>
                   </button>
 
-                  <span className="text-[10px] text-slate-400 font-bold">
+                  <span className="text-[11px] text-slate-400 font-bold">
                     Apata, Ibadan
                   </span>
                 </div>
 
                 {error && (
-                  <div className="flex items-center justify-center text-red-600 font-black text-[11px] uppercase tracking-wider mt-3 p-2 bg-red-50 rounded-xl border border-red-100 animate-bounce">
-                    <span className="mr-1.5">⚠️</span> {error}
+                  <div className="flex items-center justify-center text-red-600 font-black text-xs uppercase tracking-wider mt-3 p-2.5 bg-red-50 rounded-xl border border-red-100 break-words">
+                    <span className="mr-1.5 shrink-0">⚠️</span> <span>{error}</span>
                   </div>
                 )}
               </div>
@@ -290,10 +288,10 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
               <button 
                 type="submit"
                 disabled={lockoutRemaining > 0}
-                className="w-full py-4.5 bg-blue-900 text-yellow-400 font-black text-lg rounded-2xl shadow-xl hover:bg-blue-800 transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-center group disabled:opacity-50 disabled:pointer-events-none"
+                className="w-full min-h-[44px] py-4 px-4 bg-blue-900 text-yellow-400 font-black text-base sm:text-lg rounded-2xl shadow-xl hover:bg-blue-800 transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-center group disabled:opacity-50 disabled:pointer-events-none"
               >
                 <span>Proprietor Access</span>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                 </svg>
               </button>
@@ -301,7 +299,7 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
               <button
                 type="button"
                 onClick={() => setShowAdminAppModal(true)}
-                className="w-full py-3 bg-yellow-50 hover:bg-yellow-100 text-blue-950 font-black text-xs uppercase tracking-wider rounded-2xl border-2 border-yellow-400 transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 cursor-pointer"
+                className="w-full min-h-[44px] py-3 px-4 bg-yellow-50 hover:bg-yellow-100 text-blue-950 font-black text-xs uppercase tracking-wider rounded-2xl border-2 border-yellow-400 transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 cursor-pointer break-words whitespace-normal text-center"
               >
                 <span>📲</span>
                 <span>Download Admin App (Direct Access Next Time)</span>
@@ -310,15 +308,15 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
               <button 
                 type="button"
                 onClick={onBack}
-                className="w-full py-3 text-slate-400 font-black text-xs uppercase tracking-widest hover:text-blue-900 transition-colors"
+                className="w-full min-h-[44px] py-3 text-slate-400 font-black text-xs uppercase tracking-widest hover:text-blue-900 transition-colors"
               >
                 Return to School Home
               </button>
             </form>
           </div>
 
-          <div className="bg-slate-50 px-6 sm:px-10 py-5 text-center border-t-2 border-slate-100">
-            <p className="text-[10px] text-slate-400 font-bold uppercase leading-relaxed">
+          <div className="bg-slate-50 px-6 sm:px-10 py-5 text-center border-t-2 border-slate-100 rounded-b-[1.8rem] sm:rounded-b-[2.25rem]">
+            <p className="text-[11px] text-slate-400 font-bold uppercase leading-relaxed break-words">
               Proprietor: God's Hand International Model School<br/>
               <span className="text-blue-900 font-black">Have Faith In God • Wire & Cable, Apata, Ibadan</span>
             </p>
@@ -328,20 +326,19 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
 
       {/* FORGOTTEN PASSWORD & KEY RECOVERY MODAL */}
       {isForgotModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-blue-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-lg w-full overflow-hidden border-4 border-yellow-400 relative">
-            <div className="h-2.5 bg-gradient-to-r from-blue-900 via-yellow-400 to-blue-900"></div>
-
-            <div className="p-6 sm:p-8">
-              <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">🔑</span>
-                  <h3 className="text-xl font-black text-blue-900 font-serif">Proprietor Key Recovery</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-blue-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto overflow-x-hidden border-4 border-yellow-400 border-t-8 border-t-blue-900">
+            <div className="p-5 sm:p-8">
+              <div className="flex items-center justify-between gap-2 pb-4 mb-4 border-b border-slate-100">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-2xl shrink-0">🔑</span>
+                  <h3 className="text-lg sm:text-xl font-black text-blue-900 font-serif break-words">Proprietor Key Recovery</h3>
                 </div>
                 <button 
                   type="button"
                   onClick={() => setIsForgotModalOpen(false)}
-                  className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 font-bold flex items-center justify-center"
+                  className="min-h-[44px] min-w-[44px] rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 font-bold flex items-center justify-center shrink-0"
+                  aria-label="Close recovery modal"
                 >
                   ✕
                 </button>
@@ -359,18 +356,18 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
                 <div className="space-y-6">
                   {/* Immediate WhatsApp Verification Option */}
                   <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black text-emerald-900 uppercase tracking-wider">Fastest Method: WhatsApp Desk</span>
-                      <span className="text-lg">💬</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-black text-emerald-900 uppercase tracking-wider break-words">Fastest Method: WhatsApp Desk</span>
+                      <span className="text-lg shrink-0">💬</span>
                     </div>
-                    <p className="text-xs text-emerald-800 leading-relaxed">
+                    <p className="text-xs text-emerald-800 leading-relaxed break-words">
                       Send an encrypted key reset request directly to the School Proprietor verification hotline:
                     </p>
                     <a
                       href="https://wa.me/2347085596586?text=Hello%20God's%20Hand%20Model%20School%20Proprietor%20Desk,%20I%20need%20to%20reset%20the%20administrative%20Security%20Key%20for%20the%20School%20Management%20Portal."
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center gap-2 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md transition-all"
+                      className="inline-flex items-center justify-center gap-2 w-full min-h-[44px] py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md transition-all break-words whitespace-normal text-center"
                     >
                       <span>💬</span>
                       <span>Request Reset on WhatsApp: 07085596586</span>
@@ -380,8 +377,8 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
                   {/* School Email Recovery Info */}
                   <div className="p-4 bg-blue-50 rounded-2xl border border-blue-200 space-y-1 text-xs text-blue-900">
                     <p className="font-black uppercase tracking-wider">Official Administrative Email:</p>
-                    <p className="text-blue-800">
-                      Emergency reset records can also be dispatched to <span className="font-black underline">Godshandschool70@gmail.com</span>.
+                    <p className="text-blue-800 break-words">
+                      Emergency reset records can also be dispatched to <span className="font-black underline break-all">Godshandschool70@gmail.com</span>.
                     </p>
                   </div>
 
@@ -394,7 +391,7 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                      <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider">
                         Master Passcode / Current Key
                       </label>
                       <input 
@@ -403,16 +400,16 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
                         value={recoveryCode}
                         onChange={(e) => setRecoveryCode(e.target.value)}
                         placeholder="Master phrase or current key"
-                        className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-900 outline-none focus:border-blue-900"
+                        className="w-full min-h-[44px] px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-900 outline-none focus:border-blue-900"
                       />
-                      <p className="text-[9px] text-slate-400 italic">
+                      <p className="text-[10px] text-slate-400 italic">
                         Tip: Enter master recovery passphrase or contact the Proprietor Desk.
                       </p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider">
                           New Security Key
                         </label>
                         <input 
@@ -421,11 +418,11 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
                           value={newKey}
                           onChange={(e) => setNewKey(e.target.value)}
                           placeholder="••••••"
-                          className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-900 outline-none focus:border-blue-900"
+                          className="w-full min-h-[44px] px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-900 outline-none focus:border-blue-900"
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider">
                           Confirm New Key
                         </label>
                         <input 
@@ -434,28 +431,28 @@ export const AdminLoginGateway: React.FC<AdminLoginGatewayProps> = ({
                           value={confirmNewKey}
                           onChange={(e) => setConfirmNewKey(e.target.value)}
                           placeholder="••••••"
-                          className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-900 outline-none focus:border-blue-900"
+                          className="w-full min-h-[44px] px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-900 outline-none focus:border-blue-900"
                         />
                       </div>
                     </div>
 
                     {recoveryError && (
-                      <div className="text-red-600 text-xs font-bold text-center bg-red-50 p-2 rounded-lg border border-red-200">
+                      <div className="text-red-600 text-xs font-bold text-center bg-red-50 p-2 rounded-lg border border-red-200 break-words">
                         ⚠️ {recoveryError}
                       </div>
                     )}
 
-                    <div className="flex gap-2 pt-2">
+                    <div className="flex flex-wrap gap-2 pt-2">
                       <button
                         type="button"
                         onClick={() => setIsForgotModalOpen(false)}
-                        className="flex-1 py-3 border-2 border-slate-200 rounded-xl text-xs font-black uppercase tracking-wider text-slate-600 hover:bg-slate-50"
+                        className="flex-1 min-h-[44px] py-3 px-4 border-2 border-slate-200 rounded-xl text-xs font-black uppercase tracking-wider text-slate-600 hover:bg-slate-50"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
-                        className="flex-1 py-3 bg-blue-900 text-yellow-400 rounded-xl text-xs font-black uppercase tracking-wider shadow-lg hover:bg-blue-800"
+                        className="flex-1 min-h-[44px] py-3 px-4 bg-blue-900 text-yellow-400 rounded-xl text-xs font-black uppercase tracking-wider shadow-lg hover:bg-blue-800"
                       >
                         Reset Key Now
                       </button>

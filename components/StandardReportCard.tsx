@@ -76,27 +76,27 @@ export const StandardReportCard: React.FC<StandardReportCardProps> = ({
     <div className="standard-report-wrapper w-full">
       {/* Download Action Bar (Hidden on Print) */}
       {showControls && (
-        <div className="no-print bg-gradient-to-r from-blue-900 to-indigo-900 rounded-3xl p-5 mb-6 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-4 border-2 border-yellow-400">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 bg-yellow-400 text-blue-950 rounded-2xl flex items-center justify-center font-black text-2xl shadow-md">
+        <div className="no-print bg-gradient-to-r from-blue-900 to-indigo-900 rounded-3xl p-4 sm:p-5 mb-6 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-2 border-yellow-400">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="w-12 h-12 bg-yellow-400 text-blue-950 rounded-2xl flex items-center justify-center font-black text-2xl shadow-md shrink-0">
               📄
             </div>
-            <div>
-              <h3 className="font-serif font-black text-lg text-yellow-300">
+            <div className="min-w-0">
+              <h3 className="font-serif font-black text-base sm:text-lg text-yellow-300 break-words">
                 Official Student & Pupil Report Dossier
               </h3>
-              <p className="text-xs text-blue-200">
+              <p className="text-xs text-blue-200 break-words">
                 Standard Oyo State Ministry of Education & British Curriculum Format
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
             {/* Term Filter */}
             <select
               value={activeTerm}
               onChange={(e) => setActiveTerm(e.target.value)}
-              className="px-3.5 py-2.5 bg-blue-950 text-yellow-300 border border-yellow-400/60 rounded-xl text-xs font-black outline-none cursor-pointer"
+              className="min-h-[44px] px-3.5 py-2 bg-blue-950 text-yellow-300 border border-yellow-400/60 rounded-xl text-xs font-black outline-none cursor-pointer"
             >
               <option value="First Term">First Term</option>
               <option value="Second Term">Second Term</option>
@@ -105,8 +105,9 @@ export const StandardReportCard: React.FC<StandardReportCardProps> = ({
 
             {/* Print & Download PDF Button */}
             <button
+              type="button"
               onClick={handlePrintPDF}
-              className="px-5 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center gap-2"
+              className="min-h-[44px] px-5 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center gap-2"
               title="Download official PDF or Print standard report card"
             >
               <span className="text-base">📥</span>
@@ -115,8 +116,9 @@ export const StandardReportCard: React.FC<StandardReportCardProps> = ({
 
             {onClose && (
               <button
+                type="button"
                 onClick={onClose}
-                className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xs transition-colors"
+                className="min-h-[44px] px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xs transition-colors"
               >
                 ✕ Close
               </button>
@@ -127,16 +129,18 @@ export const StandardReportCard: React.FC<StandardReportCardProps> = ({
 
       {/* PDF Download Guidance Tooltip (Visible before or after print) */}
       {showDownloadGuidance && (
-        <div className="no-print mb-4 p-4 bg-amber-50 border-2 border-yellow-400 rounded-2xl text-amber-900 text-xs font-bold flex items-center justify-between gap-3 shadow-md animate-fade-in">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">💡</span>
-            <span>
+        <div className="no-print mb-4 p-4 bg-amber-50 border-2 border-yellow-400 rounded-2xl text-amber-900 text-xs font-bold flex items-start sm:items-center justify-between gap-3 shadow-md animate-fade-in">
+          <div className="flex items-start sm:items-center gap-2 min-w-0">
+            <span className="text-xl shrink-0">💡</span>
+            <span className="break-words">
               <strong>How to save as PDF:</strong> In the print popup window, set <span className="bg-yellow-200 px-1.5 py-0.5 rounded text-blue-950 font-black">Destination: Save as PDF</span>, enable <span className="underline">Background graphics</span>, and click <strong>Save</strong>.
             </span>
           </div>
           <button 
+            type="button"
             onClick={() => setShowDownloadGuidance(false)}
-            className="text-amber-800 hover:text-black font-black text-sm px-2"
+            className="min-h-[44px] min-w-[44px] text-amber-800 hover:text-black font-black text-sm flex items-center justify-center shrink-0"
+            aria-label="Dismiss tip"
           >
             ✕
           </button>
@@ -146,17 +150,17 @@ export const StandardReportCard: React.FC<StandardReportCardProps> = ({
       {/* THE OFFICIAL REPORT CARD CONTAINER (Rendered on screen & prints perfectly on A4) */}
       <div 
         id="official-student-report-card"
-        className="standard-report-card bg-white rounded-3xl p-6 sm:p-10 border-4 border-blue-900 shadow-2xl relative overflow-hidden text-slate-900 print:rounded-none print:shadow-none print:border-2 print:border-slate-800 print:p-4 print:max-w-none print:w-full"
+        className="standard-report-card bg-white rounded-3xl p-4 sm:p-8 lg:p-10 border-4 border-blue-900 shadow-2xl text-slate-900 print:rounded-none print:shadow-none print:border-2 print:border-slate-800 print:p-4 print:max-w-none print:w-full"
       >
-        {/* Subtle Watermark in background */}
+        {/* Subtle Watermark in background (Print only so it never overlaps on mobile) */}
         <div 
-          className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none z-0"
+          className="hidden print:flex fixed inset-0 items-center justify-center opacity-[0.03] pointer-events-none select-none z-0"
           aria-hidden="true"
         >
           <img 
             src="/logo.png" 
             alt="Watermark" 
-            className="w-[500px] h-[500px] object-contain"
+            className="w-[min(500px,80vw)] h-[min(500px,80vw)] object-contain"
             onError={(e) => { e.currentTarget.src = 'hands.jpg'; }}
           />
         </div>
@@ -225,28 +229,28 @@ export const StandardReportCard: React.FC<StandardReportCardProps> = ({
 
         {/* ===================== 2. PUPIL / STUDENT BIO-DATA ===================== */}
         <div className="relative z-10 bg-slate-50/90 rounded-2xl p-4 border border-slate-200 mb-5 text-xs">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             <div>
               <span className="block text-[9px] font-black uppercase tracking-wider text-slate-400">Pupil / Student Name:</span>
-              <span className="font-black text-blue-950 text-sm">{student.name}</span>
+              <span className="font-black text-blue-950 text-sm break-words">{student.name}</span>
             </div>
             <div>
               <span className="block text-[9px] font-black uppercase tracking-wider text-slate-400">Admission / Student ID:</span>
-              <span className="font-mono font-black text-blue-900">{student.id}</span>
+              <span className="font-mono font-black text-blue-900 break-all">{student.id}</span>
             </div>
             <div>
               <span className="block text-[9px] font-black uppercase tracking-wider text-slate-400">Class / Grade Level:</span>
-              <span className="font-black text-indigo-900 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 inline-block">
+              <span className="font-black text-indigo-900 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 inline-block break-words">
                 {student.grade}
               </span>
             </div>
             <div>
               <span className="block text-[9px] font-black uppercase tracking-wider text-slate-400">Academic Session:</span>
-              <span className="font-bold text-slate-700">{session}</span>
+              <span className="font-bold text-slate-700 break-words">{session}</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3 pt-2.5 border-t border-slate-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-3 pt-2.5 border-t border-slate-200">
             <div>
               <span className="block text-[9px] font-black uppercase tracking-wider text-slate-400">School Term:</span>
               <span className="font-black text-blue-900">{activeTerm}</span>
@@ -271,7 +275,7 @@ export const StandardReportCard: React.FC<StandardReportCardProps> = ({
         </div>
 
         {/* ===================== 3. COGNITIVE ACADEMIC PERFORMANCE TABLE ===================== */}
-        <div className="relative z-10 mb-5 overflow-x-auto">
+        <div className="relative z-10 mb-5 overflow-x-auto w-full">
           <table className="w-full text-left border-collapse border border-slate-300 text-xs">
             <thead>
               <tr className="bg-blue-950 text-white font-black text-[10px] uppercase tracking-wider">
@@ -341,11 +345,11 @@ export const StandardReportCard: React.FC<StandardReportCardProps> = ({
         <div className="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-4 mb-5 text-xs">
           {/* Summary Scorecard (Left 7 Cols) */}
           <div className="md:col-span-7 bg-blue-50/60 rounded-2xl p-4 border border-blue-200">
-            <h4 className="font-serif font-black text-blue-950 uppercase text-[11px] tracking-wider mb-2.5 border-b border-blue-200 pb-1 flex justify-between">
+            <h4 className="font-serif font-black text-blue-950 uppercase text-[11px] tracking-wider mb-2.5 border-b border-blue-200 pb-1 flex flex-wrap justify-between gap-2">
               <span>Terminal Performance Analysis</span>
               <span className="text-blue-700">Oyo State Ministry Standards</span>
             </h4>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-center">
               <div className="bg-white p-2.5 rounded-xl border border-blue-100 shadow-xs">
                 <span className="block text-[9px] font-black uppercase text-slate-400">Total Marks</span>
                 <span className="font-mono font-black text-blue-950 text-sm sm:text-base">{totalScore} / {maxAttainable}</span>
@@ -363,14 +367,14 @@ export const StandardReportCard: React.FC<StandardReportCardProps> = ({
               </div>
               <div className="bg-white p-2.5 rounded-xl border border-blue-100 shadow-xs">
                 <span className="block text-[9px] font-black uppercase text-slate-400">Terminal Decision</span>
-                <span className="font-black text-blue-900 text-[11px] mt-1 block">
+                <span className="font-black text-blue-900 text-[11px] mt-1 block break-words">
                   {averageNum >= 50 ? 'PASSED / PROMOTED' : 'UNDER REMEDIATION'}
                 </span>
               </div>
             </div>
 
             {/* Grading Scale Legend */}
-            <div className="mt-3 pt-2 border-t border-blue-200/60 flex flex-wrap items-center justify-between text-[10px] text-slate-600 font-bold">
+            <div className="mt-3 pt-2 border-t border-blue-200/60 flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-600 font-bold">
               <span><strong>A:</strong> 75-100% (Distinction)</span>
               <span><strong>B:</strong> 65-74% (Very Good)</span>
               <span><strong>C:</strong> 50-64% (Credit)</span>
@@ -384,7 +388,7 @@ export const StandardReportCard: React.FC<StandardReportCardProps> = ({
             <h4 className="font-serif font-black text-blue-950 uppercase text-[11px] tracking-wider mb-2 border-b border-slate-200 pb-1">
               Affective & Character Rating (1-5)
             </h4>
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
               <div className="flex justify-between">
                 <span className="text-slate-500">Punctuality:</span>
                 <span className="font-black text-blue-900">5 / 5</span>

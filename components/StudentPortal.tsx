@@ -122,35 +122,35 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   };
 
   return (
-    <div className="max-w-2xl mx-auto py-6 animate-in fade-in duration-300">
+    <div className="w-full max-w-2xl mx-auto py-2 sm:py-4 overflow-x-hidden animate-in fade-in duration-300">
       {/* STEP 1: INITIAL SELECTION FORM */}
       {step === 'form' && (
-        <div className="bg-white rounded-3xl shadow-xl p-6 sm:p-10 border border-blue-50 space-y-8">
+        <div className="bg-white rounded-3xl shadow-xl p-4 sm:p-8 lg:p-10 border border-blue-50 space-y-6 sm:space-y-8">
           <button 
             type="button"
             onClick={onBack} 
-            className="text-slate-400 hover:text-blue-900 flex items-center transition-colors font-bold text-xs uppercase tracking-wider"
+            className="text-slate-500 hover:text-blue-900 flex items-center transition-colors font-bold text-xs uppercase tracking-wider min-h-[44px] px-2 -ml-2 rounded-xl"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to Hub
+            <span className="break-words whitespace-normal">Back to Hub</span>
           </button>
           
           <div className="text-center space-y-2">
-            <span className="px-3 py-1 bg-yellow-400 text-blue-950 font-black text-[10px] uppercase tracking-wider rounded-full">
+            <span className="inline-block px-3 py-1 bg-yellow-400 text-blue-950 font-black text-[10px] uppercase tracking-wider rounded-full break-words whitespace-normal">
               God's Hand Int'l Model School
             </span>
-            <h2 className="text-3xl font-black text-blue-950 font-serif">School Fees Portal</h2>
-            <p className="text-slate-500 font-medium text-xs sm:text-sm">
+            <h2 className="text-2xl sm:text-3xl font-black text-blue-950 font-serif break-words">School Fees Portal</h2>
+            <p className="text-slate-500 font-medium text-xs sm:text-sm break-words">
               {hasPaidFirst ? "Settle your remaining session balance below." : "Select your class and initiate school fee payment."}
             </p>
           </div>
 
           <form onSubmit={handleApply} className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2 break-words">
                   Student / Pupil Full Name *
                 </label>
                 <input 
@@ -159,15 +159,15 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   readOnly={!!currentStudentId}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className={`w-full px-4 py-3 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none transition-all ${
-                    currentStudentId ? 'bg-slate-50 text-slate-400' : 'bg-white text-blue-950 focus:border-blue-900'
+                  className={`w-full min-h-[44px] px-4 py-3 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none transition-all ${
+                    currentStudentId ? 'bg-slate-50 text-slate-500' : 'bg-white text-blue-950 focus:border-blue-900'
                   }`}
                 />
               </div>
 
               {!currentStudentId && (
                 <div>
-                  <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2 break-words">
                     Parent / Guardian Email *
                   </label>
                   <input 
@@ -175,7 +175,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl font-bold text-sm text-blue-950 bg-white focus:border-blue-900 outline-none transition-all"
+                    className="w-full min-h-[44px] px-4 py-3 border-2 border-slate-200 rounded-xl font-bold text-sm text-blue-950 bg-white focus:border-blue-900 outline-none transition-all"
                     placeholder="parent@email.com"
                   />
                 </div>
@@ -183,10 +183,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
               {currentStudentId && (
                 <div>
-                  <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2 break-words">
                     Enrolled Grade / Class
                   </label>
-                  <div className="px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-black text-blue-950 text-sm">
+                  <div className="min-h-[44px] flex items-center px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-black text-blue-950 text-sm break-words">
                     {grade}
                   </div>
                 </div>
@@ -195,13 +195,13 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
             {!currentStudentId && (
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2 break-words">
                   Select Pupil / Student Grade *
                 </label>
                 <select 
                   value={grade}
                   onChange={(e) => setGrade(e.target.value as GradeLevel)}
-                  className="w-full px-4 py-3.5 border-2 border-slate-200 rounded-xl font-black text-blue-950 bg-white focus:border-blue-900 outline-none transition-all"
+                  className="w-full min-h-[44px] px-4 py-3 border-2 border-slate-200 rounded-xl font-black text-sm text-blue-950 bg-white focus:border-blue-900 outline-none transition-all"
                 >
                   {GRADE_GROUPS.map(group => (
                     <optgroup key={group.name} label={group.name}>
@@ -222,55 +222,57 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               
               {!hasPaidFirst ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div 
+                  <button 
+                    type="button"
                     onClick={() => setPaymentType('full')}
-                    className={`p-5 rounded-2xl border-3 cursor-pointer transition-all ${
+                    className={`text-left w-full min-h-[44px] p-4 sm:p-5 rounded-2xl border-2 cursor-pointer transition-all ${
                       paymentType === 'full' 
                         ? 'border-blue-900 bg-blue-50/70 shadow-md' 
                         : 'border-slate-200 bg-white hover:border-slate-300'
                     }`}
                   >
-                    <div className="flex justify-between items-center mb-3">
-                       <span className="w-5 h-5 rounded-full border-4 border-white shadow bg-blue-900" style={{ opacity: paymentType === 'full' ? 1 : 0.2 }}></span>
+                    <div className="flex flex-wrap justify-between items-center gap-2 mb-3">
+                       <span className="w-5 h-5 rounded-full border-4 border-white shadow bg-blue-900 shrink-0" style={{ opacity: paymentType === 'full' ? 1 : 0.2 }}></span>
                        <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
                          Full Term
                        </span>
                     </div>
-                    <p className="font-black text-blue-950 text-2xl font-serif">₦{totalFee.toLocaleString()}</p>
-                    <p className="text-[11px] text-slate-500 font-bold mt-1">Complete term tuition clearance</p>
-                  </div>
+                    <p className="font-black text-blue-950 text-xl sm:text-2xl font-serif break-words">₦{totalFee.toLocaleString()}</p>
+                    <p className="text-[11px] text-slate-500 font-bold mt-1 break-words">Complete term tuition clearance</p>
+                  </button>
 
-                  <div 
+                  <button 
+                    type="button"
                     onClick={() => setPaymentType('installment_1')}
-                    className={`p-5 rounded-2xl border-3 cursor-pointer transition-all ${
+                    className={`text-left w-full min-h-[44px] p-4 sm:p-5 rounded-2xl border-2 cursor-pointer transition-all ${
                       paymentType === 'installment_1' 
                         ? 'border-blue-900 bg-blue-50/70 shadow-md' 
                         : 'border-slate-200 bg-white hover:border-slate-300'
                     }`}
                   >
-                    <div className="flex justify-between items-center mb-3">
-                       <span className="w-5 h-5 rounded-full border-4 border-white shadow bg-blue-900" style={{ opacity: paymentType === 'installment_1' ? 1 : 0.2 }}></span>
+                    <div className="flex flex-wrap justify-between items-center gap-2 mb-3">
+                       <span className="w-5 h-5 rounded-full border-4 border-white shadow bg-blue-900 shrink-0" style={{ opacity: paymentType === 'installment_1' ? 1 : 0.2 }}></span>
                        <span className="bg-blue-100 text-blue-800 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
                          1st Installment (50%)
                        </span>
                     </div>
-                    <p className="font-black text-blue-950 text-2xl font-serif">₦{(totalFee / 2).toLocaleString()}</p>
-                    <p className="text-[11px] text-slate-500 font-bold mt-1">Pay half now, balance later</p>
-                  </div>
+                    <p className="font-black text-blue-950 text-xl sm:text-2xl font-serif break-words">₦{(totalFee / 2).toLocaleString()}</p>
+                    <p className="text-[11px] text-slate-500 font-bold mt-1 break-words">Pay half now, balance later</p>
+                  </button>
                 </div>
               ) : (
-                <div className="p-5 rounded-2xl border-3 border-yellow-400 bg-yellow-50/50">
-                  <div className="flex items-center justify-between">
+                <div className="p-4 sm:p-5 rounded-2xl border-2 border-yellow-400 bg-yellow-50/50">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <span className="text-[10px] font-black uppercase tracking-wider text-yellow-800">
                         Second / Final Installment
                       </span>
-                      <p className="text-2xl font-black text-blue-950 font-serif mt-0.5">
+                      <p className="text-xl sm:text-2xl font-black text-blue-950 font-serif mt-0.5">
                         ₦{(totalFee / 2).toLocaleString()}
                       </p>
-                      <p className="text-xs text-slate-600 font-medium">Finalizing full tuition payment</p>
+                      <p className="text-xs text-slate-600 font-medium break-words">Finalizing full tuition payment</p>
                     </div>
-                    <span className="px-3 py-1 bg-yellow-400 text-blue-950 font-black text-xs rounded-xl uppercase">
+                    <span className="px-3 py-1 bg-yellow-400 text-blue-950 font-black text-xs rounded-xl uppercase shrink-0">
                       50% Balance
                     </span>
                   </div>
@@ -280,7 +282,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
             <button 
               type="submit"
-              className="w-full py-4.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-base uppercase tracking-wider rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 active:scale-95"
+              className="w-full min-h-[48px] py-3.5 px-4 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-sm sm:text-base uppercase tracking-wider rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 active:scale-95"
             >
               <span>Proceed to Checkout</span>
               <span>→</span>
@@ -291,7 +293,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
       {/* STEP 2: BANK PAYMENT DETAILS & INSTRUCTIONS */}
       {step === 'payment' && (
-        <div className="bg-white rounded-3xl shadow-xl p-6 sm:p-10 border border-blue-50 text-center space-y-6">
+        <div className="bg-white rounded-3xl shadow-xl p-4 sm:p-8 lg:p-10 border border-blue-50 text-center space-y-6">
           <div className="w-16 h-16 bg-blue-100 text-blue-900 rounded-2xl flex items-center justify-center mx-auto text-3xl font-black">
             🏛️
           </div>
@@ -309,15 +311,15 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           </div>
 
           {/* School Account Details Card */}
-          <div className="bg-gradient-to-br from-blue-950 to-blue-900 text-white p-6 rounded-2xl text-left space-y-3 shadow-lg border-2 border-yellow-400 relative overflow-hidden">
-            <div className="flex justify-between items-start">
-              <div>
+          <div className="bg-gradient-to-br from-blue-950 to-blue-900 text-white p-5 sm:p-6 rounded-2xl text-left space-y-3 shadow-lg border-2 border-yellow-400">
+            <div className="flex flex-wrap justify-between items-start gap-2">
+              <div className="min-w-0">
                 <p className="text-[10px] font-black uppercase text-yellow-400 tracking-wider">
                   Bank Name
                 </p>
-                <p className="text-base font-black">{activeBank.bankName}</p>
+                <p className="text-base font-black break-words">{activeBank.bankName}</p>
               </div>
-              <span className="px-2.5 py-1 bg-yellow-400 text-blue-950 font-black text-[9px] uppercase rounded-lg">
+              <span className="px-2.5 py-1 bg-yellow-400 text-blue-950 font-black text-[9px] uppercase rounded-lg shrink-0">
                 Official Account
               </span>
             </div>
@@ -326,37 +328,37 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               <p className="text-[10px] font-black uppercase text-yellow-400 tracking-wider">
                 Account Name
               </p>
-              <p className="text-sm font-bold">{activeBank.accountName}</p>
+              <p className="text-sm font-bold break-words">{activeBank.accountName}</p>
             </div>
 
-            <div className="pt-2 border-t border-white/20 flex justify-between items-end">
+            <div className="pt-2 border-t border-white/20 flex flex-wrap justify-between items-end gap-3">
               <div>
                 <p className="text-[10px] font-black uppercase text-yellow-400 tracking-wider">
                   Account Number
                 </p>
-                <p className="text-2xl font-mono font-black text-yellow-300 tracking-wider">
+                <p className="text-xl sm:text-2xl font-mono font-black text-yellow-300 tracking-wider break-all">
                   {activeBank.accountNumber}
                 </p>
               </div>
-              <div className="text-right">
+              <div className="sm:text-right">
                 <p className="text-[10px] uppercase text-blue-200 font-bold">Amount to Transfer</p>
-                <p className="text-xl font-serif font-black text-white">
+                <p className="text-lg sm:text-xl font-serif font-black text-white">
                   ₦{amountToPay.toLocaleString()}
                 </p>
               </div>
             </div>
 
             {activeBank.paymentInstructions && (
-              <div className="p-2.5 bg-black/30 rounded-xl text-[10px] text-yellow-200 italic border border-white/10">
+              <div className="p-2.5 bg-black/30 rounded-xl text-[11px] text-yellow-200 italic border border-white/10 break-words">
                 <strong>Transfer Guidance:</strong> {activeBank.paymentInstructions}
               </div>
             )}
           </div>
 
           {/* Summary pill */}
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs flex justify-between items-center text-slate-600">
-            <span className="font-bold">Student: <strong className="text-blue-950">{name} ({grade})</strong></span>
-            <span className="font-bold text-blue-900">{paymentType === 'full' ? 'Full Payment' : 'Installment'}</span>
+          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs flex flex-wrap justify-between items-center gap-2 text-slate-600 text-left">
+            <span className="font-bold break-words">Student: <strong className="text-blue-950">{name} ({grade})</strong></span>
+            <span className="font-bold text-blue-900 shrink-0">{paymentType === 'full' ? 'Full Payment' : 'Installment'}</span>
           </div>
 
           {/* Actions */}
@@ -364,16 +366,16 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             <button 
               type="button"
               onClick={() => setStep('receipt_upload')}
-              className="w-full py-4.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 font-black text-sm uppercase tracking-wider rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95"
+              className="w-full min-h-[48px] py-3.5 px-4 bg-yellow-400 hover:bg-yellow-300 text-blue-950 font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95"
             >
-              <span>Proceed to Upload Bank Receipt Document</span>
-              <span>→</span>
+              <span className="break-words whitespace-normal">Proceed to Upload Bank Receipt Document</span>
+              <span className="shrink-0">→</span>
             </button>
 
             <button 
               type="button"
               onClick={() => setStep('form')}
-              className="w-full py-2.5 text-slate-400 font-bold text-xs uppercase tracking-wider hover:text-slate-700"
+              className="w-full min-h-[44px] py-2.5 text-slate-500 font-bold text-xs uppercase tracking-wider hover:text-slate-700"
             >
               ← Edit Details
             </button>
@@ -383,17 +385,17 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
       {/* STEP 3: DEDICATED RECEIPT UPLOAD PAGE */}
       {step === 'receipt_upload' && (
-        <div className="bg-white rounded-3xl shadow-xl p-6 sm:p-10 border border-blue-50 space-y-6">
-          <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-wider text-blue-900">
+        <div className="bg-white rounded-3xl shadow-xl p-4 sm:p-8 lg:p-10 border border-blue-50 space-y-6">
+          <div className="flex flex-wrap justify-between items-center gap-3 border-b border-slate-100 pb-4">
+            <div className="min-w-0">
+              <span className="text-[10px] font-black uppercase tracking-wider text-blue-900 block">
                 Step 2 of 2: Proof of Payment
               </span>
-              <h2 className="text-2xl font-serif font-black text-blue-950">
+              <h2 className="text-xl sm:text-2xl font-serif font-black text-blue-950 break-words">
                 Upload Bank Receipt / Document
               </h2>
             </div>
-            <span className="px-3 py-1 bg-yellow-400 text-blue-950 font-black text-xs rounded-xl font-serif">
+            <span className="px-3 py-1 bg-yellow-400 text-blue-950 font-black text-xs rounded-xl font-serif shrink-0">
               ₦{amountToPay.toLocaleString()}
             </span>
           </div>
@@ -409,7 +411,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 Bank Receipt Picture or Document (JPG, PNG, PDF) *
               </label>
 
-              <label className="border-3 border-dashed border-blue-200 hover:border-blue-400 bg-blue-50/40 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all text-center group">
+              <label className="border-2 border-dashed border-blue-200 hover:border-blue-400 bg-blue-50/40 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all text-center group">
                 <input
                   type="file"
                   accept="image/*,application/pdf"
@@ -456,9 +458,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             </div>
 
             {/* Payer and Bank Details */}
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5 break-words">
                   Payer / Depositor Full Name *
                 </label>
                 <input
@@ -467,12 +469,12 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   value={payerName}
                   onChange={(e) => setPayerName(e.target.value)}
                   placeholder="e.g. Mr. Samuel Adebayo"
-                  className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:bg-white focus:border-blue-900 outline-none"
+                  className="w-full min-h-[44px] px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:bg-white focus:border-blue-900 outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5 break-words">
                   Sending Bank Name *
                 </label>
                 <input
@@ -481,14 +483,14 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   value={bankName}
                   onChange={(e) => setBankName(e.target.value)}
                   placeholder="e.g. First Bank, GTBank, OPay, Zenith"
-                  className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:bg-white focus:border-blue-900 outline-none"
+                  className="w-full min-h-[44px] px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:bg-white focus:border-blue-900 outline-none"
                 />
               </div>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5 break-words">
                   Transfer Ref / Teller / Session ID
                 </label>
                 <input
@@ -496,12 +498,12 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   value={transactionRef}
                   onChange={(e) => setTransactionRef(e.target.value)}
                   placeholder="e.g. FBN-192842 or 000013245"
-                  className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:bg-white focus:border-blue-900 outline-none"
+                  className="w-full min-h-[44px] px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:bg-white focus:border-blue-900 outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1.5 break-words">
                   Additional Note (Optional)
                 </label>
                 <input
@@ -509,13 +511,13 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   value={studentNote}
                   onChange={(e) => setStudentNote(e.target.value)}
                   placeholder="e.g. Payment for 1st Term fees"
-                  className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:bg-white focus:border-blue-900 outline-none"
+                  className="w-full min-h-[44px] px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:bg-white focus:border-blue-900 outline-none"
                 />
               </div>
             </div>
 
             {uploadError && (
-              <p className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-xl">
+              <p className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-xl break-words">
                 {uploadError}
               </p>
             )}
@@ -524,16 +526,16 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             <div className="space-y-3 pt-2">
               <button
                 type="submit"
-                className="w-full py-4.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm uppercase tracking-wider rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 active:scale-95"
+                className="w-full min-h-[48px] py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 active:scale-95"
               >
-                <span>Submit Bank Receipt for Proprietor Review</span>
-                <span>✓</span>
+                <span className="break-words whitespace-normal">Submit Bank Receipt for Proprietor Review</span>
+                <span className="shrink-0">✓</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setStep('payment')}
-                className="w-full py-2.5 text-slate-400 font-bold text-xs uppercase tracking-wider hover:text-slate-700"
+                className="w-full min-h-[44px] py-2.5 text-slate-500 font-bold text-xs uppercase tracking-wider hover:text-slate-700"
               >
                 ← Back to Account Details
               </button>
@@ -544,40 +546,40 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
       {/* STEP 4: DIRECTED BACK TO PAGE SHOWING "payment is being reviewed by the proprietor" */}
       {step === 'review_notice' && (
-        <div className="bg-white rounded-3xl shadow-xl p-6 sm:p-10 border-2 border-amber-200 text-center space-y-6">
-          <div className="w-20 h-20 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto text-4xl font-black animate-pulse">
+        <div className="bg-white rounded-3xl shadow-xl p-4 sm:p-8 lg:p-10 border-2 border-amber-200 text-center space-y-6">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto text-3xl sm:text-4xl font-black animate-pulse">
             ⏳
           </div>
 
           <div className="space-y-2">
-            <span className="px-3 py-1 bg-amber-100 text-amber-900 font-black text-[10px] uppercase rounded-full tracking-wider border border-amber-300">
+            <span className="inline-block px-3 py-1 bg-amber-100 text-amber-900 font-black text-[10px] uppercase rounded-full tracking-wider border border-amber-300 break-words whitespace-normal">
               Administrative Review In Progress
             </span>
-            <h2 className="text-2xl sm:text-3xl font-serif font-black text-blue-950">
+            <h2 className="text-xl sm:text-3xl font-serif font-black text-blue-950 break-words">
               Payment is being reviewed by the proprietor
             </h2>
-            <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed font-medium">
+            <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed font-medium break-words">
               Your bank payment receipt picture/document has been submitted successfully to the school administration. The proprietor is reviewing your document. Once approved, you will be able to download your official stamped school fee receipt.
             </p>
           </div>
 
           {/* Submission Details Card */}
-          <div className="bg-gradient-to-br from-blue-950 to-blue-900 text-white p-6 rounded-2xl text-left space-y-3 shadow-lg border-2 border-yellow-400 relative overflow-hidden">
-            <div className="flex justify-between items-center border-b border-white/20 pb-2.5">
+          <div className="bg-gradient-to-br from-blue-950 to-blue-900 text-white p-4 sm:p-6 rounded-2xl text-left space-y-3 shadow-lg border-2 border-yellow-400">
+            <div className="flex flex-wrap justify-between items-center gap-2 border-b border-white/20 pb-2.5">
               <span className="text-[10px] font-black uppercase text-yellow-400 tracking-wider">
                 Submission Reference
               </span>
-              <span className="font-mono text-sm font-black text-white">{refId}</span>
+              <span className="font-mono text-sm font-black text-white break-all">{refId}</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>
                 <span className="text-[10px] text-blue-200 font-bold block">Pupil / Student</span>
-                <strong className="text-white font-black">{name}</strong>
+                <strong className="text-white font-black break-words">{name}</strong>
               </div>
               <div>
                 <span className="text-[10px] text-blue-200 font-bold block">Class / Grade</span>
-                <strong className="text-white font-black">{grade}</strong>
+                <strong className="text-white font-black break-words">{grade}</strong>
               </div>
               <div>
                 <span className="text-[10px] text-blue-200 font-bold block">Amount Submitted</span>
@@ -585,14 +587,14 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               </div>
               <div>
                 <span className="text-[10px] text-blue-200 font-bold block">Bank / Ref</span>
-                <span className="text-white font-bold truncate block">{bankName} ({transactionRef || 'Direct'})</span>
+                <span className="text-white font-bold break-words block">{bankName} ({transactionRef || 'Direct'})</span>
               </div>
             </div>
 
             {receiptFileName && (
-              <div className="pt-2 border-t border-white/20 flex items-center justify-between text-xs">
+              <div className="pt-2 border-t border-white/20 flex flex-wrap items-center justify-between gap-2 text-xs">
                 <span className="text-[10px] text-blue-200 font-bold">Attached Document:</span>
-                <span className="font-mono text-[11px] text-yellow-300 truncate max-w-[180px]">
+                <span className="font-mono text-[11px] text-yellow-300 break-all">
                   📎 {receiptFileName}
                 </span>
               </div>
@@ -605,17 +607,17 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               <button 
                 type="button"
                 onClick={onGoToReceipts}
-                className="w-full py-4.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-sm uppercase tracking-wider rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95"
+                className="w-full min-h-[48px] py-3.5 px-4 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95"
               >
-                <span>📑 Go to My Receipts & Download Page</span>
-                <span>→</span>
+                <span className="break-words whitespace-normal">📑 Go to My Receipts & Download Page</span>
+                <span className="shrink-0">→</span>
               </button>
             ) : null}
 
             <button 
               type="button"
               onClick={onBack}
-              className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider rounded-xl transition-all"
+              className="w-full min-h-[44px] py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider rounded-xl transition-all"
             >
               Return to School Hub
             </button>

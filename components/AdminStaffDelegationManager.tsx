@@ -165,40 +165,47 @@ export const AdminStaffDelegationManager: React.FC<AdminStaffDelegationManagerPr
   });
 
   return (
-    <div className="space-y-8" id="timed-staff-delegation-manager">
+    <div className="space-y-6 sm:space-y-8 w-full max-w-full" id="timed-staff-delegation-manager">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-950 text-white p-6 sm:p-8 rounded-3xl shadow-xl border-2 border-yellow-400/30 relative overflow-hidden">
-        <div className="relative z-10 max-w-4xl space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-400 text-blue-950 text-xs font-black uppercase tracking-wider">
+      <div className="bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-950 text-white p-4 sm:p-8 rounded-3xl shadow-xl border-2 border-yellow-400/30">
+        <div className="max-w-4xl space-y-2">
+          <div className="inline-flex flex-wrap items-center gap-2 px-3 py-1 rounded-full bg-yellow-400 text-blue-950 text-xs font-black uppercase tracking-wider">
             <span>⏱️ Timed Delegation Controller</span>
             <span>•</span>
             <span>Security Protected</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-serif font-black tracking-tight text-white">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-serif font-black tracking-tight text-white break-words whitespace-normal">
             Admin Panel Staff Delegation & Time-Lapse Control
           </h2>
-          <p className="text-blue-100 text-xs sm:text-sm font-medium leading-relaxed">
+          <p className="text-blue-100 text-xs sm:text-sm font-medium leading-relaxed break-words whitespace-normal">
             Grant temporary, time-limited administrator access to any teacher or staff member for specific sections of the school admin panel. Access automatically and irrevocably terminates the exact minute the countdown reaches zero.
           </p>
         </div>
       </div>
 
       {successMessage && (
-        <div className="p-4 bg-emerald-500 text-white rounded-2xl shadow-lg flex items-center justify-between font-black text-sm">
-          <span>{successMessage}</span>
-          <button onClick={() => setSuccessMessage('')} className="text-white/80 hover:text-white text-lg">✕</button>
+        <div className="p-4 bg-emerald-500 text-white rounded-2xl shadow-lg flex flex-wrap items-center justify-between gap-3 font-black text-sm">
+          <span className="break-words whitespace-normal flex-1">{successMessage}</span>
+          <button
+            type="button"
+            onClick={() => setSuccessMessage('')}
+            className="min-w-[44px] min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-lg flex items-center justify-center shrink-0"
+            aria-label="Dismiss notification"
+          >
+            ✕
+          </button>
         </div>
       )}
 
       {/* Main Grid: Grant Delegation Form (Left) & Active Delegations (Right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
         {/* Delegation Creation Form */}
-        <div className="lg:col-span-6 bg-white p-6 sm:p-7 rounded-3xl border-2 border-slate-200 shadow-sm space-y-6">
+        <div className="lg:col-span-6 bg-white p-4 sm:p-7 rounded-3xl border-2 border-slate-200 shadow-sm space-y-6">
           <div className="border-b border-slate-100 pb-4">
-            <h3 className="text-lg sm:text-xl font-serif font-black text-blue-950 flex items-center gap-2">
+            <h3 className="text-lg sm:text-xl font-serif font-black text-blue-950 flex items-center gap-2 break-words whitespace-normal">
               <span>🔑 Issue New Timed Access</span>
             </h3>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
+            <p className="text-xs text-slate-500 font-medium mt-0.5 break-words whitespace-normal">
               Select staff member, choose admin sections, and specify duration.
             </p>
           </div>
@@ -217,7 +224,7 @@ export const AdminStaffDelegationManager: React.FC<AdminStaffDelegationManagerPr
                 <select
                   value={selectedTeacherUsername}
                   onChange={e => setSelectedTeacherUsername(e.target.value)}
-                  className="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-slate-800 text-sm focus:border-blue-900 focus:bg-white transition-all outline-none"
+                  className="w-full min-h-[44px] p-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-slate-800 text-sm focus:border-blue-900 focus:bg-white transition-all outline-none"
                   required
                 >
                   <option value="" disabled>-- Choose a Staff Member --</option>
@@ -237,37 +244,36 @@ export const AdminStaffDelegationManager: React.FC<AdminStaffDelegationManagerPr
 
             {/* 2. Choose Admin Sections */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <label className="text-xs font-black text-blue-950 uppercase tracking-wider">
                   2. Granted Admin Sections ({selectedSections.length}/{ALL_ADMIN_SECTIONS.length}) <span className="text-red-500">*</span>
                 </label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={selectAllSections}
-                    className="text-[10px] font-black text-blue-900 hover:underline uppercase"
+                    className="min-h-[44px] px-3 py-2 text-xs font-black text-blue-900 bg-blue-50 hover:bg-blue-100 rounded-xl uppercase"
                   >
                     Select All
                   </button>
-                  <span className="text-slate-300">|</span>
                   <button
                     type="button"
                     onClick={clearAllSections}
-                    className="text-[10px] font-black text-slate-500 hover:underline uppercase"
+                    className="min-h-[44px] px-3 py-2 text-xs font-black text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl uppercase"
                   >
                     Clear
                   </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1 p-1 border border-slate-100 rounded-2xl bg-slate-50/50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-72 overflow-y-auto pr-1 p-1.5 border border-slate-100 rounded-2xl bg-slate-50/50">
                 {ALL_ADMIN_SECTIONS.map(section => {
                   const isChecked = selectedSections.includes(section.id);
                   return (
                     <div
                       key={section.id}
                       onClick={() => toggleSection(section.id)}
-                      className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-start space-x-2.5 select-none ${
+                      className={`p-3 min-h-[44px] rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 select-none ${
                         isChecked
                           ? 'bg-blue-50/80 border-blue-400 text-blue-950 shadow-xs'
                           : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
@@ -276,15 +282,15 @@ export const AdminStaffDelegationManager: React.FC<AdminStaffDelegationManagerPr
                       <input
                         type="checkbox"
                         checked={isChecked}
-                        onChange={() => {}} // Handled by container
-                        className="mt-0.5 rounded text-blue-900 focus:ring-0 cursor-pointer"
+                        onChange={() => {}}
+                        className="mt-0.5 w-5 h-5 shrink-0 rounded text-blue-900 focus:ring-0 cursor-pointer"
                       />
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm">{section.icon}</span>
-                          <span className="text-xs font-black truncate">{section.label}</span>
+                        <div className="flex items-start gap-1.5">
+                          <span className="text-sm shrink-0">{section.icon}</span>
+                          <span className="text-xs font-black break-words whitespace-normal">{section.label}</span>
                         </div>
-                        <p className="text-[10px] text-slate-500 truncate mt-0.5">
+                        <p className="text-[11px] text-slate-500 break-words whitespace-normal mt-0.5 leading-snug">
                           {section.description}
                         </p>
                       </div>
@@ -301,7 +307,7 @@ export const AdminStaffDelegationManager: React.FC<AdminStaffDelegationManagerPr
               </label>
 
               {/* Quick Presets */}
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {presetDurations.map(preset => {
                   const isSelected = durationMinutes === preset.minutes;
                   return (
@@ -309,7 +315,7 @@ export const AdminStaffDelegationManager: React.FC<AdminStaffDelegationManagerPr
                       key={preset.minutes}
                       type="button"
                       onClick={() => handleApplyPreset(preset.minutes)}
-                      className={`px-2.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${
+                      className={`min-h-[44px] px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${
                         isSelected
                           ? 'bg-yellow-400 text-blue-950 border-yellow-500 shadow-xs'
                           : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
@@ -323,15 +329,15 @@ export const AdminStaffDelegationManager: React.FC<AdminStaffDelegationManagerPr
               </div>
 
               {/* Custom Input */}
-              <div className="flex items-center gap-2 pt-1">
-                <div className="relative flex-1">
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 pt-1">
+                <div className="flex-1 min-w-[120px]">
                   <input
                     type="number"
                     min="1"
                     max="10080"
                     value={customDurationInput}
                     onChange={e => handleCustomDurationChange(e.target.value, durationUnit)}
-                    className="w-full p-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-black text-slate-800 text-sm focus:border-blue-900 focus:bg-white transition-all outline-none"
+                    className="w-full min-h-[44px] p-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-black text-slate-800 text-sm focus:border-blue-900 focus:bg-white transition-all outline-none"
                     placeholder="Enter time"
                     required
                   />
@@ -339,7 +345,7 @@ export const AdminStaffDelegationManager: React.FC<AdminStaffDelegationManagerPr
                 <select
                   value={durationUnit}
                   onChange={e => handleCustomDurationChange(customDurationInput, e.target.value as 'minutes' | 'hours')}
-                  className="p-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-slate-800 text-sm focus:border-blue-900 outline-none"
+                  className="min-h-[44px] p-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-slate-800 text-sm focus:border-blue-900 outline-none"
                 >
                   <option value="minutes">Minutes</option>
                   <option value="hours">Hours</option>
@@ -347,7 +353,7 @@ export const AdminStaffDelegationManager: React.FC<AdminStaffDelegationManagerPr
               </div>
 
               {/* Expiry Timestamp Preview */}
-              <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200 text-xs text-blue-900 flex items-center justify-between">
+              <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200 text-xs text-blue-900 flex flex-wrap items-center justify-between gap-2">
                 <span className="font-medium">Total Duration: <strong>{formatDurationText(durationMinutes)}</strong></span>
                 <span className="font-bold text-blue-950">
                   Expires at: {new Date(Date.now() + durationMinutes * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -365,7 +371,7 @@ export const AdminStaffDelegationManager: React.FC<AdminStaffDelegationManagerPr
                 value={purpose}
                 onChange={e => setPurpose(e.target.value)}
                 placeholder="e.g. Morning QR attendance duty, fee verification, exam moderation"
-                className="w-full p-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:border-blue-900 focus:bg-white transition-all outline-none"
+                className="w-full min-h-[44px] p-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:border-blue-900 focus:bg-white transition-all outline-none"
               />
             </div>
 
@@ -373,26 +379,26 @@ export const AdminStaffDelegationManager: React.FC<AdminStaffDelegationManagerPr
             <button
               type="submit"
               disabled={teachers.length === 0 || selectedSections.length === 0}
-              className="w-full py-3.5 bg-blue-950 hover:bg-blue-900 disabled:opacity-50 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg transition-all transform active:scale-98 flex items-center justify-center space-x-2 border-2 border-yellow-400"
+              className="w-full min-h-[44px] py-3.5 px-4 bg-blue-950 hover:bg-blue-900 disabled:opacity-50 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg transition-all transform active:scale-98 flex items-center justify-center gap-2 border-2 border-yellow-400"
             >
               <span>🚀</span>
-              <span>Authorize & Issue Temporary Admin Access</span>
+              <span className="break-words whitespace-normal">Authorize & Issue Temporary Admin Access</span>
             </button>
           </form>
         </div>
 
         {/* Active & Live Delegations Monitor */}
         <div className="lg:col-span-6 space-y-6">
-          <div className="bg-white p-6 sm:p-7 rounded-3xl border-2 border-slate-200 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="bg-white p-4 sm:p-7 rounded-3xl border-2 border-slate-200 shadow-sm space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
               <div>
-                <h3 className="text-lg sm:text-xl font-serif font-black text-blue-950 flex items-center gap-2">
+                <h3 className="text-lg sm:text-xl font-serif font-black text-blue-950 flex flex-wrap items-center gap-2">
                   <span>⏱️ Active Temporary Delegations</span>
-                  <span className="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800">
                     {activeDelegations.length} Live
                   </span>
                 </h3>
-                <p className="text-xs text-slate-500 font-medium">
+                <p className="text-xs text-slate-500 font-medium break-words whitespace-normal">
                   Staff currently holding valid elevated admin credentials.
                 </p>
               </div>
@@ -402,7 +408,7 @@ export const AdminStaffDelegationManager: React.FC<AdminStaffDelegationManagerPr
               <div className="text-center py-10 px-4 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
                 <span className="text-3xl block mb-2">🛡️</span>
                 <p className="text-sm font-black text-slate-700">No Active Delegations</p>
-                <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
+                <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1 break-words whitespace-normal">
                   All administrative access is strictly restricted to the School Principal & Primary Administrator. Use the form on the left to delegate temporary access.
                 </p>
               </div>
@@ -413,21 +419,21 @@ export const AdminStaffDelegationManager: React.FC<AdminStaffDelegationManagerPr
                   return (
                     <div
                       key={del.id}
-                      className="p-4 rounded-2xl border-2 border-emerald-300 bg-emerald-50/40 shadow-sm space-y-3 relative overflow-hidden"
+                      className="p-4 rounded-2xl border-2 border-emerald-300 bg-emerald-50/40 shadow-sm space-y-3"
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
                             <span className="text-base">👔</span>
-                            <span className="font-black text-blue-950 text-sm">
+                            <span className="font-black text-blue-950 text-sm break-words whitespace-normal">
                               {del.teacherName}
                             </span>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-600 text-white flex items-center gap-1 animate-pulse">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-600 text-white inline-flex items-center gap-1 animate-pulse">
                               <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
                               Active
                             </span>
                           </div>
-                          <p className="text-xs text-slate-600 font-medium mt-0.5">
+                          <p className="text-xs text-slate-600 font-medium mt-0.5 break-words whitespace-normal">
                             Purpose: <em>{del.purpose || 'Administrative assignment'}</em>
                           </p>
                         </div>
@@ -440,7 +446,7 @@ export const AdminStaffDelegationManager: React.FC<AdminStaffDelegationManagerPr
                               onRevokeDelegation(del.id);
                             }
                           }}
-                          className="px-2.5 py-1.5 bg-red-100 hover:bg-red-600 text-red-700 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all border border-red-300 shrink-0"
+                          className="min-h-[44px] px-3 py-2 bg-red-100 hover:bg-red-600 text-red-700 hover:text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all border border-red-300 shrink-0"
                           title="Instantly terminate admin privileges"
                         >
                           ⛔ Revoke Now
@@ -448,7 +454,7 @@ export const AdminStaffDelegationManager: React.FC<AdminStaffDelegationManagerPr
                       </div>
 
                       {/* Live Countdown Banner */}
-                      <div className="bg-white p-3 rounded-xl border border-emerald-200 flex items-center justify-between">
+                      <div className="bg-white p-3 rounded-xl border border-emerald-200 flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 text-xs text-slate-500 font-bold">
                           <span>⏳ Time Remaining:</span>
                         </div>
@@ -462,13 +468,13 @@ export const AdminStaffDelegationManager: React.FC<AdminStaffDelegationManagerPr
                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                           Granted Modules ({del.grantedSections.length}):
                         </span>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-1.5">
                           {del.grantedSections.map(sKey => {
                             const config = ALL_ADMIN_SECTIONS.find(s => s.id === sKey);
                             return (
                               <span
                                 key={sKey}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-100 text-blue-900 text-[10px] font-black"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 text-[11px] font-black break-words whitespace-normal"
                               >
                                 <span>{config?.icon || '⚙️'}</span>
                                 <span>{config?.label || sKey}</span>
@@ -478,7 +484,7 @@ export const AdminStaffDelegationManager: React.FC<AdminStaffDelegationManagerPr
                         </div>
                       </div>
 
-                      <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-emerald-100">
+                      <div className="text-[11px] text-slate-500 flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-emerald-100">
                         <span>Issued: {new Date(del.grantedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                         <span>Expires: {new Date(del.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
@@ -490,8 +496,8 @@ export const AdminStaffDelegationManager: React.FC<AdminStaffDelegationManagerPr
           </div>
 
           {/* Past & Expired Delegations Audit Trail */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-3">
-            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
+          <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200 shadow-xs space-y-3">
+            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex flex-wrap items-center justify-between gap-2">
               <span>📋 Recent Delegation Audit Log</span>
               <span>{pastDelegations.length} Historic</span>
             </h4>
@@ -503,22 +509,22 @@ export const AdminStaffDelegationManager: React.FC<AdminStaffDelegationManagerPr
                 {pastDelegations.slice(0, 8).map(del => (
                   <div
                     key={del.id}
-                    className="p-2.5 rounded-xl border border-slate-100 bg-slate-50/60 text-xs flex items-center justify-between text-slate-600"
+                    className="p-3 rounded-xl border border-slate-100 bg-slate-50/60 text-xs flex flex-wrap items-center justify-between gap-2 text-slate-600"
                   >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-800">{del.teacherName}</span>
-                        <span className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-bold text-slate-800 break-words whitespace-normal">{del.teacherName}</span>
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-black uppercase ${
                           del.status === 'revoked' ? 'bg-red-100 text-red-800' : 'bg-slate-200 text-slate-600'
                         }`}>
                           {del.status === 'revoked' ? 'Revoked' : 'Expired'}
                         </span>
                       </div>
-                      <p className="text-[10px] text-slate-400 mt-0.5">
+                      <p className="text-[11px] text-slate-500 mt-0.5 break-words whitespace-normal">
                         {del.grantedSections.length} section(s) • {formatDurationText(del.durationMinutes)}
                       </p>
                     </div>
-                    <div className="text-right text-[10px] text-slate-400">
+                    <div className="text-right text-[11px] text-slate-400 shrink-0">
                       {new Date(del.grantedAt).toLocaleDateString()}
                     </div>
                   </div>

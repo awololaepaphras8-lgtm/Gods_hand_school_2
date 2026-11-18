@@ -476,17 +476,15 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
   }, []);
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
+    <div className="w-full max-w-full space-y-8 animate-in fade-in duration-300">
       {/* Top Banner & Control Bar */}
-      <div className="bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-950 text-white rounded-3xl p-6 sm:p-8 shadow-2xl border-4 border-yellow-400/40 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-yellow-400/10 rounded-full blur-3xl pointer-events-none"></div>
-
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-          <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 rounded-2xl bg-yellow-400 text-blue-950 flex items-center justify-center text-3xl font-black shadow-xl shrink-0">
+      <div className="bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-950 text-white rounded-3xl p-4 sm:p-8 shadow-2xl border-4 border-yellow-400/40 relative">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 min-w-0">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-yellow-400 text-blue-950 flex items-center justify-center text-3xl font-black shadow-xl shrink-0">
               📷
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="px-3 py-0.5 rounded-full bg-yellow-400 text-blue-950 text-[10px] font-black uppercase tracking-widest shadow-sm">
                   Official Gate QR Attendance Station
@@ -496,10 +494,10 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
                 </span>
                 <span className="text-xs text-blue-300 font-bold hidden sm:inline">• Live Verification</span>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-serif font-black text-white mt-1">
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-serif font-black text-white mt-1 break-words">
                 Attendance QR Pass Scanner
               </h2>
-              <p className="text-xs text-blue-200/80 font-medium max-w-xl mt-0.5">
+              <p className="text-xs text-blue-200/80 font-medium max-w-xl mt-0.5 break-words">
                 Point device camera at student's digital or printed term QR code pass for instant gate authorization and automatic attendance sync.
               </p>
             </div>
@@ -508,7 +506,7 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
           {/* Quick Header Options & Back Button */}
           <div className="flex flex-wrap items-center gap-2.5">
             {/* Term Selector */}
-            <div className="flex items-center gap-1 bg-white/10 px-3 py-1.5 rounded-2xl border border-white/10">
+            <div className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-2xl border border-white/10 min-h-[44px]">
               <span className="text-[10px] font-black uppercase text-yellow-300">Term:</span>
               <select
                 value={selectedTerm}
@@ -516,7 +514,7 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
                   setSelectedTerm(e.target.value);
                   setActiveFeedback(null);
                 }}
-                className="bg-transparent text-white font-black text-xs outline-none cursor-pointer"
+                className="min-h-[36px] bg-transparent text-white font-black text-xs outline-none cursor-pointer"
               >
                 <option value="First Term" className="text-blue-950">First Term</option>
                 <option value="Second Term" className="text-blue-950">Second Term</option>
@@ -528,7 +526,7 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
             <button
               type="button"
               onClick={() => setIsSoundEnabled(!isSoundEnabled)}
-              className={`px-3 py-2 rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+              className={`min-h-[44px] px-3.5 py-2 rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                 isSoundEnabled
                   ? 'bg-yellow-400 text-blue-950 shadow-md'
                   : 'bg-white/10 text-white/60 hover:text-white border border-white/10'
@@ -542,7 +540,7 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all border border-white/10"
+                className="min-h-[44px] px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all border border-white/10"
               >
                 ✕ Close
               </button>
@@ -551,7 +549,7 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
         </div>
 
         {/* Live Session Counter Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-white/10 relative z-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-6 pt-6 border-t border-white/10">
           <div className="p-3.5 bg-white/5 rounded-2xl border border-white/10">
             <p className="text-[10px] font-black uppercase tracking-wider text-blue-300">Total Scanned</p>
             <p className="text-2xl font-black text-white font-mono mt-0.5">{sessionStats.totalScanned}</p>
@@ -572,26 +570,26 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
       </div>
 
       {/* Main Scanner Section Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
         {/* Left Column: Live Camera Viewfinder & Camera Controls */}
-        <div className="lg:col-span-7 space-y-5">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border-4 border-slate-100 shadow-xl space-y-5">
+        <div className="lg:col-span-7 space-y-5 min-w-0">
+          <div className="bg-white rounded-3xl p-4 sm:p-8 border-4 border-slate-100 shadow-xl space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-2">
-                <span className={`w-3 h-3 rounded-full ${isCameraActive ? 'bg-emerald-500 animate-ping' : 'bg-rose-500'}`}></span>
-                <span className="font-serif font-black text-blue-950 text-lg">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className={`w-3 h-3 rounded-full shrink-0 ${isCameraActive ? 'bg-emerald-500 animate-ping' : 'bg-rose-500'}`}></span>
+                <span className="font-serif font-black text-blue-950 text-base sm:text-lg break-words">
                   Device Camera Viewfinder
                 </span>
               </div>
 
               {/* Viewfinder Toolbar */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {isCameraActive && (
                   <>
                     <button
                       type="button"
                       onClick={toggleTorch}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1 ${
+                      className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1 ${
                         isTorchOn 
                           ? 'bg-yellow-400 text-blue-950 shadow-md' 
                           : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
@@ -604,7 +602,7 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
                     <button
                       type="button"
                       onClick={toggleFacingMode}
-                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1"
+                      className="min-h-[44px] px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1"
                       title="Flip camera (Front / Rear)"
                     >
                       <span>🔄 Flip</span>
@@ -615,7 +613,7 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
                 <button
                   type="button"
                   onClick={isCameraActive ? stopCamera : startCamera}
-                  className={`px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-xs ${
+                  className={`min-h-[44px] px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-xs ${
                     isCameraActive
                       ? 'bg-rose-100 hover:bg-rose-200 text-rose-800'
                       : 'bg-emerald-600 hover:bg-emerald-700 text-white'
@@ -642,47 +640,33 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
                 className="w-full h-full object-cover [&_video]:w-full [&_video]:h-full [&_video]:object-cover"
               ></div>
 
-              {/* Scanning Target Overlay Reticle & Laser */}
+              {/* Scanning Target Overlay Reticle */}
               {isCameraActive && (
-                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                  {/* Outer Dim Overlay */}
-                  <div className="relative w-64 h-64 sm:w-72 sm:h-72 border-2 border-yellow-400/70 rounded-3xl shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]">
-                    {/* Corner Reticle Markers */}
-                    <div className="absolute -top-2 -left-2 w-8 h-8 border-t-4 border-l-4 border-yellow-400 rounded-tl-xl"></div>
-                    <div className="absolute -top-2 -right-2 w-8 h-8 border-t-4 border-r-4 border-yellow-400 rounded-tr-xl"></div>
-                    <div className="absolute -bottom-2 -left-2 w-8 h-8 border-b-4 border-l-4 border-yellow-400 rounded-bl-xl"></div>
-                    <div className="absolute -bottom-2 -right-2 w-8 h-8 border-b-4 border-r-4 border-yellow-400 rounded-br-xl"></div>
-
-                    {/* Sweeping Laser Beam Animation */}
-                    <div className="w-full h-1 bg-gradient-to-r from-transparent via-yellow-400 to-transparent shadow-[0_0_15px_#facc15] animate-bounce opacity-80 mt-16"></div>
-
-                    <div className="absolute -bottom-8 left-0 right-0 text-center">
-                      <span className="px-3 py-1 bg-black/75 text-yellow-300 text-[10px] font-black uppercase tracking-widest rounded-full backdrop-blur-sm border border-yellow-400/30">
-                        Align Student QR Code Inside Box
-                      </span>
-                    </div>
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-4">
+                  <div className="relative w-48 h-48 sm:w-64 sm:h-64 border-2 border-yellow-400/70 rounded-3xl shadow-[0_0_0_9999px_rgba(0,0,0,0.45)] flex items-center justify-center">
+                    <div className="w-full h-1 bg-gradient-to-r from-transparent via-yellow-400 to-transparent shadow-[0_0_15px_#facc15] animate-bounce opacity-80"></div>
                   </div>
                 </div>
               )}
 
               {/* Camera Paused / Error Overlay */}
               {(!isCameraActive || cameraError) && (
-                <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center text-white z-20 space-y-4">
-                  <div className="w-16 h-16 rounded-3xl bg-white/10 flex items-center justify-center text-3xl">
+                <div className="bg-slate-900/95 backdrop-blur-sm flex flex-col items-center justify-center p-5 text-center text-white z-20 space-y-4 w-full h-full overflow-y-auto">
+                  <div className="w-14 h-14 rounded-3xl bg-white/10 flex items-center justify-center text-3xl shrink-0">
                     📷
                   </div>
-                  <div className="max-w-md">
-                    <h4 className="font-serif font-black text-lg text-yellow-400">
+                  <div className="max-w-md space-y-1.5">
+                    <h4 className="font-serif font-black text-base sm:text-lg text-yellow-400 break-words">
                       {cameraError ? 'Camera Access Required' : 'Camera Paused'}
                     </h4>
-                    <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                    <p className="text-xs text-slate-300 leading-relaxed break-words">
                       {cameraError || 'The live device camera scanner is currently paused. Click below to resume scanning.'}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={startCamera}
-                    className="px-6 py-3 bg-yellow-400 hover:bg-yellow-300 text-blue-950 font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl transition-all active:scale-95 flex items-center gap-2"
+                    className="min-h-[44px] px-6 py-3 bg-yellow-400 hover:bg-yellow-300 text-blue-950 font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl transition-all active:scale-95 flex items-center gap-2"
                   >
                     <span>▶</span>
                     <span>Start / Retry Camera Scanner</span>
@@ -691,9 +675,15 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
               )}
             </div>
 
+            {isCameraActive && (
+              <p className="text-center text-[11px] font-black uppercase tracking-wider text-blue-950 bg-yellow-50 border border-yellow-200 rounded-xl py-2 px-3 break-words">
+                Align Student QR Code Inside Viewfinder Box
+              </p>
+            )}
+
             {/* Camera Selector Dropdown (Multi-camera hardware) */}
             {availableCameras.length > 1 && (
-              <div className="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200">
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200">
                 <span className="text-xs font-black text-slate-500 uppercase tracking-wider">
                   Select Video Input:
                 </span>
@@ -705,7 +695,7 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
                     await stopCamera();
                     setTimeout(() => startCamera(), 200);
                   }}
-                  className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-blue-950 outline-none max-w-xs truncate"
+                  className="min-h-[44px] w-full sm:w-auto px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-blue-950 outline-none max-w-full sm:max-w-xs"
                 >
                   {availableCameras.map(cam => (
                     <option key={cam.id} value={cam.id}>
@@ -721,18 +711,18 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
               <label className="text-xs font-black text-slate-500 uppercase tracking-wider block mb-2">
                 Manual Pupil ID / Card Entry (Backup Validation):
               </label>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
                   value={manualInput}
                   onChange={(e) => setManualInput(e.target.value)}
                   placeholder="e.g. STU-1725883200 or Student Name / Code"
-                  className="flex-1 px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl text-xs font-bold text-blue-950 outline-none focus:bg-white focus:border-blue-900 transition-all"
+                  className="min-h-[44px] flex-1 px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl text-xs font-bold text-blue-950 outline-none focus:bg-white focus:border-blue-900 transition-all"
                 />
                 <button
                   type="submit"
                   disabled={!manualInput.trim()}
-                  className="px-6 py-3 bg-blue-900 hover:bg-blue-800 disabled:opacity-40 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-2xl shadow-md transition-all active:scale-95 shrink-0"
+                  className="min-h-[44px] px-6 py-3 bg-blue-900 hover:bg-blue-800 disabled:opacity-40 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-2xl shadow-md transition-all active:scale-95 shrink-0"
                 >
                   Verify & Mark
                 </button>
@@ -741,16 +731,16 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
               {/* Quick Demo / Test Pupil Chips */}
               {students.length > 0 && (
                 <div className="mt-3 pt-2.5 border-t border-slate-100">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1 break-words">
                     <span>⚡ Quick Test Pupil Passes (Simulate QR Scan):</span>
                   </p>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-2">
                     {students.slice(0, 5).map((stu) => (
                       <button
                         key={stu.id}
                         type="button"
                         onClick={() => processAttendanceScan(`GHS-ATT|${stu.id}|${selectedTerm}|${Date.now()}`)}
-                        className="px-2.5 py-1 bg-blue-50 hover:bg-yellow-400 hover:text-blue-950 text-blue-900 rounded-xl text-[10px] font-black border border-blue-100 transition-all active:scale-95"
+                        className="min-h-[44px] px-3 py-2 bg-blue-50 hover:bg-yellow-400 hover:text-blue-950 text-blue-900 rounded-xl text-[10px] font-black border border-blue-100 transition-all active:scale-95 break-words"
                         title={`Simulate scanning ${stu.name}'s QR code pass`}
                       >
                         🪪 {stu.name.split(' ')[0]} ({stu.grade})
@@ -759,7 +749,7 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
                     <button
                       type="button"
                       onClick={() => processAttendanceScan('INVALID-TEST-PASS-000')}
-                      className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-[10px] font-black border border-rose-200 transition-all active:scale-95"
+                      className="min-h-[44px] px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-[10px] font-black border border-rose-200 transition-all active:scale-95"
                       title="Test invalid QR pass failure feedback"
                     >
                       ✗ Test Invalid Pass
@@ -772,10 +762,10 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
         </div>
 
         {/* Right Column: Instant Success/Failure Feedback Card & Live Scan Log */}
-        <div className="lg:col-span-5 space-y-6">
+        <div className="lg:col-span-5 space-y-6 min-w-0">
           {/* Real-time Verification Feedback Card */}
           {activeFeedback ? (
-            <div className={`p-6 sm:p-8 rounded-3xl border-4 shadow-2xl transition-all duration-300 animate-in zoom-in-95 ${
+            <div className={`p-5 sm:p-8 rounded-3xl border-4 shadow-2xl transition-all duration-300 animate-in zoom-in-95 ${
               activeFeedback.type === 'success'
                 ? 'bg-gradient-to-br from-emerald-950 to-teal-950 border-emerald-400 text-white shadow-emerald-900/30'
                 : activeFeedback.type === 'denied' || activeFeedback.type === 'failure'
@@ -783,9 +773,9 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
                 : 'bg-gradient-to-br from-amber-950 to-yellow-950 border-amber-400 text-white shadow-amber-900/30'
             }`}>
               {/* Header Status & Badge */}
-              <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-5">
-                <div className="flex items-center gap-3">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl font-black shadow-lg shrink-0 ${
+              <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-4 mb-5">
+                <div className="flex items-start sm:items-center gap-3 min-w-0">
+                  <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center text-2xl sm:text-3xl font-black shadow-lg shrink-0 ${
                     activeFeedback.type === 'success'
                       ? 'bg-emerald-400 text-emerald-950'
                       : activeFeedback.type === 'denied' || activeFeedback.type === 'failure'
@@ -794,8 +784,8 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
                   }`}>
                     {activeFeedback.type === 'success' ? '✓' : activeFeedback.type === 'warning' ? '⏱️' : '⛔'}
                   </div>
-                  <div>
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                  <div className="min-w-0">
+                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest break-words ${
                       activeFeedback.type === 'success'
                         ? 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/40'
                         : activeFeedback.type === 'denied' || activeFeedback.type === 'failure'
@@ -811,7 +801,8 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
                 <button
                   type="button"
                   onClick={() => setActiveFeedback(null)}
-                  className="text-white/60 hover:text-white font-black text-sm p-1"
+                  aria-label="Dismiss Feedback"
+                  className="min-h-[44px] min-w-[44px] shrink-0 text-white/70 hover:text-white font-black text-sm flex items-center justify-center rounded-xl hover:bg-white/10"
                   title="Dismiss Feedback"
                 >
                   ✕
@@ -821,19 +812,19 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
               {/* Pupil Details (if found) */}
               {activeFeedback.student ? (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-4 bg-white/10 p-4 rounded-2xl border border-white/10">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 bg-white/10 p-4 rounded-2xl border border-white/10">
                     <div className="w-16 h-16 rounded-2xl bg-yellow-400 text-blue-950 flex items-center justify-center font-serif font-black text-2xl shadow-md shrink-0">
                       {activeFeedback.student.name.charAt(0)}
                     </div>
-                    <div className="overflow-hidden">
-                      <h3 className="font-serif font-black text-xl text-yellow-300 leading-tight truncate">
+                    <div className="min-w-0">
+                      <h3 className="font-serif font-black text-lg sm:text-xl text-yellow-300 leading-tight break-words whitespace-normal">
                         {activeFeedback.student.name}
                       </h3>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
                         <span className="px-2.5 py-0.5 bg-blue-900/80 text-yellow-300 rounded-md text-xs font-black uppercase">
                           Class: {activeFeedback.student.grade}
                         </span>
-                        <span className="text-xs font-mono font-bold text-white/80">
+                        <span className="text-xs font-mono font-bold text-white/80 break-all">
                           ID: {activeFeedback.student.id}
                         </span>
                       </div>
@@ -841,24 +832,24 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
                   </div>
 
                   {/* Feedback Message */}
-                  <p className="text-xs font-medium text-white/90 leading-relaxed bg-black/20 p-3.5 rounded-xl border border-white/5">
+                  <p className="text-xs font-medium text-white/90 leading-relaxed bg-black/20 p-3.5 rounded-xl border border-white/5 break-words">
                     {activeFeedback.message}
                   </p>
 
                   {/* Linked Parent & Guardian Emergency Contact */}
                   {activeFeedback.parent && (
-                    <div className="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-1">
-                      <div className="flex items-center justify-between">
+                    <div className="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="text-[10px] font-black uppercase text-yellow-300 tracking-wider">
                           Parent / Guardian Contact:
                         </span>
                         <span className="text-[10px] text-white/60 font-bold">{activeFeedback.parent.relationship || 'Guardian'}</span>
                       </div>
-                      <p className="text-xs font-bold text-white">{activeFeedback.parent.fullName}</p>
-                      <div className="flex items-center justify-between pt-1">
+                      <p className="text-xs font-bold text-white break-words">{activeFeedback.parent.fullName}</p>
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                         <a 
                           href={`tel:${activeFeedback.parent.phone}`}
-                          className="text-xs font-mono font-bold text-emerald-300 hover:underline"
+                          className="min-h-[44px] inline-flex items-center text-xs font-mono font-bold text-emerald-300 hover:underline break-all"
                         >
                           📞 {activeFeedback.parent.phone}
                         </a>
@@ -866,7 +857,7 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
                           href={`https://wa.me/${activeFeedback.parent.phone.replace(/[^0-9]/g, '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-all"
+                          className="min-h-[44px] inline-flex items-center px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-all"
                         >
                           WhatsApp
                         </a>
@@ -874,14 +865,14 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
                     </div>
                   )}
 
-                  <div className="pt-2 flex justify-between items-center">
+                  <div className="pt-2 flex flex-wrap justify-between items-center gap-3">
                     <span className="text-[10px] text-white/60 uppercase font-black tracking-widest">
                       Have Faith In God
                     </span>
                     <button
                       type="button"
                       onClick={() => setActiveFeedback(null)}
-                      className="px-5 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95"
+                      className="min-h-[44px] px-5 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95"
                     >
                       Scan Next Pupil →
                     </button>
@@ -889,7 +880,7 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <p className="text-xs font-medium text-white/90 leading-relaxed bg-black/20 p-4 rounded-xl border border-white/5">
+                  <p className="text-xs font-medium text-white/90 leading-relaxed bg-black/20 p-4 rounded-xl border border-white/5 break-words">
                     {activeFeedback.message}
                   </p>
                   <p className="text-[11px] text-rose-300/80 font-mono break-all bg-rose-950/40 p-2.5 rounded-lg border border-rose-800/40">
@@ -898,7 +889,7 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
                   <button
                     type="button"
                     onClick={() => setActiveFeedback(null)}
-                    className="w-full py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all active:scale-95"
+                    className="min-h-[44px] w-full py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all active:scale-95"
                   >
                     Dismiss & Scan Next
                   </button>
@@ -906,20 +897,20 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
               )}
             </div>
           ) : (
-            <div className="bg-slate-50 rounded-3xl p-8 border-2 border-dashed border-slate-200 text-center space-y-3">
+            <div className="bg-slate-50 rounded-3xl p-6 sm:p-8 border-2 border-dashed border-slate-200 text-center space-y-3">
               <span className="text-5xl block">🎯</span>
-              <h4 className="font-serif font-black text-blue-950 text-lg">
+              <h4 className="font-serif font-black text-blue-950 text-lg break-words">
                 Ready to Scan Pupil QR Passes
               </h4>
-              <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-sm mx-auto">
+              <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-sm mx-auto break-words">
                 Position pupil's printed ID badge or smartphone screen in front of the camera. The scanner validates gate clearance and marks daily presence instantly.
               </p>
             </div>
           )}
 
           {/* Real-time Session Scan Activity Feed */}
-          <div className="bg-white rounded-3xl p-6 border-2 border-slate-100 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="bg-white rounded-3xl p-4 sm:p-6 border-2 border-slate-100 shadow-xl space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <span className="text-lg">📋</span>
                 <h4 className="font-serif font-black text-blue-950 text-base">
@@ -938,8 +929,8 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
             ) : (
               <div className="divide-y divide-slate-100 max-h-[320px] overflow-y-auto space-y-1 custom-scrollbar pr-1">
                 {scanLogs.map((log) => (
-                  <div key={log.id} className="pt-2 pb-2 flex items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center space-x-2.5 overflow-hidden">
+                  <div key={log.id} className="pt-2 pb-2 flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${
                         log.status === 'present'
                           ? 'bg-emerald-100 text-emerald-800'
@@ -949,11 +940,11 @@ export const AttendanceCameraScanner: React.FC<AttendanceCameraScannerProps> = (
                       }`}>
                         {log.status === 'present' ? '✓' : log.status === 'duplicate' ? '⏱️' : '✗'}
                       </div>
-                      <div className="overflow-hidden">
-                        <p className="font-black text-blue-950 truncate leading-snug">
+                      <div className="min-w-0">
+                        <p className="font-black text-blue-950 break-words whitespace-normal leading-snug">
                           {log.studentName}
                         </p>
-                        <p className="text-[10px] text-slate-400 font-mono">
+                        <p className="text-[10px] text-slate-400 font-mono break-all">
                           {log.grade} • {log.studentId}
                         </p>
                       </div>

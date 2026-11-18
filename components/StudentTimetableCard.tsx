@@ -45,28 +45,28 @@ export const StudentTimetableCard: React.FC<StudentTimetableCardProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-3xl border-2 border-blue-900/10 shadow-md overflow-hidden space-y-0">
+    <div className="w-full max-w-full bg-white rounded-3xl border-2 border-blue-900/10 shadow-md space-y-0">
       {/* Card Header */}
-      <div className="bg-gradient-to-r from-blue-900 via-indigo-950 to-blue-950 text-white p-6 sm:p-7 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🗓️</span>
-            <h3 className="text-xl sm:text-2xl font-black font-serif text-yellow-400">
+      <div className="bg-gradient-to-r from-blue-900 via-indigo-950 to-blue-950 rounded-t-[1.35rem] text-white p-4 sm:p-7 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-2xl shrink-0">🗓️</span>
+            <h3 className="text-lg sm:text-2xl font-black font-serif text-yellow-400 break-words">
               Class Weekly Timetable
             </h3>
           </div>
-          <p className="text-xs sm:text-sm text-blue-200 font-medium mt-1">
+          <p className="text-xs sm:text-sm text-blue-200 font-medium mt-1 break-words">
             Official lesson schedule for <span className="font-bold text-white">{grade}</span> ({activeTerm})
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
           {/* View Mode Toggle */}
-          <div className="bg-blue-950/80 p-1 rounded-xl border border-blue-800/60 flex items-center gap-1">
+          <div className="bg-blue-950/80 p-1.5 rounded-xl border border-blue-800/60 flex flex-wrap items-center gap-1.5">
             <button
               type="button"
               onClick={() => setViewMode('tabular')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1 ${
+              className={`min-h-[44px] px-3 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                 viewMode === 'tabular' ? 'bg-yellow-400 text-blue-950 shadow-xs' : 'text-blue-200 hover:text-white'
               }`}
             >
@@ -76,7 +76,7 @@ export const StudentTimetableCard: React.FC<StudentTimetableCardProps> = ({
             <button
               type="button"
               onClick={() => setViewMode('scheduleList')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1 ${
+              className={`min-h-[44px] px-3 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                 viewMode === 'scheduleList' ? 'bg-yellow-400 text-blue-950 shadow-xs' : 'text-blue-200 hover:text-white'
               }`}
             >
@@ -86,7 +86,7 @@ export const StudentTimetableCard: React.FC<StudentTimetableCardProps> = ({
             <button
               type="button"
               onClick={() => setViewMode('day')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1 ${
+              className={`min-h-[44px] px-3 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                 viewMode === 'day' ? 'bg-yellow-400 text-blue-950 shadow-xs' : 'text-blue-200 hover:text-white'
               }`}
             >
@@ -98,18 +98,18 @@ export const StudentTimetableCard: React.FC<StudentTimetableCardProps> = ({
           <button
             type="button"
             onClick={handlePrint}
-            className="p-2.5 bg-blue-800/80 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition-all shadow-xs flex items-center gap-1"
+            className="min-h-[44px] min-w-[44px] px-3.5 py-2 bg-blue-800/80 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition-all shadow-xs flex items-center justify-center gap-1.5"
             title="Print or Save Timetable"
           >
             <span>🖨️</span>
-            <span className="hidden sm:inline text-[11px] uppercase tracking-wider">Print</span>
+            <span className="text-[11px] uppercase tracking-wider">Print</span>
           </button>
         </div>
       </div>
 
       {/* Quick Day Selector Tabs (for Day Focus or Table Filtering) */}
       {viewMode === 'day' && (
-        <div className="bg-slate-50 border-b border-slate-200 px-6 py-3 flex flex-wrap items-center gap-2">
+        <div className="bg-slate-50 border-b border-slate-200 px-4 sm:px-6 py-3 flex flex-wrap items-center gap-2">
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mr-1">Select Day:</span>
           {DAYS_OF_WEEK.map(day => {
             const isToday = isSchoolDay && todayName === day;
@@ -121,7 +121,7 @@ export const StudentTimetableCard: React.FC<StudentTimetableCardProps> = ({
                 key={day}
                 type="button"
                 onClick={() => setSelectedDay(day)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                   isSelected
                     ? 'bg-blue-900 text-yellow-400 shadow-xs'
                     : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200'
@@ -129,7 +129,7 @@ export const StudentTimetableCard: React.FC<StudentTimetableCardProps> = ({
               >
                 <span>{day}</span>
                 {isToday && (
-                  <span className="px-1.5 py-0.2 bg-emerald-500 text-white text-[9px] font-black rounded-md">
+                  <span className="px-1.5 py-0.5 bg-emerald-500 text-white text-[9px] font-black rounded-md">
                     Today
                   </span>
                 )}
@@ -141,7 +141,7 @@ export const StudentTimetableCard: React.FC<StudentTimetableCardProps> = ({
       )}
 
       {/* Content Area */}
-      <div className="p-6 sm:p-7">
+      <div className="p-4 sm:p-7">
         {periods.length === 0 ? (
           <div className="p-10 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 space-y-3">
             <span className="text-4xl block">📋</span>
@@ -199,7 +199,7 @@ export const StudentTimetableCard: React.FC<StudentTimetableCardProps> = ({
                           <div className="flex items-center justify-between gap-1">
                             <span>{day}</span>
                             {isToday && (
-                              <span className="px-1.5 py-0.2 bg-emerald-500 text-white text-[8px] font-black rounded uppercase">
+                              <span className="px-1.5 py-0.5 bg-emerald-500 text-white text-[8px] font-black rounded uppercase">
                                 Today
                               </span>
                             )}
@@ -240,7 +240,7 @@ export const StudentTimetableCard: React.FC<StudentTimetableCardProps> = ({
                         </td>
 
                         {/* Standard / Representative Time */}
-                        <td className="py-3 px-3 text-center border-r border-slate-200 font-mono text-[11px] font-bold text-slate-600 bg-slate-50/50 whitespace-nowrap">
+                        <td className="py-3 px-3 text-center border-r border-slate-200 font-mono text-[11px] font-bold text-slate-600 bg-slate-50/50 whitespace-normal sm:whitespace-nowrap">
                           ⏰ {samplePeriod.startTime} - {samplePeriod.endTime}
                         </td>
 
@@ -274,18 +274,18 @@ export const StudentTimetableCard: React.FC<StudentTimetableCardProps> = ({
                                     ⏰ {p.startTime} - {p.endTime}
                                   </span>
                                 )}
-                                <div className={`font-black text-xs leading-snug ${
+                                <div className={`font-black text-xs leading-snug break-words ${
                                   isBreak ? 'text-amber-900 italic' : isDevotion ? 'text-purple-900' : 'text-blue-950'
                                 }`}>
                                   {p.subject}
                                 </div>
                                 {(p.teacherName || p.room) && !isBreak && (
-                                  <div className="text-[10px] text-slate-500 font-medium flex items-center justify-between gap-1">
+                                  <div className="text-[10px] text-slate-500 font-medium flex flex-wrap items-center justify-between gap-1">
                                     {p.teacherName && (
-                                      <span className="truncate max-w-[90px]">{p.teacherName}</span>
+                                      <span className="break-words whitespace-normal">{p.teacherName}</span>
                                     )}
                                     {p.room && (
-                                      <span className="text-slate-400 font-mono text-[9px]">{p.room}</span>
+                                      <span className="text-slate-400 font-mono text-[9px] break-words">{p.room}</span>
                                     )}
                                   </div>
                                 )}
@@ -346,7 +346,7 @@ export const StudentTimetableCard: React.FC<StudentTimetableCardProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedDay('All')}
-                  className={`px-3 py-1 rounded-xl text-xs font-black uppercase transition-all ${
+                  className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-black uppercase transition-all ${
                     selectedDay === 'All' ? 'bg-blue-900 text-yellow-400 shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
@@ -357,7 +357,7 @@ export const StudentTimetableCard: React.FC<StudentTimetableCardProps> = ({
                     key={d}
                     type="button"
                     onClick={() => setSelectedDay(d)}
-                    className={`px-3 py-1 rounded-xl text-xs font-black uppercase transition-all ${
+                    className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-black uppercase transition-all ${
                       selectedDay === d ? 'bg-blue-900 text-yellow-400 shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
@@ -416,8 +416,8 @@ export const StudentTimetableCard: React.FC<StudentTimetableCardProps> = ({
                           <td className="py-2.5 px-3 font-mono font-bold text-slate-500">
                             {isBreak ? 'Interval' : `Period ${idx + 1}`}
                           </td>
-                          <td className="py-2.5 px-3 font-mono font-bold text-slate-700 whitespace-nowrap">
-                            <span className="px-2 py-0.5 bg-slate-100 rounded-md border border-slate-200">
+                          <td className="py-2.5 px-3 font-mono font-bold text-slate-700 whitespace-normal sm:whitespace-nowrap">
+                            <span className="inline-block px-2 py-0.5 bg-slate-100 rounded-md border border-slate-200">
                               ⏰ {p.startTime} - {p.endTime}
                             </span>
                           </td>
@@ -473,7 +473,7 @@ export const StudentTimetableCard: React.FC<StudentTimetableCardProps> = ({
                             : 'bg-slate-50 border-slate-200 hover:border-blue-900/30'
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                         <span className="font-mono text-xs font-black px-2.5 py-1 bg-white rounded-lg border border-slate-200 text-blue-900 shadow-2xs">
                           ⏰ {period.startTime} - {period.endTime}
                         </span>
@@ -482,18 +482,18 @@ export const StudentTimetableCard: React.FC<StudentTimetableCardProps> = ({
                         </span>
                       </div>
 
-                      <h5 className="font-black text-sm sm:text-base text-blue-950 leading-snug">
+                      <h5 className="font-black text-sm sm:text-base text-blue-950 leading-snug break-words">
                         {period.subject}
                       </h5>
 
-                      <div className="mt-3 pt-2.5 border-t border-slate-200/60 flex items-center justify-between text-xs text-slate-500 font-medium">
+                      <div className="mt-3 pt-2.5 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 font-medium">
                         {period.teacherName && (
-                          <span className="truncate max-w-[150px]">
+                          <span className="break-words whitespace-normal">
                             👨‍🏫 {period.teacherName}
                           </span>
                         )}
                         {period.room && (
-                          <span className="text-[11px] text-slate-400">
+                          <span className="text-[11px] text-slate-400 break-words">
                             📍 {period.room}
                           </span>
                         )}

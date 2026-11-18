@@ -182,38 +182,37 @@ export const StudentPhotoUploadModal: React.FC<StudentPhotoUploadModalProps> = (
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div 
-        className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border-2 border-slate-100 dark:border-slate-800 relative overflow-hidden flex flex-col text-slate-900 dark:text-slate-100"
+        className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full max-h-[92vh] overflow-y-auto overflow-x-hidden p-4 sm:p-8 shadow-2xl border-2 border-slate-100 dark:border-slate-800 border-t-8 border-t-yellow-400 flex flex-col text-slate-900 dark:text-slate-100"
         onClick={e => e.stopPropagation()}
       >
-        {/* Top Gold Stripe */}
-        <div className="absolute top-0 left-0 right-0 h-2 bg-yellow-400"></div>
-
-        {/* Close Button */}
-        <button
-          type="button"
-          onClick={() => {
-            stopCamera();
-            onClose();
-          }}
-          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white flex items-center justify-center font-black transition-colors"
-          title="Close"
-        >
-          ✕
-        </button>
-
-        {/* Header */}
-        <div className="text-left mb-6 pr-8">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">📸</span>
-            <h3 className="font-serif font-black text-xl text-blue-950 dark:text-yellow-400">
-              {uploaderTitle}
-            </h3>
+        {/* Header with flex Close Button */}
+        <div className="flex items-start justify-between gap-3 mb-6">
+          <div className="text-left min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl shrink-0">📸</span>
+              <h3 className="font-serif font-black text-lg sm:text-xl text-blue-950 dark:text-yellow-400 break-words">
+                {uploaderTitle}
+              </h3>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 break-words">
+              {isParentView 
+                ? `Update official pupil portrait for ${student.name} (${student.grade})`
+                : `Set your official student passport photograph for ${student.name}`}
+            </p>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            {isParentView 
-              ? `Update official pupil portrait for ${student.name} (${student.grade})`
-              : `Set your official student passport photograph for ${student.name}`}
-          </p>
+
+          <button
+            type="button"
+            onClick={() => {
+              stopCamera();
+              onClose();
+            }}
+            className="min-h-[44px] min-w-[44px] rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white flex items-center justify-center font-black transition-colors shrink-0"
+            title="Close"
+            aria-label="Close photo upload modal"
+          >
+            ✕
+          </button>
         </div>
 
         {/* Hidden File Inputs */}
@@ -239,27 +238,25 @@ export const StudentPhotoUploadModal: React.FC<StudentPhotoUploadModalProps> = (
         {mode === 'options' && (
           <div className="space-y-6">
             {/* Current Photo Avatar Display */}
-            <div className="flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-slate-800/60 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700">
-              <div className="relative">
-                <div className="w-32 h-32 rounded-3xl overflow-hidden shadow-xl border-4 border-yellow-400 bg-white dark:bg-slate-800 flex items-center justify-center text-4xl font-serif font-black text-blue-900 dark:text-yellow-400">
-                  {student.photo ? (
-                    <img 
-                      src={student.photo} 
-                      alt={student.name} 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span>{student.name.charAt(0)}</span>
-                  )}
-                </div>
-                {student.photo && (
-                  <span className="absolute -bottom-2 -right-2 px-2.5 py-0.5 bg-emerald-500 text-white rounded-full text-[9px] font-black uppercase tracking-wider shadow-md">
-                    Active
-                  </span>
+            <div className="flex flex-col items-center justify-center p-5 sm:p-6 bg-slate-50 dark:bg-slate-800/60 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700">
+              <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl overflow-hidden shadow-xl border-4 border-yellow-400 bg-white dark:bg-slate-800 flex items-center justify-center text-4xl font-serif font-black text-blue-900 dark:text-yellow-400">
+                {student.photo ? (
+                  <img 
+                    src={student.photo} 
+                    alt={student.name} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span>{student.name.charAt(0)}</span>
                 )}
               </div>
-              <p className="font-black text-sm text-blue-950 dark:text-white mt-3">{student.name}</p>
-              <p className="text-xs text-slate-400">{student.grade} • ID: {student.id}</p>
+              {student.photo && (
+                <span className="mt-2 px-2.5 py-0.5 bg-emerald-500 text-white rounded-full text-[9px] font-black uppercase tracking-wider shadow-xs">
+                  Active Photo
+                </span>
+              )}
+              <p className="font-black text-sm text-blue-950 dark:text-white mt-2 text-center break-words">{student.name}</p>
+              <p className="text-xs text-slate-400 text-center break-words">{student.grade} • ID: {student.id}</p>
             </div>
 
             {/* Upload & Capture Actions */}
@@ -268,7 +265,7 @@ export const StudentPhotoUploadModal: React.FC<StudentPhotoUploadModalProps> = (
               <button
                 type="button"
                 onClick={() => startCamera('user')}
-                className="p-4 rounded-2xl bg-blue-900 hover:bg-blue-800 text-yellow-400 flex flex-col items-center justify-center text-center shadow-md active:scale-95 transition-all border-2 border-blue-950 group"
+                className="min-h-[44px] p-4 rounded-2xl bg-blue-900 hover:bg-blue-800 text-yellow-400 flex flex-col items-center justify-center text-center shadow-md active:scale-95 transition-all border-2 border-blue-950 group"
               >
                 <span className="text-3xl mb-1 group-hover:scale-110 transition-transform">📷</span>
                 <span className="font-black text-xs uppercase tracking-wider text-white">Open Device Camera</span>
@@ -279,7 +276,7 @@ export const StudentPhotoUploadModal: React.FC<StudentPhotoUploadModalProps> = (
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="p-4 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 flex flex-col items-center justify-center text-center shadow-xs active:scale-95 transition-all border border-slate-200 dark:border-slate-700 group"
+                className="min-h-[44px] p-4 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 flex flex-col items-center justify-center text-center shadow-xs active:scale-95 transition-all border border-slate-200 dark:border-slate-700 group"
               >
                 <span className="text-3xl mb-1 group-hover:scale-110 transition-transform">🖼️</span>
                 <span className="font-black text-xs uppercase tracking-wider">Choose From Gallery</span>
@@ -291,10 +288,10 @@ export const StudentPhotoUploadModal: React.FC<StudentPhotoUploadModalProps> = (
             <button
               type="button"
               onClick={() => mobileCameraInputRef.current?.click()}
-              className="w-full py-3 px-4 rounded-2xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-yellow-300 border border-amber-200 dark:border-amber-800/60 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95"
+              className="w-full min-h-[44px] py-3 px-4 rounded-2xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-yellow-300 border border-amber-200 dark:border-amber-800/60 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95"
             >
               <span>📱</span>
-              <span>Launch Phone Camera App Direct</span>
+              <span className="break-words whitespace-normal">Launch Phone Camera App Direct</span>
             </button>
 
             {student.photo && (
@@ -302,7 +299,7 @@ export const StudentPhotoUploadModal: React.FC<StudentPhotoUploadModalProps> = (
                 <button
                   type="button"
                   onClick={handleRemovePhoto}
-                  className="text-xs text-rose-500 hover:text-rose-700 font-bold flex items-center gap-1 hover:underline"
+                  className="min-h-[44px] px-3 text-xs text-rose-500 hover:text-rose-700 font-bold flex items-center gap-1 hover:underline"
                 >
                   <span>🗑️</span>
                   <span>Remove Current Photo</span>
@@ -326,7 +323,7 @@ export const StudentPhotoUploadModal: React.FC<StudentPhotoUploadModalProps> = (
 
               {/* Passport Guide Overlay Oval / Square */}
               <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                <div className="w-56 h-56 rounded-full border-2 border-yellow-400/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.4)] flex items-center justify-center">
+                <div className="w-40 h-40 sm:w-56 sm:h-56 rounded-full border-2 border-yellow-400/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.4)] flex items-center justify-center">
                   <span className="text-[10px] font-black uppercase text-yellow-300 bg-black/60 px-2 py-0.5 rounded-full tracking-widest">
                     Center Face Here
                   </span>
@@ -338,7 +335,7 @@ export const StudentPhotoUploadModal: React.FC<StudentPhotoUploadModalProps> = (
                 <button
                   type="button"
                   onClick={handleToggleCamera}
-                  className="p-2.5 rounded-full bg-black/60 hover:bg-black/80 text-white text-xs font-black shadow-md border border-white/20 active:scale-95 transition-transform"
+                  className="min-h-[44px] px-3.5 py-2 rounded-full bg-black/70 hover:bg-black/90 text-white text-xs font-black shadow-md border border-white/20 active:scale-95 transition-transform"
                   title="Flip Camera (Front / Back)"
                 >
                   🔄 Flip
@@ -347,20 +344,20 @@ export const StudentPhotoUploadModal: React.FC<StudentPhotoUploadModalProps> = (
             </div>
 
             {cameraError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-bold text-center">
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-bold text-center break-words">
                 {cameraError}
               </div>
             )}
 
             {/* Shutter Bar */}
-            <div className="flex items-center justify-between gap-3 pt-2">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => {
                   stopCamera();
                   setMode('options');
                 }}
-                className="px-5 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 font-black text-xs uppercase tracking-wider"
+                className="min-h-[44px] px-5 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 font-black text-xs uppercase tracking-wider"
               >
                 Cancel
               </button>
@@ -369,7 +366,7 @@ export const StudentPhotoUploadModal: React.FC<StudentPhotoUploadModalProps> = (
                 type="button"
                 onClick={handleSnapPhoto}
                 disabled={!cameraActive}
-                className="flex-1 py-3.5 px-6 rounded-2xl bg-yellow-400 hover:bg-yellow-300 text-blue-950 font-black text-sm uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50"
+                className="min-h-[44px] flex-1 py-3 px-6 rounded-2xl bg-yellow-400 hover:bg-yellow-300 text-blue-950 font-black text-sm uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50"
               >
                 <span className="text-xl">📸</span>
                 <span>Take Photo</span>
@@ -381,13 +378,13 @@ export const StudentPhotoUploadModal: React.FC<StudentPhotoUploadModalProps> = (
         {/* MODE 3: PREVIEW & CONFIRM */}
         {mode === 'preview' && previewUrl && (
           <div className="space-y-6">
-            <div className="text-center p-6 bg-slate-50 dark:bg-slate-800/60 rounded-3xl border border-slate-200 dark:border-slate-700 space-y-4">
+            <div className="text-center p-4 sm:p-6 bg-slate-50 dark:bg-slate-800/60 rounded-3xl border border-slate-200 dark:border-slate-700 space-y-4">
               <p className="text-xs font-black uppercase tracking-wider text-slate-400">Photo Preview</p>
               
-              <div className="flex items-center justify-center gap-6">
+              <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
                 {/* Square Avatar */}
                 <div className="text-center">
-                  <div className="w-28 h-28 rounded-2xl overflow-hidden border-4 border-yellow-400 shadow-xl mx-auto bg-white">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-4 border-yellow-400 shadow-xl mx-auto bg-white">
                     <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
                   </div>
                   <span className="text-[10px] text-slate-400 font-bold block mt-1.5 uppercase">Report / ID</span>
@@ -395,28 +392,28 @@ export const StudentPhotoUploadModal: React.FC<StudentPhotoUploadModalProps> = (
 
                 {/* Circular Avatar */}
                 <div className="text-center">
-                  <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-blue-900 shadow-xl mx-auto bg-white">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-blue-900 shadow-xl mx-auto bg-white">
                     <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
                   </div>
                   <span className="text-[10px] text-slate-400 font-bold block mt-1.5 uppercase">Portal Avatar</span>
                 </div>
               </div>
 
-              <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border border-emerald-200 dark:border-emerald-800/40">
+              <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border border-emerald-200 dark:border-emerald-800/40 break-words">
                 <span>✓</span>
                 <span>Photo processed and optimized for instant loading</span>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
                 onClick={() => {
                   setPreviewUrl(null);
                   setMode('options');
                 }}
-                className="w-1/3 py-3.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 font-black text-xs uppercase tracking-wider transition-all"
+                className="min-h-[44px] flex-1 sm:flex-none sm:px-6 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 font-black text-xs uppercase tracking-wider transition-all"
               >
                 Retake
               </button>
@@ -425,10 +422,10 @@ export const StudentPhotoUploadModal: React.FC<StudentPhotoUploadModalProps> = (
                 type="button"
                 onClick={handleSave}
                 disabled={isProcessing}
-                className="flex-1 py-3.5 px-6 rounded-2xl bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50"
+                className="min-h-[44px] flex-1 py-3 px-6 rounded-2xl bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50"
               >
                 <span>💾</span>
-                <span>{isProcessing ? 'Saving Photo...' : 'Save & Set Profile Photo'}</span>
+                <span className="break-words whitespace-normal">{isProcessing ? 'Saving Photo...' : 'Save & Set Profile Photo'}</span>
               </button>
             </div>
           </div>

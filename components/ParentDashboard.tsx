@@ -276,30 +276,29 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
+    <div className="w-full max-w-full overflow-x-hidden px-4 sm:px-6 py-6 sm:py-8">
+      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
       {/* Top Welcome & Parent Profile Card */}
-      <div className="bg-gradient-to-r from-blue-900 via-blue-950 to-blue-900 text-white rounded-3xl p-6 sm:p-10 shadow-2xl border-2 border-blue-800 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-yellow-400/10 rounded-full blur-3xl pointer-events-none"></div>
-
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-          <div className="flex items-start sm:items-center gap-4">
+      <div className="bg-gradient-to-r from-blue-900 via-blue-950 to-blue-900 text-white rounded-3xl p-5 sm:p-10 shadow-2xl border-2 border-blue-800">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 min-w-0">
             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-yellow-400 text-blue-900 flex items-center justify-center font-black text-2xl sm:text-3xl shadow-xl border-2 border-yellow-300 shrink-0">
               👨‍👩‍👧‍👦
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2.5 flex-wrap">
                 <span className="px-3 py-1 bg-yellow-400 text-blue-900 font-black text-[10px] uppercase tracking-wider rounded-full">
                   {parent.relationship || 'Parent / Guardian'}
                 </span>
-                <span className="text-blue-200 text-xs font-bold">ID: {parent.id}</span>
+                <span className="text-blue-200 text-xs font-bold break-all">ID: {parent.id}</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-serif font-black text-white mt-1">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif font-black text-white mt-1 break-words whitespace-normal">
                 {parent.fullName}
               </h1>
-              <p className="text-xs text-blue-200/80 font-medium flex items-center gap-4 mt-1 flex-wrap">
+              <p className="text-xs text-blue-200/80 font-medium flex items-center gap-x-4 gap-y-1 mt-1 flex-wrap break-all">
                 <span>✉️ {parent.email}</span>
                 <span>📞 {parent.phone}</span>
-                {parent.address && <span>📍 {parent.address}</span>}
+                {parent.address && <span className="break-words">📍 {parent.address}</span>}
               </p>
             </div>
           </div>
@@ -308,14 +307,14 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
             <button
               type="button"
               onClick={() => setShowAddChildModal(true)}
-              className="px-5 py-3 bg-yellow-400 hover:bg-yellow-300 text-blue-900 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-2"
+              className="min-h-[44px] px-5 py-3 bg-yellow-400 hover:bg-yellow-300 text-blue-900 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2"
             >
               <span>+ Add Child Account</span>
             </button>
             <button
               type="button"
               onClick={onLogout}
-              className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider rounded-xl border border-white/20 transition-all"
+              className="min-h-[44px] px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider rounded-xl border border-white/20 transition-all"
             >
               Logout
             </button>
@@ -323,7 +322,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
         </div>
 
         {/* Quick Family Metrics Bar */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-8 border-t border-white/10 text-center">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-white/10 text-center">
           <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
             <p className="text-[10px] font-black uppercase tracking-wider text-blue-200">Registered Children</p>
             <p className="text-2xl sm:text-3xl font-black text-yellow-400 mt-1">{totalChildren}</p>
@@ -349,20 +348,20 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
       {/* If No Children Linked Yet */}
       {linkedChildren.length === 0 ? (
-        <div className="bg-white rounded-3xl p-12 text-center border-2 border-dashed border-slate-200 space-y-6">
+        <div className="bg-white rounded-3xl p-6 sm:p-12 text-center border-2 border-dashed border-slate-200 space-y-6">
           <div className="w-20 h-20 mx-auto bg-yellow-100 rounded-full flex items-center justify-center text-4xl">
             🧒
           </div>
           <div className="max-w-md mx-auto space-y-2">
-            <h3 className="text-2xl font-serif font-black text-blue-900">No Children Linked Yet</h3>
-            <p className="text-slate-500 text-sm font-medium">
+            <h3 className="text-xl sm:text-2xl font-serif font-black text-blue-900">No Children Linked Yet</h3>
+            <p className="text-slate-500 text-sm font-medium break-words">
               Link your enrolled student or register a new child to monitor daily gate scans, view live school entry status, and pay term fees.
             </p>
           </div>
           <button
             type="button"
             onClick={() => setShowAddChildModal(true)}
-            className="px-8 py-4 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl transition-all"
+            className="min-h-[44px] px-8 py-4 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl transition-all"
           >
             + Link or Register First Child
           </button>
@@ -372,16 +371,16 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
         <div className="space-y-8">
           {/* Children Tabs / Cards */}
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-serif font-black text-blue-900 uppercase tracking-wider">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <h2 className="text-base sm:text-lg font-serif font-black text-blue-900 uppercase tracking-wider break-words">
                 Your Children & Pupils ({linkedChildren.length})
               </h2>
-              <span className="text-xs text-slate-400 font-bold">
+              <span className="text-xs text-slate-400 font-bold break-words">
                 Select a child to view live gate attendance and school fees
               </span>
             </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {linkedChildren.map(child => {
                 const isSelected = activeChild?.id === child.id;
                 const { isScannedToday } = getChildAttendanceStats(child);
@@ -391,14 +390,14 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                   <div
                     key={child.id}
                     onClick={() => setSelectedChildId(child.id)}
-                    className={`cursor-pointer rounded-2xl p-5 border-2 transition-all relative ${
+                    className={`cursor-pointer rounded-2xl p-4 sm:p-5 border-2 transition-all ${
                       isSelected
-                        ? 'bg-blue-900 text-white border-blue-900 shadow-xl scale-[1.02]'
+                        ? 'bg-blue-900 text-white border-blue-900 shadow-xl ring-2 ring-yellow-400'
                         : 'bg-white text-slate-800 border-slate-200 hover:border-blue-300 hover:shadow-md'
                     }`}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg overflow-hidden border-2 shrink-0 ${
                           isSelected ? 'bg-yellow-400 text-blue-900 border-yellow-300' : 'bg-blue-100 text-blue-900 border-blue-200'
                         }`}>
@@ -408,11 +407,11 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                             child.name.charAt(0)
                           )}
                         </div>
-                        <div>
-                          <h3 className={`font-serif font-black text-base leading-tight ${isSelected ? 'text-white' : 'text-blue-900'}`}>
+                        <div className="min-w-0">
+                          <h3 className={`font-serif font-black text-base leading-tight break-words whitespace-normal ${isSelected ? 'text-white' : 'text-blue-900'}`}>
                             {child.name}
                           </h3>
-                          <p className={`text-xs font-bold uppercase tracking-wider ${isSelected ? 'text-yellow-400' : 'text-slate-500'}`}>
+                          <p className={`text-xs font-bold uppercase tracking-wider break-words ${isSelected ? 'text-yellow-400' : 'text-slate-500'}`}>
                             {child.grade}
                           </p>
                         </div>
@@ -431,7 +430,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                       </span>
                     </div>
 
-                    <div className={`mt-4 pt-3 border-t grid grid-cols-2 text-xs ${
+                    <div className={`mt-4 pt-3 border-t grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs ${
                       isSelected ? 'border-white/10 text-blue-100' : 'border-slate-100 text-slate-600'
                     }`}>
                       <div>
@@ -453,51 +452,36 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
           {/* ACTIVE CHILD DETAILED HUB */}
           {activeChild && (
-            <div className="bg-white rounded-3xl p-6 sm:p-10 border-2 border-slate-200 shadow-xl space-y-8">
+            <div className="bg-white rounded-3xl p-4 sm:p-8 lg:p-10 border-2 border-slate-200 shadow-xl space-y-8">
               {/* Active Child Header Bar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
-                <div className="flex items-center gap-4">
-                  <div className="relative group shrink-0">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-blue-900 text-yellow-400 flex items-center justify-center font-black text-2xl font-serif shadow-md border-2 border-yellow-400 overflow-hidden">
-                      {activeChild.photo ? (
-                        <img src={activeChild.photo} alt={activeChild.name} className="w-full h-full object-cover" />
-                      ) : (
-                        activeChild.name.charAt(0)
-                      )}
-                    </div>
-                    {onUpdateChildPhoto && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setPhotoUploadChild(activeChild);
-                        }}
-                        className="absolute -bottom-1 -right-1 p-1.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-lg text-xs font-black shadow-md border-2 border-white transition-transform active:scale-95"
-                        title="Upload child profile photo from camera or mobile device"
-                      >
-                        📷
-                      </button>
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 min-w-0">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-blue-900 text-yellow-400 flex items-center justify-center font-black text-2xl font-serif shadow-md border-2 border-yellow-400 overflow-hidden shrink-0">
+                    {activeChild.photo ? (
+                      <img src={activeChild.photo} alt={activeChild.name} className="w-full h-full object-cover" />
+                    ) : (
+                      activeChild.name.charAt(0)
                     )}
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-2xl font-serif font-black text-blue-900">{activeChild.name}</h2>
-                      <span className="px-2.5 py-0.5 bg-blue-100 text-blue-900 rounded-full text-xs font-black uppercase">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl sm:text-2xl font-serif font-black text-blue-900 break-words whitespace-normal">{activeChild.name}</h2>
+                      <span className="px-2.5 py-0.5 bg-blue-100 text-blue-900 rounded-full text-xs font-black uppercase shrink-0">
                         {activeChild.grade}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-400 font-bold mt-0.5">
+                    <p className="text-xs text-slate-400 font-bold mt-1 break-all">
                       Student ID: <span className="text-blue-900 font-black">{activeChild.id}</span> • Email: {activeChild.email}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2.5">
                   {onUpdateChildPhoto && (
                     <button
                       type="button"
                       onClick={() => setPhotoUploadChild(activeChild)}
-                      className="px-4 py-3 bg-indigo-900 hover:bg-indigo-800 text-yellow-300 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5 border border-indigo-700"
+                      className="min-h-[44px] px-4 py-2.5 bg-indigo-900 hover:bg-indigo-800 text-yellow-300 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5 border border-indigo-700"
                       title="Upload or update this child's profile photo from phone camera or gallery"
                     >
                       <span>📸</span>
@@ -508,7 +492,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                     <button
                       type="button"
                       onClick={() => onMessageTeacher(activeChild.id, activeChild.grade)}
-                      className="px-4 py-3 bg-yellow-400 hover:bg-yellow-300 text-blue-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5"
+                      className="min-h-[44px] px-4 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5"
                       title="Message this child's teachers or school administration directly"
                     >
                       <span>💬</span>
@@ -518,7 +502,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowChildQrModal(true)}
-                    className="px-4 py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5"
+                    className="min-h-[44px] px-4 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5"
                     title="View and print gate attendance QR pass for this child"
                   >
                     <span>📱</span>
@@ -527,12 +511,12 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => handleOpenPayment(activeChild)}
-                    className="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-2"
+                    className="min-h-[44px] px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-2"
                   >
                     <span>💳 Pay School Fees</span>
                   </button>
                   <div 
-                    className="px-3.5 py-3 bg-slate-100 text-slate-600 font-bold text-xs uppercase tracking-wider border border-slate-200 rounded-xl flex items-center gap-1.5 cursor-help"
+                    className="min-h-[44px] px-3.5 py-2.5 bg-slate-100 text-slate-600 font-bold text-xs uppercase tracking-wider border border-slate-200 rounded-xl flex items-center gap-1.5 cursor-help"
                     title="Child links are permanent. For child safety, delinking can only be performed by the School Administrator."
                   >
                     <span>🔒</span>
@@ -544,10 +528,10 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
               {/* CRUCIAL SECTION 1: LIVE ATTENDANCE & GATE SCAN STATUS */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">🚪</span>
-                    <h3 className="text-lg font-serif font-black text-blue-900">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-xl shrink-0">🚪</span>
+                    <h3 className="text-base sm:text-lg font-serif font-black text-blue-900 break-words">
                       Live Gate & School Attendance Status
                     </h3>
                   </div>
@@ -560,20 +544,20 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                   const { isScannedToday, todayRecord } = getChildAttendanceStats(activeChild);
 
                   return (
-                    <div className={`rounded-3xl p-6 sm:p-8 border-2 transition-all ${
+                    <div className={`rounded-3xl p-5 sm:p-8 border-2 transition-all ${
                       isScannedToday
                         ? 'bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border-emerald-300'
                         : 'bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 border-amber-300'
                     }`}>
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div className="flex items-start gap-4">
+                        <div className="flex flex-col sm:flex-row items-start gap-4 min-w-0">
                           <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shrink-0 shadow-md ${
                             isScannedToday ? 'bg-emerald-600 text-white' : 'bg-amber-500 text-white'
                           }`}>
                             {isScannedToday ? '✓' : '⏳'}
                           </div>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
+                          <div className="space-y-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
                               <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
                                 isScannedToday ? 'bg-emerald-600 text-white' : 'bg-amber-600 text-white'
                               }`}>
@@ -585,12 +569,12 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                                 </span>
                               )}
                             </div>
-                            <h4 className="text-xl font-serif font-black text-blue-950">
+                            <h4 className="text-lg sm:text-xl font-serif font-black text-blue-950 break-words whitespace-normal">
                               {isScannedToday
                                 ? `${activeChild.name} was scanned and verified at the school gate!`
                                 : `${activeChild.name} has not been scanned at the gate yet today.`}
                             </h4>
-                            <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                            <p className="text-xs text-slate-600 leading-relaxed font-medium break-words">
                               {isScannedToday
                                 ? `Scanned by: ${todayRecord?.markedBy || 'School Security / Gate Staff'}. Your child is safely present on campus.`
                                 : `Students and pupils are scanned via their attendance QR badge upon arriving at the entrance gate. Status updates immediately once verified.`}
@@ -599,11 +583,11 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                         </div>
 
                         {/* Interactive Scan Simulation button for quick testing */}
-                        <div className="shrink-0 flex flex-col items-end gap-2">
+                        <div className="shrink-0 flex flex-col items-start md:items-end gap-2">
                           <button
                             type="button"
                             onClick={() => onSimulateGateScan(activeChild.id)}
-                            className={`px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider shadow transition-all ${
+                            className={`min-h-[44px] w-full md:w-auto px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider shadow transition-all ${
                               isScannedToday
                                 ? 'bg-white text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
                                 : 'bg-blue-900 text-yellow-400 hover:bg-blue-800 active:scale-95'
@@ -621,10 +605,10 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 })()}
 
                 {/* Child's Attendance Pass & Attendance History Cards */}
-                <div className="grid md:grid-cols-12 gap-6 pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pt-4">
                   {/* Digital Gate QR Pass Card */}
-                  <div className="md:col-span-5 bg-slate-50 rounded-2xl p-6 border border-slate-200 space-y-4 text-center">
-                    <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                  <div className="md:col-span-5 bg-slate-50 rounded-2xl p-5 sm:p-6 border border-slate-200 space-y-4 text-center">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
                       <span className="text-xs font-black uppercase text-blue-900 tracking-wider">
                         Gate Attendance QR Pass
                       </span>
@@ -633,7 +617,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                       </span>
                     </div>
 
-                    <div className="p-4 bg-white rounded-2xl shadow-inner inline-block border-2 border-blue-900">
+                    <div className="p-4 bg-white rounded-2xl shadow-inner inline-block max-w-full border-2 border-blue-900">
                       <QRCodeSVG
                         value={`GHS-ATT|${activeChild.id}|First Term|PASS`}
                         size={150}
@@ -643,16 +627,16 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                     </div>
 
                     <div className="text-xs space-y-1">
-                      <p className="font-black text-blue-900">{activeChild.name}</p>
-                      <p className="text-[10px] text-slate-500 font-bold">
+                      <p className="font-black text-blue-900 break-words">{activeChild.name}</p>
+                      <p className="text-[10px] text-slate-500 font-bold break-words">
                         Keep this QR pass on the student's phone, card, or printed in their bag for gate scanning.
                       </p>
                     </div>
                   </div>
 
                   {/* Attendance Log Table */}
-                  <div className="md:col-span-7 bg-slate-50 rounded-2xl p-6 border border-slate-200 space-y-4">
-                    <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                  <div className="md:col-span-7 bg-slate-50 rounded-2xl p-5 sm:p-6 border border-slate-200 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
                       <span className="text-xs font-black uppercase text-blue-900 tracking-wider">
                         Recent Campus Attendance Logs
                       </span>
@@ -672,14 +656,14 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                           .map((rec, idx) => (
                             <div
                               key={idx}
-                              className="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between text-xs"
+                              className="p-3 bg-white rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs"
                             >
-                              <div className="flex items-center gap-2.5">
-                                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
                                 <span className="font-black text-blue-900">{rec.date}</span>
                                 <span className="text-slate-400 font-medium">({rec.term || 'First Term'})</span>
                               </div>
-                              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md break-words">
                                 Verified by {rec.markedBy}
                               </span>
                             </div>
@@ -692,17 +676,17 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
               {/* CRUCIAL SECTION 2: SCHOOL FEES & PAYMENTS FOR THIS CHILD */}
               <div className="space-y-4 pt-6 border-t border-slate-100">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">💰</span>
-                    <h3 className="text-lg font-serif font-black text-blue-900">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-xl shrink-0">💰</span>
+                    <h3 className="text-base sm:text-lg font-serif font-black text-blue-900 break-words">
                       School Fees & Payment Ledger for {activeChild.name}
                     </h3>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleOpenPayment(activeChild)}
-                    className="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow"
+                    className="min-h-[44px] px-4 py-2 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow"
                   >
                     + Pay Fees for {activeChild.name.split(' ')[0]}
                   </button>
@@ -713,7 +697,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
                   return (
                     <div className="space-y-6">
-                      <div className="grid sm:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200">
                           <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Class Fee ({activeChild.grade})</p>
                           <p className="text-2xl font-serif font-black text-blue-900 mt-1">₦{totalFee.toLocaleString()}</p>
@@ -738,7 +722,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                       </div>
 
                       {/* Payment History Table */}
-                      <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
+                      <div className="bg-slate-50 rounded-2xl p-4 sm:p-6 border border-slate-200">
                         <h4 className="text-xs font-black uppercase text-blue-900 tracking-wider mb-4">
                           Payment Transactions & Receipts
                         </h4>
@@ -753,8 +737,8 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                                 key={p.id}
                                 className="p-4 bg-white rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
                               >
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-2">
+                                <div className="space-y-1 min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2">
                                     <span className="font-black text-blue-900 text-sm">₦{p.amount.toLocaleString()}</span>
                                     <span className="px-2 py-0.5 bg-blue-50 text-blue-900 rounded font-black text-[10px] uppercase">
                                       {p.type === 'full' ? 'Full Payment' : p.type === 'installment_1' ? '1st Installment' : '2nd Installment'}
@@ -769,16 +753,16 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                                       {p.status || 'pending'}
                                     </span>
                                   </div>
-                                  <p className="text-slate-500 text-[11px]">
+                                  <p className="text-slate-500 text-[11px] break-all">
                                     Ref: <strong className="text-slate-700">{p.transactionRef || p.id}</strong> • Payer: {p.payerName || 'Parent'} • Bank: {p.bankName || 'Direct Transfer'}
                                   </p>
                                 </div>
-                                <div className="text-right">
+                                <div className="text-left sm:text-right shrink-0">
                                   <p className="text-slate-400 text-[10px] font-bold">
                                     {new Date(p.date).toLocaleDateString()}
                                   </p>
                                   {p.receiptFileName && (
-                                    <span className="text-[10px] font-black text-blue-900 bg-blue-50 px-2 py-1 rounded inline-block mt-1">
+                                    <span className="text-[10px] font-black text-blue-900 bg-blue-50 px-2 py-1 rounded inline-block mt-1 break-all">
                                       📎 {p.receiptFileName}
                                     </span>
                                   )}
@@ -796,14 +780,14 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
               {/* SECTION 3: ACADEMIC RESULTS FOR THIS CHILD (Exam, Test, or Total with Position) */}
               <div className="space-y-5 pt-6 border-t border-slate-100">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-xl">📊</span>
-                      <h3 className="text-lg font-serif font-black text-blue-900">
+                      <span className="text-xl shrink-0">📊</span>
+                      <h3 className="text-base sm:text-lg font-serif font-black text-blue-900 break-words">
                         Academic Assessment & Results for {activeChild.name}
                       </h3>
                     </div>
-                    <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    <p className="text-xs text-slate-500 font-medium mt-0.5 break-words">
                       Check your child's Continuous Assessment test marks, terminal examinations, or cumulative totals with class rankings.
                     </p>
                   </div>
@@ -813,7 +797,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                     <select
                       value={selectedReportTerm}
                       onChange={(e) => setSelectedReportTerm(e.target.value)}
-                      className="px-3 py-2 bg-slate-50 border-2 border-slate-300 rounded-xl font-black text-xs text-blue-950 outline-none cursor-pointer"
+                      className="min-h-[44px] px-3 py-2 bg-slate-50 border-2 border-slate-300 rounded-xl font-black text-xs text-blue-950 outline-none cursor-pointer"
                     >
                       <option value="First Term">First Term</option>
                       <option value="Second Term">Second Term</option>
@@ -824,14 +808,14 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                     <button
                       type="button"
                       onClick={() => handleOpenReportCard(activeChild, selectedReportTerm)}
-                      className={`px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-2 active:scale-95 ${
+                      className={`min-h-[44px] px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-2 active:scale-95 text-left break-words whitespace-normal ${
                         isReportCardPaid(activeChild, selectedReportTerm)
                           ? 'bg-yellow-400 hover:bg-yellow-300 text-blue-950 border border-yellow-500'
                           : 'bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white'
                       }`}
                       title={isReportCardPaid(activeChild, selectedReportTerm) ? `View official ${selectedReportTerm} report card PDF` : `Pay ₦${getResultFeeAmount(bankAccountConfig, resultCheckerFees, selectedReportTerm, activeSession).toLocaleString()} via Paystack to unlock ${selectedReportTerm} report card dossier`}
                     >
-                      <span>{isReportCardPaid(activeChild, selectedReportTerm) ? '📄' : '💳'}</span>
+                      <span className="shrink-0">{isReportCardPaid(activeChild, selectedReportTerm) ? '📄' : '💳'}</span>
                       <span>
                         {isReportCardPaid(activeChild, selectedReportTerm) 
                           ? `${selectedReportTerm} Report Card (Unlocked)` 
@@ -844,8 +828,8 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 {/* Official Vacation Hard-Copy Assurance Notice to Parents */}
                 <div className="p-4 bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl flex items-start gap-3.5 text-amber-950 shadow-xs">
                   <span className="text-2xl shrink-0 mt-0.5">📜</span>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
                       <h4 className="font-serif font-black text-xs uppercase tracking-wider text-blue-950">
                         Official Physical Hard-Copy Assurance
                       </h4>
@@ -853,7 +837,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                         Vacation Day Issuance
                       </span>
                     </div>
-                    <p className="text-xs text-amber-900 leading-relaxed font-medium">
+                    <p className="text-xs text-amber-900 leading-relaxed font-medium break-words">
                       {VACATION_HARD_COPY_ASSURANCE_NOTE}
                     </p>
                   </div>
@@ -864,7 +848,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => setParentResultViewMode('all')}
-                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                    className={`min-h-[44px] px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                       parentResultViewMode === 'all'
                         ? 'bg-blue-900 text-yellow-400 shadow-md'
                         : 'text-slate-600 hover:text-blue-950 hover:bg-white/60'
@@ -877,7 +861,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => setParentResultViewMode('test')}
-                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                    className={`min-h-[44px] px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                       parentResultViewMode === 'test'
                         ? 'bg-amber-600 text-white shadow-md'
                         : 'text-slate-600 hover:text-blue-950 hover:bg-white/60'
@@ -890,7 +874,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => setParentResultViewMode('exam')}
-                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                    className={`min-h-[44px] px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                       parentResultViewMode === 'exam'
                         ? 'bg-indigo-700 text-white shadow-md'
                         : 'text-slate-600 hover:text-blue-950 hover:bg-white/60'
@@ -903,7 +887,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => setParentResultViewMode('total')}
-                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                    className={`min-h-[44px] px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                       parentResultViewMode === 'total'
                         ? 'bg-emerald-700 text-white shadow-md'
                         : 'text-slate-600 hover:text-blue-950 hover:bg-white/60'
@@ -964,7 +948,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                       </div>
 
                       {/* Subject Cards Grid */}
-                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {childResults.map(res => {
                           const ca = res.caScore !== undefined ? res.caScore : Math.round(res.score * 0.4);
                           const exam = res.examScore !== undefined ? res.examScore : (res.score - ca);
@@ -975,28 +959,28 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
                           return (
                             <div key={res.id} className="p-5 bg-white rounded-2xl border-2 border-slate-100 hover:border-blue-200 transition-all shadow-xs space-y-3">
-                              <div className="flex justify-between items-start gap-2">
-                                <div>
-                                  <h4 className="font-serif font-black text-blue-950 text-base">{formatSubjectName(res.subject)}</h4>
+                              <div className="flex flex-wrap justify-between items-start gap-2">
+                                <div className="min-w-0 flex-1">
+                                  <h4 className="font-serif font-black text-blue-950 text-base break-words whitespace-normal">{formatSubjectName(res.subject)}</h4>
                                   <p className="text-[10px] text-slate-400 font-bold uppercase">{res.term}</p>
                                 </div>
 
                                 {parentResultViewMode === 'test' ? (
-                                  <span className="px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-xl text-xs font-black">
+                                  <span className="px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-xl text-xs font-black shrink-0">
                                     {ca} / 40 (Test)
                                   </span>
                                 ) : parentResultViewMode === 'exam' ? (
-                                  <span className="px-2.5 py-1 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded-xl text-xs font-black">
+                                  <span className="px-2.5 py-1 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded-xl text-xs font-black shrink-0">
                                     {exam} / 60 (Exam)
                                   </span>
                                 ) : parentResultViewMode === 'total' ? (
-                                  <span className={`px-2.5 py-1 rounded-xl text-xs font-black ${
+                                  <span className={`px-2.5 py-1 rounded-xl text-xs font-black shrink-0 ${
                                     res.score >= 70 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : res.score >= 50 ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' : 'bg-rose-100 text-rose-800 border border-rose-300'
                                   }`}>
                                     {res.score}% (Total)
                                   </span>
                                 ) : (
-                                  <span className={`px-2.5 py-1 rounded-xl text-xs font-black ${
+                                  <span className={`px-2.5 py-1 rounded-xl text-xs font-black shrink-0 ${
                                     res.score >= 70 ? 'bg-emerald-100 text-emerald-800' : res.score >= 50 ? 'bg-yellow-100 text-yellow-800' : 'bg-rose-100 text-rose-800'
                                   }`}>
                                     {res.score}%
@@ -1006,7 +990,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
                               {/* Breakdown stats for 'all' mode */}
                               {parentResultViewMode === 'all' && (
-                                <div className="grid grid-cols-3 gap-1.5 text-center p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs">
                                   <div>
                                     <span className="text-[9px] uppercase font-bold text-slate-400 block">CA Test</span>
                                     <span className="font-mono font-black text-blue-950">{ca}/40</span>
@@ -1024,7 +1008,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
                               {/* Position standing badge */}
                               {(parentResultViewMode === 'total' || parentResultViewMode === 'all') && (
-                                <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
+                                <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-1 border-t border-slate-100">
                                   <span className="text-[11px] font-bold text-slate-500">Subject Position:</span>
                                   <span className="px-2 py-0.5 bg-yellow-100 text-blue-950 font-black rounded-lg text-[11px] border border-yellow-300">
                                     ★ {subjStanding?.positionOrdinal || '1st'} in Subject
@@ -1065,25 +1049,25 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
           )}
 
           {/* REAL-TIME SCHOOL CALENDAR & OFFICIAL BULLETINS */}
-          <div className="grid lg:grid-cols-12 gap-8 pt-4">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 pt-4">
             {/* Academic Calendar Card */}
-            <div className="lg:col-span-7 bg-white rounded-3xl p-8 border border-slate-100 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <div className="flex items-center gap-3">
-                  <span className="p-2.5 bg-yellow-400 text-blue-900 rounded-2xl text-xl shadow-xs">📅</span>
-                  <div>
-                    <h3 className="font-serif font-black text-blue-900 text-lg">Official School Calendar</h3>
+            <div className="lg:col-span-7 bg-white rounded-3xl p-5 sm:p-8 border border-slate-100 shadow-sm space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="p-2.5 bg-yellow-400 text-blue-900 rounded-2xl text-xl shadow-xs shrink-0">📅</span>
+                  <div className="min-w-0">
+                    <h3 className="font-serif font-black text-blue-900 text-base sm:text-lg break-words">Official School Calendar</h3>
                     <p className="text-xs text-slate-400 font-bold">Term Schedules & Key School Events</p>
                   </div>
                 </div>
-                <span className="inline-flex items-center px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-black uppercase tracking-wider">
+                <span className="inline-flex items-center px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0">
                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5 animate-pulse"></span>
                   Live Sync
                 </span>
               </div>
 
               {calendar ? (
-                <div className="p-6 bg-slate-50/80 rounded-2xl border border-slate-200/60 font-mono text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">
+                <div className="p-4 sm:p-6 bg-slate-50/80 rounded-2xl border border-slate-200/60 font-mono text-xs text-slate-700 whitespace-pre-wrap break-words leading-relaxed">
                   {calendar}
                 </div>
               ) : (
@@ -1091,22 +1075,22 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                   Calendar dates will appear here once published by the administration.
                 </div>
               )}
-              <p className="text-[11px] text-slate-400 italic">
+              <p className="text-[11px] text-slate-400 italic break-words">
                 * When the school administration updates these dates, this calendar updates automatically in real time.
               </p>
             </div>
 
             {/* School Bulletins / Announcements */}
-            <div className="lg:col-span-5 bg-white rounded-3xl p-8 border border-slate-100 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <div className="flex items-center gap-3">
-                  <span className="p-2.5 bg-blue-900 text-yellow-400 rounded-2xl text-xl shadow-xs">📢</span>
-                  <div>
-                    <h3 className="font-serif font-black text-blue-900 text-lg">School Bulletins</h3>
+            <div className="lg:col-span-5 bg-white rounded-3xl p-5 sm:p-8 border border-slate-100 shadow-sm space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="p-2.5 bg-blue-900 text-yellow-400 rounded-2xl text-xl shadow-xs shrink-0">📢</span>
+                  <div className="min-w-0">
+                    <h3 className="font-serif font-black text-blue-900 text-base sm:text-lg break-words">School Bulletins</h3>
                     <p className="text-xs text-slate-400 font-bold">Official Administrative Notices</p>
                   </div>
                 </div>
-                <span className="text-[10px] font-black uppercase text-blue-900 bg-blue-50 px-2.5 py-1 rounded-full">
+                <span className="text-[10px] font-black uppercase text-blue-900 bg-blue-50 px-2.5 py-1 rounded-full shrink-0">
                   {announcements.length} Active
                 </span>
               </div>
@@ -1119,11 +1103,11 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
                   {announcements.map((ann) => (
                     <div key={ann.id} className="p-4 bg-blue-50/40 rounded-2xl border border-blue-100/70 space-y-1.5">
-                      <div className="flex justify-between items-start">
-                        <h4 className="font-serif font-black text-blue-950 text-xs">{ann.title}</h4>
+                      <div className="flex flex-wrap justify-between items-start gap-2">
+                        <h4 className="font-serif font-black text-blue-950 text-xs break-words">{ann.title}</h4>
                         <span className="text-[10px] text-slate-400 font-bold uppercase shrink-0">{ann.date}</span>
                       </div>
-                      <p className="text-slate-600 text-xs leading-relaxed whitespace-pre-wrap">{ann.content}</p>
+                      <p className="text-slate-600 text-xs leading-relaxed whitespace-pre-wrap break-words">{ann.content}</p>
                     </div>
                   ))}
                 </div>
@@ -1135,25 +1119,25 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
       {/* MODAL: ADD / LINK CHILD */}
       {showAddChildModal && (
-        <div className="fixed inset-0 z-50 bg-blue-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="max-w-lg w-full bg-white rounded-3xl shadow-2xl border-2 border-blue-900 overflow-hidden">
-            <div className="bg-blue-900 text-white p-6 flex justify-between items-center">
-              <div>
-                <h3 className="text-xl font-serif font-black">Add Child to Parent Account</h3>
-                <p className="text-xs text-blue-200 font-medium">Connect an existing student or register a new child</p>
+        <div className="fixed inset-0 z-50 bg-blue-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="max-w-lg w-full max-h-[92vh] overflow-y-auto bg-white rounded-3xl shadow-2xl border-2 border-blue-900">
+            <div className="bg-blue-900 text-white p-5 sm:p-6 flex justify-between items-start gap-3">
+              <div className="min-w-0">
+                <h3 className="text-lg sm:text-xl font-serif font-black break-words">Add Child to Parent Account</h3>
+                <p className="text-xs text-blue-200 font-medium break-words">Connect an existing student or register a new child</p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowAddChildModal(false)}
-                className="text-white hover:text-yellow-400 font-black text-xl p-1"
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center text-white hover:text-yellow-400 font-black text-xl rounded-xl hover:bg-white/10 shrink-0"
               >
                 ✕
               </button>
             </div>
 
             {/* Link Enrolled Student Only */}
-            <div className="p-6 space-y-6">
-              <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-2xl flex items-center justify-between">
+            <div className="p-5 sm:p-6 space-y-6">
+              <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-2xl flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs font-black uppercase tracking-wider text-blue-900">
                   Link Enrolled Pupil
                 </span>
@@ -1163,7 +1147,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
               </div>
 
               {linkError && (
-                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-xl">
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-xl break-words">
                   {linkError}
                 </div>
               )}
@@ -1184,7 +1168,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                     autoCorrect="off"
                     autoCapitalize="characters"
                     spellCheck={false}
-                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-black text-sm text-blue-950 focus:bg-white focus:border-blue-900 outline-none uppercase placeholder:normal-case placeholder:font-normal"
+                    className="w-full min-h-[44px] px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-black text-sm text-blue-950 focus:bg-white focus:border-blue-900 outline-none uppercase placeholder:normal-case placeholder:font-normal"
                   />
                 </div>
 
@@ -1193,26 +1177,26 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                     <span>🛡️</span>
                     <span>Official Enrollment Verification</span>
                   </p>
-                  <p className="text-[11px] leading-relaxed">
+                  <p className="text-[11px] leading-relaxed break-words">
                     Pupil accounts cannot be self-registered. All student accounts are created by the <strong>School Administrator</strong> or your child's assigned <strong>Class Teacher</strong>.
                   </p>
-                  <p className="text-[11px] font-bold text-blue-900 pt-1 border-t border-amber-200/60">
+                  <p className="text-[11px] font-bold text-blue-900 pt-1 border-t border-amber-200/60 break-words">
                     🔒 Enter the exact Student ID assigned to your child by their Class Teacher or on their official admission slip.
                   </p>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-2">
+                <div className="flex flex-wrap justify-end gap-3 pt-2">
                   <button
                     type="button"
                     onClick={() => setShowAddChildModal(false)}
-                    className="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800"
+                    className="min-h-[44px] px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 rounded-xl"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={!linkStudentId.trim()}
-                    className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 disabled:opacity-50 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all"
+                    className="min-h-[44px] px-6 py-2.5 bg-blue-900 hover:bg-blue-800 disabled:opacity-50 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all"
                   >
                     Verify & Link Child
                   </button>
@@ -1225,27 +1209,27 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
       {/* MODAL: PAY SCHOOL FEES FOR A SPECIFIC CHILD */}
       {showPaymentModal && paymentTargetChild && (
-        <div className="fixed inset-0 z-50 bg-blue-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="max-w-xl w-full bg-white rounded-3xl shadow-2xl border-2 border-blue-900 overflow-hidden">
-            <div className="bg-blue-900 text-white p-6 flex justify-between items-center">
-              <div>
+        <div className="fixed inset-0 z-50 bg-blue-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="max-w-xl w-full max-h-[92vh] overflow-y-auto bg-white rounded-3xl shadow-2xl border-2 border-blue-900">
+            <div className="bg-blue-900 text-white p-5 sm:p-6 flex justify-between items-start gap-3">
+              <div className="min-w-0">
                 <span className="text-[10px] font-black uppercase tracking-wider text-yellow-400">
                   School Fees Checkout
                 </span>
-                <h3 className="text-xl font-serif font-black">
+                <h3 className="text-lg sm:text-xl font-serif font-black break-words">
                   Pay Fees for {paymentTargetChild.name}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowPaymentModal(false)}
-                className="text-white hover:text-yellow-400 font-black text-xl p-1"
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center text-white hover:text-yellow-400 font-black text-xl rounded-xl hover:bg-white/10 shrink-0"
               >
                 ✕
               </button>
             </div>
 
-            <div className="p-6 sm:p-8 space-y-6 max-h-[80vh] overflow-y-auto">
+            <div className="p-5 sm:p-8 space-y-6">
               {paymentModalStep === 'reviewed' && paymentSuccessRef ? (
                 <div className="p-8 text-center space-y-5 bg-gradient-to-b from-blue-50/60 to-amber-50/40 rounded-3xl border-2 border-amber-200">
                   <div className="w-20 h-20 mx-auto bg-amber-100 text-amber-800 border-4 border-amber-300 rounded-full flex items-center justify-center text-4xl font-black shadow-lg">
@@ -1260,22 +1244,22 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                     Payment is being reviewed by the proprietor
                   </h4>
 
-                  <div className="p-5 bg-white rounded-2xl border border-slate-200 text-left text-xs space-y-2.5 max-w-lg mx-auto shadow-sm">
-                    <div className="flex justify-between border-b border-slate-100 pb-2">
+                  <div className="p-4 sm:p-5 bg-white rounded-2xl border border-slate-200 text-left text-xs space-y-2.5 max-w-lg mx-auto shadow-sm">
+                    <div className="flex flex-wrap justify-between gap-2 border-b border-slate-100 pb-2">
                       <span className="font-bold text-slate-500">Student / Pupil:</span>
-                      <strong className="text-blue-900 font-black">{paymentTargetChild.name} ({paymentTargetChild.grade})</strong>
+                      <strong className="text-blue-900 font-black break-words">{paymentTargetChild.name} ({paymentTargetChild.grade})</strong>
                     </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-2">
+                    <div className="flex flex-wrap justify-between gap-2 border-b border-slate-100 pb-2">
                       <span className="font-bold text-slate-500">Payment Ref ID:</span>
-                      <code className="text-blue-900 font-black">{paymentSuccessRef}</code>
+                      <code className="text-blue-900 font-black break-all">{paymentSuccessRef}</code>
                     </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-2">
+                    <div className="flex flex-wrap justify-between gap-2 border-b border-slate-100 pb-2">
                       <span className="font-bold text-slate-500">Receipt Attached:</span>
-                      <span className="text-emerald-700 font-bold truncate max-w-[200px]">
+                      <span className="text-emerald-700 font-bold break-all">
                         {receiptFileName || 'Bank Receipt File Provided'}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-500 pt-1 leading-relaxed">
+                    <p className="text-[11px] text-slate-500 pt-1 leading-relaxed break-words">
                       Thank you. Your receipt proof has been transmitted to the School Proprietor and Bursar for review. Once verified and approved, you can download your official stamped school receipt.
                     </p>
                   </div>
@@ -1288,7 +1272,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                           setShowPaymentModal(false);
                           onGoToReceipts();
                         }}
-                        className="px-6 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+                        className="min-h-[44px] px-6 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
                       >
                         <span>📑</span>
                         <span>Go to Download Receipts Page</span>
@@ -1297,7 +1281,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                     <button
                       type="button"
                       onClick={() => setShowPaymentModal(false)}
-                      className="px-6 py-3.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all"
+                      className="min-h-[44px] px-6 py-3.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all"
                     >
                       Done & Return to Dashboard
                     </button>
@@ -1306,7 +1290,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
               ) : paymentModalStep === 'details' ? (
                 <div className="space-y-6">
                   {/* Step progress header */}
-                  <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-3">
                     <span className="text-blue-900 font-black">Step 1: Fee Details & Amount</span>
                     <span>Step 2: Bank Receipt Upload →</span>
                   </div>
@@ -1319,22 +1303,22 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                       : stats.totalFee / 2;
 
                     return (
-                      <div className="p-5 bg-gradient-to-r from-blue-50 to-yellow-50/50 rounded-2xl border border-blue-100 space-y-3">
-                        <div className="flex justify-between items-center text-xs">
+                      <div className="p-4 sm:p-5 bg-gradient-to-r from-blue-50 to-yellow-50/50 rounded-2xl border border-blue-100 space-y-3">
+                        <div className="flex flex-wrap justify-between items-center gap-2 text-xs">
                           <span className="font-bold text-slate-500">Pupil / Student:</span>
-                          <strong className="text-blue-900 font-black">{paymentTargetChild.name} ({paymentTargetChild.grade})</strong>
+                          <strong className="text-blue-900 font-black break-words">{paymentTargetChild.name} ({paymentTargetChild.grade})</strong>
                         </div>
-                        <div className="flex justify-between items-center text-xs">
+                        <div className="flex flex-wrap justify-between items-center gap-2 text-xs">
                           <span className="font-bold text-slate-500">Full Term Fee:</span>
                           <strong className="text-slate-800">₦{stats.totalFee.toLocaleString()}</strong>
                         </div>
-                        <div className="flex justify-between items-center text-xs">
+                        <div className="flex flex-wrap justify-between items-center gap-2 text-xs">
                           <span className="font-bold text-slate-500">Already Paid:</span>
                           <span className="text-emerald-700 font-black">₦{stats.amountPaid.toLocaleString()}</span>
                         </div>
-                        <div className="pt-2 border-t border-blue-200/60 flex justify-between items-center">
+                        <div className="pt-2 border-t border-blue-200/60 flex flex-wrap justify-between items-center gap-2">
                           <span className="text-xs font-black uppercase text-blue-900">Payment Amount:</span>
-                          <span className="text-2xl font-serif font-black text-blue-900">₦{feeToPay.toLocaleString()}</span>
+                          <span className="text-xl sm:text-2xl font-serif font-black text-blue-900">₦{feeToPay.toLocaleString()}</span>
                         </div>
                       </div>
                     );
@@ -1345,11 +1329,11 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                     <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2">
                       Payment Option
                     </label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <button
                         type="button"
                         onClick={() => setPaymentType('full')}
-                        className={`p-3 rounded-xl border-2 text-xs font-black uppercase tracking-wider transition-all text-center ${
+                        className={`min-h-[44px] p-3 rounded-xl border-2 text-xs font-black uppercase tracking-wider transition-all text-center ${
                           paymentType === 'full'
                             ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md'
                             : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-blue-300'
@@ -1360,7 +1344,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                       <button
                         type="button"
                         onClick={() => setPaymentType('installment_1')}
-                        className={`p-3 rounded-xl border-2 text-xs font-black uppercase tracking-wider transition-all text-center ${
+                        className={`min-h-[44px] p-3 rounded-xl border-2 text-xs font-black uppercase tracking-wider transition-all text-center ${
                           paymentType === 'installment_1' || paymentType === 'installment_2'
                             ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md'
                             : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-blue-300'
@@ -1372,8 +1356,8 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                   </div>
 
                   {/* Official School Bank Account Details */}
-                  <div className="p-4 bg-yellow-50 rounded-2xl border border-yellow-200 text-xs space-y-1.5 text-blue-950">
-                    <div className="flex items-center justify-between">
+                  <div className="p-4 bg-yellow-50 rounded-2xl border border-yellow-200 text-xs space-y-1.5 text-blue-950 break-words">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="font-black text-blue-900 uppercase text-[11px]">
                         🏛️ Official School Bank Account Details
                       </p>
@@ -1383,24 +1367,24 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                     </div>
                     <p><strong>Bank:</strong> {activeBank.bankName}</p>
                     <p><strong>Account Name:</strong> {activeBank.accountName}</p>
-                    <p><strong>Account Number:</strong> <span className="text-sm font-black text-blue-900 font-mono tracking-wider">{activeBank.accountNumber}</span></p>
+                    <p><strong>Account Number:</strong> <span className="text-sm font-black text-blue-900 font-mono tracking-wider break-all">{activeBank.accountNumber}</span></p>
                     <p className="text-[10px] text-slate-500 italic">
                       {activeBank.paymentInstructions || "Please make the direct transfer or cash deposit using your child's name as the description, then proceed to upload receipt proof."}
                     </p>
                   </div>
 
-                  <div className="flex justify-end gap-3 pt-2">
+                  <div className="flex flex-wrap justify-end gap-3 pt-2">
                     <button
                       type="button"
                       onClick={() => setShowPaymentModal(false)}
-                      className="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800"
+                      className="min-h-[44px] px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 rounded-xl"
                     >
                       Cancel
                     </button>
                     <button
                       type="button"
                       onClick={() => setPaymentModalStep('upload')}
-                      className="px-8 py-3.5 bg-blue-900 hover:bg-blue-950 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center gap-2"
+                      className="min-h-[44px] px-6 sm:px-8 py-3.5 bg-blue-900 hover:bg-blue-950 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center gap-2"
                     >
                       <span>Proceed to Input Bank Receipt Proof</span>
                       <span>→</span>
@@ -1410,11 +1394,11 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
               ) : (
                 /* Step 2: Bank Receipt Upload & Details */
                 <form onSubmit={handleExecutePayment} className="space-y-6">
-                  <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-3">
                     <button
                       type="button"
                       onClick={() => setPaymentModalStep('details')}
-                      className="text-blue-900 hover:underline flex items-center gap-1"
+                      className="min-h-[44px] px-2 text-blue-900 hover:underline flex items-center gap-1"
                     >
                       ← Back to Amount
                     </button>
@@ -1422,7 +1406,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                   </div>
 
                   {paymentUploadError && (
-                    <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-xl text-xs font-bold">
+                    <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-xl text-xs font-bold break-words">
                       {paymentUploadError}
                     </div>
                   )}
@@ -1460,16 +1444,16 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
                     <label
                       htmlFor="parentReceiptFileInput"
-                      className="inline-block px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl cursor-pointer shadow-sm transition-all"
+                      className="inline-flex min-h-[44px] items-center justify-center px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl cursor-pointer shadow-sm transition-all"
                     >
                       📁 Browse & Select Receipt File
                     </label>
 
                     {receiptFileName && (
-                      <div className="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2 truncate">
-                          <span className="text-emerald-600 font-black">✓ Attached:</span>
-                          <span className="font-bold text-slate-700 truncate">{receiptFileName}</span>
+                      <div className="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex flex-wrap items-center justify-between gap-2 text-xs text-left">
+                        <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
+                          <span className="text-emerald-600 font-black shrink-0">✓ Attached:</span>
+                          <span className="font-bold text-slate-700 break-all">{receiptFileName}</span>
                         </div>
                         {receiptImage && receiptFileType.startsWith('image/') && (
                           <div className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-slate-300">
@@ -1482,7 +1466,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
                   {/* Depositor & Reference inputs */}
                   <div className="space-y-3">
-                    <div className="grid sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">
                           Payer / Depositor Name *
@@ -1492,7 +1476,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                           required
                           value={payerName}
                           onChange={(e) => setPayerName(e.target.value)}
-                          className="w-full px-3.5 py-2.5 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:border-blue-900 outline-none"
+                          className="w-full min-h-[44px] px-3.5 py-2.5 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:border-blue-900 outline-none"
                         />
                       </div>
                       <div>
@@ -1503,12 +1487,12 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                           type="text"
                           value={bankName}
                           onChange={(e) => setBankName(e.target.value)}
-                          className="w-full px-3.5 py-2.5 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:border-blue-900 outline-none"
+                          className="w-full min-h-[44px] px-3.5 py-2.5 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:border-blue-900 outline-none"
                         />
                       </div>
                     </div>
 
-                    <div className="grid sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">
                           Transfer Ref / Session ID
@@ -1518,7 +1502,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                           value={transactionRef}
                           onChange={(e) => setTransactionRef(e.target.value)}
                           placeholder="e.g. FBN-839201 or 123456789"
-                          className="w-full px-3.5 py-2.5 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:border-blue-900 outline-none"
+                          className="w-full min-h-[44px] px-3.5 py-2.5 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:border-blue-900 outline-none"
                         />
                       </div>
                       <div>
@@ -1530,23 +1514,23 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                           value={paymentNote}
                           onChange={(e) => setPaymentNote(e.target.value)}
                           placeholder="e.g. 1st term fees paid via mobile transfer"
-                          className="w-full px-3.5 py-2.5 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:border-blue-900 outline-none"
+                          className="w-full min-h-[44px] px-3.5 py-2.5 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-950 focus:border-blue-900 outline-none"
                         />
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-center pt-2">
+                  <div className="flex flex-wrap justify-between items-center gap-3 pt-2">
                     <button
                       type="button"
                       onClick={() => setPaymentModalStep('details')}
-                      className="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800"
+                      className="min-h-[44px] px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 rounded-xl"
                     >
                       ← Back
                     </button>
                     <button
                       type="submit"
-                      className="px-8 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-2"
+                      className="min-h-[44px] px-6 sm:px-8 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-2"
                     >
                       <span>Submit Receipt to Proprietor for Review</span>
                       <span>✓</span>
@@ -1561,37 +1545,40 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
       {/* CHILD GATE PASS QR CODE MODAL */}
       {showChildQrModal && activeChild && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border-4 border-yellow-400 relative">
-            <button
-              onClick={() => setShowChildQrModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-black text-xl p-2 rounded-full hover:bg-slate-100 transition-all"
-            >
-              ✕
-            </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm overflow-y-auto animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full max-h-[92vh] overflow-y-auto p-5 sm:p-8 shadow-2xl border-4 border-yellow-400">
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div className="p-3 bg-blue-900 text-yellow-400 rounded-2xl shadow-md">
+                <span className="text-2xl sm:text-3xl">🪪</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowChildQrModal(false)}
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-slate-600 font-black text-xl rounded-full hover:bg-slate-100 transition-all shrink-0"
+                aria-label="Close gate pass modal"
+              >
+                ✕
+              </button>
+            </div>
 
             <div className="text-center space-y-4">
-              <div className="inline-block p-3 bg-blue-900 text-yellow-400 rounded-2xl shadow-md">
-                <span className="text-3xl">🪪</span>
-              </div>
-
               <div>
                 <span className="text-[11px] font-black text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full uppercase tracking-widest inline-block mb-1">
                   Official Digital Gate Pass
                 </span>
-                <h3 className="text-2xl font-serif font-black text-blue-900">
+                <h3 className="text-xl sm:text-2xl font-serif font-black text-blue-900 break-words">
                   {activeChild.name}
                 </h3>
-                <p className="text-xs font-bold text-slate-500">
+                <p className="text-xs font-bold text-slate-500 break-all">
                   {activeChild.grade} • Student ID: <strong className="text-blue-900 font-black">{activeChild.id}</strong>
                 </p>
               </div>
 
-              <div className="p-5 bg-white border-2 border-dashed border-blue-900/40 rounded-2xl flex flex-col items-center justify-center gap-3 shadow-inner">
+              <div className="p-4 sm:p-5 bg-white border-2 border-dashed border-blue-900/40 rounded-2xl flex flex-col items-center justify-center gap-3 shadow-inner">
                 <QRCodeSVG
                   id={`child-qr-svg-${activeChild.id}`}
                   value={`GHS-ATT|${activeChild.id}|${activeChild.activeTerm || 'First Term'}|${Date.now()}`}
-                  size={200}
+                  size={180}
                   level="H"
                   includeMargin={true}
                   imageSettings={{
@@ -1609,7 +1596,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
               </div>
 
               {/* Download Attendance Pass Image Buttons */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <button
                   type="button"
                   onClick={() => {
@@ -1625,7 +1612,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                       }
                     );
                   }}
-                  className="py-2.5 px-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5"
+                  className="min-h-[44px] py-2.5 px-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5"
                   title="Download gate pass as PNG image file"
                 >
                   <span>📥</span>
@@ -1646,7 +1633,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                       }
                     );
                   }}
-                  className="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5"
+                  className="min-h-[44px] py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5"
                   title="Download gate pass as JPEG image file"
                 >
                   <span>🖼️</span>
@@ -1654,7 +1641,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 </button>
               </div>
 
-              <div className={`p-3 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 ${
+              <div className={`p-3 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 break-words ${
                 activeChild.entryAllowed 
                   ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
                   : 'bg-rose-50 text-rose-800 border border-rose-200'
@@ -1667,18 +1654,18 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 </span>
               </div>
 
-              <div className="pt-2 flex gap-3">
+              <div className="pt-2 flex flex-col sm:flex-row gap-3">
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="w-full py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95"
+                  className="w-full min-h-[44px] py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95"
                 >
                   🖨️ Print Pass
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowChildQrModal(false)}
-                  className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs uppercase tracking-wider rounded-xl transition-all"
+                  className="w-full min-h-[44px] py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs uppercase tracking-wider rounded-xl transition-all"
                 >
                   Done
                 </button>
@@ -1711,7 +1698,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
       {/* Official Standard Student/Pupil Report Card Modal */}
       {selectedChildForReport && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto print:p-0 print:bg-white print:static">
-          <div className="bg-white rounded-3xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl relative my-auto print:shadow-none print:border-none print:p-0">
+          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[92vh] overflow-y-auto p-4 sm:p-6 shadow-2xl my-auto print:max-h-none print:overflow-visible print:shadow-none print:border-none print:p-0">
             <StandardReportCard 
               student={selectedChildForReport}
               results={results.filter(r => r.studentName.toLowerCase().trim() === selectedChildForReport.name.toLowerCase().trim())}
@@ -1737,6 +1724,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
           isParentView={true}
         />
       )}
+      </div>
     </div>
   );
 };

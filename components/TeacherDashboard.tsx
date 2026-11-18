@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Course, StudentResult, GradeLevel, StudentAccount, AttendanceRecord, StaffPagePermission, ALL_STAFF_PAGES, Announcement, ResultPublishRequest, TimedStaffDelegation, AdminSectionKey, ALL_ADMIN_SECTIONS, ClassTimetable, ParentStaffMessage, ParentAccount, TeacherAssignmentRole } from '../types';
+import { Course, StudentResult, GradeLevel, StudentAccount, AttendanceRecord, StaffPagePermission, ALL_STAFF_PAGES, Announcement, ResultPublishRequest, TimedStaffDelegation, AdminSectionKey, ALL_ADMIN_SECTIONS, ClassTimetable, ParentStaffMessage, ParentAccount, TeacherAssignmentRole, GradingCriterion } from '../types';
 import { GRADE_GROUPS, getNextGradeLevel } from '../constants';
 import { AttendanceCameraScanner } from './AttendanceCameraScanner';
 import { StandardReportCard } from './StandardReportCard';
@@ -10,6 +10,8 @@ import { AcademicTrendsWidget } from './AcademicTrendsWidget';
 import { DedicatedAppInstallModal } from './DedicatedAppInstallModal';
 import { generateSecureTempPassword } from '../utils/authSecurity';
 import { StaffBatchMarksheet } from './StaffBatchMarksheet';
+import { StaffMasterBroadsheet } from './StaffMasterBroadsheet';
+import { getStaffAssignedCourses, normalizeCourseName } from '../utils/courseUtils';
 
 interface TeacherDashboardProps {
   username: string;
@@ -47,6 +49,7 @@ interface TeacherDashboardProps {
   onAddStudent?: (student: StudentAccount) => void;
   onAddParentAccount?: (parent: ParentAccount) => void;
   onUpdateStudent?: (studentId: string, updates: Partial<StudentAccount>) => void;
+  gradingCriteria?: GradingCriterion[];
   initialTab?: string;
 }
 
@@ -86,6 +89,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   onSendResultsToPupils,
   onSendParentMessage,
   onOpenParentMessaging,
+  gradingCriteria,
   initialTab
 }) => {
   const [delegationNow, setDelegationNow] = useState<Date>(new Date());
@@ -106,6 +110,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const availableTabs = ALL_STAFF_PAGES.filter(p => !allowedPages || allowedPages.includes(p.id));
   const defaultTab = (initialTab as any) || availableTabs[0]?.id || 'overview';
   const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'students' | 'grading' | 'attendance' | 'attendanceScanning' | 'termStats' | 'timetable' | 'parentMessages'>(defaultTab as any);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (availableTabs.length > 0 && !availableTabs.some(t => t.id === activeTab)) {
@@ -136,8 +141,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const [duplicateCourseId, setDuplicateCourseId] = useState<string | null>(null);
   const [targetDuplicateGrades, setTargetDuplicateGrades] = useState<GradeLevel[]>([]);
 
-  // Grading Layout Mode: 'batch_sheet' (Class Sheet Grid with Phone Resume) vs 'single_entry' (Single Pupil)
-  const [gradingLayoutMode, setGradingLayoutMode] = useState<'batch_sheet' | 'single_entry'>('batch_sheet');
+  // Grading Layout Mode: 'batch_sheet' (Single Subject Sheet), 'broadsheet' (Multi-Subject Master Spreadsheet), 'single_entry' (Single Pupil)
+  const [gradingLayoutMode, setGradingLayoutMode] = useState<'batch_sheet' | 'broadsheet' | 'single_entry'>('batch_sheet');
 
   // Grading form state with CA (40%), Exam (60%), and Total (100%)
   const [gradeClassFilter, setGradeClassFilter] = useState<string>(authorizedGrades[0] || 'all');
@@ -352,13 +357,29 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const today = new Date().toLocaleDateString();
   const presentToday = attendance.filter(a => a.date === today && filteredStudents.some(s => s.id === a.studentId));
 
+  // Courses strictly assigned to this staff member's class(es), deduplicated so subjects like "Mathematics" appear ONCE
+  const staffAssignedCourses = getStaffAssignedCourses(courses, {
+    assignedGrades: authorizedGrades,
+    assignedSubjects,
+    assignmentRole
+  });
+
   const handleAddCourse = (e: React.FormEvent) => {
     e.preventDefault();
     if (courseName) {
-      onAddCourse(courseName, courseGrade, courseDesc);
+      const cleanName = normalizeCourseName(courseName);
+      // Prevent redundant duplicates in this class
+      const alreadyExists = courses.some(
+        c => c.grade === courseGrade && normalizeCourseName(c.name).toLowerCase() === cleanName.toLowerCase()
+      );
+      if (alreadyExists) {
+        alert(`Subject "${cleanName}" is already registered for ${courseGrade}. Redundant duplicates are prevented.`);
+        return;
+      }
+      onAddCourse(cleanName, courseGrade, courseDesc);
       setCourseName('');
       setCourseDesc('');
-      alert("New course added to curriculum!");
+      alert(`✓ Subject "${cleanName}" successfully registered for ${courseGrade}!`);
     }
   };
 
@@ -485,12 +506,12 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-4 border-yellow-400">
-      <div className="bg-blue-900 px-8 sm:px-10 py-10 sm:py-12 text-white relative">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
+    <div className="w-full max-w-full bg-white rounded-2xl sm:rounded-[2.5rem] shadow-2xl border-4 border-yellow-400">
+      <div className="bg-blue-900 rounded-t-xl sm:rounded-t-[2.25rem] px-4 sm:px-8 md:px-10 py-6 sm:py-10 text-white">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
-              <h2 className="text-3xl sm:text-4xl font-black font-serif">Welcome, {username}</h2>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black font-serif break-words">Welcome, {username}</h2>
               {assignmentRole === 'subject_teacher' ? (
                 <span className="px-3.5 py-1 bg-indigo-500 text-yellow-300 border border-indigo-400 rounded-full text-[11px] font-black uppercase tracking-wider shadow-sm">
                   📚 Subject Teacher
@@ -518,13 +539,13 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 </span>
               ))}
             </div>
-            <p className="text-blue-200 font-bold uppercase text-xs tracking-[0.2em] mt-3">Academic Staff Portal • God's Hand International Model School</p>
+            <p className="text-blue-200 font-bold uppercase text-xs tracking-wider sm:tracking-[0.2em] mt-3 break-words">Academic Staff Portal • God's Hand International Model School</p>
           </div>
 
           <button
             type="button"
             onClick={() => setShowStaffAppDownloadModal(true)}
-            className="inline-flex items-center gap-2 px-5 py-3 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-xl hover:scale-105 active:scale-95 cursor-pointer border-2 border-yellow-500 self-start md:self-center shrink-0"
+            className="min-h-[44px] inline-flex items-center justify-center gap-2 px-5 py-3 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-xl active:scale-95 cursor-pointer border-2 border-yellow-500 self-start md:self-center shrink-0"
             title="Download Staff App to launch straight to Staff Desk next time"
           >
             <span>📲</span>
@@ -535,19 +556,19 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
       {/* Active Admin Delegation Banner */}
       {activeDelegation && (
-        <div className="bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 p-6 sm:p-7 text-blue-950 border-b-4 border-yellow-600 shadow-inner">
+        <div className="bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 p-4 sm:p-7 text-blue-950 border-b-4 border-yellow-600 shadow-inner">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="space-y-1.5 max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-950 text-yellow-400 text-xs font-black uppercase tracking-wider shadow-xs">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <div className="space-y-1.5 max-w-2xl min-w-0">
+              <div className="inline-flex flex-wrap items-center gap-2 px-3 py-1 rounded-full bg-blue-950 text-yellow-400 text-xs font-black uppercase tracking-wider shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
                 <span>Temporary Admin Access Granted</span>
                 <span>•</span>
                 <span>By: {activeDelegation.grantedBy}</span>
               </div>
-              <h3 className="text-xl sm:text-2xl font-serif font-black tracking-tight">
+              <h3 className="text-lg sm:text-2xl font-serif font-black tracking-tight break-words">
                 Admin-Delegated Authority Active
               </h3>
-              <p className="text-xs sm:text-sm font-bold text-blue-900/90 leading-snug">
+              <p className="text-xs sm:text-sm font-bold text-blue-900/90 leading-snug break-words">
                 You have been granted temporary administrative privileges to {activeDelegation.grantedSections.length} admin panel module{activeDelegation.grantedSections.length === 1 ? '' : 's'}. 
                 {activeDelegation.purpose && ` Purpose: "${activeDelegation.purpose}".`}
               </p>
@@ -570,7 +591,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
             </div>
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-white/95 p-4 rounded-2xl border-2 border-yellow-500/40 shadow-sm shrink-0">
-              <div className="text-center sm:text-right pr-2">
+              <div className="text-left sm:text-right pr-2">
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Time Remaining</span>
                 <span className="font-mono text-xl sm:text-2xl font-black text-blue-950">
                   {(() => {
@@ -590,7 +611,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => onOpenAdminDelegation()}
-                  className="px-5 py-3 bg-blue-950 hover:bg-blue-900 text-yellow-400 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg transition-all transform active:scale-95 flex items-center gap-2 border border-yellow-400"
+                  className="min-h-[44px] px-5 py-3 bg-blue-950 hover:bg-blue-900 text-yellow-400 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg transition-all transform active:scale-95 flex items-center gap-2 border border-yellow-400"
                 >
                   <span>🚀</span>
                   <span>Open Admin Panel</span>
@@ -602,33 +623,111 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
       )}
 
       {availableTabs.length > 0 ? (
-        <div className="flex flex-wrap border-b-2 border-slate-100 bg-slate-50">
-          {availableTabs.map(tab => (
-            <button 
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`px-7 py-5 font-black text-xs uppercase tracking-widest transition-all flex items-center space-x-2 ${
-                activeTab === tab.id 
-                  ? 'text-blue-900 border-b-4 border-blue-900 bg-white shadow-sm' 
-                  : 'text-slate-400 hover:text-blue-700'
-              }`}
+        <div className="flex flex-col md:flex-row w-full max-w-full">
+          {/* Mobile Top Module Header & Hamburger Drawer Trigger (<768px) */}
+          <div className="md:hidden border-b-2 border-slate-200 bg-slate-50 p-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400">
+                Staff Academic Desk ({availableTabs.length})
+              </span>
+              <p className="text-xs sm:text-sm font-black text-blue-950 break-words whitespace-normal flex items-center gap-1.5">
+                <span>{availableTabs.find(t => t.id === activeTab)?.icon}</span>
+                <span>{availableTabs.find(t => t.id === activeTab)?.label || 'Staff Module'}</span>
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setMobileSidebarOpen(true)}
+              aria-label="Open Staff Modules Menu"
+              className="min-h-[44px] px-4 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl font-black text-xs uppercase tracking-wider shadow-sm flex items-center gap-2 shrink-0"
             >
-              <span>{tab.icon}</span>
-              <span>{tab.label}</span>
+              <span className="text-base leading-none">☰</span>
+              <span>Modules</span>
             </button>
-          ))}
-        </div>
-      ) : (
-        <div className="p-12 text-center bg-amber-50 border-b-2 border-amber-200">
-          <span className="text-4xl block mb-2">🔒</span>
-          <h3 className="text-lg font-black text-amber-900 font-serif">Staff Module Access Restricted</h3>
-          <p className="text-xs text-amber-700 font-medium max-w-md mx-auto mt-1">
-            The School Administrator has not granted this account access to academic modules yet. Please contact the Proprietor or Admin to enable your module permissions.
-          </p>
-        </div>
-      )}
+          </div>
 
-      <div className="p-10">
+          {/* Mobile Hamburger Slide-Over Drawer (<768px) */}
+          {mobileSidebarOpen && (
+            <div className="fixed inset-0 z-50 md:hidden flex">
+              <div
+                className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm"
+                onClick={() => setMobileSidebarOpen(false)}
+              />
+              <aside
+                aria-label="Staff Modules Drawer"
+                className="relative z-10 w-full max-w-xs bg-white h-full overflow-y-auto shadow-2xl border-r-2 border-blue-900/20 flex flex-col"
+              >
+                <div className="p-4 bg-blue-950 text-white flex items-center justify-between gap-3 sticky top-0 z-10">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-yellow-400">Staff Navigation</p>
+                    <h4 className="font-serif font-black text-sm text-white break-words whitespace-normal">
+                      {availableTabs.length} Assigned Modules
+                    </h4>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setMobileSidebarOpen(false)}
+                    aria-label="Close Staff Drawer"
+                    className="min-w-[44px] min-h-[44px] rounded-xl bg-white/10 hover:bg-white/20 text-white font-black flex items-center justify-center shrink-0"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <nav className="p-3 flex flex-col gap-1.5 flex-1">
+                  {availableTabs.map(tab => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveTab(tab.id as any);
+                        setMobileSidebarOpen(false);
+                      }}
+                      className={`min-h-[44px] w-full px-3.5 py-2.5 font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 rounded-xl break-words whitespace-normal text-left ${
+                        activeTab === tab.id
+                          ? 'text-blue-950 bg-yellow-400 border-2 border-blue-900 shadow-sm'
+                          : 'text-slate-700 bg-slate-50 hover:text-blue-900 hover:bg-blue-50 border border-slate-200'
+                      }`}
+                    >
+                      <span className="shrink-0">{tab.icon}</span>
+                      <span className="break-words whitespace-normal">{tab.label}</span>
+                    </button>
+                  ))}
+                </nav>
+              </aside>
+            </div>
+          )}
+
+          {/* Fixed / Sticky Side Navigation (Tablet & Desktop >=768px) */}
+          <aside
+            aria-label="Staff Sidebar Navigation"
+            className="hidden md:flex md:flex-col md:w-64 lg:w-72 shrink-0 border-r-2 border-slate-200 bg-slate-50/90 md:sticky md:top-20 md:self-start md:max-h-[calc(100vh-5.5rem)] overflow-y-auto p-3 lg:p-4 gap-1.5"
+          >
+            <div className="px-2 py-2 mb-1 border-b border-slate-200">
+              <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400">
+                Staff Academic Desk
+              </span>
+              <span className="text-xs font-black text-blue-950">
+                {availableTabs.length} Assigned Modules
+              </span>
+            </div>
+            {availableTabs.map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`min-h-[44px] w-full px-3.5 py-2.5 font-black text-[11px] lg:text-xs uppercase tracking-wider transition-all flex items-center gap-2 rounded-xl break-words whitespace-normal text-left ${
+                  activeTab === tab.id
+                    ? 'text-blue-950 bg-yellow-400 border-2 border-blue-900 shadow-sm'
+                    : 'text-slate-600 bg-white hover:text-blue-900 hover:bg-blue-50 border border-slate-200'
+                }`}
+              >
+                <span className="shrink-0">{tab.icon}</span>
+                <span className="break-words whitespace-normal">{tab.label}</span>
+              </button>
+            ))}
+          </aside>
+
+          <div className="flex-1 min-w-0 p-3 sm:p-6 md:p-8 lg:p-10 overflow-x-hidden">
         {availableTabs.length === 0 && (
           <div className="py-16 text-center text-slate-400">
             <p className="text-sm font-bold">No active permissions assigned. Access will appear once granted by Admin.</p>
@@ -636,42 +735,44 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
         )}
 
         {availableTabs.some(t => t.id === 'overview') && activeTab === 'overview' && (
-          <div className="grid md:grid-cols-4 gap-8">
-            <div className="p-8 bg-blue-50 rounded-3xl border-2 border-blue-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className="p-5 sm:p-8 bg-blue-50 rounded-3xl border-2 border-blue-100">
                <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mb-2">Students & Pupils</p>
-               <p className="text-5xl font-black text-blue-900">{filteredStudents.length}</p>
+               <p className="text-4xl sm:text-5xl font-black text-blue-900">{filteredStudents.length}</p>
             </div>
-            <div className="p-8 bg-green-50 rounded-3xl border-2 border-green-100">
+            <div className="p-5 sm:p-8 bg-green-50 rounded-3xl border-2 border-green-100">
                <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mb-2">Present Today</p>
-               <p className="text-5xl font-black text-green-700">{presentToday.length}</p>
+               <p className="text-4xl sm:text-5xl font-black text-green-700">{presentToday.length}</p>
             </div>
-            <div className="p-8 bg-yellow-50 rounded-3xl border-2 border-yellow-100">
-               <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mb-2">Total Courses</p>
-               <p className="text-5xl font-black text-blue-900">{courses.length}</p>
+            <div className="p-5 sm:p-8 bg-yellow-50 rounded-3xl border-2 border-yellow-100">
+               <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mb-2 break-words whitespace-normal">
+                 Assigned Courses {authorizedGrades.length > 0 ? `(${authorizedGrades.join(', ')})` : ''}
+               </p>
+               <p className="text-4xl sm:text-5xl font-black text-blue-900">{staffAssignedCourses.length}</p>
             </div>
-            <div className="p-8 bg-indigo-50 rounded-3xl border-2 border-indigo-100">
+            <div className="p-5 sm:p-8 bg-indigo-50 rounded-3xl border-2 border-indigo-100">
                <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mb-2">Results Uploaded</p>
-               <p className="text-5xl font-black text-blue-900">{myResults.length}</p>
+               <p className="text-4xl sm:text-5xl font-black text-blue-900">{myResults.length}</p>
             </div>
 
             {/* Quick Pupil Promotion & Class Advancement Widget */}
-            <div className="md:col-span-4 bg-gradient-to-r from-emerald-900 to-teal-950 text-white p-6 sm:p-8 rounded-3xl border-2 border-emerald-500/20 shadow-md">
+            <div className="sm:col-span-2 lg:col-span-4 bg-gradient-to-r from-emerald-900 to-teal-950 text-white p-5 sm:p-8 rounded-3xl border-2 border-emerald-500/20 shadow-md">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-emerald-800/80 pb-4 mb-4">
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">🎓</span>
-                    <h4 className="font-serif font-black text-yellow-400 text-lg sm:text-xl">
+                    <span className="text-2xl shrink-0">🎓</span>
+                    <h4 className="font-serif font-black text-yellow-400 text-lg sm:text-xl break-words">
                       Pupil Advancement & Next Class Promotion
                     </h4>
                   </div>
-                  <p className="text-xs text-emerald-200 mt-0.5">
+                  <p className="text-xs text-emerald-200 mt-0.5 break-words">
                     Move individual pupils or entire classes to the next academic grade level with 1-click.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setActiveTab('students')}
-                  className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-xs"
+                  className="min-h-[44px] px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-xs"
                 >
                   View Full Registers & Promotion
                 </button>
@@ -682,7 +783,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                   const pupils = filteredStudents.filter(s => s.grade === g);
                   const nextG = getNextGradeLevel(g);
                   return (
-                    <div key={g} className="bg-emerald-950/70 p-4 rounded-2xl border border-emerald-700/50 flex items-center justify-between gap-3">
+                    <div key={g} className="bg-emerald-950/70 p-4 rounded-2xl border border-emerald-700/50 flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <span className="text-xs font-black text-white block uppercase tracking-wider">{g}</span>
                         <span className="text-[11px] text-emerald-300 font-bold">{pupils.length} Pupils enrolled</span>
@@ -700,7 +801,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                               alert(`Successfully promoted ${pupils.length} pupils from ${g} to ${nextG}!`);
                             }
                           }}
-                          className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-black uppercase rounded-lg shadow-xs transition-all active:scale-95"
+                          className="min-h-[44px] px-3 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-black uppercase rounded-lg shadow-xs transition-all active:scale-95"
                           title={`Promote all ${g} pupils to ${nextG}`}
                         >
                           ➔ Next ({nextG})
@@ -717,7 +818,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
             </div>
 
             {/* Academic Trends Recharts Visualization */}
-            <div className="md:col-span-4">
+            <div className="sm:col-span-2 lg:col-span-4">
               <AcademicTrendsWidget
                 results={results}
                 assignedGrades={assignedGrades}
@@ -727,22 +828,22 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
             </div>
 
             {/* Live Academic Calendar & Notices */}
-            <div className="md:col-span-4 grid lg:grid-cols-12 gap-8 mt-2">
-              <div className="lg:col-span-7 bg-white p-8 rounded-3xl border-2 border-blue-100 space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                  <div className="flex items-center gap-3">
-                    <span className="p-2.5 bg-yellow-400 text-blue-900 rounded-2xl text-xl">📅</span>
-                    <div>
-                      <h4 className="font-serif font-black text-blue-900 text-lg">School Academic Calendar</h4>
+            <div className="sm:col-span-2 lg:col-span-4 grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 mt-2">
+              <div className="lg:col-span-7 bg-white p-5 sm:p-8 rounded-3xl border-2 border-blue-100 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="p-2.5 bg-yellow-400 text-blue-900 rounded-2xl text-xl shrink-0">📅</span>
+                    <div className="min-w-0">
+                      <h4 className="font-serif font-black text-blue-900 text-base sm:text-lg break-words">School Academic Calendar</h4>
                       <p className="text-xs text-slate-400 font-bold">Term Resumption, Breaks, and Exams</p>
                     </div>
                   </div>
-                  <span className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-black uppercase">
+                  <span className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-black uppercase shrink-0">
                     ● Realtime Live
                   </span>
                 </div>
                 {calendar ? (
-                  <div className="p-5 bg-slate-50 rounded-2xl font-mono text-xs text-slate-700 whitespace-pre-wrap leading-relaxed border border-slate-200">
+                  <div className="p-4 sm:p-5 bg-slate-50 rounded-2xl font-mono text-xs text-slate-700 whitespace-pre-wrap break-words leading-relaxed border border-slate-200">
                     {calendar}
                   </div>
                 ) : (
@@ -750,12 +851,12 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 )}
               </div>
 
-              <div className="lg:col-span-5 bg-white p-8 rounded-3xl border-2 border-blue-100 space-y-4">
+              <div className="lg:col-span-5 bg-white p-5 sm:p-8 rounded-3xl border-2 border-blue-100 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                  <div className="flex items-center gap-3">
-                    <span className="p-2.5 bg-blue-900 text-yellow-400 rounded-2xl text-xl">📢</span>
-                    <div>
-                      <h4 className="font-serif font-black text-blue-900 text-lg">Staff & School Bulletins</h4>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="p-2.5 bg-blue-900 text-yellow-400 rounded-2xl text-xl shrink-0">📢</span>
+                    <div className="min-w-0">
+                      <h4 className="font-serif font-black text-blue-900 text-base sm:text-lg break-words">Staff & School Bulletins</h4>
                       <p className="text-xs text-slate-400 font-bold">{announcements.length} Published</p>
                     </div>
                   </div>
@@ -766,11 +867,11 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                   <div className="space-y-3 max-h-[320px] overflow-y-auto pr-1">
                     {announcements.map(ann => (
                       <div key={ann.id} className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 space-y-1">
-                        <div className="flex justify-between items-start">
-                          <h5 className="font-serif font-black text-blue-950 text-xs">{ann.title}</h5>
-                          <span className="text-[10px] text-slate-400 uppercase font-bold">{ann.date}</span>
+                        <div className="flex flex-wrap justify-between items-start gap-2">
+                          <h5 className="font-serif font-black text-blue-950 text-xs break-words">{ann.title}</h5>
+                          <span className="text-[10px] text-slate-400 uppercase font-bold shrink-0">{ann.date}</span>
                         </div>
-                        <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">{ann.content}</p>
+                        <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap break-words">{ann.content}</p>
                       </div>
                     ))}
                   </div>
@@ -784,19 +885,19 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
           <div className="space-y-8">
             {/* Top Mode Switcher Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-slate-100 pb-4">
-              <div>
-                <h3 className="text-2xl font-black text-blue-900 font-serif">Staff Daily Attendance Portal</h3>
-                <p className="text-xs text-slate-500 font-bold mt-1">
+              <div className="min-w-0">
+                <h3 className="text-xl sm:text-2xl font-black text-blue-900 font-serif break-words">Staff Daily Attendance Portal</h3>
+                <p className="text-xs text-slate-500 font-bold mt-1 break-words">
                   Mark daily student attendance either by roll call checklist or via student QR pass camera scanning.
                 </p>
               </div>
 
               {/* Mode Toggle Tabs */}
-              <div className="inline-flex p-1.5 bg-slate-100 rounded-2xl border border-slate-200">
+              <div className="flex flex-wrap p-1.5 bg-slate-100 rounded-2xl border border-slate-200 gap-1">
                 <button
                   type="button"
                   onClick={() => setAttendanceMode('checklist')}
-                  className={`px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                  className={`min-h-[44px] px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                     attendanceMode === 'checklist'
                       ? 'bg-blue-900 text-yellow-400 shadow-md'
                       : 'text-slate-600 hover:text-blue-950'
@@ -808,7 +909,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => setAttendanceMode('scanner')}
-                  className={`px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                  className={`min-h-[44px] px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                     attendanceMode === 'scanner'
                       ? 'bg-blue-900 text-yellow-400 shadow-md'
                       : 'text-slate-600 hover:text-blue-950'
@@ -850,7 +951,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                           setChecklistClass(e.target.value as GradeLevel);
                           setAttendanceSubmitSuccess(null);
                         }}
-                        className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-2xl font-black text-xs text-blue-950 outline-none focus:border-blue-900 transition-all"
+                        className="w-full min-h-[44px] px-4 py-2.5 bg-white border-2 border-slate-200 rounded-2xl font-black text-xs text-blue-950 outline-none focus:border-blue-900 transition-all"
                       >
                         {authorizedGrades.map(lvl => (
                           <option key={lvl} value={lvl}>{lvl}</option>
@@ -860,7 +961,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
                     {/* Select Date */}
                     <div className="space-y-1.5">
-                      <div className="flex justify-between items-center">
+                      <div className="flex justify-between items-center gap-2">
                         <label className="text-xs font-black text-blue-950 uppercase tracking-wider block">
                           Attendance Date
                         </label>
@@ -873,7 +974,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                             const day = String(d.getDate()).padStart(2, '0');
                             setChecklistDate(`${year}-${month}-${day}`);
                           }}
-                          className="text-[10px] font-black text-blue-700 hover:text-blue-900 uppercase underline"
+                          className="min-h-[32px] px-2 text-[10px] font-black text-blue-700 hover:text-blue-900 uppercase underline"
                         >
                           Today
                         </button>
@@ -885,7 +986,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                           setChecklistDate(e.target.value);
                           setAttendanceSubmitSuccess(null);
                         }}
-                        className="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-2xl font-black text-xs text-blue-950 outline-none focus:border-blue-900 transition-all"
+                        className="w-full min-h-[44px] px-4 py-2.5 bg-white border-2 border-slate-200 rounded-2xl font-black text-xs text-blue-950 outline-none focus:border-blue-900 transition-all"
                       />
                     </div>
 
@@ -900,7 +1001,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                           setChecklistTerm(e.target.value);
                           setAttendanceSubmitSuccess(null);
                         }}
-                        className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-2xl font-black text-xs text-blue-950 outline-none focus:border-blue-900 transition-all"
+                        className="w-full min-h-[44px] px-4 py-2.5 bg-white border-2 border-slate-200 rounded-2xl font-black text-xs text-blue-950 outline-none focus:border-blue-900 transition-all"
                       >
                         <option value="First Term">First Term</option>
                         <option value="Second Term">Second Term</option>
@@ -909,12 +1010,12 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                     </div>
 
                     {/* Quick Selection Helpers */}
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
                         onClick={handleSelectAllPresent}
                         disabled={checklistClassStudents.length === 0}
-                        className="flex-1 py-3 px-3 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-xs active:scale-95 disabled:opacity-40"
+                        className="min-h-[44px] flex-1 py-2.5 px-3 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-xs active:scale-95 disabled:opacity-40"
                       >
                         ✓ Mark All Present
                       </button>
@@ -922,7 +1023,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                         type="button"
                         onClick={handleDeselectAll}
                         disabled={checklistClassStudents.length === 0}
-                        className="py-3 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-xs active:scale-95 disabled:opacity-40"
+                        className="min-h-[44px] py-2.5 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-xs active:scale-95 disabled:opacity-40"
                         title="Clear checklist / Mark all absent"
                       >
                         ✕ Clear
@@ -931,7 +1032,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                   </div>
 
                   {/* Summary Metric Counters */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-slate-200">
                     <div className="p-3 bg-white rounded-2xl border border-slate-200">
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Class Roster</p>
                       <p className="text-xl font-black text-blue-950 mt-0.5">{checklistClassStudents.length} <span className="text-xs text-slate-400 font-bold">Enrolled</span></p>
@@ -960,15 +1061,15 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
                 {/* Success Banner */}
                 {attendanceSubmitSuccess && (
-                  <div className="p-5 bg-emerald-50 border-2 border-emerald-300 text-emerald-950 rounded-3xl text-xs sm:text-sm font-black flex items-center justify-between gap-3 shadow-md animate-in fade-in">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-2xl">🎉</span>
-                      <span>{attendanceSubmitSuccess}</span>
+                  <div className="p-4 sm:p-5 bg-emerald-50 border-2 border-emerald-300 text-emerald-950 rounded-3xl text-xs sm:text-sm font-black flex items-center justify-between gap-3 shadow-md animate-in fade-in">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="text-2xl shrink-0">🎉</span>
+                      <span className="break-words">{attendanceSubmitSuccess}</span>
                     </div>
                     <button
                       type="button"
                       onClick={() => setAttendanceSubmitSuccess(null)}
-                      className="text-emerald-700 hover:text-emerald-950 font-black text-xs px-2 py-1"
+                      className="min-h-[44px] min-w-[44px] flex items-center justify-center text-emerald-700 hover:text-emerald-950 font-black text-xs rounded-xl shrink-0"
                     >
                       ✕
                     </button>
@@ -977,18 +1078,18 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
                 {/* Interactive Checklist of Students */}
                 <div className="space-y-3">
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <div className="relative w-full sm:w-80">
-                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 w-full sm:w-80 min-h-[44px] px-3.5 bg-white border-2 border-slate-200 rounded-2xl focus-within:border-blue-900 shadow-xs">
+                      <span className="text-slate-400 text-xs shrink-0">🔍</span>
                       <input
                         type="text"
                         value={checklistSearch}
                         onChange={(e) => setChecklistSearch(e.target.value)}
                         placeholder="Search pupil by name or ID..."
-                        className="w-full pl-9 pr-4 py-2.5 bg-white border-2 border-slate-200 rounded-2xl text-xs font-bold text-blue-950 outline-none focus:border-blue-900 shadow-xs"
+                        className="w-full py-2 bg-transparent text-xs font-bold text-blue-950 outline-none"
                       />
                     </div>
-                    <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
                       <p className="text-xs font-black text-slate-500 uppercase tracking-wider hidden sm:block">
                         Click row, checkbox or button to mark Present
                       </p>
@@ -999,20 +1100,20 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                   </div>
 
                   {checklistClassStudents.length === 0 ? (
-                    <div className="p-16 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                    <div className="p-8 sm:p-16 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
                       <span className="text-4xl block mb-2">🧑‍🎓</span>
                       <p className="font-black text-blue-950 text-base">No students enrolled in {checklistClass} yet</p>
-                      <p className="text-xs text-slate-400 mt-1 font-medium">
+                      <p className="text-xs text-slate-400 mt-1 font-medium break-words">
                         Students added to this class will appear here automatically for morning attendance check-listing.
                       </p>
                     </div>
                   ) : displayedChecklistStudents.length === 0 ? (
-                    <div className="p-12 text-center bg-slate-50 rounded-3xl border border-slate-200">
-                      <p className="font-bold text-slate-500 text-sm">No pupils match "{checklistSearch}" in {checklistClass}</p>
+                    <div className="p-8 sm:p-12 text-center bg-slate-50 rounded-3xl border border-slate-200">
+                      <p className="font-bold text-slate-500 text-sm break-words">No pupils match "{checklistSearch}" in {checklistClass}</p>
                       <button
                         type="button"
                         onClick={() => setChecklistSearch('')}
-                        className="mt-2 text-xs font-black text-blue-900 underline uppercase"
+                        className="min-h-[44px] mt-2 px-4 text-xs font-black text-blue-900 underline uppercase"
                       >
                         Clear Search Filter
                       </button>
@@ -1025,15 +1126,15 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                           <div
                             key={student.id}
                             onClick={() => toggleStudentCheck(student.id)}
-                            className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between select-none ${
+                            className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-wrap items-center justify-between gap-3 select-none ${
                               isChecked
                                 ? 'bg-emerald-50/70 border-emerald-400 shadow-xs'
                                 : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
                             }`}
                           >
-                            <div className="flex items-center space-x-3">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
                               {/* Checkbox input */}
-                              <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                              <div className="shrink-0 min-h-[44px] min-w-[32px] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
                                 <input
                                   type="checkbox"
                                   checked={isChecked}
@@ -1050,25 +1151,25 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                               </div>
 
                               {/* Student Information */}
-                              <div className="overflow-hidden">
-                                <p className="font-black text-blue-950 text-sm leading-snug truncate">
+                              <div className="min-w-0 flex-1">
+                                <p className="font-black text-blue-950 text-sm leading-snug break-words whitespace-normal">
                                   {student.name}
                                 </p>
-                                <p className="text-[10px] text-slate-400 font-mono font-bold">
+                                <p className="text-[10px] text-slate-400 font-mono font-bold break-all">
                                   ID: {student.id}
                                 </p>
                               </div>
                             </div>
 
                             {/* Status & Quick Toggle Button */}
-                            <div className="flex items-center gap-2 shrink-0 pl-2">
+                            <div className="flex items-center gap-2 shrink-0">
                               <button
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   toggleStudentCheck(student.id);
                                 }}
-                                className={`px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all shadow-xs active:scale-95 flex items-center gap-1 ${
+                                className={`min-h-[44px] px-3.5 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all shadow-xs active:scale-95 flex items-center gap-1 ${
                                   isChecked
                                     ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                                     : 'bg-slate-100 hover:bg-yellow-400 text-slate-700 hover:text-blue-950 border border-slate-200'
@@ -1085,13 +1186,13 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 </div>
 
                 {/* Prominent Submit Attendance Button */}
-                <div className="p-6 bg-blue-950 rounded-3xl border-4 border-yellow-400 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
-                  <div>
-                    <h4 className="text-white font-black text-base font-serif flex items-center gap-2">
+                <div className="p-5 sm:p-6 bg-blue-950 rounded-3xl border-4 border-yellow-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
+                  <div className="min-w-0">
+                    <h4 className="text-white font-black text-base font-serif flex items-center gap-2 break-words">
                       <span>📝</span>
                       <span>Ready to Submit Daily Attendance?</span>
                     </h4>
-                    <p className="text-xs text-yellow-300 font-medium mt-0.5">
+                    <p className="text-xs text-yellow-300 font-medium mt-0.5 break-words">
                       Submitting records daily presence for <strong className="text-white">{checkedStudentIds.length} pupils</strong> in <strong className="text-white">{checklistClass}</strong> on {checklistDate} ({checklistTerm}).
                     </p>
                   </div>
@@ -1100,7 +1201,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                     type="button"
                     onClick={handleSubmitChecklistAttendance}
                     disabled={isSubmittingAttendance || checklistClassStudents.length === 0}
-                    className="w-full sm:w-auto px-8 py-4 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl transition-all hover:scale-[1.03] active:scale-[0.97] flex items-center justify-center gap-2 shrink-0 disabled:opacity-40"
+                    className="min-h-[44px] w-full sm:w-auto px-6 sm:px-8 py-3.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl transition-all active:scale-[0.97] flex items-center justify-center gap-2 shrink-0 disabled:opacity-40"
                   >
                     <span>{isSubmittingAttendance ? '⏳' : '✓'}</span>
                     <span>{isSubmittingAttendance ? 'Submitting...' : `Submit Attendance (${checkedStudentIds.length} Present)`}</span>
@@ -1112,11 +1213,11 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
             {/* QR CAMERA SCANNER MODE */}
             {attendanceMode === 'scanner' && (
               <div className="space-y-6">
-                <div className="flex items-center justify-between gap-4 pb-1">
+                <div className="flex flex-wrap items-center justify-between gap-4 pb-1">
                   <button
                     type="button"
                     onClick={() => setAttendanceMode('checklist')}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-blue-950 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+                    className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-blue-950 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
                   >
                     <span>←</span>
                     <span>Switch to Roll Call Checklist</span>
@@ -1140,11 +1241,11 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
         {/* ATTENDANCE SCANNING DEDICATED TAB */}
         {activeTab === 'attendanceScanning' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between gap-4 pb-2">
+            <div className="flex flex-wrap items-center justify-between gap-4 pb-2">
               <button
                 type="button"
                 onClick={() => setActiveTab('attendance')}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-blue-950 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+                className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-blue-950 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
               >
                 <span>←</span>
                 <span>Back to Attendance Desk</span>
@@ -1182,7 +1283,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowAddStudentForm(!showAddStudentForm)}
-                  className="px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-2xl shadow-md transition-all flex items-center gap-2 self-start sm:self-auto active:scale-95"
+                  className="min-h-[44px] px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-2xl shadow-md transition-all flex items-center gap-2 self-start sm:self-auto active:scale-95"
                 >
                   <span>{showAddStudentForm ? '✕ Close Form' : '➕ Register Pupil for My Class'}</span>
                 </button>
@@ -1191,12 +1292,12 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
             {/* Class Teacher Student Registration Form */}
             {canCreateStudents && showAddStudentForm && authorizedGrades.length > 0 && (
-              <div className="p-6 sm:p-8 bg-amber-50/70 border-2 border-amber-200 rounded-3xl shadow-sm space-y-4 animate-in fade-in duration-200">
-                <div className="flex items-center gap-3 border-b border-amber-200/60 pb-3">
-                  <span className="p-2 bg-amber-500 text-white rounded-xl text-lg">📝</span>
-                  <div>
-                    <h4 className="font-serif font-black text-blue-950 text-base">Class Teacher Pupil Enrollment Portal</h4>
-                    <p className="text-[11px] text-amber-900 font-medium">
+              <div className="p-4 sm:p-8 bg-amber-50/70 border-2 border-amber-200 rounded-3xl shadow-sm space-y-4 animate-in fade-in duration-200">
+                <div className="flex flex-wrap items-center gap-3 border-b border-amber-200/60 pb-3">
+                  <span className="p-2 bg-amber-500 text-white rounded-xl text-lg shrink-0">📝</span>
+                  <div className="min-w-0">
+                    <h4 className="font-serif font-black text-blue-950 text-base break-words">Class Teacher Pupil Enrollment Portal</h4>
+                    <p className="text-[11px] text-amber-900 font-medium break-words">
                       Admin has authorized you to register pupils for: <strong className="text-blue-900">{authorizedGrades.join(', ')}</strong>. Unassigned classes cannot be registered.
                     </p>
                   </div>
@@ -1213,7 +1314,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                       value={newPupilName}
                       onChange={(e) => setNewPupilName(e.target.value)}
                       placeholder="e.g. Oluwaseun Adeleke"
-                      className="w-full px-4 py-2.5 bg-white border border-amber-200 rounded-xl font-bold text-sm text-blue-950 outline-none focus:ring-2 focus:ring-blue-900"
+                      className="w-full min-h-[44px] px-4 py-2.5 bg-white border border-amber-200 rounded-xl font-bold text-sm text-blue-950 outline-none focus:ring-2 focus:ring-blue-900"
                     />
                   </div>
 
@@ -1224,7 +1325,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                     <select
                       value={newPupilGrade}
                       onChange={(e) => setNewPupilGrade(e.target.value as GradeLevel)}
-                      className="w-full px-3 py-2.5 bg-white border border-amber-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:ring-2 focus:ring-blue-900"
+                      className="w-full min-h-[44px] px-3 py-2.5 bg-white border border-amber-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:ring-2 focus:ring-blue-900"
                     >
                       {authorizedGrades.map(g => (
                         <option key={g} value={g}>{g}</option>
@@ -1239,7 +1340,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                     <select
                       value={newPupilGender}
                       onChange={(e) => setNewPupilGender(e.target.value as any)}
-                      className="w-full px-3 py-2.5 bg-white border border-amber-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:ring-2 focus:ring-blue-900"
+                      className="w-full min-h-[44px] px-3 py-2.5 bg-white border border-amber-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:ring-2 focus:ring-blue-900"
                     >
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
@@ -1255,54 +1356,54 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                       type="number"
                       value={newPupilAdmissionYear}
                       onChange={(e) => setNewPupilAdmissionYear(Number(e.target.value))}
-                      className="w-full px-3 py-2.5 bg-white border border-amber-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:ring-2 focus:ring-blue-900"
+                      className="w-full min-h-[44px] px-3 py-2.5 bg-white border border-amber-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:ring-2 focus:ring-blue-900"
                     />
                   </div>
 
                   {/* Pupil Password Input with Reveal Toggle */}
                   <div className="space-y-1 sm:col-span-2 lg:col-span-3">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-wrap justify-between items-center gap-2">
                       <label className="text-[11px] font-black text-blue-950 uppercase tracking-wider block">
                         Pupil Login Password (Letters & Numbers) *
                       </label>
                       <button
                         type="button"
                         onClick={() => setNewPupilPassword(generateSecureTempPassword())}
-                        className="text-[10px] font-black text-blue-900 hover:text-blue-700 uppercase underline"
+                        className="min-h-[32px] text-[10px] font-black text-blue-900 hover:text-blue-700 uppercase underline"
                       >
                         ⚡ Suggest Password
                       </button>
                     </div>
-                    <div className="relative">
+                    <div className="flex items-stretch gap-2">
                       <input
                         type={showNewPupilPassword ? "text" : "password"}
                         value={newPupilPassword}
                         onChange={(e) => setNewPupilPassword(e.target.value)}
                         placeholder="e.g. Pupil2025Pass (Letters & Numbers accepted)"
-                        className="w-full px-4 py-2.5 pr-20 bg-white border border-amber-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:ring-2 focus:ring-blue-900"
+                        className="flex-1 min-w-0 min-h-[44px] px-4 py-2.5 bg-white border border-amber-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:ring-2 focus:ring-blue-900"
                       />
                       <button
                         type="button"
                         onClick={() => setShowNewPupilPassword(!showNewPupilPassword)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[10px] font-black uppercase text-slate-500 hover:text-blue-900 bg-slate-100 hover:bg-slate-200 rounded-md border border-slate-200"
+                        className="min-h-[44px] px-3.5 py-2 text-[10px] font-black uppercase text-slate-600 hover:text-blue-900 bg-white hover:bg-slate-100 rounded-xl border border-amber-200 shrink-0"
                       >
                         {showNewPupilPassword ? "Hide" : "Show"}
                       </button>
                     </div>
-                    <p className="text-[10px] text-amber-900">Accepts numbers and letters. If left empty, an alphanumeric password will be generated automatically.</p>
+                    <p className="text-[10px] text-amber-900 break-words">Accepts numbers and letters. If left empty, an alphanumeric password will be generated automatically.</p>
                   </div>
 
                   {/* Parent Provisioning Section */}
                   <div className="sm:col-span-2 lg:col-span-4 p-4 bg-white/80 border border-amber-200 rounded-2xl space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="flex items-center gap-2 cursor-pointer">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <label className="flex items-center gap-2 cursor-pointer min-h-[44px]">
                         <input
                           type="checkbox"
                           checked={createParentWithPupil}
                           onChange={(e) => setCreateParentWithPupil(e.target.checked)}
-                          className="w-4 h-4 rounded text-blue-900 focus:ring-blue-900"
+                          className="w-5 h-5 rounded text-blue-900 focus:ring-blue-900 shrink-0"
                         />
-                        <span className="text-xs font-black text-blue-950 uppercase tracking-wider">
+                        <span className="text-xs font-black text-blue-950 uppercase tracking-wider break-words">
                           Also Provision Parent Portal Account for this Pupil
                         </span>
                       </label>
@@ -1322,7 +1423,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                             value={newPupilParentName}
                             onChange={(e) => setNewPupilParentName(e.target.value)}
                             placeholder="e.g. Mr. Babatunde Adeleke"
-                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+                            className="w-full min-h-[44px] px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
                           />
                         </div>
 
@@ -1335,7 +1436,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                             value={newPupilParentPhone}
                             onChange={(e) => setNewPupilParentPhone(e.target.value)}
                             placeholder="08034567890"
-                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+                            className="w-full min-h-[44px] px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
                           />
                         </div>
 
@@ -1343,11 +1444,11 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                           <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                             Relationship & Email
                           </label>
-                          <div className="flex gap-2">
+                          <div className="flex flex-col sm:flex-row gap-2">
                             <select
                               value={newPupilParentRelationship}
                               onChange={(e) => setNewPupilParentRelationship(e.target.value as any)}
-                              className="px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none"
+                              className="min-h-[44px] px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-blue-950 outline-none"
                             >
                               <option value="Father">Father</option>
                               <option value="Mother">Mother</option>
@@ -1359,7 +1460,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                               value={newPupilParentEmail}
                               onChange={(e) => setNewPupilParentEmail(e.target.value)}
                               placeholder="parent@email.com"
-                              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
+                              className="w-full min-h-[44px] px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-xs text-blue-950 outline-none focus:bg-white focus:border-blue-900"
                             />
                           </div>
                         </div>
@@ -1367,21 +1468,21 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                     )}
                   </div>
 
-                  <div className="sm:col-span-2 lg:col-span-4 flex items-center justify-between gap-3 pt-2">
-                    <p className="text-[11px] text-amber-900 font-medium">
+                  <div className="sm:col-span-2 lg:col-span-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+                    <p className="text-[11px] text-amber-900 font-medium break-words">
                       ⚡ Accounts will be created with secure temporary credentials. Users can update their passwords on login.
                     </p>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <button
                         type="button"
                         onClick={() => setShowAddStudentForm(false)}
-                        className="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-black text-xs uppercase rounded-xl transition-all"
+                        className="min-h-[44px] px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-black text-xs uppercase rounded-xl transition-all"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
-                        className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95"
+                        className="min-h-[44px] px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95"
                       >
                         ✓ Provision Account in {newPupilGrade}
                       </button>
@@ -1393,48 +1494,48 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
             {/* Enrollment Receipt Modal for Class Teacher */}
             {lastEnrollmentSuccess && (
-              <div className="fixed inset-0 z-50 bg-blue-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-                <div className="max-w-lg w-full bg-white rounded-3xl shadow-2xl border-4 border-yellow-400 overflow-hidden space-y-4">
-                  <div className="bg-blue-900 text-white p-6 flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                      <span className="p-2 bg-yellow-400 text-blue-900 rounded-xl text-xl font-black">✓</span>
-                      <div>
-                        <h3 className="font-serif font-black text-lg">Pupil Enrolled Successfully</h3>
+              <div className="fixed inset-0 z-50 bg-blue-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
+                <div className="max-w-lg w-full max-h-[92vh] overflow-y-auto bg-white rounded-3xl shadow-2xl border-4 border-yellow-400 space-y-4">
+                  <div className="bg-blue-900 text-white p-5 sm:p-6 flex justify-between items-start gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="p-2 bg-yellow-400 text-blue-900 rounded-xl text-xl font-black shrink-0">✓</span>
+                      <div className="min-w-0">
+                        <h3 className="font-serif font-black text-base sm:text-lg break-words">Pupil Enrolled Successfully</h3>
                         <p className="text-xs text-yellow-300 font-bold">Synchronized to Supabase in Real Time</p>
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => setLastEnrollmentSuccess(null)}
-                      className="text-white hover:text-yellow-400 font-black text-xl p-1"
+                      className="min-h-[44px] min-w-[44px] flex items-center justify-center text-white hover:text-yellow-400 font-black text-xl rounded-xl hover:bg-white/10 shrink-0"
                     >
                       ✕
                     </button>
                   </div>
 
-                  <div className="p-6 space-y-5">
+                  <div className="p-5 sm:p-6 space-y-5">
                     {/* Pupil Slip */}
                     <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl space-y-2">
-                      <div className="flex items-center justify-between border-b border-blue-200/60 pb-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-200/60 pb-2">
                         <span className="text-[10px] font-black uppercase text-blue-900 tracking-wider">🎓 Pupil Credentials</span>
                         <span className="px-2 py-0.5 bg-blue-900 text-yellow-400 text-[10px] font-black rounded-md">{lastEnrollmentSuccess.student.grade}</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                         <div>
                           <span className="text-slate-400 text-[10px] uppercase font-bold block">Pupil Full Name</span>
-                          <span className="font-black text-blue-950">{lastEnrollmentSuccess.student.name}</span>
+                          <span className="font-black text-blue-950 break-words">{lastEnrollmentSuccess.student.name}</span>
                         </div>
                         <div>
                           <span className="text-slate-400 text-[10px] uppercase font-bold block">Assigned Student ID</span>
-                          <span className="font-mono font-black text-blue-900">{lastEnrollmentSuccess.student.id}</span>
+                          <span className="font-mono font-black text-blue-900 break-all">{lastEnrollmentSuccess.student.id}</span>
                         </div>
                         <div>
                           <span className="text-slate-400 text-[10px] uppercase font-bold block">Portal Email</span>
-                          <span className="font-bold text-slate-700">{lastEnrollmentSuccess.student.email}</span>
+                          <span className="font-bold text-slate-700 break-all">{lastEnrollmentSuccess.student.email}</span>
                         </div>
                         <div>
                           <span className="text-slate-400 text-[10px] uppercase font-bold block">Temporary Password</span>
-                          <span className="font-mono font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">{lastEnrollmentSuccess.tempStudentPass || 'Generated & Secured'}</span>
+                          <span className="font-mono font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded break-all inline-block">{lastEnrollmentSuccess.tempStudentPass || 'Generated & Secured'}</span>
                         </div>
                       </div>
                     </div>
@@ -1442,40 +1543,40 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                     {/* Parent Slip if created */}
                     {lastEnrollmentSuccess.parent && (
                       <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl space-y-2">
-                        <div className="flex items-center justify-between border-b border-amber-200/60 pb-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200/60 pb-2">
                           <span className="text-[10px] font-black uppercase text-amber-900 tracking-wider">👨‍👩‍👧 Linked Parent Account</span>
                           <span className="px-2 py-0.5 bg-amber-800 text-white text-[10px] font-black rounded-md">{lastEnrollmentSuccess.parent.relationship || 'Guardian'}</span>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                           <div>
                             <span className="text-slate-400 text-[10px] uppercase font-bold block">Parent Name</span>
-                            <span className="font-black text-amber-950">{lastEnrollmentSuccess.parent.fullName}</span>
+                            <span className="font-black text-amber-950 break-words">{lastEnrollmentSuccess.parent.fullName}</span>
                           </div>
                           <div>
                             <span className="text-slate-400 text-[10px] uppercase font-bold block">Parent ID</span>
-                            <span className="font-mono font-black text-amber-900">{lastEnrollmentSuccess.parent.id}</span>
+                            <span className="font-mono font-black text-amber-900 break-all">{lastEnrollmentSuccess.parent.id}</span>
                           </div>
                           <div>
                             <span className="text-slate-400 text-[10px] uppercase font-bold block">Login Phone / Email</span>
-                            <span className="font-bold text-slate-700">{lastEnrollmentSuccess.parent.phone} / {lastEnrollmentSuccess.parent.email}</span>
+                            <span className="font-bold text-slate-700 break-all">{lastEnrollmentSuccess.parent.phone} / {lastEnrollmentSuccess.parent.email}</span>
                           </div>
                           <div>
                             <span className="text-slate-400 text-[10px] uppercase font-bold block">Temporary Password</span>
-                            <span className="font-mono font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">{lastEnrollmentSuccess.tempParentPass || 'Generated & Secured'}</span>
+                            <span className="font-mono font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded break-all inline-block">{lastEnrollmentSuccess.tempParentPass || 'Generated & Secured'}</span>
                           </div>
                         </div>
                       </div>
                     )}
 
                     <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-[11px] text-emerald-900 font-medium flex items-center gap-2">
-                      <span>⚡</span>
-                      <span>This pupil is now saved to Supabase and immediately visible across the Admin Panel and Roll Call checklists.</span>
+                      <span className="shrink-0">⚡</span>
+                      <span className="break-words">This pupil is now saved to Supabase and immediately visible across the Admin Panel and Roll Call checklists.</span>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => setLastEnrollmentSuccess(null)}
-                      className="w-full py-3.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg transition-all"
+                      className="w-full min-h-[44px] py-3.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg transition-all"
                     >
                       Done & Return to Class List
                     </button>
@@ -1484,15 +1585,15 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
               </div>
             )}
             {assignedGrades.length === 0 ? (
-              <div className="p-12 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 text-slate-400 font-bold uppercase text-xs tracking-widest">No classes assigned to you yet.</div>
+              <div className="p-8 sm:p-12 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 text-slate-400 font-bold uppercase text-xs tracking-widest">No classes assigned to you yet.</div>
             ) : (
               <div className="grid gap-8">
                 {assignedGrades.map(grade => {
                   const studentsInGrade = filteredStudents.filter(s => s.grade === grade);
                   return (
-                    <div key={grade} className="bg-white rounded-3xl border-2 border-slate-100 overflow-hidden shadow-sm">
-                      <div className="bg-slate-50 px-6 sm:px-8 py-4 border-b-2 border-slate-100 flex flex-wrap justify-between items-center gap-3">
-                        <div className="flex items-center gap-3">
+                    <div key={grade} className="bg-white rounded-3xl border-2 border-slate-100 shadow-sm">
+                      <div className="bg-slate-50 rounded-t-[1.35rem] px-4 sm:px-8 py-4 border-b-2 border-slate-100 flex flex-wrap justify-between items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
                           <h4 className="font-black text-blue-900 uppercase tracking-widest">{grade}</h4>
                           <span className="px-3 py-1 bg-blue-900 text-yellow-400 text-[10px] font-black rounded-full">{studentsInGrade.length} Students & Pupils</span>
                         </div>
@@ -1511,7 +1612,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                                   alert(`Success! All ${studentsInGrade.length} pupils in ${grade} have been promoted to ${nextTarget}!`);
                                 }
                               }}
-                              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black uppercase tracking-wider rounded-xl transition-all shadow-sm flex items-center gap-1.5 active:scale-95"
+                              className="min-h-[44px] px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black uppercase tracking-wider rounded-xl transition-all shadow-sm flex items-center gap-1.5 active:scale-95"
                               title={`Promote all pupils to ${nextTarget}`}
                             >
                               <span>⚡ Promote All to {nextTarget}</span>
@@ -1530,46 +1631,20 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                           studentsInGrade.map(student => {
                             const nextGrade = getNextGradeLevel(student.grade);
                             return (
-                              <div key={student.id} className="p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
-                                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                                  {/* Pupil Photo with Quick Upload Camera Badge */}
-                                  <div className="relative group shrink-0">
-                                    <div className="w-14 h-14 rounded-2xl bg-yellow-100 text-blue-900 flex items-center justify-center font-black border-2 border-yellow-300 overflow-hidden shadow-xs">
-                                      {student.photo ? (
-                                        <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
-                                      ) : (
-                                        <span className="text-xl font-black">{student.name.charAt(0)}</span>
-                                      )}
-                                    </div>
-                                    <label
-                                      className="absolute -bottom-1 -right-1 w-6 h-6 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-lg flex items-center justify-center text-[10px] shadow cursor-pointer transition-transform hover:scale-110 border border-yellow-500"
-                                      title="Click to take or upload student picture"
-                                    >
-                                      📷
-                                      <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={(e) => {
-                                          const file = e.target.files?.[0];
-                                          if (file) {
-                                            const reader = new FileReader();
-                                            reader.onload = () => {
-                                              if (typeof reader.result === 'string') {
-                                                onUpdateStudent?.(student.id, { photo: reader.result });
-                                                alert(`✓ Photo successfully updated for ${student.name}!`);
-                                              }
-                                            };
-                                            reader.readAsDataURL(file);
-                                          }
-                                        }}
-                                      />
-                                    </label>
+                              <div key={student.id} className="p-4 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
+                                <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
+                                  {/* Pupil Photo Frame */}
+                                  <div className="w-14 h-14 rounded-2xl bg-yellow-100 text-blue-900 flex items-center justify-center font-black border-2 border-yellow-300 overflow-hidden shadow-xs shrink-0">
+                                    {student.photo ? (
+                                      <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <span className="text-xl font-black">{student.name.charAt(0)}</span>
+                                    )}
                                   </div>
 
                                   <div className="min-w-0 flex-1">
-                                    <p className="font-black text-blue-900 text-base sm:text-lg truncate">{student.name}</p>
-                                    <p className="text-xs text-slate-500 font-medium truncate">{student.email} • ID: <span className="font-mono font-bold text-slate-700">{student.id}</span></p>
+                                    <p className="font-black text-blue-900 text-base sm:text-lg break-words whitespace-normal">{student.name}</p>
+                                    <p className="text-xs text-slate-500 font-medium break-all">{student.email} • ID: <span className="font-mono font-bold text-slate-700">{student.id}</span></p>
                                     <div className="flex flex-wrap items-center gap-1.5 mt-1">
                                       <span className="px-2 py-0.5 bg-slate-200 text-slate-700 text-[10px] font-bold rounded-md uppercase">
                                         Class: {student.grade}
@@ -1593,10 +1668,10 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                                   </div>
                                 </div>
 
-                                <div className="flex flex-wrap items-center justify-between md:justify-end gap-2 sm:gap-3 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
+                                <div className="flex flex-wrap items-center justify-start lg:justify-end gap-2 sm:gap-3 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
                                   {/* Teacher Photo Upload Button */}
                                   <label
-                                    className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-900 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-2xs border border-blue-200 flex items-center gap-1.5 cursor-pointer active:scale-95"
+                                    className="min-h-[44px] px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-900 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-2xs border border-blue-200 flex items-center gap-1.5 cursor-pointer active:scale-95"
                                     title="Upload photo for this student"
                                   >
                                     <span>📷</span>
@@ -1627,7 +1702,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                                       const todayStr = new Date().toLocaleDateString();
                                       const isPresentToday = attendance.some(a => a.studentId === student.id && a.date === todayStr);
                                       return isPresentToday ? (
-                                        <span className="px-3 py-1.5 bg-emerald-100 text-emerald-800 rounded-xl text-[11px] font-black uppercase flex items-center gap-1 shadow-xs border border-emerald-200">
+                                        <span className="min-h-[44px] px-3 py-2 bg-emerald-100 text-emerald-800 rounded-xl text-[11px] font-black uppercase flex items-center gap-1 shadow-xs border border-emerald-200">
                                           <span>✓</span>
                                           <span>Present Today</span>
                                         </span>
@@ -1642,7 +1717,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                                               alert(`${student.name} is already marked present for today.`);
                                             }
                                           }}
-                                          className="px-3 py-1.5 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all shadow-xs flex items-center gap-1 active:scale-95"
+                                          className="min-h-[44px] px-3 py-2 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all shadow-xs flex items-center gap-1 active:scale-95"
                                           title="Check mark student present for today"
                                         >
                                           <span>✓</span>
@@ -1652,7 +1727,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                                     })()}
                                   </div>
 
-                                  <div className="text-left md:text-right hidden sm:block">
+                                  <div className="text-left lg:text-right hidden sm:block">
                                     <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">Enrolled</p>
                                     <p className="text-xs font-bold text-blue-900">{new Date(student.createdAt).toLocaleDateString()}</p>
                                   </div>
@@ -1666,14 +1741,14 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                                           alert(`Success! Pupil ${student.name} has been moved to ${nextGrade}.`);
                                         }
                                       }}
-                                      className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1"
+                                      className="min-h-[44px] px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1"
                                       title={`Move pupil to ${nextGrade}`}
                                     >
                                       <span>Move to {nextGrade}</span>
                                       <span className="text-yellow-300 font-black">➔</span>
                                     </button>
                                   ) : (
-                                    <span className="px-3 py-1.5 bg-purple-100 text-purple-900 text-[10px] font-black uppercase rounded-xl border border-purple-200">
+                                    <span className="min-h-[44px] px-3 py-2 bg-purple-100 text-purple-900 text-[10px] font-black uppercase rounded-xl border border-purple-200 inline-flex items-center">
                                       🎓 Graduating
                                     </span>
                                   )}
@@ -1709,24 +1784,84 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
           <div className="space-y-8">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b-2 border-slate-100 pb-6">
               <div>
-                <h3 className="text-2xl font-black text-blue-900 font-serif">Students & Pupils Term Attendance Register</h3>
-                <p className="text-slate-500 text-sm font-medium">Tracking total school days attended by students and pupils across 1st, 2nd, and 3rd terms.</p>
+                <h3 className="text-xl sm:text-2xl font-black text-blue-900 font-serif break-words">Students & Pupils Term Attendance Register</h3>
+                <p className="text-slate-500 text-xs sm:text-sm font-medium break-words">Tracking total school days attended by students and pupils across 1st, 2nd, and 3rd terms.</p>
               </div>
-              <div className="bg-yellow-400 text-blue-900 px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-wider">
+              <div className="bg-yellow-400 text-blue-900 px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-wider shrink-0">
                 Staff Term Records
               </div>
             </div>
 
-            <div className="bg-white rounded-[2rem] border-2 border-slate-100 overflow-x-auto shadow-sm">
-              <table className="w-full text-left min-w-[700px]">
+            {/* Mobile Stacked Cards (<768px) */}
+            <div className="md:hidden space-y-3">
+              {filteredStudents.length === 0 ? (
+                <div className="bg-white rounded-3xl border-2 border-slate-100 py-14 px-6 text-center text-slate-400 font-bold uppercase text-xs shadow-sm">
+                  No students or pupils enrolled in your assigned classes.
+                </div>
+              ) : (
+                filteredStudents.map(student => {
+                  const studentAtt = attendance.filter(a => a.studentId === student.id);
+                  const term1Count = studentAtt.filter(a => a.term === 'First Term' || (!a.term)).length;
+                  const term2Count = studentAtt.filter(a => a.term === 'Second Term').length;
+                  const term3Count = studentAtt.filter(a => a.term === 'Third Term').length;
+                  const totalDays = term1Count + term2Count + term3Count;
+
+                  return (
+                    <div key={student.id} className="bg-white rounded-2xl border-2 border-slate-100 p-4 shadow-sm space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-900 flex items-center justify-center font-black shrink-0 border border-blue-200">
+                            {student.name.charAt(0)}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-black text-blue-900 text-sm break-words whitespace-normal">{student.name}</p>
+                            <span className="inline-block mt-1 px-2.5 py-0.5 bg-yellow-100 text-blue-900 text-[10px] font-black rounded-lg uppercase break-words whitespace-normal">
+                              {student.grade}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="bg-blue-900 text-yellow-400 px-3 py-1 rounded-xl text-xs font-black shrink-0 tabular-nums">
+                          {totalDays} Days
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-center">
+                        <div className="bg-slate-50 rounded-xl p-2">
+                          <span className="block text-[10px] font-black uppercase text-slate-400">1st Term</span>
+                          <span className={`inline-block mt-1 px-2 py-0.5 rounded-lg font-black text-xs tabular-nums ${term1Count > 0 ? 'bg-green-100 text-green-800' : 'text-slate-400'}`}>
+                            {term1Count} Days
+                          </span>
+                        </div>
+                        <div className="bg-slate-50 rounded-xl p-2">
+                          <span className="block text-[10px] font-black uppercase text-slate-400">2nd Term</span>
+                          <span className={`inline-block mt-1 px-2 py-0.5 rounded-lg font-black text-xs tabular-nums ${term2Count > 0 ? 'bg-green-100 text-green-800' : 'text-slate-400'}`}>
+                            {term2Count} Days
+                          </span>
+                        </div>
+                        <div className="bg-slate-50 rounded-xl p-2">
+                          <span className="block text-[10px] font-black uppercase text-slate-400">3rd Term</span>
+                          <span className={`inline-block mt-1 px-2 py-0.5 rounded-lg font-black text-xs tabular-nums ${term3Count > 0 ? 'bg-green-100 text-green-800' : 'text-slate-400'}`}>
+                            {term3Count} Days
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Tablet & Desktop Table View (>=768px) */}
+            <div className="hidden md:block bg-white rounded-[2rem] border-2 border-slate-100 overflow-x-auto w-full shadow-sm">
+              <table className="w-full text-left min-w-[680px]">
                 <thead>
                   <tr className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
-                    <th className="px-8 py-5">Student / Pupil Name</th>
-                    <th className="px-6 py-5">Class Grade</th>
-                    <th className="px-6 py-5 text-center">1st Term</th>
-                    <th className="px-6 py-5 text-center">2nd Term</th>
-                    <th className="px-6 py-5 text-center">3rd Term</th>
-                    <th className="px-8 py-5 text-right">Total Present</th>
+                    <th className="px-6 py-5">Student / Pupil Name</th>
+                    <th className="px-4 py-5">Class Grade</th>
+                    <th className="px-4 py-5 text-center">1st Term</th>
+                    <th className="px-4 py-5 text-center">2nd Term</th>
+                    <th className="px-4 py-5 text-center">3rd Term</th>
+                    <th className="px-6 py-5 text-right">Total Present</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y-2 divide-slate-50">
@@ -1746,34 +1881,34 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
                       return (
                         <tr key={student.id} className="hover:bg-blue-50/40 transition-colors">
-                          <td className="px-8 py-5 font-black text-blue-900">
-                            <div className="flex items-center">
-                              <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-900 flex items-center justify-center font-black mr-3 border border-blue-200">
+                          <td className="px-6 py-5 font-black text-blue-900">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-900 flex items-center justify-center font-black shrink-0 border border-blue-200">
                                 {student.name.charAt(0)}
                               </div>
-                              <span>{student.name}</span>
+                              <span className="break-words whitespace-normal">{student.name}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-5">
-                            <span className="px-3 py-1 bg-yellow-100 text-blue-900 text-[10px] font-black rounded-lg uppercase">{student.grade}</span>
+                          <td className="px-4 py-5">
+                            <span className="inline-block px-3 py-1 bg-yellow-100 text-blue-900 text-[10px] font-black rounded-lg uppercase break-words whitespace-normal">{student.grade}</span>
                           </td>
                           <td className="px-6 py-5 text-center">
-                            <span className={`px-3 py-1.5 rounded-xl font-black text-xs ${term1Count > 0 ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-400'}`}>
+                            <span className={`px-3 py-1.5 rounded-xl font-black text-xs tabular-nums ${term1Count > 0 ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-400'}`}>
                               {term1Count} Days
                             </span>
                           </td>
                           <td className="px-6 py-5 text-center">
-                            <span className={`px-3 py-1.5 rounded-xl font-black text-xs ${term2Count > 0 ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-400'}`}>
+                            <span className={`px-3 py-1.5 rounded-xl font-black text-xs tabular-nums ${term2Count > 0 ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-400'}`}>
                               {term2Count} Days
                             </span>
                           </td>
                           <td className="px-6 py-5 text-center">
-                            <span className={`px-3 py-1.5 rounded-xl font-black text-xs ${term3Count > 0 ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-400'}`}>
+                            <span className={`px-3 py-1.5 rounded-xl font-black text-xs tabular-nums ${term3Count > 0 ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-400'}`}>
                               {term3Count} Days
                             </span>
                           </td>
                           <td className="px-8 py-5 text-right font-black text-blue-900 text-base">
-                            <span className="bg-blue-900 text-yellow-400 px-4 py-1.5 rounded-2xl shadow-sm">
+                            <span className="bg-blue-900 text-yellow-400 px-4 py-1.5 rounded-2xl shadow-sm tabular-nums">
                               {totalDays} Days
                             </span>
                           </td>
@@ -1824,23 +1959,23 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
               )}
 
               {/* Publish Results to All Pupils Workflow Banner */}
-              <div className="bg-gradient-to-br from-indigo-900 via-blue-900 to-slate-900 text-white rounded-3xl p-6 sm:p-8 border-2 border-yellow-400 shadow-xl space-y-6">
+              <div className="bg-gradient-to-br from-indigo-900 via-blue-900 to-slate-900 text-white rounded-3xl p-4 sm:p-8 border-2 border-yellow-400 shadow-xl space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-indigo-700/60 pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-yellow-400 text-blue-950 flex items-center justify-center font-black text-2xl shadow-md">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-12 h-12 rounded-2xl bg-yellow-400 text-blue-950 flex items-center justify-center font-black text-2xl shadow-md shrink-0">
                       📤
                     </div>
-                    <div>
-                      <h4 className="font-serif font-black text-lg sm:text-xl text-yellow-300">
+                    <div className="min-w-0">
+                      <h4 className="font-serif font-black text-lg sm:text-xl text-yellow-300 break-words">
                         Send Results to All Pupils
                       </h4>
-                      <p className="text-xs text-blue-200">
+                      <p className="text-xs text-blue-200 break-words">
                         Request administrative sign-off to distribute termly results to all pupils simultaneously
                       </p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[11px] font-black uppercase text-yellow-300 bg-blue-950 px-3.5 py-1 rounded-full border border-yellow-400/40">
                       Class: {activeClassForPublish}
                     </span>
@@ -1886,26 +2021,26 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                       <button
                         type="button"
                         onClick={() => handleSendToAllPupils(activeClassForPublish, term)}
-                        className="w-full py-4 bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+                        className="w-full py-3.5 min-h-[44px] bg-yellow-400 hover:bg-yellow-300 text-blue-950 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 text-center whitespace-normal break-words px-4"
                       >
                         <span>📢</span>
                         <span>Send / Broadcast Results to All Pupils at Once</span>
                       </button>
                     </div>
                   ) : latestRequest?.status === 'pending' ? (
-                    <div className="p-5 bg-amber-500/20 border border-amber-400/40 rounded-2xl text-xs text-amber-200 space-y-2">
+                    <div className="p-4 sm:p-5 bg-amber-500/20 border border-amber-400/40 rounded-2xl text-xs text-amber-200 space-y-2">
                       <div className="flex items-center gap-2 font-black">
                         <span className="text-base">⏳</span>
                         <span>Request Awaiting Administrator Approval</span>
                       </div>
-                      <p className="text-[11px] text-amber-100/90 leading-relaxed">
+                      <p className="text-[11px] text-amber-100/90 leading-relaxed break-words">
                         Your request to release {resultsInCurrentGrade.length} recorded assessment grades for {activeClassForPublish} ({term}) is currently awaiting sign-off from the School Administrator. Once approved, you can send out results to all pupils with a single click.
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       {latestRequest?.status === 'rejected' && (
-                        <p className="text-xs text-rose-200 font-bold bg-rose-900/50 p-3 rounded-xl border border-rose-500/40">
+                        <p className="text-xs text-rose-200 font-bold bg-rose-900/50 p-3 rounded-xl border border-rose-500/40 break-words">
                           Admin Feedback: {latestRequest.adminFeedback || 'Please review scores before resubmitting.'}
                         </p>
                       )}
@@ -1913,7 +2048,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                         type="button"
                         disabled={resultsInCurrentGrade.length === 0}
                         onClick={() => handleRequestPublish(activeClassForPublish, term)}
-                        className={`w-full py-4 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider transition-all shadow-lg flex items-center justify-center gap-2 ${
+                        className={`w-full py-3.5 px-4 min-h-[44px] rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider transition-all shadow-lg flex items-center justify-center gap-2 text-center whitespace-normal break-words ${
                           resultsInCurrentGrade.length > 0 
                             ? 'bg-yellow-400 hover:bg-yellow-300 text-blue-950 active:scale-95 cursor-pointer' 
                             : 'bg-white/20 text-white/50 cursor-not-allowed'
@@ -1927,7 +2062,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                         </span>
                       </button>
                       {resultsInCurrentGrade.length === 0 && (
-                        <p className="text-[10px] text-center text-blue-300">
+                        <p className="text-[10px] text-center text-blue-300 break-words">
                           Please record at least one grade for this class below before submitting publication request.
                         </p>
                       )}
@@ -1935,47 +2070,62 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                   )}
                   
                   {publishFeedback && (
-                    <p className="mt-3 text-xs font-black text-emerald-300 text-center animate-fade-in bg-emerald-950/60 p-2 rounded-xl border border-emerald-500/30">
+                    <p className="mt-3 text-xs font-black text-emerald-300 text-center animate-fade-in bg-emerald-950/60 p-2 rounded-xl border border-emerald-500/30 break-words">
                       {publishFeedback}
                     </p>
                   )}
                 </div>
               </div>
 
-              {/* Grading Entry Mode Selector: Batch Sheet vs Single Entry */}
-              <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-100 p-2 rounded-2xl border border-slate-200">
+              {/* Grading Entry Mode Selector: Subject Sheet vs Master Broadsheet vs Single Entry */}
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-100 p-3 rounded-2xl border border-slate-200">
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setGradingLayoutMode('batch_sheet')}
-                    className={`px-5 py-3 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 ${
+                    className={`px-4 py-2.5 min-h-[44px] rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 ${
                       gradingLayoutMode === 'batch_sheet'
                         ? 'bg-blue-900 text-yellow-400 shadow-md'
                         : 'text-slate-700 hover:text-blue-950 hover:bg-white'
                     }`}
                   >
                     <span>📋</span>
-                    <span>Batch Marksheet (Sheet View with Phone Auto-Resume)</span>
+                    <span>Subject Sheet Format</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setGradingLayoutMode('broadsheet')}
+                    className={`px-4 py-2.5 min-h-[44px] rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 ${
+                      gradingLayoutMode === 'broadsheet'
+                        ? 'bg-emerald-700 text-yellow-300 shadow-md'
+                        : 'text-slate-700 hover:text-emerald-900 hover:bg-white'
+                    }`}
+                  >
+                    <span>📊</span>
+                    <span>Master Broadsheet (All Subjects Sheet)</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setGradingLayoutMode('single_entry')}
-                    className={`px-5 py-3 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 ${
+                    className={`px-4 py-2.5 min-h-[44px] rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 ${
                       gradingLayoutMode === 'single_entry'
                         ? 'bg-blue-900 text-yellow-400 shadow-md'
                         : 'text-slate-700 hover:text-blue-950 hover:bg-white'
                     }`}
                   >
                     <span>👤</span>
-                    <span>Single Pupil Entry Form</span>
+                    <span>Single Pupil Form</span>
                   </button>
                 </div>
 
-                <span className="text-[11px] font-bold text-slate-500 pr-2">
-                  {gradingLayoutMode === 'batch_sheet' 
-                    ? '⚡ Record entire class marks at once with autosave' 
-                    : 'Individual score recording'}
+                <span className="text-[11px] font-bold text-slate-500 px-2">
+                  {gradingLayoutMode === 'batch_sheet'
+                    ? '⚡ Spreadsheet marksheet for 1 subject'
+                    : gradingLayoutMode === 'broadsheet'
+                    ? '⚡ Grade all subjects & students on one master sheet'
+                    : 'Individual score entry'}
                 </span>
               </div>
 
@@ -1988,18 +2138,32 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                   courses={courses}
                   results={results}
                   activeTerm={currentTerm}
+                  gradingCriteria={gradingCriteria}
+                  onBatchSaveResults={onBatchSaveResults}
+                  onAddResult={onAddResult}
+                />
+              ) : gradingLayoutMode === 'broadsheet' ? (
+                <StaffMasterBroadsheet
+                  teacherUsername={username}
+                  assignedGrades={authorizedGrades}
+                  assignedSubjects={assignedSubjects}
+                  allStudents={staffStudents}
+                  courses={courses}
+                  results={results}
+                  activeTerm={currentTerm}
+                  gradingCriteria={gradingCriteria}
                   onBatchSaveResults={onBatchSaveResults}
                   onAddResult={onAddResult}
                 />
               ) : (
                 /* Assessment Form & Position Standings */
-                <div className="grid lg:grid-cols-2 gap-12">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
                   <div>
-                    <h3 className="text-2xl font-black text-blue-900 mb-6 font-serif">Record Assessment Marks</h3>
-                    <form onSubmit={handleAddGrade} className="space-y-6 bg-blue-50/70 p-8 rounded-[2rem] border-2 border-blue-100 shadow-sm">
+                    <h3 className="text-xl sm:text-2xl font-black text-blue-900 mb-6 font-serif">Record Assessment Marks</h3>
+                    <form onSubmit={handleAddGrade} className="space-y-6 bg-blue-50/70 p-4 sm:p-8 rounded-[2rem] border-2 border-blue-100 shadow-sm">
                     {/* Class Filter - Restricted strictly to staff's assigned classes */}
                     <div className="space-y-2">
-                      <div className="flex justify-between items-center">
+                      <div className="flex flex-wrap justify-between items-center gap-2">
                         <label className="text-xs font-black text-blue-900 uppercase tracking-widest">
                           Assigned Class
                         </label>
@@ -2013,7 +2177,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                           setGradeClassFilter(e.target.value);
                           setSelectedStudent('');
                         }}
-                        className="w-full px-4 py-3 bg-white border-2 border-blue-100 rounded-2xl font-bold outline-none text-xs text-blue-950"
+                        className="w-full min-h-[44px] px-4 py-3 bg-white border-2 border-blue-100 rounded-2xl font-bold outline-none text-xs text-blue-950"
                       >
                         {hasAssignedGrades && authorizedGrades.length > 1 && (
                           <option value="all">-- All My Assigned Classes ({authorizedGrades.join(', ')}) --</option>
@@ -2031,7 +2195,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                         required
                         value={selectedStudent}
                         onChange={(e) => setSelectedStudent(e.target.value)}
-                        className="w-full px-4 py-3.5 bg-white border-2 border-blue-100 rounded-2xl font-bold outline-none text-xs text-blue-950"
+                        className="w-full min-h-[44px] px-4 py-3.5 bg-white border-2 border-blue-100 rounded-2xl font-bold outline-none text-xs text-blue-950"
                       >
                         <option value="">-- Choose Pupil from {gradeClassFilter === 'all' ? 'Assigned Classes' : gradeClassFilter} --</option>
                         {filteredStudents.map(s => (
@@ -2042,7 +2206,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                     
                     {/* Subject Selection */}
                     <div className="space-y-2">
-                      <div className="flex justify-between items-center">
+                      <div className="flex flex-wrap justify-between items-center gap-2">
                         <label className="text-xs font-black text-blue-900 uppercase tracking-widest">
                           Subject
                         </label>
@@ -2055,7 +2219,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
                       {/* Quick chips for assigned subjects */}
                       {assignedSubjects && assignedSubjects.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 p-2 bg-indigo-50/60 rounded-xl border border-indigo-100">
+                        <div className="flex flex-wrap gap-2 p-2.5 bg-indigo-50/60 rounded-xl border border-indigo-100">
                           <span className="text-[10px] font-bold text-indigo-900 self-center mr-1">Your Subjects:</span>
                           {assignedSubjects.map(subj => (
                             <button
@@ -2065,7 +2229,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                                 setSelectedSubject(subj);
                                 setCustomSubject('');
                               }}
-                              className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-all ${
+                              className={`px-3 py-2 min-h-[44px] rounded-lg text-[10px] font-black uppercase transition-all ${
                                 selectedSubject === subj
                                   ? 'bg-indigo-900 text-yellow-300 shadow-sm'
                                   : 'bg-white text-indigo-900 border border-indigo-200 hover:bg-indigo-100'
@@ -2081,7 +2245,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                         required
                         value={selectedSubject}
                         onChange={(e) => setSelectedSubject(e.target.value)}
-                        className="w-full px-4 py-3.5 bg-white border-2 border-blue-100 rounded-2xl font-bold outline-none text-xs text-blue-950"
+                        className="w-full min-h-[44px] px-4 py-3.5 bg-white border-2 border-blue-100 rounded-2xl font-bold outline-none text-xs text-blue-950"
                       >
                         <option value="">-- Choose Subject --</option>
                         {assignedSubjects && assignedSubjects.length > 0 && (
@@ -2091,9 +2255,9 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                             ))}
                           </optgroup>
                         )}
-                        <optgroup label="School Curriculum & Courses">
-                          {courses.map(c => (
-                            <option key={c.id} value={c.name}>{c.name} ({c.grade})</option>
+                        <optgroup label={`Assigned Courses (${authorizedGrades.join(', ') || 'My Class'})`}>
+                          {staffAssignedCourses.map(c => (
+                            <option key={c.id} value={c.name}>{c.name}</option>
                           ))}
                         </optgroup>
                         <option value="__custom__">➕ Type Custom Subject...</option>
@@ -2105,7 +2269,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                           placeholder="Enter subject name (e.g. Mathematics, English Studies, Yoruba)"
                           value={customSubject}
                           onChange={(e) => setCustomSubject(e.target.value)}
-                          className="w-full mt-2 px-4 py-3 bg-white border-2 border-yellow-400 rounded-2xl font-bold outline-none text-blue-900 text-xs"
+                          className="w-full min-h-[44px] mt-2 px-4 py-3 bg-white border-2 border-yellow-400 rounded-2xl font-bold outline-none text-blue-900 text-xs"
                         />
                       )}
                     </div>
@@ -2116,7 +2280,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                       <select 
                         value={term}
                         onChange={(e) => setTerm(e.target.value)}
-                        className="w-full px-4 py-3.5 bg-white border-2 border-blue-100 rounded-2xl font-bold outline-none text-xs text-blue-950"
+                        className="w-full min-h-[44px] px-4 py-3.5 bg-white border-2 border-blue-100 rounded-2xl font-bold outline-none text-xs text-blue-950"
                       >
                         <option value="First Term">First Term</option>
                         <option value="Second Term">Second Term</option>
@@ -2129,7 +2293,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                       <label className="text-xs font-black text-blue-900 uppercase tracking-widest block">
                         Mark Entry Scope
                       </label>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <button
                           type="button"
                           onClick={() => {
@@ -2137,7 +2301,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                             setExamScore(0);
                             setTotalScore(caScore);
                           }}
-                          className={`py-2 px-3 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1 border-2 ${
+                          className={`min-h-[44px] py-2.5 px-3 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1 border-2 ${
                             staffGradingMode === 'test_only'
                               ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
                               : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -2154,7 +2318,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                             setStaffGradingMode('both');
                             setTotalScore(Math.min(100, Math.round((caScore + examScore) * 10) / 10));
                           }}
-                          className={`py-2 px-3 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1 border-2 ${
+                          className={`min-h-[44px] py-2.5 px-3 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1 border-2 ${
                             staffGradingMode === 'both'
                               ? 'bg-blue-900 text-yellow-400 border-blue-950 shadow-sm'
                               : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -2172,7 +2336,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                             setCaScore(0);
                             setTotalScore(examScore);
                           }}
-                          className={`py-2 px-3 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1 border-2 ${
+                          className={`min-h-[44px] py-2.5 px-3 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1 border-2 ${
                             staffGradingMode === 'exam_only'
                               ? 'bg-indigo-700 text-white border-indigo-800 shadow-sm'
                               : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -2186,9 +2350,9 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                     </div>
 
                     {/* CA Test, Examination, and Total Mark Inputs */}
-                    <div className="p-5 bg-white rounded-2xl border-2 border-blue-100 space-y-4">
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                        <span className="text-xs font-black text-blue-900 uppercase tracking-wider">
+                    <div className="p-4 sm:p-5 bg-white rounded-2xl border-2 border-blue-100 space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                        <span className="text-xs font-black text-blue-900 uppercase tracking-wider break-words">
                           {staffGradingMode === 'test_only' ? '🧪 Continuous Assessment (Test) Input' : staffGradingMode === 'exam_only' ? '📝 Examination Mark Input' : 'Mark Allocation (CA: 40% | Exam: 60%)'}
                         </span>
                         <span className="text-[10px] font-bold text-slate-400">
@@ -2196,7 +2360,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         {/* Continuous Assessment (CA) */}
                         <div className={`space-y-1.5 ${staffGradingMode === 'exam_only' ? 'opacity-40 pointer-events-none' : ''}`}>
                           <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
@@ -2211,7 +2375,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                             disabled={staffGradingMode === 'exam_only'}
                             value={caScore}
                             onChange={(e) => handleCaChange(parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-mono font-black text-center text-blue-950 outline-none focus:bg-white focus:border-blue-900 transition-all text-sm disabled:bg-slate-100"
+                            className="w-full min-h-[44px] px-3 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-mono font-black text-center text-blue-950 outline-none focus:bg-white focus:border-blue-900 transition-all text-sm disabled:bg-slate-100"
                           />
                           <span className="text-[9px] text-slate-400 block text-center font-medium">Max 40</span>
                         </div>
@@ -2230,7 +2394,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                             disabled={staffGradingMode === 'test_only'}
                             value={examScore}
                             onChange={(e) => handleExamChange(parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-mono font-black text-center text-blue-950 outline-none focus:bg-white focus:border-blue-900 transition-all text-sm disabled:bg-slate-100"
+                            className="w-full min-h-[44px] px-3 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-mono font-black text-center text-blue-950 outline-none focus:bg-white focus:border-blue-900 transition-all text-sm disabled:bg-slate-100"
                           />
                           <span className="text-[9px] text-slate-400 block text-center font-medium">Max 60</span>
                         </div>
@@ -2248,7 +2412,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                             required
                             value={totalScore}
                             onChange={(e) => handleTotalChange(parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-3 bg-yellow-50 border-2 border-yellow-400 rounded-xl font-mono font-black text-center text-blue-950 outline-none text-base"
+                            className="w-full min-h-[44px] px-3 py-3 bg-yellow-50 border-2 border-yellow-400 rounded-xl font-mono font-black text-center text-blue-950 outline-none text-base"
                           />
                           <span className="text-[9px] font-black text-blue-900 block text-center">
                             {staffGradingMode === 'test_only' 
@@ -2260,7 +2424,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                       </div>
                     </div>
 
-                    <button type="submit" className="w-full py-4.5 bg-blue-900 text-yellow-400 font-black text-base rounded-2xl shadow-xl hover:bg-blue-800 transition-all transform hover:-translate-y-0.5 active:scale-95">
+                    <button type="submit" className="w-full min-h-[44px] py-4 bg-blue-900 text-yellow-400 font-black text-sm sm:text-base rounded-2xl shadow-xl hover:bg-blue-800 transition-all active:scale-95">
                       Upload & Save Assessment
                     </button>
                   </form>
@@ -2268,22 +2432,22 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
                 {/* Class Standings & Automatic Positions from First to Last */}
                 <div className="space-y-6">
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-wrap justify-between items-center gap-3">
                     <div>
-                      <h3 className="text-2xl font-black text-blue-900 font-serif">
+                      <h3 className="text-xl sm:text-2xl font-black text-blue-900 font-serif">
                         Class Standings & Positions
                       </h3>
-                      <p className="text-xs text-slate-500 font-medium">
+                      <p className="text-xs text-slate-500 font-medium break-words">
                         System ranking from First to Last based on aggregate assessment scores
                       </p>
                     </div>
-                    <span className="text-[11px] font-black bg-blue-100 text-blue-900 px-3 py-1 rounded-full uppercase">
+                    <span className="text-[11px] font-black bg-blue-100 text-blue-900 px-3 py-1 rounded-full uppercase shrink-0">
                       {activeClassForPublish}
                     </span>
                   </div>
 
-                  <div className="bg-white border-2 border-blue-100 rounded-3xl p-5 shadow-sm space-y-4">
-                    <div className="flex items-center justify-between text-xs font-black text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2 px-2">
+                  <div className="bg-white border-2 border-blue-100 rounded-3xl p-4 sm:p-5 shadow-sm space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-black text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2 px-2">
                       <span>Pos • Student / Pupil</span>
                       <span>Avg • Total • Subjects</span>
                     </div>
@@ -2301,7 +2465,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                           return (
                             <div 
                               key={rank.studentId}
-                              className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between ${
+                              className={`p-3.5 rounded-2xl border transition-all flex flex-wrap items-center justify-between gap-3 ${
                                 rank.position === 1 
                                   ? 'bg-amber-50/80 border-amber-300 shadow-xs' 
                                   : isTop3 
@@ -2309,8 +2473,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                                     : 'bg-white border-slate-200 hover:border-blue-200'
                               }`}
                             >
-                              <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs sm:text-sm ${
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs sm:text-sm shrink-0 ${
                                   rank.position === 1 
                                     ? 'bg-yellow-400 text-blue-950 shadow-xs font-serif text-lg' 
                                     : rank.position === 2 
@@ -2321,17 +2485,17 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                                 }`}>
                                   {isTop3 ? medal : rank.positionOrdinal}
                                 </div>
-                                <div>
-                                  <p className="font-black text-blue-950 text-xs sm:text-sm">
+                                <div className="min-w-0">
+                                  <p className="font-black text-blue-950 text-xs sm:text-sm break-words">
                                     {rank.studentName}
                                   </p>
-                                  <p className="text-[10px] text-slate-400 font-bold">
+                                  <p className="text-[10px] text-slate-400 font-bold break-words">
                                     ID: {rank.studentId} • Position: <strong className="text-blue-900">{rank.positionOrdinal}</strong> of {rank.totalStudentsInClass}
                                   </p>
                                 </div>
                               </div>
 
-                              <div className="text-right">
+                              <div className="text-right shrink-0 ml-auto">
                                 <span className="font-mono font-black text-sm text-blue-950 block">
                                   {rank.averageScore}%
                                 </span>
@@ -2361,17 +2525,17 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                           const ex = res.examScore !== undefined ? res.examScore : (res.score - ca);
 
                           return (
-                            <div key={res.id} className="p-4 bg-white border border-slate-200 rounded-2xl shadow-2xs flex justify-between items-center">
-                              <div>
-                                <p className="font-black text-blue-950 text-xs">{res.studentName} ({res.grade})</p>
-                                <p className="text-[10px] text-slate-400 font-bold">
+                            <div key={res.id} className="p-4 bg-white border border-slate-200 rounded-2xl shadow-2xs flex flex-wrap justify-between items-center gap-3">
+                              <div className="min-w-0">
+                                <p className="font-black text-blue-950 text-xs break-words">{res.studentName} ({res.grade})</p>
+                                <p className="text-[10px] text-slate-400 font-bold break-words">
                                   {res.subject} • {res.term}
                                 </p>
                                 <p className="text-[10px] text-slate-600 font-mono mt-0.5">
                                   CA: {ca}/40 • Exam: {ex}/60
                                 </p>
                               </div>
-                              <div className="text-right flex flex-col items-end gap-1">
+                              <div className="text-right flex flex-col items-end gap-1.5 ml-auto">
                                 <span className={`text-base font-black font-mono ${res.score >= 50 ? 'text-emerald-700' : 'text-rose-600'}`}>
                                   {res.score}%
                                 </span>
@@ -2379,7 +2543,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => setPreviewStudentReport(st)}
-                                    className="text-[9px] font-black text-blue-900 bg-yellow-400 hover:bg-yellow-300 px-2 py-0.5 rounded uppercase tracking-wider transition-all"
+                                    className="text-[10px] font-black text-blue-900 bg-yellow-400 hover:bg-yellow-300 px-3 py-2 min-h-[44px] rounded-xl uppercase tracking-wider transition-all"
                                   >
                                     Report PDF
                                   </button>
@@ -2398,10 +2562,10 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
         )}
 
         {activeTab === 'courses' && (
-          <div className="grid lg:grid-cols-2 gap-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
              <div>
-               <h3 className="text-2xl font-black text-blue-900 mb-8 font-serif">Contribute to Curriculum</h3>
-               <form onSubmit={handleAddCourse} className="space-y-6 bg-slate-50 p-8 rounded-3xl border-2 border-slate-100">
+               <h3 className="text-xl sm:text-2xl font-black text-blue-900 mb-6 sm:mb-8 font-serif">Contribute to Curriculum</h3>
+               <form onSubmit={handleAddCourse} className="space-y-6 bg-slate-50 p-4 sm:p-8 rounded-3xl border-2 border-slate-100">
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Subject Title</label>
                     <input 
@@ -2410,7 +2574,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                       value={courseName}
                       onChange={(e) => setCourseName(e.target.value)}
                       placeholder="e.g. Basic Science"
-                      className="w-full px-4 py-4 bg-white border-2 border-slate-200 rounded-2xl font-bold focus:ring-4 focus:ring-blue-100 outline-none"
+                      className="w-full min-h-[44px] px-4 py-3.5 bg-white border-2 border-slate-200 rounded-2xl font-bold focus:ring-4 focus:ring-blue-100 outline-none"
                     />
                   </div>
                   <div className="space-y-2">
@@ -2418,7 +2582,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                     <select 
                       value={courseGrade}
                       onChange={(e) => setCourseGrade(e.target.value as GradeLevel)}
-                      className="w-full px-4 py-4 bg-white border-2 border-slate-200 rounded-2xl font-bold focus:ring-4 focus:ring-blue-100 outline-none"
+                      className="w-full min-h-[44px] px-4 py-3.5 bg-white border-2 border-slate-200 rounded-2xl font-bold focus:ring-4 focus:ring-blue-100 outline-none"
                     >
                       {assignedGrades.map(lvl => (
                         <option key={lvl} value={lvl}>{lvl}</option>
@@ -2431,52 +2595,70 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                       value={courseDesc}
                       onChange={(e) => setCourseDesc(e.target.value)}
                       rows={3}
-                      className="w-full px-4 py-4 bg-white border-2 border-slate-200 rounded-2xl font-bold focus:ring-4 focus:ring-blue-100 outline-none"
+                      className="w-full px-4 py-3.5 bg-white border-2 border-slate-200 rounded-2xl font-bold focus:ring-4 focus:ring-blue-100 outline-none"
                       placeholder="What will students and pupils learn?"
                     />
                   </div>
-                  <button type="submit" className="w-full py-5 bg-blue-900 text-yellow-400 font-black text-lg rounded-2xl shadow-xl hover:bg-blue-800 transition-all">
+                  <button type="submit" className="w-full min-h-[44px] py-4 bg-blue-900 text-yellow-400 font-black text-base sm:text-lg rounded-2xl shadow-xl hover:bg-blue-800 transition-all">
                     Register New Subject
                   </button>
                </form>
              </div>
 
-             <div className="space-y-6">
-                <h3 className="text-2xl font-black text-blue-900 font-serif">Academic Course List</h3>
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-xl sm:text-2xl font-black text-blue-900 font-serif break-words">
+                    Academic Course List ({staffAssignedCourses.length})
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium mt-1 break-words">
+                    Showing only courses assigned for your class ({authorizedGrades.join(', ') || 'No class assigned'}). Deduplicated with no repeats.
+                  </p>
+                </div>
+
                 <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                  {courses.map(course => (
-                    <div key={course.id} className="p-6 bg-white border-2 border-slate-100 rounded-2xl group hover:border-blue-200 transition-colors">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-black text-blue-900 text-lg">{course.name}</p>
-                            <span className="text-[10px] font-black uppercase bg-blue-100 text-blue-800 px-3 py-1 rounded-full">{course.grade}</span>
+                  {staffAssignedCourses.length === 0 ? (
+                    <div className="p-10 sm:p-12 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 text-slate-400 font-bold text-xs uppercase break-words">
+                      No courses currently assigned for your class ({authorizedGrades.join(', ') || 'No class assigned'}).
+                    </div>
+                  ) : (
+                    staffAssignedCourses.map(course => (
+                      <div key={course.id} className="p-4 sm:p-6 bg-white border-2 border-slate-100 rounded-2xl group hover:border-blue-200 transition-colors">
+                        <div className="flex flex-wrap justify-between items-start gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-black text-blue-900 text-base sm:text-lg break-words">{course.name}</p>
+                              {course.grades.map(g => (
+                                <span key={g} className="text-[10px] font-black uppercase bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full">
+                                  {g}
+                                </span>
+                              ))}
+                            </div>
+                            <p className="text-xs text-slate-500 mt-1 break-words">{course.description || 'No description provided.'}</p>
                           </div>
-                          <p className="text-xs text-slate-500 mt-1">{course.description || 'No description provided.'}</p>
+                          {onDuplicateCourse && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (duplicateCourseId === course.id) {
+                                  setDuplicateCourseId(null);
+                                } else {
+                                  setDuplicateCourseId(course.id);
+                                  setTargetDuplicateGrades([...assignedGrades]);
+                                }
+                              }}
+                              className="px-3.5 py-2 min-h-[44px] bg-yellow-400 text-blue-900 hover:bg-yellow-500 font-black text-[10px] uppercase rounded-xl transition-all shadow-sm shrink-0"
+                            >
+                              📋 Duplicate
+                            </button>
+                          )}
                         </div>
-                        {onDuplicateCourse && (
-                          <button
-                            onClick={() => {
-                              if (duplicateCourseId === course.id) {
-                                setDuplicateCourseId(null);
-                              } else {
-                                setDuplicateCourseId(course.id);
-                                setTargetDuplicateGrades([...assignedGrades]);
-                              }
-                            }}
-                            className="px-3 py-1.5 bg-yellow-400 text-blue-900 hover:bg-yellow-500 font-black text-[10px] uppercase rounded-xl transition-all shadow-sm"
-                          >
-                            📋 Duplicate
-                          </button>
-                        )}
-                      </div>
 
                       {duplicateCourseId === course.id && onDuplicateCourse && (
                         <div className="mt-4 p-4 bg-yellow-50/80 rounded-2xl border-2 border-yellow-200">
-                          <p className="text-xs font-black text-blue-900 uppercase mb-2">Duplicate "{course.name}" to target classes:</p>
-                          <div className="grid grid-cols-2 gap-2 mb-3 bg-white p-2 rounded-xl border border-yellow-200 text-xs">
+                          <p className="text-xs font-black text-blue-900 uppercase mb-2 break-words">Duplicate "{course.name}" to target classes:</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3 bg-white p-2.5 rounded-xl border border-yellow-200 text-xs">
                             {assignedGrades.map(g => (
-                              <label key={g} className="flex items-center space-x-2 font-bold text-slate-700 cursor-pointer">
+                              <label key={g} className="flex items-center space-x-2 font-bold text-slate-700 cursor-pointer min-h-[44px] px-2">
                                 <input 
                                   type="checkbox"
                                   checked={targetDuplicateGrades.includes(g)}
@@ -2487,17 +2669,17 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                                       setTargetDuplicateGrades(prev => prev.filter(item => item !== g));
                                     }
                                   }}
-                                  className="rounded text-blue-900"
+                                  className="w-5 h-5 rounded text-blue-900"
                                 />
                                 <span>{g}</span>
                               </label>
                             ))}
                           </div>
-                          <div className="flex justify-end gap-2">
+                          <div className="flex flex-wrap justify-end gap-2">
                             <button
                               type="button"
                               onClick={() => setDuplicateCourseId(null)}
-                              className="px-3 py-1.5 bg-slate-200 text-slate-600 font-black text-[10px] uppercase rounded-lg"
+                              className="px-4 py-2 min-h-[44px] bg-slate-200 text-slate-600 font-black text-[10px] uppercase rounded-lg"
                             >
                               Cancel
                             </button>
@@ -2512,7 +2694,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                                 alert(`Course "${course.name}" duplicated to ${targetDuplicateGrades.length} classes!`);
                                 setDuplicateCourseId(null);
                               }}
-                              className="px-4 py-1.5 bg-blue-900 text-yellow-400 font-black text-[10px] uppercase rounded-lg shadow-md"
+                              className="px-4 py-2 min-h-[44px] bg-blue-900 text-yellow-400 font-black text-[10px] uppercase rounded-lg shadow-md"
                             >
                               Confirm
                             </button>
@@ -2520,8 +2702,9 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                         </div>
                       )}
                     </div>
-                  ))}
-                </div>
+                  ))
+                )}
+              </div>
              </div>
           </div>
         )}
@@ -2546,7 +2729,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 <button
                   type="button"
                   onClick={onOpenParentMessaging}
-                  className="px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-2 active:scale-95 shrink-0"
+                  className="px-5 py-2.5 min-h-[44px] bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-2 active:scale-95 shrink-0"
                 >
                   <span>Open Full Messaging Desk ➔</span>
                 </button>
@@ -2563,10 +2746,10 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
               if (myParentMessages.length === 0) {
                 return (
-                  <div className="p-12 text-center bg-white rounded-3xl border-2 border-dashed border-slate-200 space-y-2">
+                  <div className="p-10 sm:p-12 text-center bg-white rounded-3xl border-2 border-dashed border-slate-200 space-y-2">
                     <span className="text-4xl block mb-2">📬</span>
                     <h4 className="font-serif font-black text-blue-950 text-base">No Parent Inquiries Yet</h4>
-                    <p className="text-xs text-slate-400 max-w-md mx-auto">
+                    <p className="text-xs text-slate-400 max-w-md mx-auto break-words">
                       When parents message you about homework, attendance, or student progress, their inquiries will appear here in real-time.
                     </p>
                   </div>
@@ -2578,24 +2761,24 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                   {myParentMessages.map(msg => (
                     <div
                       key={msg.id}
-                      className="bg-white rounded-3xl p-6 border-2 border-slate-100 shadow-md hover:border-blue-200 transition-all space-y-4"
+                      className="bg-white rounded-3xl p-4 sm:p-6 border-2 border-slate-100 shadow-md hover:border-blue-200 transition-all space-y-4"
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
                           <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-900 flex items-center justify-center font-black text-base shrink-0">
                             👨‍👩‍👧‍👦
                           </div>
-                          <div>
-                            <p className="font-serif font-black text-sm text-blue-950 leading-tight">
+                          <div className="min-w-0">
+                            <p className="font-serif font-black text-sm text-blue-950 leading-tight break-words">
                               {msg.parentName}
                             </p>
-                            <p className="text-[10px] text-slate-400 font-bold">
+                            <p className="text-[10px] text-slate-400 font-bold break-words">
                               Regarding: <span className="text-blue-900 font-black">{msg.studentName || 'Pupil'}</span> ({msg.studentGrade || 'Class'})
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase ${
                             msg.priority === 'urgent' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-800'
                           }`}>
@@ -2609,24 +2792,24 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
                       <div>
                         {msg.subject && (
-                          <h5 className="font-serif font-black text-xs text-blue-900 mb-1">
+                          <h5 className="font-serif font-black text-xs text-blue-900 mb-1 break-words">
                             {msg.subject}
                           </h5>
                         )}
-                        <p className="text-xs sm:text-sm text-slate-700 font-medium whitespace-pre-wrap leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <p className="text-xs sm:text-sm text-slate-700 font-medium whitespace-pre-wrap break-words leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
                           {msg.message}
                         </p>
                       </div>
 
                       {/* Quick Reply Form */}
                       {onSendParentMessage && (
-                        <div className="pt-2 flex flex-col sm:flex-row items-center gap-2">
+                        <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                           <input
                             type="text"
                             value={parentReplyText[msg.id] || ''}
                             onChange={e => setParentReplyText(prev => ({ ...prev, [msg.id]: e.target.value }))}
                             placeholder={`Reply directly to ${msg.parentName}...`}
-                            className="flex-1 w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                            className="flex-1 w-full min-h-[44px] px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900"
                             onKeyDown={e => {
                               if (e.key === 'Enter' && (parentReplyText[msg.id] || '').trim()) {
                                 onSendParentMessage({
@@ -2674,7 +2857,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                               setParentReplyText(prev => ({ ...prev, [msg.id]: '' }));
                               alert(`Reply sent to ${msg.parentName}!`);
                             }}
-                            className="w-full sm:w-auto px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl font-black text-xs uppercase tracking-wider shadow-xs transition-all active:scale-95 shrink-0"
+                            className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-xl font-black text-xs uppercase tracking-wider shadow-xs transition-all active:scale-95 shrink-0"
                           >
                             Send Reply
                           </button>
@@ -2687,12 +2870,23 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
             })()}
           </div>
         )}
-      </div>
+          </div>
+        </div>
+      ) : (
+        <div className="p-8 sm:p-12 text-center bg-amber-50 border-t-2 border-amber-200">
+          <span className="text-4xl block mb-2">🔒</span>
+          <h3 className="text-lg font-black text-amber-900 font-serif">Staff Module Access Restricted</h3>
+          <p className="text-xs text-amber-700 font-medium max-w-md mx-auto mt-1 break-words whitespace-normal">
+            The School Administrator has not granted this account access to academic modules yet. Please contact the Proprietor or Admin to enable your module permissions.
+          </p>
+          <p className="text-xs font-bold text-slate-500 mt-3">No active permissions assigned. Access will appear once granted by Admin.</p>
+        </div>
+      )}
 
       {/* Official Standard Report Card Modal for Teachers to Preview / Print */}
       {previewStudentReport && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto print:p-0 print:bg-white print:static">
-          <div className="bg-white rounded-3xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl relative my-auto print:shadow-none print:border-none print:p-0">
+          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[92vh] overflow-y-auto p-4 sm:p-6 shadow-2xl relative my-auto print:max-h-none print:overflow-visible print:shadow-none print:border-none print:p-0">
             <StandardReportCard 
               student={previewStudentReport}
               results={results.filter(r => r.studentName.toLowerCase().trim() === previewStudentReport.name.toLowerCase().trim())}

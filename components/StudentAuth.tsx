@@ -124,13 +124,11 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
-      <div className="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-4 border-blue-900 relative">
-        <div className="absolute top-0 left-0 w-full h-2 bg-yellow-400"></div>
-        
-        <div className="px-6 sm:px-10 py-10 sm:py-12">
+    <div className="min-h-[80vh] w-full max-w-full overflow-x-hidden flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
+      <div className="max-w-md w-full bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl border-4 border-blue-900 border-t-8 border-t-yellow-400">
+        <div className="px-4 sm:px-10 py-8 sm:py-12">
           <div className="flex justify-center mb-6">
-            <div className="w-24 h-24 sm:w-28 sm:h-28 bg-white rounded-3xl border-3 border-yellow-400 shadow-xl ring-4 ring-blue-900/10 overflow-hidden flex items-center justify-center">
+            <div className="w-24 h-24 sm:w-28 sm:h-28 bg-white rounded-3xl border-2 border-yellow-400 shadow-xl ring-4 ring-blue-900/10 overflow-hidden flex items-center justify-center">
               <img 
                 src="/logo.png" 
                 alt="God's Hand International Model School Logo" 
@@ -140,14 +138,14 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
             </div>
           </div>
 
-          <div className="text-center mb-8">
-            <h2 className="text-2xl sm:text-3xl font-black text-blue-900 uppercase tracking-tighter font-serif">
+          <div className="text-center mb-6 sm:mb-8">
+            <h2 className="text-2xl sm:text-3xl font-black text-blue-900 uppercase tracking-tighter font-serif break-words">
               {mode === 'login' && 'Students & Pupils Login'}
               {mode === 'forgot' && 'Reset Student Password'}
             </h2>
             <div className="h-1.5 w-16 bg-yellow-400 rounded-full mx-auto mt-2"></div>
             {mode === 'login' && (
-              <p className="text-xs text-slate-500 font-medium mt-2">
+              <p className="text-xs text-slate-500 font-medium mt-2 break-words">
                 Official Student Portal • Accounts provisioned strictly by Admin & Class Teacher
               </p>
             )}
@@ -156,8 +154,8 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
           {/* Security alert */}
           {securityAlert && (
             <div className="p-3 mb-6 bg-red-50 border-2 border-red-200 rounded-2xl text-red-700 text-xs font-bold flex items-start gap-2">
-              <span className="text-base leading-none">🛡️</span>
-              <span className="leading-snug">{securityAlert}</span>
+              <span className="text-base leading-none shrink-0">🛡️</span>
+              <span className="leading-snug break-words">{securityAlert}</span>
             </div>
           )}
 
@@ -170,7 +168,7 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
           )}
 
           {error && (
-            <div className="bg-red-50 text-red-600 p-4 rounded-xl text-xs font-bold uppercase tracking-widest text-center mb-6 border border-red-100">
+            <div className="bg-red-50 text-red-600 p-4 rounded-xl text-xs font-bold uppercase tracking-widest text-center mb-6 border border-red-100 break-words">
               {error}
             </div>
           )}
@@ -184,7 +182,7 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
               autoComplete="off"
             >
               <div className="space-y-1.5">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest px-1">Email or Student ID</label>
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest px-1">Email or Student ID</label>
                 <input 
                   type="text" 
                   name="student_email"
@@ -192,18 +190,18 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
                   disabled={lockoutRemaining > 0}
                   value={loginEmail}
                   onChange={(e) => handleInputFilter(e.target.value, setLoginEmail)}
-                  className="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold text-sm text-blue-900 focus:bg-white focus:ring-4 focus:ring-blue-100 outline-none transition-all disabled:opacity-50"
+                  className="w-full min-h-[44px] px-4 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold text-sm text-blue-900 focus:bg-white focus:ring-4 focus:ring-blue-100 outline-none transition-all disabled:opacity-50"
                   placeholder="student@email.com or STU-1"
                   autoComplete="username"
                 />
               </div>
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between px-1">
+                <div className="flex flex-wrap items-center justify-between gap-2 px-1">
                   <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Password</label>
                   <button 
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="text-[10px] font-black uppercase tracking-wider text-blue-900 hover:text-yellow-600 transition-colors"
+                    className="min-h-[44px] px-2 text-xs font-black uppercase tracking-wider text-blue-900 hover:text-yellow-600 transition-colors"
                   >
                     {showPassword ? 'Hide' : 'Show'}
                   </button>
@@ -215,7 +213,7 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
                   disabled={lockoutRemaining > 0}
                   value={loginPass}
                   onChange={(e) => handleInputFilter(e.target.value, setLoginPass)}
-                  className="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold text-sm text-blue-900 focus:bg-white focus:ring-4 focus:ring-blue-100 outline-none transition-all disabled:opacity-50"
+                  className="w-full min-h-[44px] px-4 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold text-sm text-blue-900 focus:bg-white focus:ring-4 focus:ring-blue-100 outline-none transition-all disabled:opacity-50"
                   placeholder="••••••••"
                   autoComplete="current-password"
                   spellCheck="false"
@@ -225,16 +223,16 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
               </div>
 
               {/* Action Buttons: Forgotten Password & Restricted Registration Notice */}
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-[11px] font-black uppercase tracking-wider px-1 pt-1">
+              <div className="flex flex-wrap justify-between items-center gap-2 text-xs font-black uppercase tracking-wider px-1 pt-1">
                 <button 
                   type="button" 
                   onClick={() => { setMode('forgot'); setSecurityAlert(null); }} 
-                  className="text-blue-900 hover:text-yellow-600 inline-flex items-center gap-1"
+                  className="min-h-[44px] text-blue-900 hover:text-yellow-600 inline-flex items-center gap-1"
                 >
                   <span>🔑</span>
                   <span className="underline decoration-yellow-400 underline-offset-2">Forgot Password?</span>
                 </button>
-                <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+                <span className="text-[11px] text-slate-400 font-bold flex items-center gap-1">
                   <span>🔒</span>
                   <span>Created by Admin / Teacher</span>
                 </span>
@@ -243,16 +241,16 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
               <button 
                 type="submit" 
                 disabled={lockoutRemaining > 0}
-                className="w-full py-4.5 bg-blue-900 text-yellow-400 font-black text-lg rounded-2xl shadow-xl hover:bg-blue-800 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none"
+                className="w-full min-h-[44px] py-4 px-4 bg-blue-900 text-yellow-400 font-black text-base sm:text-lg rounded-2xl shadow-xl hover:bg-blue-800 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none break-words whitespace-normal"
               >
                 Enter Students & Pupils Hub
               </button>
 
               {/* Informative Policy Card */}
-              <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-2xl text-[11px] text-blue-950 font-medium flex items-start gap-2.5">
+              <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-2xl text-xs text-blue-950 font-medium flex items-start gap-2.5">
                 <span className="text-base shrink-0">🛡️</span>
-                <div>
-                  <strong className="font-black text-blue-900 uppercase block text-[10px]">Enrollment Policy</strong>
+                <div className="min-w-0 break-words">
+                  <strong className="font-black text-blue-900 uppercase block text-[11px]">Enrollment Policy</strong>
                   <span>Pupils and students cannot self-register. Your account is provisioned directly by your Class Teacher or the School Administrator.</span>
                 </div>
               </div>
@@ -269,12 +267,12 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
                   className="space-y-4"
                   autoComplete="off"
                 >
-                  <p className="text-slate-500 text-xs text-center leading-relaxed font-medium">
+                  <p className="text-slate-500 text-xs text-center leading-relaxed font-medium break-words">
                     Enter your registered Student Email or Student ID to reset your portal password.
                   </p>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest px-1">
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest px-1">
                       Student ID or Email
                     </label>
                     <input 
@@ -283,54 +281,54 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
                       required 
                       value={forgotEmailOrId}
                       onChange={(e) => handleInputFilter(e.target.value, setForgotEmailOrId)}
-                      className="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold text-sm text-blue-900 focus:bg-white outline-none transition-all"
+                      className="w-full min-h-[44px] px-4 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold text-sm text-blue-900 focus:bg-white outline-none transition-all"
                       placeholder="e.g. STU-1 or student@email.com"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">New Password</label>
+                      <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest">New Password</label>
                       <input 
                         type="password"
                         value={newStudentPass}
                         onChange={(e) => handleInputFilter(e.target.value, setNewStudentPass)}
                         placeholder="New password"
-                        className="w-full px-3.5 py-2.5 bg-slate-50 border-2 border-slate-100 rounded-xl font-bold text-xs text-blue-900 outline-none focus:border-blue-900"
+                        className="w-full min-h-[44px] px-3.5 py-2.5 bg-slate-50 border-2 border-slate-100 rounded-xl font-bold text-xs text-blue-900 outline-none focus:border-blue-900"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Confirm Password</label>
+                      <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest">Confirm Password</label>
                       <input 
                         type="password"
                         value={confirmStudentPass}
                         onChange={(e) => handleInputFilter(e.target.value, setConfirmStudentPass)}
                         placeholder="Confirm password"
-                        className="w-full px-3.5 py-2.5 bg-slate-50 border-2 border-slate-100 rounded-xl font-bold text-xs text-blue-900 outline-none focus:border-blue-900"
+                        className="w-full min-h-[44px] px-3.5 py-2.5 bg-slate-50 border-2 border-slate-100 rounded-xl font-bold text-xs text-blue-900 outline-none focus:border-blue-900"
                       />
                     </div>
                   </div>
 
                   {resetError && (
-                    <div className="text-red-600 text-xs font-bold text-center bg-red-50 p-2 rounded-xl border border-red-200">
+                    <div className="text-red-600 text-xs font-bold text-center bg-red-50 p-2 rounded-xl border border-red-200 break-words">
                       ⚠️ {resetError}
                     </div>
                   )}
 
-                  <button type="submit" className="w-full py-4 bg-blue-900 text-yellow-400 font-black rounded-2xl shadow-xl hover:bg-blue-800 transition-all">
+                  <button type="submit" className="w-full min-h-[44px] py-3.5 bg-blue-900 text-yellow-400 font-black rounded-2xl shadow-xl hover:bg-blue-800 transition-all">
                     Reset Student Password
                   </button>
 
                   {/* Immediate WhatsApp School Records Assistance */}
                   <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-center space-y-1.5">
-                    <p className="text-[11px] text-emerald-800 font-bold">
+                    <p className="text-[11px] text-emerald-800 font-bold break-words">
                       Forget your credentials entirely? Ask the School Admin on WhatsApp:
                     </p>
                     <a
                       href={`https://wa.me/2347085596586?text=Hello%20God's%20Hand%20Model%20School%20Office,%20I%20am%20a%20student%20(${encodeURIComponent(forgotEmailOrId || 'Student')})%20requesting%20assistance%20with%20my%20Student%20Hub%20password.`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center gap-1.5 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+                      className="inline-flex items-center justify-center gap-1.5 w-full min-h-[44px] py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all break-words whitespace-normal"
                     >
                       <span>💬</span>
                       <span>Request Help on WhatsApp: 07085596586</span>
@@ -340,7 +338,7 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
                   <button 
                     type="button" 
                     onClick={() => setMode('login')} 
-                    className="w-full text-xs font-black text-slate-400 uppercase tracking-widest pt-1 hover:text-blue-900 transition-colors"
+                    className="w-full min-h-[44px] text-xs font-black text-slate-400 uppercase tracking-widest pt-1 hover:text-blue-900 transition-colors"
                   >
                     Back to Login
                   </button>
@@ -358,7 +356,7 @@ export const StudentAuth: React.FC<StudentAuthProps> = ({
           )}
         </div>
         
-        <button onClick={onBack} className="w-full py-4 bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-t border-slate-100 hover:text-blue-900 transition-colors">
+        <button type="button" onClick={onBack} className="w-full min-h-[44px] py-4 bg-slate-50 text-xs font-black text-slate-400 uppercase tracking-[0.2em] border-t border-slate-100 rounded-b-[1.8rem] sm:rounded-b-[2.25rem] hover:text-blue-900 transition-colors">
           Return to Home
         </button>
       </div>

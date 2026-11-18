@@ -33,50 +33,49 @@ export const AboutUs: React.FC<AboutUsProps> = ({ onApply, onCheckFees, onBack }
   ];
 
   return (
-    <div className="bg-slate-50 min-h-screen py-10 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto space-y-12">
+    <div className="bg-slate-50 min-h-screen w-full max-w-full overflow-x-hidden py-8 sm:py-10 px-4 sm:px-6">
+      <div className="max-w-6xl mx-auto space-y-10 sm:space-y-12">
         {/* Top Navigation & Breadcrumb */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-2 text-xs font-black text-blue-900 bg-white hover:bg-blue-50 px-4 py-2.5 rounded-xl border border-slate-200 shadow-sm transition-all"
+            className="min-h-[44px] inline-flex items-center gap-2 text-xs font-black text-blue-900 bg-white hover:bg-blue-50 px-4 py-2.5 rounded-xl border border-slate-200 shadow-sm transition-all"
           >
             <span>←</span>
             <span>Back to School Home</span>
           </button>
 
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-yellow-100 text-blue-900 border border-yellow-300 rounded-full text-xs font-black uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3.5 py-2 bg-yellow-100 text-blue-900 border border-yellow-300 rounded-full text-xs font-black uppercase tracking-wider break-words whitespace-normal">
             <span>★ Top & Best Private School • Affordable Fees in Ibadan</span>
           </div>
         </div>
 
         {/* Hero Header on About Page */}
-        <section className="bg-white rounded-3xl p-8 sm:p-12 border-2 border-slate-200 shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-2.5 bg-yellow-400"></div>
+        <section className="bg-white rounded-3xl p-5 sm:p-10 md:p-12 border-2 border-slate-200 border-t-8 border-t-yellow-400 shadow-xl">
           <div className="max-w-3xl">
-            <span className="text-xs font-black text-blue-900 bg-blue-100 px-3.5 py-1 rounded-full uppercase tracking-widest inline-block mb-4">
+            <span className="text-xs font-black text-blue-900 bg-blue-100 px-3.5 py-1.5 rounded-full uppercase tracking-widest inline-block mb-4 break-words whitespace-normal">
               About Our School • Quality & Affordability
             </span>
-            <h1 className="text-3xl sm:text-5xl font-serif font-black text-blue-900 leading-tight mb-4">
+            <h1 className="text-2xl sm:text-5xl font-serif font-black text-blue-900 leading-tight mb-4 break-words">
               Top & Best Private <br />
               <span className="text-yellow-600 underline decoration-yellow-400 decoration-wavy decoration-2">
                 Primary & Secondary School
               </span> <br />
               and Affordable Fees in Ibadan
             </h1>
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-800 mb-6">
+            <p className="text-xs font-black uppercase tracking-wider sm:tracking-[0.2em] text-blue-800 mb-6 break-words">
               God's Hand International Model School • Wire & Cable, Apata, Ibadan, Oyo State
             </p>
-            <p className="text-slate-700 text-base sm:text-lg leading-relaxed font-medium mb-8">
+            <p className="text-slate-700 text-sm sm:text-lg leading-relaxed font-medium mb-8 break-words">
               At <strong>God's Hand International Model School</strong>, we are proud to be recognized as the <strong>top and best private primary and secondary school with affordable fees in Ibadan</strong>. Situated along the Wire and Cable, Apata axis, we deliver premier basic and secondary education, modern science and ICT computer laboratories, dedicated certified teachers, and Christian moral discipline at transparent, family-friendly tuition fees.
             </p>
 
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-3 sm:gap-4">
               <button
                 type="button"
                 onClick={onApply}
-                className="px-8 py-4 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-sm uppercase tracking-wider rounded-2xl shadow-xl transition-all active:scale-95 flex items-center gap-2"
+                className="min-h-[44px] w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2"
               >
                 <span>Apply for Admission</span>
                 <span>→</span>
@@ -85,7 +84,7 @@ export const AboutUs: React.FC<AboutUsProps> = ({ onApply, onCheckFees, onBack }
                 <button
                   type="button"
                   onClick={onCheckFees}
-                  className="px-8 py-4 bg-yellow-400 hover:bg-yellow-300 text-blue-900 font-black text-sm uppercase tracking-wider rounded-2xl shadow-lg transition-all active:scale-95"
+                  className="min-h-[44px] w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 bg-yellow-400 hover:bg-yellow-300 text-blue-900 font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center"
                 >
                   💳 Check Affordable Fees Schedule
                 </button>
@@ -127,7 +126,7 @@ export const AboutUs: React.FC<AboutUsProps> = ({ onApply, onCheckFees, onBack }
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             <div className="p-8 bg-white rounded-3xl border-2 border-slate-200 shadow-sm space-y-3">
               <div className="w-12 h-12 bg-blue-900 text-yellow-400 rounded-2xl flex items-center justify-center text-2xl font-black shadow-md">
                 💳
@@ -216,7 +215,7 @@ export const AboutUs: React.FC<AboutUsProps> = ({ onApply, onCheckFees, onBack }
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-2">
               <span className="text-2xl">🌱</span>
               <h4 className="font-serif font-black text-lg text-blue-900">Early Childhood</h4>
@@ -320,15 +319,15 @@ export const AboutUs: React.FC<AboutUsProps> = ({ onApply, onCheckFees, onBack }
         </section>
 
         {/* FAQ Section */}
-        <section className="bg-white rounded-3xl p-8 sm:p-12 border-2 border-slate-200 shadow-md space-y-8">
+        <section className="bg-white rounded-3xl p-5 sm:p-12 border-2 border-slate-200 shadow-md space-y-8">
           <div className="text-center max-w-3xl mx-auto">
             <span className="text-xs font-black text-yellow-600 bg-yellow-100 px-3.5 py-1 rounded-full uppercase tracking-widest">
               Parent Questions & Answers
             </span>
-            <h2 className="text-2xl sm:text-3xl font-serif font-black text-blue-900 mt-3 mb-2">
+            <h2 className="text-xl sm:text-3xl font-serif font-black text-blue-900 mt-3 mb-2 break-words">
               Frequently Asked Questions About Our Private School & Affordable Fees in Ibadan
             </h2>
-            <p className="text-slate-500 text-xs sm:text-sm">
+            <p className="text-slate-500 text-xs sm:text-sm break-words">
               Everything you need to know about enrollments, classes, and affordable tuition at God's Hand International Model School, Ibadan.
             </p>
           </div>
@@ -339,22 +338,22 @@ export const AboutUs: React.FC<AboutUsProps> = ({ onApply, onCheckFees, onBack }
               return (
                 <div 
                   key={index}
-                  className="border-2 border-slate-200 rounded-2xl overflow-hidden bg-white transition-all shadow-sm"
+                  className="border-2 border-slate-200 rounded-2xl bg-white transition-all shadow-sm"
                 >
                   <button
                     type="button"
                     onClick={() => setOpenFaq(isOpen ? null : index)}
-                    className="w-full p-5 text-left flex justify-between items-center gap-4 hover:bg-slate-50 transition-colors"
+                    className="min-h-[44px] w-full p-4 sm:p-5 text-left flex justify-between items-center gap-3 hover:bg-slate-50 rounded-2xl transition-colors"
                   >
-                    <span className="font-serif font-black text-sm sm:text-base text-blue-900">
+                    <span className="font-serif font-black text-sm sm:text-base text-blue-900 break-words whitespace-normal">
                       {faq.q}
                     </span>
-                    <span className="w-8 h-8 rounded-full bg-blue-50 text-blue-900 font-black flex items-center justify-center text-sm shrink-0">
+                    <span className="w-9 h-9 rounded-full bg-blue-50 text-blue-900 font-black flex items-center justify-center text-sm shrink-0">
                       {isOpen ? '−' : '+'}
                     </span>
                   </button>
                   {isOpen && (
-                    <div className="p-5 pt-0 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-100 bg-slate-50/50">
+                    <div className="p-4 sm:p-5 pt-3 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-100 bg-slate-50/50 rounded-b-2xl break-words">
                       {faq.a}
                     </div>
                   )}

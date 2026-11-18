@@ -307,27 +307,27 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Top Header Card */}
-      <div className="bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-950 text-white rounded-[2.5rem] p-6 sm:p-10 border-4 border-yellow-400 shadow-2xl relative overflow-hidden">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
+      <div className="bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-950 text-white rounded-[2.5rem] p-4 sm:p-10 border-4 border-yellow-400 shadow-2xl">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-2 min-w-0">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-yellow-400 text-blue-950 rounded-full text-xs font-black uppercase tracking-wider">
               <span>✍️</span>
               <span>Authoritative Admin Grading Center</span>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-serif font-black text-yellow-300">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-black text-yellow-300 break-words whitespace-normal">
               Direct Student Grades & Assessment Entry
             </h2>
-            <p className="text-xs sm:text-sm text-blue-200 max-w-2xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-blue-200 max-w-2xl leading-relaxed break-words whitespace-normal">
               Input, modify, and publish terminal grades, Continuous Assessment (CA) tests, and examination scores directly for <strong>any pupil or student registered in the school</strong>.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="bg-white/10 p-4 rounded-2xl border border-white/15 text-center min-w-[130px]">
+            <div className="bg-white/10 p-4 rounded-2xl border border-white/15 text-center min-w-[130px] flex-1 sm:flex-none">
               <span className="block text-[10px] font-black uppercase text-blue-200">Registered Pupils</span>
               <span className="text-2xl font-black text-white font-serif">{students.length}</span>
             </div>
-            <div className="bg-white/10 p-4 rounded-2xl border border-white/15 text-center min-w-[130px]">
+            <div className="bg-white/10 p-4 rounded-2xl border border-white/15 text-center min-w-[130px] flex-1 sm:flex-none">
               <span className="block text-[10px] font-black uppercase text-yellow-300">Recorded Scores</span>
               <span className="text-2xl font-black text-yellow-400 font-serif">{results.length}</span>
             </div>
@@ -335,13 +335,13 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
         </div>
 
         {/* View Mode Switcher */}
-        <div className="relative z-10 mt-8 pt-6 border-t border-white/15 flex flex-wrap gap-2">
+        <div className="mt-6 sm:mt-8 pt-6 border-t border-white/15 flex flex-wrap gap-2.5">
           <button
             type="button"
             onClick={() => setActiveSubTab('single')}
-            className={`px-5 py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-sm ${
+            className={`min-h-[44px] px-4 sm:px-5 py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-sm ${
               activeSubTab === 'single'
-                ? 'bg-yellow-400 text-blue-950 shadow-md scale-105'
+                ? 'bg-yellow-400 text-blue-950 shadow-md ring-2 ring-yellow-200'
                 : 'bg-white/10 text-white hover:bg-white/20'
             }`}
           >
@@ -352,9 +352,9 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
           <button
             type="button"
             onClick={() => setActiveSubTab('batch')}
-            className={`px-5 py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-sm ${
+            className={`min-h-[44px] px-4 sm:px-5 py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-sm ${
               activeSubTab === 'batch'
-                ? 'bg-yellow-400 text-blue-950 shadow-md scale-105'
+                ? 'bg-yellow-400 text-blue-950 shadow-md ring-2 ring-yellow-200'
                 : 'bg-white/10 text-white hover:bg-white/20'
             }`}
           >
@@ -365,9 +365,9 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
           <button
             type="button"
             onClick={() => setActiveSubTab('ledger')}
-            className={`px-5 py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-sm ${
+            className={`min-h-[44px] px-4 sm:px-5 py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-sm ${
               activeSubTab === 'ledger'
-                ? 'bg-yellow-400 text-blue-950 shadow-md scale-105'
+                ? 'bg-yellow-400 text-blue-950 shadow-md ring-2 ring-yellow-200'
                 : 'bg-white/10 text-white hover:bg-white/20'
             }`}
           >
@@ -381,19 +381,19 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
       {/* 1. SINGLE STUDENT GRADE ENTRY FORM */}
       {/* ======================================================================== */}
       {activeSubTab === 'single' && (
-        <div className="grid lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
           {/* Form Side (7 Cols) */}
-          <div className="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-8 border-2 border-slate-200 shadow-sm space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div className="lg:col-span-7 bg-white rounded-3xl p-4 sm:p-8 border-2 border-slate-200 shadow-sm space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
               <div>
-                <h3 className="text-xl font-serif font-black text-blue-950">
+                <h3 className="text-lg sm:text-xl font-serif font-black text-blue-950 break-words whitespace-normal">
                   Input Assessment Score
                 </h3>
-                <p className="text-xs text-slate-500 font-medium">
+                <p className="text-xs text-slate-500 font-medium break-words whitespace-normal">
                   Select student, choose mode (Test only, Exam only, or Both), and record marks.
                 </p>
               </div>
-              <span className="px-3 py-1 bg-blue-100 text-blue-900 rounded-full text-[10px] font-black uppercase">
+              <span className="px-3 py-1 bg-blue-100 text-blue-900 rounded-full text-[10px] font-black uppercase shrink-0">
                 Direct Entry
               </span>
             </div>
@@ -408,7 +408,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
             <form onSubmit={handleSaveSingleGrade} className="space-y-6">
               {/* Filter & Select Student */}
               <div className="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                <div className="grid sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
                       Filter By Class
@@ -416,7 +416,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                     <select
                       value={singleGradeClass}
                       onChange={(e) => setSingleGradeClass(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-blue-900 outline-none"
+                      className="w-full min-h-[44px] px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-blue-900 outline-none"
                     >
                       <option value="all">All Classes ({students.length} pupils)</option>
                       {GRADE_ORDER.map(g => (
@@ -434,7 +434,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                       placeholder="Type name or ID..."
                       value={studentSearchQuery}
                       onChange={(e) => setStudentSearchQuery(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-blue-900 outline-none placeholder-slate-400"
+                      className="w-full min-h-[44px] px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-blue-900 outline-none placeholder-slate-400"
                     />
                   </div>
                 </div>
@@ -447,7 +447,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                     required
                     value={selectedStudentId}
                     onChange={(e) => setSelectedStudentId(e.target.value)}
-                    className="w-full px-4 py-3 bg-white border-2 border-blue-900/20 rounded-xl font-black text-sm text-blue-950 outline-none focus:border-blue-900 shadow-sm"
+                    className="w-full min-h-[44px] px-4 py-3 bg-white border-2 border-blue-900/20 rounded-xl font-black text-sm text-blue-950 outline-none focus:border-blue-900 shadow-sm"
                   >
                     <option value="">-- Choose Pupil ({filteredStudents.length} Available) --</option>
                     {filteredStudents.map(s => (
@@ -464,11 +464,11 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                 <label className="block text-xs font-black text-blue-950 uppercase tracking-wider">
                   Assessment Input Mode
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
                   <button
                     type="button"
                     onClick={() => handleModeSwitch('both')}
-                    className={`p-3 rounded-2xl border-2 font-black text-xs uppercase tracking-wider text-center transition-all ${
+                    className={`min-h-[44px] p-3 rounded-2xl border-2 font-black text-xs uppercase tracking-wider text-center transition-all ${
                       gradingMode === 'both'
                         ? 'bg-blue-900 text-yellow-300 border-blue-900 shadow-md'
                         : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
@@ -482,7 +482,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                   <button
                     type="button"
                     onClick={() => handleModeSwitch('test_only')}
-                    className={`p-3 rounded-2xl border-2 font-black text-xs uppercase tracking-wider text-center transition-all ${
+                    className={`min-h-[44px] p-3 rounded-2xl border-2 font-black text-xs uppercase tracking-wider text-center transition-all ${
                       gradingMode === 'test_only'
                         ? 'bg-blue-900 text-yellow-300 border-blue-900 shadow-md'
                         : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
@@ -496,7 +496,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                   <button
                     type="button"
                     onClick={() => handleModeSwitch('exam_only')}
-                    className={`p-3 rounded-2xl border-2 font-black text-xs uppercase tracking-wider text-center transition-all ${
+                    className={`min-h-[44px] p-3 rounded-2xl border-2 font-black text-xs uppercase tracking-wider text-center transition-all ${
                       gradingMode === 'exam_only'
                         ? 'bg-blue-900 text-yellow-300 border-blue-900 shadow-md'
                         : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
@@ -510,7 +510,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                   <button
                     type="button"
                     onClick={() => handleModeSwitch('total_only')}
-                    className={`p-3 rounded-2xl border-2 font-black text-xs uppercase tracking-wider text-center transition-all ${
+                    className={`min-h-[44px] p-3 rounded-2xl border-2 font-black text-xs uppercase tracking-wider text-center transition-all ${
                       gradingMode === 'total_only'
                         ? 'bg-blue-900 text-yellow-300 border-blue-900 shadow-md'
                         : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
@@ -528,12 +528,12 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                 <label className="block text-xs font-black text-blue-950 uppercase tracking-wider">
                   Subject *
                 </label>
-                <div className="grid sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <select
                     required
                     value={selectedSubject}
                     onChange={(e) => setSelectedSubject(e.target.value)}
-                    className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-900 outline-none focus:border-blue-900"
+                    className="w-full min-h-[44px] px-4 py-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-900 outline-none focus:border-blue-900"
                   >
                     <option value="">-- Select Subject from Curriculum --</option>
                     {cleanCourseSubjects.map(subj => (
@@ -545,7 +545,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                   <select
                     value={selectedTerm}
                     onChange={(e) => setSelectedTerm(e.target.value)}
-                    className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-900 outline-none focus:border-blue-900"
+                    className="w-full min-h-[44px] px-4 py-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs text-blue-900 outline-none focus:border-blue-900"
                   >
                     <option value="First Term">First Term</option>
                     <option value="Second Term">Second Term</option>
@@ -560,15 +560,15 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                     placeholder="Enter custom subject name..."
                     value={customSubject}
                     onChange={(e) => setCustomSubject(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-yellow-50 border-2 border-yellow-400 rounded-xl text-xs font-bold text-blue-950 outline-none"
+                    className="w-full min-h-[44px] px-4 py-2.5 bg-yellow-50 border-2 border-yellow-400 rounded-xl text-xs font-bold text-blue-950 outline-none"
                   />
                 )}
               </div>
 
               {/* Score Allocation Inputs */}
-              <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                  <span className="text-xs font-black uppercase text-blue-950">
+              <div className="p-4 sm:p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2">
+                  <span className="text-xs font-black uppercase text-blue-950 break-words whitespace-normal">
                     Scores Allocation ({gradingMode.replace('_', ' ').toUpperCase()})
                   </span>
                   <span className="text-[10px] text-slate-500 font-mono">
@@ -576,7 +576,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {/* CA Score */}
                   <div className={`space-y-1.5 ${gradingMode === 'exam_only' ? 'opacity-40 pointer-events-none' : ''}`}>
                     <label className="block text-[10px] font-black uppercase text-slate-500 text-center">
@@ -590,7 +590,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                       required={gradingMode === 'both' || gradingMode === 'test_only'}
                       value={caScore}
                       onChange={(e) => handleCaChange(parseFloat(e.target.value) || 0)}
-                      className="w-full py-3 px-2 bg-white border-2 border-slate-200 rounded-xl font-mono font-black text-center text-blue-950 text-base outline-none focus:border-blue-900"
+                      className="w-full min-h-[48px] py-3 px-2 bg-white border-2 border-slate-200 rounded-xl font-mono font-black text-center text-blue-950 text-base outline-none focus:border-blue-900"
                     />
                     <span className="block text-[9px] text-slate-400 text-center">Test Marks</span>
                   </div>
@@ -608,7 +608,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                       required={gradingMode === 'both' || gradingMode === 'exam_only'}
                       value={examScore}
                       onChange={(e) => handleExamChange(parseFloat(e.target.value) || 0)}
-                      className="w-full py-3 px-2 bg-white border-2 border-slate-200 rounded-xl font-mono font-black text-center text-blue-950 text-base outline-none focus:border-blue-900"
+                      className="w-full min-h-[48px] py-3 px-2 bg-white border-2 border-slate-200 rounded-xl font-mono font-black text-center text-blue-950 text-base outline-none focus:border-blue-900"
                     />
                     <span className="block text-[9px] text-slate-400 text-center">Exam Marks</span>
                   </div>
@@ -626,12 +626,12 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                       required
                       value={totalScore}
                       onChange={(e) => handleTotalChange(parseFloat(e.target.value) || 0)}
-                      className="w-full py-3 px-2 bg-yellow-100 border-2 border-yellow-400 rounded-xl font-mono font-black text-center text-blue-950 text-lg outline-none"
+                      className="w-full min-h-[48px] py-3 px-2 bg-yellow-100 border-2 border-yellow-400 rounded-xl font-mono font-black text-center text-blue-950 text-lg outline-none"
                     />
                     {(() => {
                       const info = getGradeInfo(totalScore);
                       return (
-                        <span className="block text-[10px] font-black text-blue-900 text-center">
+                        <span className="block text-[10px] font-black text-blue-900 text-center break-words whitespace-normal">
                           {info.letter} ({info.remark})
                         </span>
                       );
@@ -641,7 +641,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
               </div>
 
               {/* Examiner Name & Publish Toggle */}
-              <div className="grid sm:grid-cols-2 gap-4 items-center">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
                 <div>
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">
                     Recorded By / Examiner Signature
@@ -651,27 +651,27 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                     value={examinerName}
                     onChange={(e) => setExaminerName(e.target.value)}
                     placeholder="e.g. School Administrator"
-                    className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-blue-950 outline-none"
+                    className="w-full min-h-[44px] px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-blue-950 outline-none"
                   />
                 </div>
 
-                <div className="flex items-center gap-2 pt-4">
+                <label htmlFor="admin-publish-grade-imm" className="min-h-[44px] flex items-center gap-3 pt-1 sm:pt-4 cursor-pointer">
                   <input
                     type="checkbox"
                     id="admin-publish-grade-imm"
                     checked={publishImmediately}
                     onChange={(e) => setPublishImmediately(e.target.checked)}
-                    className="w-4 h-4 text-blue-900 rounded cursor-pointer"
+                    className="w-5 h-5 text-blue-900 rounded cursor-pointer shrink-0"
                   />
-                  <label htmlFor="admin-publish-grade-imm" className="text-xs font-black text-blue-950 cursor-pointer">
+                  <span className="text-xs font-black text-blue-950 break-words whitespace-normal">
                     Publish immediately to student & parent portals
-                  </label>
-                </div>
+                  </span>
+                </label>
               </div>
 
               <button
                 type="submit"
-                className="w-full py-4 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-sm uppercase tracking-wider rounded-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2"
+                className="w-full min-h-[48px] py-4 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-sm uppercase tracking-wider rounded-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2"
               >
                 <span>💾</span>
                 <span>Save Assessment Mark Directly to System</span>
@@ -682,8 +682,8 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
           {/* Student Profile Preview & Recent Scores (5 Cols) */}
           <div className="lg:col-span-5 space-y-6">
             {selectedStudentObj ? (
-              <div className="bg-gradient-to-br from-slate-900 to-blue-950 text-white rounded-3xl p-6 border-2 border-yellow-400/50 shadow-xl space-y-5">
-                <div className="flex items-center gap-4">
+              <div className="bg-gradient-to-br from-slate-900 to-blue-950 text-white rounded-3xl p-4 sm:p-6 border-2 border-yellow-400/50 shadow-xl space-y-5">
+                <div className="flex flex-wrap sm:flex-nowrap items-center gap-4">
                   <div className="w-16 h-16 rounded-2xl bg-white/10 border-2 border-yellow-400 overflow-hidden flex items-center justify-center text-2xl font-black text-yellow-300 shrink-0">
                     {selectedStudentObj.photo ? (
                       <img src={selectedStudentObj.photo} alt={selectedStudentObj.name} className="w-full h-full object-cover" />
@@ -691,21 +691,21 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                       <span>{selectedStudentObj.name.charAt(0)}</span>
                     )}
                   </div>
-                  <div>
-                    <h4 className="font-serif font-black text-xl text-yellow-300">
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-serif font-black text-lg sm:text-xl text-yellow-300 break-words whitespace-normal">
                       {selectedStudentObj.name}
                     </h4>
-                    <p className="text-xs text-blue-200 font-mono">
+                    <p className="text-xs text-blue-200 font-mono break-all">
                       ID: {selectedStudentObj.id} • Class: {selectedStudentObj.grade}
                     </p>
-                    <p className="text-[11px] text-slate-300 mt-0.5">
+                    <p className="text-[11px] text-slate-300 mt-0.5 break-words whitespace-normal">
                       {selectedStudentObj.nin ? `NIN: ${selectedStudentObj.nin}` : 'NIN: Not yet linked'}
                     </p>
                   </div>
                 </div>
 
                 <div className="border-t border-white/15 pt-4 space-y-3">
-                  <h5 className="text-xs font-black uppercase text-yellow-400 tracking-wider">
+                  <h5 className="text-xs font-black uppercase text-yellow-400 tracking-wider break-words whitespace-normal">
                     Existing Terminal Marks for {selectedStudentObj.name.split(' ')[0]} ({selectedTerm})
                   </h5>
                   {(() => {
@@ -727,14 +727,14 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                         {studentTermResults.map(r => {
                           const info = getGradeInfo(r.score);
                           return (
-                            <div key={r.id} className="p-3 bg-white/10 rounded-xl border border-white/10 flex items-center justify-between text-xs">
-                              <div>
-                                <p className="font-black text-white">{formatSubjectName(r.subject)}</p>
-                                <p className="text-[10px] text-blue-200">
+                            <div key={r.id} className="p-3 bg-white/10 rounded-xl border border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs">
+                              <div className="min-w-0 flex-1">
+                                <p className="font-black text-white break-words whitespace-normal">{formatSubjectName(r.subject)}</p>
+                                <p className="text-[10px] text-blue-200 break-words whitespace-normal">
                                   CA: {r.caScore ?? '-'} • Exam: {r.examScore ?? '-'} • Total: {r.score}%
                                 </p>
                               </div>
-                              <div className="text-right flex items-center gap-2">
+                              <div className="flex items-center gap-2 shrink-0">
                                 <span className="px-2.5 py-1 bg-yellow-400 text-blue-950 rounded-lg font-black text-xs">
                                   {info.letter}
                                 </span>
@@ -742,7 +742,8 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => onDeleteResult(r.id)}
-                                    className="text-red-400 hover:text-red-300 font-black p-1"
+                                    aria-label="Delete this grade"
+                                    className="min-w-[44px] min-h-[44px] text-red-400 hover:text-red-300 font-black flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10"
                                     title="Delete this grade"
                                   >
                                     ✕
@@ -770,13 +771,13 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
       {/* 2. BATCH CLASS GRADE SHEET */}
       {/* ======================================================================== */}
       {activeSubTab === 'batch' && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-slate-200 shadow-sm space-y-6">
+        <div className="bg-white rounded-3xl p-4 sm:p-8 border-2 border-slate-200 shadow-sm space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
             <div>
-              <h3 className="text-xl font-serif font-black text-blue-950">
+              <h3 className="text-lg sm:text-xl font-serif font-black text-blue-950 break-words whitespace-normal">
                 Batch Class Assessment Sheet
               </h3>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-xs text-slate-500 font-medium break-words whitespace-normal">
                 Enter CA test and examination marks for an entire class at once, row by row.
               </p>
             </div>
@@ -785,7 +786,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
               <button
                 type="button"
                 onClick={handleSaveAllBatchGrades}
-                className="px-6 py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center gap-2"
+                className="min-h-[44px] px-5 sm:px-6 py-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center gap-2"
               >
                 <span>💾</span>
                 <span>Save All Class Marks ({batchStudents.length} Pupils)</span>
@@ -796,12 +797,12 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
           {batchSaveMsg && (
             <div className="p-4 bg-emerald-50 border-2 border-emerald-300 rounded-2xl text-emerald-900 text-xs font-bold flex items-center gap-2 animate-fade-in">
               <span className="text-lg">✓</span>
-              <span>{batchSaveMsg}</span>
+              <span className="break-words whitespace-normal">{batchSaveMsg}</span>
             </div>
           )}
 
           {/* Batch Selector Bar */}
-          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 grid sm:grid-cols-4 gap-3">
+          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
               <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">
                 Class Grade
@@ -809,7 +810,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
               <select
                 value={batchGrade}
                 onChange={(e) => setBatchGrade(e.target.value as GradeLevel)}
-                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-blue-900 outline-none"
+                className="w-full min-h-[44px] px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-blue-900 outline-none"
               >
                 {GRADE_ORDER.map(g => (
                   <option key={g} value={g}>{g}</option>
@@ -824,7 +825,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
               <select
                 value={batchSubject}
                 onChange={(e) => setBatchSubject(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-blue-900 outline-none"
+                className="w-full min-h-[44px] px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-blue-900 outline-none"
               >
                 {cleanCourseSubjects.map(subj => (
                   <option key={subj} value={subj}>{subj}</option>
@@ -840,7 +841,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
               <select
                 value={batchTerm}
                 onChange={(e) => setBatchTerm(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-blue-900 outline-none"
+                className="w-full min-h-[44px] px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-blue-900 outline-none"
               >
                 <option value="First Term">First Term</option>
                 <option value="Second Term">Second Term</option>
@@ -855,7 +856,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
               <select
                 value={batchMode}
                 onChange={(e) => setBatchMode(e.target.value as any)}
-                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-blue-900 outline-none"
+                className="w-full min-h-[44px] px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-blue-900 outline-none"
               >
                 <option value="both">Both CA Test & Exam (100)</option>
                 <option value="test_only">Test / CA Only (40)</option>
@@ -870,13 +871,13 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
               placeholder="Enter custom subject for this class..."
               value={customBatchSubject}
               onChange={(e) => setCustomBatchSubject(e.target.value)}
-              className="w-full px-4 py-2 bg-yellow-50 border-2 border-yellow-400 rounded-xl text-xs font-bold text-blue-950 outline-none"
+              className="w-full min-h-[44px] px-4 py-2.5 bg-yellow-50 border-2 border-yellow-400 rounded-xl text-xs font-bold text-blue-950 outline-none"
             />
           )}
 
           {/* Students Class Table */}
-          <div className="overflow-x-auto rounded-2xl border border-slate-200">
-            <table className="w-full text-left text-xs min-w-[700px]">
+          <div className="overflow-x-auto w-full rounded-2xl border border-slate-200">
+            <table className="w-full text-left text-xs min-w-[720px]">
               <thead className="bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-wider">
                 <tr>
                   <th className="p-3 w-10 text-center">#</th>
@@ -911,14 +912,14 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                       <tr key={st.id} className="hover:bg-blue-50/30 transition-colors">
                         <td className="p-3 text-center font-bold text-slate-400">{idx + 1}</td>
                         <td className="p-3 font-black text-blue-950">
-                          <div className="flex items-center gap-2">
-                            <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-900 font-black text-[10px] flex items-center justify-center">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-900 font-black text-[10px] flex items-center justify-center shrink-0">
                               {st.name.charAt(0)}
                             </span>
-                            <span>{st.name}</span>
+                            <span className="break-words whitespace-normal">{st.name}</span>
                           </div>
                         </td>
-                        <td className="p-3 font-mono text-[11px] text-slate-500">{st.id}</td>
+                        <td className="p-3 font-mono text-[11px] text-slate-500 break-all">{st.id}</td>
 
                         {batchMode !== 'exam_only' && (
                           <td className="p-2 text-center">
@@ -928,7 +929,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                               max="40"
                               value={input.ca}
                               onChange={(e) => handleBatchScoreInput(st.id, 'ca', parseFloat(e.target.value) || 0)}
-                              className="w-20 px-2 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-center font-mono font-bold text-xs text-blue-950 focus:bg-white focus:border-blue-900 outline-none"
+                              className="w-20 min-h-[44px] px-2 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-center font-mono font-bold text-xs text-blue-950 focus:bg-white focus:border-blue-900 outline-none"
                             />
                           </td>
                         )}
@@ -941,7 +942,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                               max="60"
                               value={input.exam}
                               onChange={(e) => handleBatchScoreInput(st.id, 'exam', parseFloat(e.target.value) || 0)}
-                              className="w-20 px-2 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-center font-mono font-bold text-xs text-blue-950 focus:bg-white focus:border-blue-900 outline-none"
+                              className="w-20 min-h-[44px] px-2 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-center font-mono font-bold text-xs text-blue-950 focus:bg-white focus:border-blue-900 outline-none"
                             />
                           </td>
                         )}
@@ -951,7 +952,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                         </td>
 
                         <td className="p-3 text-center">
-                          <span className="px-2 py-0.5 rounded font-black text-[10px] bg-blue-100 text-blue-900">
+                          <span className="px-2 py-0.5 rounded font-black text-[10px] bg-blue-100 text-blue-900 inline-block">
                             {gradeInfo.letter} - {gradeInfo.remark}
                           </span>
                         </td>
@@ -979,7 +980,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
             <button
               type="button"
               onClick={handleSaveAllBatchGrades}
-              className="px-8 py-3.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95"
+              className="w-full sm:w-auto min-h-[48px] px-8 py-3.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95"
             >
               ✓ Save All Recorded Grades for {batchGrade}
             </button>
@@ -991,35 +992,35 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
       {/* 3. ALL RECORDED GRADES LEDGER */}
       {/* ======================================================================== */}
       {activeSubTab === 'ledger' && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-slate-200 shadow-sm space-y-6">
+        <div className="bg-white rounded-3xl p-4 sm:p-8 border-2 border-slate-200 shadow-sm space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
             <div>
-              <h3 className="text-xl font-serif font-black text-blue-950">
+              <h3 className="text-lg sm:text-xl font-serif font-black text-blue-950 break-words whitespace-normal">
                 School Master Grades Ledger
               </h3>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-xs text-slate-500 font-medium break-words whitespace-normal">
                 Comprehensive database of all terminal and continuous assessment marks recorded in the system.
               </p>
             </div>
-            <span className="px-3 py-1 bg-yellow-400 text-blue-950 font-black text-xs uppercase rounded-xl">
+            <span className="px-3 py-1 bg-yellow-400 text-blue-950 font-black text-xs uppercase rounded-xl self-start sm:self-center shrink-0">
               {filteredLedgerResults.length} / {results.length} Records
             </span>
           </div>
 
           {/* Ledger Filter Row */}
-          <div className="grid sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <input
               type="text"
               placeholder="Search student or subject..."
               value={ledgerSearch}
               onChange={(e) => setLedgerSearch(e.target.value)}
-              className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-blue-900 outline-none focus:border-blue-900 placeholder-slate-400"
+              className="min-h-[44px] px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-blue-900 outline-none focus:border-blue-900 placeholder-slate-400"
             />
 
             <select
               value={ledgerGradeFilter}
               onChange={(e) => setLedgerGradeFilter(e.target.value)}
-              className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-blue-900 outline-none"
+              className="min-h-[44px] px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-blue-900 outline-none"
             >
               <option value="all">All Classes ({GRADE_ORDER.length})</option>
               {GRADE_ORDER.map(g => (
@@ -1030,7 +1031,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
             <select
               value={ledgerTermFilter}
               onChange={(e) => setLedgerTermFilter(e.target.value)}
-              className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-blue-900 outline-none"
+              className="min-h-[44px] px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-blue-900 outline-none"
             >
               <option value="all">All Terms</option>
               <option value="First Term">First Term</option>
@@ -1039,9 +1040,74 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
             </select>
           </div>
 
-          {/* Ledger Table */}
-          <div className="overflow-x-auto rounded-2xl border border-slate-200">
-            <table className="w-full text-left text-xs min-w-[750px]">
+          {/* Mobile Stacked Cards (<768px) */}
+          <div className="md:hidden space-y-3">
+            {filteredLedgerResults.length === 0 ? (
+              <div className="p-8 rounded-2xl border border-slate-200 text-center text-slate-400 font-bold uppercase text-xs">
+                No assessment records match your filter criteria.
+              </div>
+            ) : (
+              filteredLedgerResults.map((r, idx) => {
+                const gradeInfo = getGradeInfo(r.score);
+                return (
+                  <div key={r.id || idx} className="rounded-2xl border-2 border-slate-100 bg-white p-4 shadow-xs space-y-3">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-black text-blue-950 text-sm break-words whitespace-normal">
+                          #{idx + 1} • {r.studentName}
+                        </p>
+                        <p className="text-xs font-bold text-blue-900 break-words whitespace-normal mt-0.5">
+                          {formatSubjectName(r.subject)}
+                        </p>
+                      </div>
+                      <span className="px-2.5 py-1 bg-slate-100 rounded-lg text-[10px] font-black text-slate-700 shrink-0">
+                        {r.grade} • {r.term}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-50 rounded-xl p-2.5 text-center text-xs">
+                      <div>
+                        <span className="block text-[10px] font-black uppercase text-slate-400">CA</span>
+                        <span className="font-mono font-bold text-slate-700 tabular-nums">{r.caScore ?? '-'}</span>
+                      </div>
+                      <div>
+                        <span className="block text-[10px] font-black uppercase text-slate-400">Exam</span>
+                        <span className="font-mono font-bold text-slate-700 tabular-nums">{r.examScore ?? '-'}</span>
+                      </div>
+                      <div>
+                        <span className="block text-[10px] font-black uppercase text-slate-400">Total</span>
+                        <span className="font-mono font-black text-blue-900 tabular-nums">{r.score}%</span>
+                      </div>
+                      <div>
+                        <span className="block text-[10px] font-black uppercase text-slate-400">Grade</span>
+                        <span className="inline-block px-2 py-0.5 bg-yellow-100 text-blue-950 font-black text-[10px] rounded">
+                          {gradeInfo.letter}
+                        </span>
+                      </div>
+                    </div>
+
+                    {onDeleteResult && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm(`Delete grade for ${r.studentName} (${r.subject})?`)) {
+                            onDeleteResult(r.id);
+                          }
+                        }}
+                        className="w-full min-h-[44px] px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-black uppercase transition-all"
+                      >
+                        Delete Score
+                      </button>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Ledger Table (>=768px) */}
+          <div className="hidden md:block overflow-x-auto w-full rounded-2xl border border-slate-200">
+            <table className="w-full text-left text-xs min-w-[760px]">
               <thead className="bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-wider">
                 <tr>
                   <th className="p-3 w-10 text-center">#</th>
@@ -1069,16 +1135,16 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                     return (
                       <tr key={r.id || idx} className="hover:bg-blue-50/30 transition-colors">
                         <td className="p-3 text-center font-bold text-slate-400">{idx + 1}</td>
-                        <td className="p-3 font-black text-blue-950">{r.studentName}</td>
+                        <td className="p-3 font-black text-blue-950 break-words whitespace-normal">{r.studentName}</td>
                         <td className="p-3">
-                          <span className="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold text-slate-700">
+                          <span className="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold text-slate-700 inline-block">
                             {r.grade}
                           </span>
                         </td>
-                        <td className="p-3 font-bold text-blue-900">{formatSubjectName(r.subject)}</td>
-                        <td className="p-3 text-center font-mono text-slate-600">{r.caScore ?? '-'}</td>
-                        <td className="p-3 text-center font-mono text-slate-600">{r.examScore ?? '-'}</td>
-                        <td className="p-3 text-center font-mono font-black text-sm text-blue-900">{r.score}%</td>
+                        <td className="p-3 font-bold text-blue-900 break-words whitespace-normal">{formatSubjectName(r.subject)}</td>
+                        <td className="p-3 text-center font-mono text-slate-600 tabular-nums">{r.caScore ?? '-'}</td>
+                        <td className="p-3 text-center font-mono text-slate-600 tabular-nums">{r.examScore ?? '-'}</td>
+                        <td className="p-3 text-center font-mono font-black text-sm text-blue-900 tabular-nums">{r.score}%</td>
                         <td className="p-3 text-center">
                           <span className="px-2 py-0.5 bg-yellow-100 text-blue-950 font-black text-[10px] rounded">
                             {gradeInfo.letter}
@@ -1094,7 +1160,7 @@ export const AdminDirectGradeEntry: React.FC<AdminDirectGradeEntryProps> = ({
                                   onDeleteResult(r.id);
                                 }
                               }}
-                              className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-[10px] font-black uppercase transition-all"
+                              className="min-h-[44px] px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-[10px] font-black uppercase transition-all"
                             >
                               Delete
                             </button>

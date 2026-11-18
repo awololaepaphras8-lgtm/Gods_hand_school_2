@@ -48,7 +48,7 @@ export const Hero: React.FC<HeroProps> = ({
   };
 
   return (
-    <div className="relative min-h-screen bg-slate-950 pb-16 lg:pb-24 text-white">
+    <div className="relative w-full max-w-full overflow-x-hidden min-h-screen bg-slate-950 pb-16 lg:pb-24 text-white">
       {/* FIXED BACKGROUND AERIAL VIEW VIDEO COVERING THE ENTIRE HOME PAGE */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none select-none">
         <video
@@ -79,35 +79,33 @@ export const Hero: React.FC<HeroProps> = ({
         <div className="absolute inset-0 bg-radial-gradient from-transparent via-blue-950/30 to-slate-950/80" />
       </div>
 
-
-      
       {/* MAIN HERO CONTENT */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16 grid lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
         
         {/* Left Column: Heading, Call to Action, Calendar */}
-        <div className="lg:col-span-7">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-yellow-400 text-blue-950 rounded-full text-xs font-black uppercase tracking-widest mb-6 shadow-xl border border-yellow-300">
+        <div className="lg:col-span-7 min-w-0">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-yellow-400 text-blue-950 rounded-full text-xs font-black uppercase tracking-widest mb-5 shadow-xl border border-yellow-300 break-words whitespace-normal">
             <span>✨</span>
             <span>Now Enrolling for {getNowEnrollingSession()}</span>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-7xl font-serif font-black text-white mb-6 leading-[1.1] tracking-tight drop-shadow-lg">
+          <h1 className="text-2xl sm:text-5xl lg:text-7xl font-serif font-black text-white mb-5 sm:mb-6 leading-[1.15] tracking-tight drop-shadow-lg break-words">
             Building Lives <br />
             <span className="text-yellow-400 underline decoration-yellow-500/50 underline-offset-8">
               Upon The Solid Rock
             </span>
           </h1>
 
-          <p className="text-base sm:text-lg lg:text-xl text-blue-100 mb-8 max-w-xl leading-relaxed font-medium drop-shadow-md">
+          <p className="text-sm sm:text-lg lg:text-xl text-blue-100 mb-7 sm:mb-8 max-w-xl leading-relaxed font-medium drop-shadow-md break-words">
             At <strong className="text-white font-black">God's Hand International Model School</strong>, we nurture every pupil and student to{' '}
             <span className="text-yellow-300 font-bold underline decoration-yellow-400/40">Have Faith In God</span> while attaining world-class academic, moral, and technological excellence in Ibadan.
           </p>
 
           {/* Action Buttons Row */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 mb-6">
+          <div className="flex flex-wrap items-stretch sm:items-center gap-3 mb-6">
             <button 
               onClick={onApply}
-              className="px-7 py-4 bg-yellow-400 text-blue-950 font-black text-base rounded-2xl shadow-2xl shadow-yellow-500/30 hover:bg-yellow-300 transition-all transform hover:-translate-y-0.5 active:scale-95 text-center flex items-center justify-center gap-2"
+              className="min-h-[44px] w-full sm:w-auto px-6 sm:px-7 py-3.5 sm:py-4 bg-yellow-400 text-blue-950 font-black text-sm sm:text-base rounded-2xl shadow-2xl shadow-yellow-500/30 hover:bg-yellow-300 transition-all transform hover:-translate-y-0.5 active:scale-95 text-center flex items-center justify-center gap-2"
             >
               <span>🎓</span>
               <span>Get Admission Form</span>
@@ -116,7 +114,7 @@ export const Hero: React.FC<HeroProps> = ({
             {onParentPortal && (
               <button 
                 onClick={onParentPortal}
-                className="px-7 py-4 bg-blue-950/90 text-yellow-300 hover:text-yellow-200 border-2 border-yellow-400/80 font-black text-base rounded-2xl shadow-xl hover:bg-blue-900 transition-all transform hover:-translate-y-0.5 active:scale-95 text-center flex items-center justify-center gap-2 backdrop-blur-md"
+                className="min-h-[44px] w-full sm:w-auto px-6 sm:px-7 py-3.5 sm:py-4 bg-blue-950/90 text-yellow-300 hover:text-yellow-200 border-2 border-yellow-400/80 font-black text-sm sm:text-base rounded-2xl shadow-xl hover:bg-blue-900 transition-all transform hover:-translate-y-0.5 active:scale-95 text-center flex items-center justify-center gap-2 backdrop-blur-md"
               >
                 <span>👨‍👩‍👧‍👦</span>
                 <span>Parent Portal & Attendance</span>
@@ -126,7 +124,7 @@ export const Hero: React.FC<HeroProps> = ({
             {!isAppInstalled && onOpenDownloadModal && (
               <button 
                 onClick={onOpenDownloadModal}
-                className="px-5 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm uppercase tracking-wider rounded-2xl shadow-xl transition-all transform hover:-translate-y-0.5 active:scale-95 text-center flex items-center justify-center gap-2 border border-emerald-400"
+                className="min-h-[44px] w-full sm:w-auto px-5 py-3.5 sm:py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm uppercase tracking-wider rounded-2xl shadow-xl transition-all transform hover:-translate-y-0.5 active:scale-95 text-center flex items-center justify-center gap-2 border border-emerald-400"
                 title="Download God's Hand School App to your device"
               >
                 <span>📲</span>
@@ -140,7 +138,7 @@ export const Hero: React.FC<HeroProps> = ({
             {onGoToReceipts && (
               <button 
                 onClick={onGoToReceipts}
-                className="text-xs sm:text-sm font-black uppercase text-emerald-300 hover:text-white tracking-wider flex items-center gap-1.5 transition-colors bg-emerald-950/80 hover:bg-emerald-900/90 px-3.5 py-2 rounded-xl border border-emerald-400/50 backdrop-blur-md shadow-md"
+                className="min-h-[44px] text-xs sm:text-sm font-black uppercase text-emerald-300 hover:text-white tracking-wider flex items-center gap-1.5 transition-colors bg-emerald-950/80 hover:bg-emerald-900/90 px-3.5 py-2.5 rounded-xl border border-emerald-400/50 backdrop-blur-md shadow-md break-words whitespace-normal text-left"
               >
                 <span>📑 Download Fee Receipts</span>
                 <span>→</span>
@@ -150,7 +148,7 @@ export const Hero: React.FC<HeroProps> = ({
             {onAbout && (
               <button 
                 onClick={onAbout}
-                className="text-xs sm:text-sm font-black uppercase text-yellow-300 hover:text-white tracking-wider flex items-center gap-1.5 transition-colors bg-blue-950/70 hover:bg-blue-900/80 px-3.5 py-2 rounded-xl border border-yellow-400/40 backdrop-blur-md shadow-md"
+                className="min-h-[44px] text-xs sm:text-sm font-black uppercase text-yellow-300 hover:text-white tracking-wider flex items-center gap-1.5 transition-colors bg-blue-950/70 hover:bg-blue-900/80 px-3.5 py-2.5 rounded-xl border border-yellow-400/40 backdrop-blur-md shadow-md break-words whitespace-normal text-left"
               >
                 <span>🏛️ About Our School, Campus & Results</span>
                 <span>→</span>
@@ -159,7 +157,7 @@ export const Hero: React.FC<HeroProps> = ({
 
             <button
               onClick={() => setIsGateModalOpen(true)}
-              className="text-xs sm:text-sm font-black uppercase text-blue-100 hover:text-white tracking-wider flex items-center gap-1.5 transition-colors bg-blue-900/70 hover:bg-blue-800/90 px-3.5 py-2 rounded-xl border border-blue-600 backdrop-blur-md shadow-md"
+              className="min-h-[44px] text-xs sm:text-sm font-black uppercase text-blue-100 hover:text-white tracking-wider flex items-center gap-1.5 transition-colors bg-blue-900/70 hover:bg-blue-800/90 px-3.5 py-2.5 rounded-xl border border-blue-600 backdrop-blur-md shadow-md break-words whitespace-normal text-left"
             >
               <span>🏫 View Physical Campus Gate</span>
               <span>🔍</span>
@@ -167,35 +165,35 @@ export const Hero: React.FC<HeroProps> = ({
           </div>
 
           {/* Academic Calendar Card */}
-          <div className="p-5 bg-blue-950/85 border-2 border-yellow-400/80 rounded-2xl max-w-lg backdrop-blur-xl shadow-2xl">
-            <div className="flex items-center justify-between mb-2 border-b border-blue-800 pb-1.5">
+          <div className="p-4 sm:p-5 bg-blue-950/85 border-2 border-yellow-400/80 rounded-2xl max-w-lg backdrop-blur-xl shadow-2xl">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-2 border-b border-blue-800 pb-1.5">
               <h4 className="text-yellow-400 font-black text-xs uppercase tracking-widest flex items-center gap-1.5">
                 <span>📅</span>
                 <span>Academic Calendar Highlights</span>
               </h4>
-              <span className="text-[10px] bg-yellow-400/20 text-yellow-300 font-bold px-2 py-0.5 rounded-md uppercase">
+              <span className="text-[10px] bg-yellow-400/20 text-yellow-300 font-bold px-2 py-0.5 rounded-md uppercase shrink-0">
                 Term Schedule
               </span>
             </div>
-            <div className="text-xs text-blue-100 font-semibold whitespace-pre-wrap leading-relaxed italic">
+            <div className="text-xs text-blue-100 font-semibold whitespace-pre-wrap break-words leading-relaxed italic">
               {calendar}
             </div>
           </div>
         </div>
 
         {/* Right Column: Physical School Entrance & Gate Showcase */}
-        <div className="lg:col-span-5 relative">
-          <div className="relative bg-gradient-to-b from-blue-900/95 to-blue-950/95 p-3 rounded-[2.2rem] shadow-2xl border-4 border-yellow-400 backdrop-blur-xl">
+        <div className="lg:col-span-5 min-w-0">
+          <div className="bg-gradient-to-b from-blue-900/95 to-blue-950/95 p-3 sm:p-4 rounded-[2rem] shadow-2xl border-4 border-yellow-400 backdrop-blur-xl space-y-3">
             
             {/* Header Title Bar */}
-            <div className="flex items-center justify-between px-3 py-2 bg-blue-950/90 rounded-2xl mb-3 border border-blue-800">
-              <div className="flex items-center gap-2">
-                <span className="text-base">🏫</span>
-                <span className="text-xs font-black uppercase tracking-wider text-yellow-400">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-blue-950/90 rounded-2xl border border-blue-800">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-base shrink-0">🏫</span>
+                <span className="text-xs font-black uppercase tracking-wider text-yellow-400 break-words whitespace-normal">
                   School Entrance & Main Gate
                 </span>
               </div>
-              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-md uppercase border border-emerald-500/40">
+              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-md uppercase border border-emerald-500/40 shrink-0">
                 Active Campus
               </span>
             </div>
@@ -203,49 +201,50 @@ export const Hero: React.FC<HeroProps> = ({
             {/* Entrance & Gate Photo Display Window */}
             <div 
               onClick={() => setIsGateModalOpen(true)}
-              className="relative rounded-[1.8rem] overflow-hidden aspect-4/3 sm:aspect-4/3 bg-slate-900 border-2 border-white/20 shadow-inner group cursor-pointer"
+              className="rounded-2xl bg-slate-900 border-2 border-white/20 shadow-inner group cursor-pointer flex flex-col"
               title="Click to view high-resolution photo of school gate"
             >
-              <img 
-                src="/school_premises.jpg" 
-                alt="God's Hand International Model School Physical Entrance and Gate - Wire & Cable, Apata, Ibadan" 
-                referrerPolicy="no-referrer"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-              />
-
-              {/* Zoom pill badge */}
-              <div className="absolute top-3 right-3 bg-blue-950/80 hover:bg-yellow-400 hover:text-blue-950 text-white px-2.5 py-1 rounded-xl text-[10px] font-bold tracking-wider backdrop-blur-md border border-white/30 transition-all flex items-center gap-1 shadow-md">
-                <span>🔍</span>
-                <span>Zoom</span>
+              <div className="aspect-video sm:aspect-4/3 w-full rounded-t-xl overflow-hidden">
+                <img 
+                  src="/school_premises.jpg" 
+                  alt="God's Hand International Model School Physical Entrance and Gate - Wire & Cable, Apata, Ibadan" 
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
               </div>
 
-              {/* Bottom Caption Overlay */}
-              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-blue-950/95 via-blue-950/70 to-transparent p-4 text-left">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-black uppercase text-yellow-400 tracking-wide font-serif">
+              {/* Clean Below-Photo Caption Bar */}
+              <div className="bg-blue-950/95 p-3.5 rounded-b-xl border-t border-white/10 text-left">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-xs font-black uppercase text-yellow-400 tracking-wide font-serif break-words">
                       God's Hand Int. Model School
                     </p>
-                    <p className="text-[11px] text-blue-100 font-medium">
+                    <p className="text-[11px] text-blue-100 font-medium break-words">
                       Wire & Cable, Apata, Ibadan, Oyo State
                     </p>
                   </div>
-                  <span className="text-[9px] bg-yellow-400 text-blue-950 font-black px-2 py-0.5 rounded-md uppercase shrink-0">
-                    Main Gate
-                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-[10px] bg-blue-900 text-white font-bold px-2 py-1 rounded-md border border-white/20">
+                      🔍 Zoom
+                    </span>
+                    <span className="text-[10px] bg-yellow-400 text-blue-950 font-black px-2 py-1 rounded-md uppercase">
+                      Main Gate
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Bottom Info Bar */}
-            <div className="mt-2.5 px-3 py-2 bg-blue-950/90 rounded-xl border border-blue-800 text-center flex items-center justify-between text-xs">
-              <span className="text-blue-200 font-bold text-[11px] flex items-center gap-1.5">
+            <div className="px-3 py-2 bg-blue-950/90 rounded-xl border border-blue-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span className="text-blue-200 font-bold text-[11px] flex items-center gap-1.5 break-words">
                 <span>📍</span>
                 <span>Wire and Cable, Apata, Ibadan</span>
               </span>
               <button
                 onClick={() => setIsGateModalOpen(true)}
-                className="text-[10px] font-black uppercase text-yellow-400 hover:text-yellow-300 underline flex items-center gap-1"
+                className="min-h-[44px] px-2 text-[11px] font-black uppercase text-yellow-400 hover:text-yellow-300 underline flex items-center gap-1 shrink-0"
               >
                 <span>Enlarge Gate View</span>
                 <span>↗</span>
@@ -263,24 +262,24 @@ export const Hero: React.FC<HeroProps> = ({
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-5xl bg-slate-900 rounded-3xl overflow-hidden border-4 border-yellow-400 shadow-2xl"
+            className="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto bg-slate-900 rounded-3xl border-4 border-yellow-400 shadow-2xl"
           >
             {/* Modal Header */}
-            <div className="p-4 bg-blue-950 text-white flex items-center justify-between border-b border-blue-800">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">🚁</span>
-                <div>
-                  <h3 className="text-sm sm:text-base font-black uppercase tracking-wider text-yellow-400">
+            <div className="p-4 bg-blue-950 text-white flex items-center justify-between gap-3 border-b border-blue-800">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-xl shrink-0">🚁</span>
+                <div className="min-w-0">
+                  <h3 className="text-sm sm:text-base font-black uppercase tracking-wider text-yellow-400 break-words">
                     Campus Aerial Drone Tour
                   </h3>
-                  <p className="text-[10px] text-blue-200">
+                  <p className="text-[11px] text-blue-200 break-words">
                     God's Hand International Model School & Surrounding Neighborhood • Wire & Cable, Apata, Ibadan
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsAerialModalOpen(false)}
-                className="w-9 h-9 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center font-bold text-lg transition-colors"
+                className="min-h-[44px] min-w-[44px] bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center font-bold text-lg transition-colors shrink-0"
               >
                 ✕
               </button>
@@ -303,27 +302,27 @@ export const Hero: React.FC<HeroProps> = ({
 
             {/* Modal Footer Info */}
             <div className="p-4 bg-blue-950/90 text-xs text-blue-100 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-blue-800">
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="px-2 py-1 bg-yellow-400 text-blue-950 font-black rounded-md uppercase text-[10px]">
                   Campus Flyover
                 </span>
-                <span>Location: Wire and Cable, Apata, Ibadan, Oyo State</span>
+                <span className="break-words">Location: Wire and Cable, Apata, Ibadan, Oyo State</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {!isAppInstalled && onOpenDownloadModal && (
                   <button
                     onClick={() => {
                       setIsAerialModalOpen(false);
                       onOpenDownloadModal();
                     }}
-                    className="px-3 py-1.5 bg-yellow-400 text-blue-950 font-black rounded-lg uppercase text-[10px] hover:bg-yellow-300 transition-colors"
+                    className="min-h-[44px] px-3.5 py-2 bg-yellow-400 text-blue-950 font-black rounded-lg uppercase text-[11px] hover:bg-yellow-300 transition-colors"
                   >
                     📲 Download App
                   </button>
                 )}
                 <button
                   onClick={() => setIsAerialModalOpen(false)}
-                  className="px-4 py-1.5 bg-blue-800 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors"
+                  className="min-h-[44px] px-4 py-2 bg-blue-800 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors"
                 >
                   Close
                 </button>
@@ -341,30 +340,30 @@ export const Hero: React.FC<HeroProps> = ({
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-4xl bg-slate-900 rounded-3xl overflow-hidden border-4 border-yellow-400 shadow-2xl"
+            className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-900 rounded-3xl border-4 border-yellow-400 shadow-2xl"
           >
             {/* Modal Header */}
-            <div className="p-4 bg-blue-950 text-white flex items-center justify-between border-b border-blue-800">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center border border-yellow-400 shrink-0 overflow-hidden">
+            <div className="p-4 bg-blue-950 text-white flex items-center justify-between gap-3 border-b border-blue-800">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center border border-yellow-400 shrink-0 p-1">
                   <img 
                     src="/logo.png" 
                     alt="God's Hand Logo" 
-                    className="w-[80%] h-[80%] object-contain"
+                    className="w-full h-full object-contain"
                   />
                 </div>
-                <div>
-                  <h3 className="text-sm sm:text-base font-black uppercase tracking-wider text-yellow-400">
+                <div className="min-w-0">
+                  <h3 className="text-sm sm:text-base font-black uppercase tracking-wider text-yellow-400 break-words">
                     Physical School Entrance & Main Gate
                   </h3>
-                  <p className="text-[11px] text-blue-200">
+                  <p className="text-[11px] text-blue-200 break-words">
                     God's Hand International Model School • Wire & Cable, Apata, Ibadan, Oyo State
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsGateModalOpen(false)}
-                className="w-9 h-9 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center font-bold text-lg transition-colors"
+                className="min-h-[44px] min-w-[44px] bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center font-bold text-lg transition-colors shrink-0"
                 title="Close"
               >
                 ✕
@@ -372,35 +371,35 @@ export const Hero: React.FC<HeroProps> = ({
             </div>
 
             {/* High-Resolution Gate Photo */}
-            <div className="relative bg-black flex items-center justify-center max-h-[70vh] overflow-hidden">
+            <div className="relative bg-black flex items-center justify-center max-h-[65vh]">
               <img 
                 src="/school_premises.jpg" 
                 alt="God's Hand International Model School Entrance & Gate" 
-                className="w-full h-auto max-h-[70vh] object-contain"
+                className="w-full h-auto max-h-[65vh] object-contain"
               />
             </div>
 
             {/* Modal Footer */}
             <div className="p-4 bg-blue-950/95 text-xs text-blue-100 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-blue-800">
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-1 bg-yellow-400 text-blue-950 font-black rounded-md uppercase text-[10px]">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-2.5 py-1 bg-yellow-400 text-blue-950 font-black rounded-md uppercase text-[10px] shrink-0">
                   Campus Gate
                 </span>
-                <span>Welcoming Nursery, Primary & College Students Every Academic Session</span>
+                <span className="break-words">Welcoming Nursery, Primary & College Students Every Academic Session</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => {
                     setIsGateModalOpen(false);
                     onApply();
                   }}
-                  className="px-3.5 py-1.5 bg-yellow-400 text-blue-950 font-black rounded-lg uppercase text-[10px] hover:bg-yellow-300 transition-colors"
+                  className="min-h-[44px] px-4 py-2 bg-yellow-400 text-blue-950 font-black rounded-lg uppercase text-[11px] hover:bg-yellow-300 transition-colors"
                 >
                   🎓 Apply For Admission
                 </button>
                 <button
                   onClick={() => setIsGateModalOpen(false)}
-                  className="px-4 py-1.5 bg-blue-800 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors"
+                  className="min-h-[44px] px-4 py-2 bg-blue-800 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors"
                 >
                   Close
                 </button>
@@ -412,40 +411,40 @@ export const Hero: React.FC<HeroProps> = ({
 
       {/* OFFICIAL SCHOOL BULLETINS & ANNOUNCEMENTS SECTION */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-        <div className="bg-blue-950/85 backdrop-blur-xl text-white rounded-3xl shadow-2xl p-6 sm:p-10 border-4 border-yellow-400 relative overflow-hidden">
-          <div className="flex items-center mb-8 relative z-10">
-            <div className="p-3 bg-yellow-400 text-blue-950 rounded-2xl mr-4 shadow-lg border border-yellow-300">
+        <div className="bg-blue-950/85 backdrop-blur-xl text-white rounded-3xl shadow-2xl p-4 sm:p-10 border-4 border-yellow-400">
+          <div className="flex flex-wrap items-center gap-3 mb-6 sm:mb-8">
+            <div className="p-3 bg-yellow-400 text-blue-950 rounded-2xl shadow-lg border border-yellow-300 shrink-0">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
             </div>
-            <div>
-              <h2 className="text-2xl sm:text-3xl font-black text-yellow-400 uppercase tracking-tight font-serif">
+            <div className="min-w-0">
+              <h2 className="text-xl sm:text-3xl font-black text-yellow-400 uppercase tracking-tight font-serif break-words">
                 Official School Bulletins
               </h2>
               <div className="h-1.5 w-24 bg-yellow-400 rounded-full mt-1"></div>
             </div>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {announcements.map(ann => (
-              <div key={ann.id} className="p-6 bg-slate-900/70 backdrop-blur-md rounded-2xl border-2 border-yellow-400/30 hover:border-yellow-400 hover:bg-blue-900/60 transition-all group shadow-md flex flex-col justify-between">
-                <div>
-                  <div className="flex justify-between items-start mb-3">
+              <div key={ann.id} className="p-5 sm:p-6 bg-slate-900/70 backdrop-blur-md rounded-2xl border-2 border-yellow-400/30 hover:border-yellow-400 hover:bg-blue-900/60 transition-all group shadow-md flex flex-col justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap justify-between items-start mb-3 gap-2">
                     <span className="px-3 py-1 bg-yellow-400 text-blue-950 text-[10px] font-black rounded-full uppercase tracking-wider">
                       {ann.date}
                     </span>
                   </div>
-                  <h3 className="font-black text-lg text-white mb-2 group-hover:text-yellow-300 transition-colors font-serif">
+                  <h3 className="font-black text-base sm:text-lg text-white mb-2 group-hover:text-yellow-300 transition-colors font-serif break-words">
                     {ann.title}
                   </h3>
-                  <p className="text-blue-100 text-xs sm:text-sm leading-relaxed line-clamp-4">
+                  <p className="text-blue-100 text-xs sm:text-sm leading-relaxed break-words whitespace-pre-wrap">
                     {ann.content}
                   </p>
                 </div>
                 <button 
                   onClick={onAbout}
-                  className="mt-5 text-yellow-400 hover:text-yellow-300 font-black text-xs uppercase flex items-center hover:translate-x-1.5 transition-transform"
+                  className="min-h-[44px] mt-4 text-yellow-400 hover:text-yellow-300 font-black text-xs uppercase flex items-center hover:translate-x-1.5 transition-transform self-start"
                 >
                   Learn More <span className="ml-1.5 font-bold">→</span>
                 </button>

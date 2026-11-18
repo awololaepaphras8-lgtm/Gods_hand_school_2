@@ -578,41 +578,43 @@ ON CONFLICT (id) DO NOTHING;
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-white rounded-[2.5rem] p-6 sm:p-8 max-w-5xl w-full max-h-[90vh] flex flex-col shadow-2xl border-4 border-slate-100 relative">
-        {/* Modal Close Button */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 font-black text-2xl w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center transition-all"
-        >
-          ✕
-        </button>
-
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
+      <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-4 sm:p-8 max-w-5xl w-full max-h-[92vh] overflow-y-auto flex flex-col shadow-2xl border-4 border-slate-100">
         {/* Modal Header */}
-        <div className="pb-4 border-b border-slate-100">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-3 py-0.5 bg-yellow-400 text-blue-950 text-[10px] font-black uppercase tracking-widest rounded-full">
-              PostgreSQL Master SQL Generator
-            </span>
-            <span className="px-3 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase rounded-full">
-              Ready for Supabase SQL Editor
-            </span>
+        <div className="flex items-start justify-between gap-3 pb-4 border-b border-slate-100 shrink-0">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
+              <span className="px-3 py-0.5 bg-yellow-400 text-blue-950 text-[10px] font-black uppercase tracking-widest rounded-full">
+                PostgreSQL Master SQL Generator
+              </span>
+              <span className="px-3 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase rounded-full">
+                Ready for Supabase SQL Editor
+              </span>
+            </div>
+            <h2 className="text-lg sm:text-2xl font-serif font-black text-blue-950 break-words whitespace-normal">
+              Database Schema & Real-Time Sync SQL
+            </h2>
+            <p className="text-xs text-slate-500 font-medium mt-1 break-words whitespace-normal">
+              Copy and paste this SQL directly into your Supabase Dashboard SQL Editor to activate all 22+ tables, realtime publications, and RLS policies.
+            </p>
           </div>
-          <h2 className="text-xl sm:text-2xl font-serif font-black text-blue-950">
-            Database Schema & Real-Time Sync SQL
-          </h2>
-          <p className="text-xs text-slate-500 font-medium mt-1">
-            Copy and paste this SQL directly into your Supabase Dashboard SQL Editor to activate all 22+ tables, realtime publications, and RLS policies.
-          </p>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="min-w-[44px] min-h-[44px] rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 font-black text-xl flex items-center justify-center transition-all shrink-0"
+            aria-label="Close modal"
+          >
+            ✕
+          </button>
         </div>
 
         {/* Tab Selection */}
-        <div className="flex items-center gap-2 pt-4 pb-3 overflow-x-auto">
+        <div className="flex flex-wrap items-center gap-2 pt-4 pb-3 shrink-0">
           <button
             type="button"
             onClick={() => setActiveTab('staffAssignments')}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+            className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all text-left break-words whitespace-normal ${
               activeTab === 'staffAssignments'
                 ? 'bg-blue-900 text-yellow-400 shadow-sm'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -624,7 +626,7 @@ ON CONFLICT (id) DO NOTHING;
           <button
             type="button"
             onClick={() => setActiveTab('all')}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+            className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all text-left break-words whitespace-normal ${
               activeTab === 'all'
                 ? 'bg-blue-900 text-yellow-400 shadow-sm'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -636,7 +638,7 @@ ON CONFLICT (id) DO NOTHING;
           <button
             type="button"
             onClick={() => setActiveTab('coursesRealtime')}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+            className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all text-left break-words whitespace-normal ${
               activeTab === 'coursesRealtime'
                 ? 'bg-blue-900 text-yellow-400 shadow-sm'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -648,7 +650,7 @@ ON CONFLICT (id) DO NOTHING;
           <button
             type="button"
             onClick={() => setActiveTab('assignments')}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+            className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all text-left break-words whitespace-normal ${
               activeTab === 'assignments'
                 ? 'bg-blue-900 text-yellow-400 shadow-sm'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -660,7 +662,7 @@ ON CONFLICT (id) DO NOTHING;
           <button
             type="button"
             onClick={() => setActiveTab('accountCreation')}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+            className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all text-left break-words whitespace-normal ${
               activeTab === 'accountCreation'
                 ? 'bg-blue-900 text-yellow-400 shadow-sm'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -672,7 +674,7 @@ ON CONFLICT (id) DO NOTHING;
           <button
             type="button"
             onClick={() => setActiveTab('timetableQr')}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+            className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all text-left break-words whitespace-normal ${
               activeTab === 'timetableQr'
                 ? 'bg-blue-900 text-yellow-400 shadow-sm'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -684,7 +686,7 @@ ON CONFLICT (id) DO NOTHING;
           <button
             type="button"
             onClick={() => setActiveTab('staffAdmin')}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+            className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all text-left break-words whitespace-normal ${
               activeTab === 'staffAdmin'
                 ? 'bg-blue-900 text-yellow-400 shadow-sm'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -696,7 +698,7 @@ ON CONFLICT (id) DO NOTHING;
           <button
             type="button"
             onClick={() => setActiveTab('bankAccount')}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+            className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all text-left break-words whitespace-normal ${
               activeTab === 'bankAccount'
                 ? 'bg-blue-900 text-yellow-400 shadow-sm'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -708,7 +710,7 @@ ON CONFLICT (id) DO NOTHING;
           <button
             type="button"
             onClick={() => setActiveTab('attendance')}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+            className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all text-left break-words whitespace-normal ${
               activeTab === 'attendance'
                 ? 'bg-blue-900 text-yellow-400 shadow-sm'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -720,7 +722,7 @@ ON CONFLICT (id) DO NOTHING;
           <button
             type="button"
             onClick={() => setActiveTab('videoRecordings')}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+            className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all text-left break-words whitespace-normal ${
               activeTab === 'videoRecordings'
                 ? 'bg-blue-900 text-yellow-400 shadow-sm'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -732,7 +734,7 @@ ON CONFLICT (id) DO NOTHING;
           <button
             type="button"
             onClick={() => setActiveTab('adminRealtime')}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+            className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all text-left break-words whitespace-normal ${
               activeTab === 'adminRealtime'
                 ? 'bg-blue-900 text-yellow-400 shadow-sm'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -744,7 +746,7 @@ ON CONFLICT (id) DO NOTHING;
           <button
             type="button"
             onClick={() => setActiveTab('chatCalls')}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+            className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all text-left break-words whitespace-normal ${
               activeTab === 'chatCalls'
                 ? 'bg-blue-900 text-yellow-400 shadow-sm'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -755,33 +757,38 @@ ON CONFLICT (id) DO NOTHING;
         </div>
 
         {/* Code Display Area */}
-        <div className="flex-1 min-h-[300px] overflow-hidden rounded-2xl bg-slate-950 border border-slate-800 relative my-2">
-          <pre className="p-4 sm:p-6 text-[11px] sm:text-xs font-mono text-emerald-400 overflow-auto h-[380px] leading-relaxed selection:bg-yellow-400 selection:text-blue-950">
+        <div className="flex-1 min-h-[260px] rounded-2xl bg-slate-950 border border-slate-800 flex flex-col my-2">
+          {/* Code Toolbar */}
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-slate-900 border-b border-slate-800 rounded-t-2xl">
+            <span className="text-[11px] font-mono text-slate-400 font-bold uppercase tracking-wider">
+              SQL Script Preview ({activeTab})
+            </span>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className={`min-h-[44px] px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-2 ${
+                copySuccess
+                  ? 'bg-emerald-500 text-white'
+                  : 'bg-yellow-400 hover:bg-yellow-300 text-blue-950 active:scale-95'
+              }`}
+            >
+              <span>{copySuccess ? '✓' : '📋'}</span>
+              <span>{copySuccess ? 'Copied to Clipboard!' : 'Copy SQL'}</span>
+            </button>
+          </div>
+
+          <pre className="p-4 sm:p-6 text-[11px] sm:text-xs font-mono text-emerald-400 overflow-auto max-h-[42vh] w-full leading-relaxed selection:bg-yellow-400 selection:text-blue-950">
             {activeSqlToDisplay}
           </pre>
-
-          {/* Quick Copy Floating Button */}
-          <button
-            type="button"
-            onClick={handleCopy}
-            className={`absolute top-4 right-4 px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-xl flex items-center gap-2 ${
-              copySuccess
-                ? 'bg-emerald-500 text-white'
-                : 'bg-yellow-400 hover:bg-yellow-300 text-blue-950 active:scale-95'
-            }`}
-          >
-            <span>{copySuccess ? '✓' : '📋'}</span>
-            <span>{copySuccess ? 'Copied to Clipboard!' : 'Copy SQL'}</span>
-          </button>
         </div>
 
         {/* Bottom Action Footer & Instructions */}
-        <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-xs text-slate-500 font-medium">
+        <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-between gap-4 shrink-0">
+          <div className="text-xs text-slate-500 font-medium break-words whitespace-normal flex-1">
             <span className="font-black text-blue-950">How to use:</span> 1. Open Supabase Dashboard → 2. SQL Editor → 3. Click "+ New query" → 4. Paste and press "Run".
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto">
             <button
               type="button"
               onClick={() => {
@@ -801,7 +808,7 @@ ON CONFLICT (id) DO NOTHING;
                   downloadSupabaseSchemaSql();
                 }
               }}
-              className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-xs flex items-center gap-1.5"
+              className="flex-1 sm:flex-initial min-h-[44px] px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-xs flex items-center justify-center gap-1.5"
             >
               <span>💾</span>
               <span>Download .sql File</span>
@@ -810,7 +817,7 @@ ON CONFLICT (id) DO NOTHING;
             <button
               type="button"
               onClick={handleCopy}
-              className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-2 ${
+              className={`flex-1 sm:flex-initial min-h-[44px] px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-2 ${
                 copySuccess
                   ? 'bg-emerald-600 text-white'
                   : 'bg-blue-900 hover:bg-blue-800 text-yellow-400 active:scale-95'

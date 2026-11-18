@@ -230,66 +230,65 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
+    <div className="space-y-6 sm:space-y-8 w-full max-w-full animate-in fade-in duration-300">
       {/* Header Banner & Stats */}
-      <div className="bg-gradient-to-r from-blue-900 via-blue-950 to-indigo-950 text-white p-8 sm:p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden border-2 border-yellow-400/30">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-yellow-400/10 rounded-full blur-3xl pointer-events-none"></div>
-
-        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
+      <div className="bg-gradient-to-r from-blue-900 via-blue-950 to-indigo-950 text-white p-4 sm:p-10 rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl border-2 border-yellow-400/30">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="px-3 py-1 bg-yellow-400 text-blue-900 font-black text-[10px] uppercase rounded-full tracking-wider">
                 Bursary & Accounts
               </span>
-              <span className="text-blue-300 text-xs font-bold">
+              <span className="text-blue-300 text-xs font-bold break-words whitespace-normal">
                 Wire & Cable, Apata, Ibadan
               </span>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-black font-serif text-white">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black font-serif text-white break-words whitespace-normal">
               Payment Receipts Review Desk
             </h2>
-            <p className="text-slate-300 text-sm mt-1 max-w-xl leading-relaxed">
+            <p className="text-slate-300 text-xs sm:text-sm mt-1 max-w-xl leading-relaxed break-words whitespace-normal">
               Review student fee receipts, bank transfer confirmations, and exchange notes before validating student balances and gate entry passes.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 w-full lg:w-auto">
             <button
               type="button"
               onClick={handleOpenDirectModal}
-              className="px-6 py-4 bg-yellow-400 text-blue-950 hover:bg-yellow-300 rounded-2xl font-black text-xs uppercase tracking-wider shadow-xl transition-all flex items-center justify-center gap-2 border-2 border-yellow-200 hover:scale-105 active:scale-95 shrink-0"
+              className="w-full sm:w-auto min-h-[44px] px-5 py-3.5 bg-yellow-400 text-blue-950 hover:bg-yellow-300 rounded-2xl font-black text-xs uppercase tracking-wider shadow-xl transition-all flex items-center justify-center gap-2 border-2 border-yellow-200 active:scale-95 shrink-0"
             >
               <span>💳</span>
-              <span>Input Payment & Issue Receipt</span>
+              <span className="break-words whitespace-normal">Input Payment & Issue Receipt</span>
             </button>
 
             <button
+              type="button"
               onClick={handleConfirmAll}
               disabled={pendingPayments.length === 0}
-              className={`px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-wider shadow-xl transition-all flex items-center justify-center gap-2 ${
+              className={`w-full sm:w-auto min-h-[44px] px-5 py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider shadow-xl transition-all flex items-center justify-center gap-2 ${
                 pendingPayments.length > 0
-                  ? 'bg-white/10 text-white hover:bg-white/20 border border-white/20 hover:scale-105 active:scale-95'
+                  ? 'bg-white/10 text-white hover:bg-white/20 border border-white/20 active:scale-95'
                   : 'bg-slate-700 text-slate-400 cursor-not-allowed'
               }`}
             >
               <span>⚡</span>
-              <span>Confirm All Pending ({pendingPayments.length})</span>
+              <span className="break-words whitespace-normal">Confirm All Pending ({pendingPayments.length})</span>
             </button>
           </div>
         </div>
 
         {/* Metric Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-8 border-t border-white/10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-white/10">
           <div className="bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/10">
             <p className="text-[10px] font-black uppercase tracking-wider text-yellow-300">Pending Review</p>
             <p className="text-2xl font-black text-white mt-1">{pendingPayments.length}</p>
-            <p className="text-xs text-yellow-400 font-bold mt-0.5">₦{totalPendingAmount.toLocaleString()}</p>
+            <p className="text-xs text-yellow-400 font-bold mt-0.5 break-all">₦{totalPendingAmount.toLocaleString()}</p>
           </div>
 
           <div className="bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/10">
             <p className="text-[10px] font-black uppercase tracking-wider text-green-300">Confirmed / Paid</p>
             <p className="text-2xl font-black text-white mt-1">{confirmedPayments.length}</p>
-            <p className="text-xs text-green-400 font-bold mt-0.5">₦{totalConfirmedAmount.toLocaleString()}</p>
+            <p className="text-xs text-green-400 font-bold mt-0.5 break-all">₦{totalConfirmedAmount.toLocaleString()}</p>
           </div>
 
           <div className="bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/10">
@@ -308,18 +307,26 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
 
       {/* Action Notification */}
       {actionSuccessMsg && (
-        <div className="p-4 bg-green-100 border-2 border-green-300 text-green-900 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center justify-between animate-in fade-in duration-200">
-          <span>✓ {actionSuccessMsg}</span>
-          <button onClick={() => setActionSuccessMsg('')} className="text-green-700 hover:text-green-900">✕</button>
+        <div className="p-4 bg-green-100 border-2 border-green-300 text-green-900 rounded-2xl font-black text-xs uppercase tracking-wider flex flex-wrap items-center justify-between gap-2 animate-in fade-in duration-200">
+          <span className="break-words whitespace-normal flex-1">✓ {actionSuccessMsg}</span>
+          <button
+            type="button"
+            onClick={() => setActionSuccessMsg('')}
+            className="min-w-[44px] min-h-[44px] rounded-xl text-green-700 hover:text-green-900 hover:bg-green-200 flex items-center justify-center shrink-0"
+            aria-label="Dismiss notification"
+          >
+            ✕
+          </button>
         </div>
       )}
 
       {/* Filter Tabs & Search Bar */}
-      <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-white p-4 rounded-3xl shadow-sm border border-slate-100">
+      <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 bg-white p-4 rounded-3xl shadow-sm border border-slate-100">
         <div className="flex flex-wrap gap-2">
           <button
+            type="button"
             onClick={() => setActiveFilter('pending')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
+            className={`min-h-[44px] px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
               activeFilter === 'pending'
                 ? 'bg-blue-900 text-yellow-400 shadow-md'
                 : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
@@ -334,8 +341,9 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveFilter('confirmed')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
+            className={`min-h-[44px] px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
               activeFilter === 'confirmed'
                 ? 'bg-blue-900 text-yellow-400 shadow-md'
                 : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
@@ -348,8 +356,9 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveFilter('declined')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
+            className={`min-h-[44px] px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
               activeFilter === 'declined'
                 ? 'bg-blue-900 text-yellow-400 shadow-md'
                 : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
@@ -362,8 +371,9 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveFilter('all')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+            className={`min-h-[44px] px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
               activeFilter === 'all'
                 ? 'bg-blue-900 text-yellow-400 shadow-md'
                 : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
@@ -374,19 +384,21 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
         </div>
 
         {/* Search */}
-        <div className="relative flex-1 max-w-md">
+        <div className="flex items-center gap-2 flex-1 w-full lg:max-w-md min-h-[44px] px-3.5 bg-slate-50 border border-slate-200 rounded-xl focus-within:border-blue-900 focus-within:bg-white transition-all">
+          <span className="text-slate-400 text-sm shrink-0" aria-hidden="true">🔍</span>
           <input
             type="text"
             placeholder="Search by student, payer, bank, or ref ID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-4 py-2.5 pl-10 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs outline-none focus:border-blue-900 focus:bg-white transition-all text-blue-900"
+            className="w-full min-h-[40px] py-2 bg-transparent font-bold text-xs sm:text-sm outline-none text-blue-900"
           />
-          <span className="absolute left-3 top-2.5 text-slate-400 text-sm">🔍</span>
           {searchQuery && (
             <button
+              type="button"
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs font-bold"
+              className="min-w-[36px] min-h-[36px] rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 text-xs font-bold flex items-center justify-center shrink-0"
+              aria-label="Clear search"
             >
               ✕
             </button>
@@ -416,7 +428,7 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
             return (
               <div
                 key={payment.id}
-                className={`bg-white rounded-3xl p-6 sm:p-8 border-2 shadow-sm transition-all ${
+                className={`bg-white rounded-3xl p-4 sm:p-8 border-2 shadow-sm transition-all ${
                   isPending
                     ? 'border-amber-300 bg-amber-50/20 hover:border-amber-400 hover:shadow-md'
                     : isConfirmed
@@ -426,65 +438,65 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
               >
                 <div className="flex flex-col lg:flex-row justify-between items-start gap-6">
                   {/* Left: Student & Transaction Info */}
-                  <div className="space-y-4 flex-1">
+                  <div className="space-y-4 flex-1 min-w-0 w-full">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-mono font-black text-slate-400 uppercase bg-slate-100 px-2.5 py-1 rounded-lg">
+                      <span className="text-xs font-mono font-black text-slate-500 uppercase bg-slate-100 px-2.5 py-1 rounded-lg break-all">
                         {payment.id}
                       </span>
                       <span className="text-xs font-black uppercase bg-blue-900 text-yellow-400 px-3 py-1 rounded-full">
                         {payment.grade}
                       </span>
                       {isPending && (
-                        <span className="px-3 py-1 bg-amber-400 text-blue-900 font-black text-[10px] uppercase rounded-full animate-pulse flex items-center gap-1">
+                        <span className="px-3 py-1 bg-amber-400 text-blue-900 font-black text-[10px] uppercase rounded-full animate-pulse inline-flex items-center gap-1">
                           <span>⏳</span>
                           <span>Pending Admin Review</span>
                         </span>
                       )}
                       {isConfirmed && (
-                        <span className="px-3 py-1 bg-green-100 text-green-800 font-black text-[10px] uppercase rounded-full flex items-center gap-1">
+                        <span className="px-3 py-1 bg-green-100 text-green-800 font-black text-[10px] uppercase rounded-full inline-flex items-center gap-1">
                           <span>✅</span>
                           <span>Confirmed & Cleared</span>
                         </span>
                       )}
                       {isDeclined && (
-                        <span className="px-3 py-1 bg-red-100 text-red-800 font-black text-[10px] uppercase rounded-full flex items-center gap-1">
+                        <span className="px-3 py-1 bg-red-100 text-red-800 font-black text-[10px] uppercase rounded-full inline-flex items-center gap-1">
                           <span>❌</span>
                           <span>Declined</span>
                         </span>
                       )}
-                      <span className="text-slate-400 text-xs font-bold ml-auto">
+                      <span className="text-slate-400 text-xs font-bold sm:ml-auto break-words whitespace-normal">
                         {new Date(payment.date).toLocaleString()}
                       </span>
                     </div>
 
                     <div>
-                      <h4 className="text-2xl font-black text-blue-900 font-serif">
+                      <h4 className="text-xl sm:text-2xl font-black text-blue-900 font-serif break-words whitespace-normal">
                         {payment.studentName}
                       </h4>
-                      <p className="text-xs text-slate-500 font-bold mt-0.5">
+                      <p className="text-xs text-slate-500 font-bold mt-0.5 break-words whitespace-normal">
                         Class: {payment.grade} {matchingStudent ? `• Student ID: ${matchingStudent.id}` : ''}
                       </p>
                     </div>
 
                     {/* Financial Meta Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                      <div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                      <div className="min-w-0">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Amount Paid</p>
-                        <p className="text-lg font-black text-blue-900">₦{payment.amount.toLocaleString()}</p>
+                        <p className="text-lg font-black text-blue-900 break-all">₦{payment.amount.toLocaleString()}</p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Payment Purpose</p>
-                        <p className="text-xs font-bold text-slate-700 capitalize">
+                        <p className="text-xs font-bold text-slate-700 capitalize break-words whitespace-normal">
                           {payment.type === 'full' ? 'Full Session' : payment.type === 'installment_1' ? '1st Installment' : payment.type === 'result_fee' ? 'Result Checker Fee (₦1,000)' : '2nd Installment'}
                         </p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Payer / Guardian</p>
-                        <p className="text-xs font-bold text-slate-700 truncate">{payment.payerName || 'Not specified'}</p>
+                        <p className="text-xs font-bold text-slate-700 break-words whitespace-normal">{payment.payerName || 'Not specified'}</p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Bank / Ref</p>
-                        <p className="text-xs font-bold text-slate-700 truncate" title={payment.transactionRef || payment.bankName || ''}>
+                        <p className="text-xs font-bold text-slate-700 break-all whitespace-normal">
                           {payment.bankName ? `${payment.bankName} - ` : ''}{payment.transactionRef || 'Direct Transfer'}
                         </p>
                       </div>
@@ -492,7 +504,7 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
 
                     {/* Student Initial Note */}
                     {payment.studentNote && (
-                      <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs font-medium text-blue-900">
+                      <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs font-medium text-blue-900 break-words whitespace-normal">
                         <span className="font-black uppercase tracking-wider text-[10px] text-blue-600 block mb-0.5">
                           Student / Parent Note:
                         </span>
@@ -502,7 +514,7 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
 
                     {/* Decline note if any */}
                     {payment.adminNote && isDeclined && (
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs font-medium text-red-900">
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs font-medium text-red-900 break-words whitespace-normal">
                         <span className="font-black uppercase tracking-wider text-[10px] text-red-600 block mb-0.5">
                           Reason Declined:
                         </span>
@@ -512,35 +524,45 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                   </div>
 
                   {/* Right: Receipt Image Thumbnail & Verification Action */}
-                  <div className="w-full lg:w-72 space-y-4 shrink-0">
+                  <div className="w-full lg:w-72 space-y-3 shrink-0">
                     <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
                       Payment Proof / Receipt
                     </p>
 
                     {payment.receiptImage ? (
-                      <div
-                        onClick={() => setSelectedReceiptImage({
-                          url: payment.receiptImage!,
-                          title: `${payment.studentName} - ₦${payment.amount.toLocaleString()}`,
-                          ref: payment.transactionRef || payment.id
-                        })}
-                        className="group relative cursor-pointer overflow-hidden rounded-2xl border-2 border-slate-200 bg-slate-100 aspect-video sm:aspect-square max-h-48 flex items-center justify-center shadow-inner hover:border-blue-900 transition-all"
-                      >
-                        <img
-                          src={payment.receiptImage}
-                          alt="Bank Payment Receipt"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                        />
-                        <div className="absolute inset-0 bg-blue-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white p-2 text-center">
-                          <span className="text-2xl mb-1">🔍</span>
-                          <span className="text-xs font-black uppercase tracking-wider">Inspect Full Receipt</span>
+                      <div className="space-y-2">
+                        <div
+                          onClick={() => setSelectedReceiptImage({
+                            url: payment.receiptImage!,
+                            title: `${payment.studentName} - ₦${payment.amount.toLocaleString()}`,
+                            ref: payment.transactionRef || payment.id
+                          })}
+                          className="cursor-pointer overflow-hidden rounded-2xl border-2 border-slate-200 bg-slate-100 aspect-video sm:aspect-square max-h-48 flex items-center justify-center shadow-inner hover:border-blue-900 transition-all"
+                        >
+                          <img
+                            src={payment.receiptImage}
+                            alt="Bank Payment Receipt"
+                            className="w-full h-full object-cover"
+                          />
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedReceiptImage({
+                            url: payment.receiptImage!,
+                            title: `${payment.studentName} - ₦${payment.amount.toLocaleString()}`,
+                            ref: payment.transactionRef || payment.id
+                          })}
+                          className="w-full min-h-[44px] py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-900 font-black text-xs uppercase tracking-wider rounded-xl border border-blue-200 flex items-center justify-center gap-1.5"
+                        >
+                          <span>🔍</span>
+                          <span>Inspect Full Receipt</span>
+                        </button>
                       </div>
                     ) : (
-                      <div className="p-6 bg-slate-100 rounded-2xl border-2 border-dashed border-slate-200 text-center text-slate-400">
+                      <div className="p-5 bg-slate-100 rounded-2xl border-2 border-dashed border-slate-200 text-center text-slate-400">
                         <span className="text-2xl block mb-1">📄</span>
                         <p className="text-[10px] font-black uppercase">No image uploaded</p>
-                        <p className="text-[10px] mt-1 font-mono">{payment.transactionRef || 'Ref: ' + payment.id}</p>
+                        <p className="text-[10px] mt-1 font-mono break-all">{payment.transactionRef || 'Ref: ' + payment.id}</p>
                       </div>
                     )}
 
@@ -553,7 +575,7 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                           exportSinglePaymentReceiptPDF(payment, matchingStudent);
                           showNotification(`Official receipt voucher for ${payment.studentName} generated & downloaded!`);
                         }}
-                        className="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center gap-2 border-2 border-yellow-400 active:scale-95"
+                        className="w-full min-h-[44px] py-2.5 px-3 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center gap-2 border-2 border-yellow-400 active:scale-95"
                         title="Download official branded PDF receipt / audit voucher for this payment before accepting"
                       >
                         <span>📥</span>
@@ -564,7 +586,7 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                         <a
                           href={payment.receiptImage}
                           download={`payment_proof_${payment.studentName.replace(/\s+/g, '_')}_${payment.id}.jpg`}
-                          className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 border border-slate-200 text-center"
+                          className="w-full min-h-[44px] py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 border border-slate-200 text-center"
                           title="Save original uploaded bank payment document/image to device"
                         >
                           <span>💾</span>
@@ -577,22 +599,24 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                           <button
                             type="button"
                             onClick={() => handleOpenInspectConfirm(payment)}
-                            className="w-full py-3 bg-yellow-400 hover:bg-yellow-300 text-blue-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 border border-yellow-500"
+                            className="w-full min-h-[44px] py-3 px-3 bg-yellow-400 hover:bg-yellow-300 text-blue-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 border border-yellow-500"
                             title="Verify amount paid and remaining balance before approving"
                           >
                             <span>✍️</span>
-                            <span>Input Amount Paid & Remaining →</span>
+                            <span className="break-words whitespace-normal">Input Amount Paid & Remaining →</span>
                           </button>
                           <button
+                            type="button"
                             onClick={() => handleConfirmSingle(payment.id)}
-                            className="w-full py-2.5 bg-green-600 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-sm hover:bg-green-700 transition-all flex items-center justify-center gap-1.5"
+                            className="w-full min-h-[44px] py-2.5 px-3 bg-green-600 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-sm hover:bg-green-700 transition-all flex items-center justify-center gap-1.5"
                           >
                             <span>✓</span>
                             <span>Quick Confirm (As Submitted)</span>
                           </button>
                           <button
+                            type="button"
                             onClick={() => setDeclinePromptId(payment.id)}
-                            className="w-full py-2 bg-red-50 text-red-600 hover:bg-red-100 font-black text-xs uppercase tracking-wider rounded-xl transition-all border border-red-200"
+                            className="w-full min-h-[44px] py-2.5 px-3 bg-red-50 text-red-600 hover:bg-red-100 font-black text-xs uppercase tracking-wider rounded-xl transition-all border border-red-200"
                           >
                             ✕ Decline / Return
                           </button>
@@ -612,12 +636,13 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                             )}
                           </div>
                           <button
+                            type="button"
                             onClick={() => {
                               if (window.confirm("Reopen this payment receipt for review?")) {
                                 onConfirmPayment(payment.id, "Reopened for re-audit");
                               }
                             }}
-                            className="w-full py-2 text-slate-400 hover:text-slate-600 font-bold text-[10px] uppercase"
+                            className="w-full min-h-[44px] py-2 text-slate-500 hover:text-slate-700 font-bold text-xs uppercase rounded-xl hover:bg-slate-50"
                           >
                             Re-open Review
                           </button>
@@ -626,8 +651,9 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
 
                       {isDeclined && (
                         <button
+                          type="button"
                           onClick={() => handleConfirmSingle(payment.id, "Payment reconsidered and approved")}
-                          className="w-full py-3 bg-blue-900 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md hover:bg-blue-800 transition-all"
+                          className="w-full min-h-[44px] py-3 bg-blue-900 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-md hover:bg-blue-800 transition-all"
                         >
                           Re-approve Payment
                         </button>
@@ -638,8 +664,8 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
 
                 {/* Decline Prompt Modal / Expandable Box */}
                 {declinePromptId === payment.id && (
-                  <div className="mt-6 p-5 bg-red-50 border-2 border-red-200 rounded-2xl animate-in fade-in space-y-3">
-                    <p className="text-xs font-black text-red-900 uppercase">
+                  <div className="mt-6 p-4 sm:p-5 bg-red-50 border-2 border-red-200 rounded-2xl animate-in fade-in space-y-3">
+                    <p className="text-xs font-black text-red-900 uppercase break-words whitespace-normal">
                       Decline Payment Receipt: Please provide a reason to the student
                     </p>
                     <textarea
@@ -647,18 +673,20 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                       value={declineReason}
                       onChange={(e) => setDeclineReason(e.target.value)}
                       placeholder="e.g. Receipt image is too blurry to read transaction reference. Kindly re-upload a clear screenshot or teller."
-                      className="w-full p-3 bg-white border border-red-200 rounded-xl font-bold text-xs text-red-900 outline-none focus:ring-2 focus:ring-red-400"
+                      className="w-full p-3 bg-white border border-red-200 rounded-xl font-bold text-xs sm:text-sm text-red-900 outline-none focus:ring-2 focus:ring-red-400"
                     />
-                    <div className="flex gap-2 justify-end">
+                    <div className="flex flex-wrap gap-2 justify-end">
                       <button
+                        type="button"
                         onClick={() => { setDeclinePromptId(null); setDeclineReason(''); }}
-                        className="px-4 py-2 bg-slate-200 text-slate-700 font-black text-[10px] uppercase rounded-xl"
+                        className="min-h-[44px] px-4 py-2 bg-slate-200 text-slate-700 font-black text-xs uppercase rounded-xl"
                       >
                         Cancel
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleDeclineSubmit(payment.id)}
-                        className="px-5 py-2 bg-red-600 text-white font-black text-[10px] uppercase rounded-xl shadow-md hover:bg-red-700"
+                        className="min-h-[44px] px-5 py-2 bg-red-600 text-white font-black text-xs uppercase rounded-xl shadow-md hover:bg-red-700"
                       >
                         Submit Decline
                       </button>
@@ -668,12 +696,12 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
 
                 {/* Chat & Verification Notes Thread */}
                 <div className="mt-6 pt-6 border-t border-slate-100">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                     <p className="text-xs font-black text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
                       <span>💬</span>
                       <span>Review Discussion & Verification Notes ({payment.messages?.length || 0})</span>
                     </p>
-                    <span className="text-[10px] text-slate-400 font-bold">
+                    <span className="text-[11px] text-slate-400 font-bold">
                       Visible in Student Portal
                     </span>
                   </div>
@@ -681,7 +709,7 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                   {/* Message History */}
                   <div className="space-y-2 mb-4 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                     {(!payment.messages || payment.messages.length === 0) ? (
-                      <p className="text-[11px] text-slate-400 italic bg-slate-50 p-3 rounded-xl border border-slate-100">
+                      <p className="text-xs text-slate-400 italic bg-slate-50 p-3 rounded-xl border border-slate-100">
                         No messages yet. Send a verification note or question to the student below.
                       </p>
                     ) : (
@@ -696,15 +724,15 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                                 : 'bg-slate-100 text-slate-800 mr-auto'
                             }`}
                           >
-                            <div className="flex items-center justify-between gap-4 mb-1">
-                              <span className={`text-[10px] font-black uppercase ${isAdmin ? 'text-yellow-400' : 'text-blue-900'}`}>
+                            <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+                              <span className={`text-[10px] font-black uppercase break-words whitespace-normal ${isAdmin ? 'text-yellow-400' : 'text-blue-900'}`}>
                                 {msg.senderName} ({isAdmin ? 'Bursar / Admin' : 'Student / Parent'})
                               </span>
-                              <span className={`text-[9px] ${isAdmin ? 'text-blue-200' : 'text-slate-400'}`}>
+                              <span className={`text-[10px] shrink-0 ${isAdmin ? 'text-blue-200' : 'text-slate-400'}`}>
                                 {msg.timestamp}
                               </span>
                             </div>
-                            <p className="leading-relaxed font-medium">{msg.message}</p>
+                            <p className="leading-relaxed font-medium break-words whitespace-normal">{msg.message}</p>
                           </div>
                         );
                       })
@@ -712,8 +740,8 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                   </div>
 
                   {/* Quick Preset Reply Chips */}
-                  <div className="flex flex-wrap gap-1.5 mb-3">
-                    <span className="text-[10px] font-bold text-slate-400 py-1 mr-1">Quick Notes:</span>
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase mr-1">Quick Notes:</span>
                     {[
                       'Bank transfer confirmed. Entry cleared!',
                       'Received 1st installment. Balance due before midterm.',
@@ -724,7 +752,7 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                         key={idx}
                         type="button"
                         onClick={() => setChatInputs(prev => ({ ...prev, [payment.id]: preset }))}
-                        className="px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-900 text-slate-600 text-[10px] font-bold rounded-lg transition-all"
+                        className="min-h-[44px] px-3 py-2 bg-slate-100 hover:bg-blue-50 hover:text-blue-900 text-slate-600 text-[11px] font-bold rounded-xl transition-all text-left break-words whitespace-normal"
                       >
                         {preset}
                       </button>
@@ -732,7 +760,7 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                   </div>
 
                   {/* Reply Input */}
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       type="text"
                       placeholder="Type a message or verification note to student..."
@@ -743,12 +771,12 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                           handleSendMessage(payment.id);
                         }
                       }}
-                      className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-blue-900 outline-none focus:bg-white focus:border-blue-900"
+                      className="flex-1 min-h-[44px] px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs sm:text-sm text-blue-900 outline-none focus:bg-white focus:border-blue-900"
                     />
                     <button
                       type="button"
                       onClick={() => handleSendMessage(payment.id)}
-                      className="px-5 py-2.5 bg-blue-900 text-yellow-400 font-black text-xs uppercase rounded-xl hover:bg-blue-800 shadow-md transition-all shrink-0"
+                      className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 bg-blue-900 text-yellow-400 font-black text-xs uppercase rounded-xl hover:bg-blue-800 shadow-md transition-all shrink-0"
                     >
                       Send
                     </button>
@@ -762,51 +790,51 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
 
       {/* Full-Screen Receipt Inspection Modal */}
       {selectedReceiptImage && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-blue-950/85 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-white rounded-[2.5rem] p-6 sm:p-8 max-w-2xl w-full relative shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <div>
-                <h3 className="font-black text-blue-900 text-lg font-serif">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-3 sm:p-4 bg-blue-950/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-4 sm:p-8 max-w-2xl w-full shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto flex flex-col">
+            <div className="flex justify-between items-start gap-3 border-b border-slate-100 pb-3 shrink-0">
+              <div className="min-w-0 flex-1">
+                <h3 className="font-black text-blue-900 text-base sm:text-lg font-serif break-words whitespace-normal">
                   {selectedReceiptImage.title}
                 </h3>
-                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider break-all">
                   Reference: {selectedReceiptImage.ref}
                 </p>
               </div>
               <button
+                type="button"
                 onClick={() => setSelectedReceiptImage(null)}
-                className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 hover:bg-red-100 hover:text-red-600 font-black text-lg flex items-center justify-center transition-all"
+                className="min-w-[44px] min-h-[44px] rounded-full bg-slate-100 text-slate-600 hover:bg-red-100 hover:text-red-600 font-black text-lg flex items-center justify-center transition-all shrink-0"
+                aria-label="Close modal"
               >
                 ✕
               </button>
             </div>
 
-            <div className="flex-1 overflow-auto rounded-2xl bg-slate-50 border-2 border-slate-100 p-2 flex items-center justify-center">
+            <div className="flex-1 overflow-auto rounded-2xl bg-slate-50 border-2 border-slate-100 p-2 flex items-center justify-center min-h-[200px]">
               <img
                 src={selectedReceiptImage.url}
                 alt="Receipt Inspection"
-                className="max-h-[60vh] w-auto object-contain rounded-xl shadow-md"
+                className="max-h-[55vh] w-auto object-contain rounded-xl shadow-md"
               />
             </div>
 
-            <div className="flex justify-between items-center pt-2">
-              <span className="text-[10px] text-slate-400 font-bold uppercase">
+            <div className="flex flex-wrap justify-between items-center gap-3 pt-2 shrink-0">
+              <span className="text-[11px] text-slate-400 font-bold uppercase break-words whitespace-normal">
                 God's Hand International Model School Bursary Audit
               </span>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                 <button
-                  onClick={() => {
-                    const win = window.open();
-                    win?.document.write(`<img src="${selectedReceiptImage.url}" style="max-width:100%"/>`);
-                    win?.print();
-                  }}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs uppercase rounded-xl transition-all"
+                  type="button"
+                  onClick={() => window.print()}
+                  className="flex-1 sm:flex-initial min-h-[44px] px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs uppercase rounded-xl transition-all"
                 >
                   🖨️ Print Receipt
                 </button>
                 <button
+                  type="button"
                   onClick={() => setSelectedReceiptImage(null)}
-                  className="px-6 py-2 bg-blue-900 text-yellow-400 font-black text-xs uppercase rounded-xl hover:bg-blue-800 transition-all shadow-md"
+                  className="flex-1 sm:flex-initial min-h-[44px] px-6 py-2 bg-blue-900 text-yellow-400 font-black text-xs uppercase rounded-xl hover:bg-blue-800 transition-all shadow-md"
                 >
                   Done
                 </button>
@@ -818,18 +846,18 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
 
       {/* MODAL 1: ADMIN DIRECT PAYMENT ENTRY & INSTANT RECEIPT GENERATION */}
       {showDirectModal && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-blue-950/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
-          <div className="bg-white rounded-[2.5rem] p-6 sm:p-8 max-w-2xl w-full shadow-2xl space-y-5 border-4 border-yellow-400 my-6">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <span className="w-10 h-10 rounded-xl bg-yellow-400 text-blue-950 flex items-center justify-center text-xl font-black">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-3 sm:p-4 bg-blue-950/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-4 sm:p-8 max-w-2xl w-full shadow-2xl space-y-5 border-4 border-yellow-400 max-h-[92vh] overflow-y-auto">
+            <div className="flex justify-between items-start gap-3 border-b border-slate-100 pb-3">
+              <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                <span className="w-10 h-10 rounded-xl bg-yellow-400 text-blue-950 flex items-center justify-center text-xl font-black shrink-0">
                   💳
                 </span>
-                <div>
-                  <h3 className="font-black text-blue-950 text-xl font-serif">
+                <div className="min-w-0">
+                  <h3 className="font-black text-blue-950 text-lg sm:text-xl font-serif break-words whitespace-normal">
                     Record Payment & Generate Official Receipt
                   </h3>
-                  <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+                  <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider break-words whitespace-normal">
                     Instant Bursary Stamping & Automatic Receipt Download
                   </p>
                 </div>
@@ -837,7 +865,8 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
               <button
                 type="button"
                 onClick={() => setShowDirectModal(false)}
-                className="w-9 h-9 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 font-black flex items-center justify-center"
+                className="min-w-[44px] min-h-[44px] rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 font-black flex items-center justify-center shrink-0"
+                aria-label="Close modal"
               >
                 ✕
               </button>
@@ -852,7 +881,7 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                 <select
                   value={selectedStudentId}
                   onChange={(e) => handleSelectStudent(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-blue-950 outline-none focus:border-blue-900 focus:bg-white"
+                  className="w-full min-h-[44px] px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm text-blue-950 outline-none focus:border-blue-900 focus:bg-white"
                 >
                   {students.map(s => (
                     <option key={s.id} value={s.id}>
@@ -878,9 +907,9 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                       setInputTotalExpected(val);
                       setInputAmountRemaining(Math.max(0, val - inputAmountPaid));
                     }}
-                    className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-mono text-sm font-black text-blue-950 outline-none focus:border-blue-900"
+                    className="w-full min-h-[44px] p-2.5 bg-white border border-slate-300 rounded-xl font-mono text-sm font-black text-blue-950 outline-none focus:border-blue-900"
                   />
-                  <span className="text-[9px] text-slate-400 mt-0.5 block">Standard Term Fee</span>
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Standard Term Fee</span>
                 </div>
 
                 <div>
@@ -893,9 +922,9 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                     required
                     value={inputAmountPaid}
                     onChange={(e) => handleAmountPaidChange(Number(e.target.value))}
-                    className="w-full p-2.5 bg-emerald-50 border-2 border-emerald-400 rounded-xl font-mono text-sm font-black text-emerald-950 outline-none focus:border-emerald-600"
+                    className="w-full min-h-[44px] p-2.5 bg-emerald-50 border-2 border-emerald-400 rounded-xl font-mono text-sm font-black text-emerald-950 outline-none focus:border-emerald-600"
                   />
-                  <span className="text-[9px] text-emerald-700 mt-0.5 block font-bold">Received by Bursar</span>
+                  <span className="text-[10px] text-emerald-700 mt-0.5 block font-bold">Received by Bursar</span>
                 </div>
 
                 <div>
@@ -908,9 +937,9 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                     required
                     value={inputAmountRemaining}
                     onChange={(e) => setInputAmountRemaining(Number(e.target.value))}
-                    className="w-full p-2.5 bg-amber-50 border-2 border-amber-400 rounded-xl font-mono text-sm font-black text-amber-950 outline-none focus:border-amber-600"
+                    className="w-full min-h-[44px] p-2.5 bg-amber-50 border-2 border-amber-400 rounded-xl font-mono text-sm font-black text-amber-950 outline-none focus:border-amber-600"
                   />
-                  <span className="text-[9px] text-amber-700 mt-0.5 block font-bold">
+                  <span className="text-[10px] text-amber-700 mt-0.5 block font-bold">
                     {inputAmountRemaining === 0 ? '✓ Fully Cleared (₦0)' : 'Outstanding Balance'}
                   </span>
                 </div>
@@ -925,7 +954,7 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                   <select
                     value={inputTerm}
                     onChange={(e) => setInputTerm(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-blue-950"
+                    className="w-full min-h-[44px] p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs sm:text-sm text-blue-950"
                   >
                     <option value="First Term">First Term</option>
                     <option value="Second Term">Second Term</option>
@@ -940,7 +969,7 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                   <select
                     value={inputPaymentType}
                     onChange={(e) => setInputPaymentType(e.target.value as any)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-blue-950"
+                    className="w-full min-h-[44px] p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs sm:text-sm text-blue-950"
                   >
                     <option value="full">Full Session / Term Fee</option>
                     <option value="installment_1">1st Installment (50%)</option>
@@ -956,7 +985,7 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                   <select
                     value={inputPaymentMethod}
                     onChange={(e) => setInputPaymentMethod(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-blue-950"
+                    className="w-full min-h-[44px] p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs sm:text-sm text-blue-950"
                   >
                     <option value="Cash at Bursary Desk">Cash at Bursary Desk</option>
                     <option value="Direct Bank Transfer">Direct Bank Transfer</option>
@@ -976,7 +1005,7 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                   placeholder="e.g. FBN-TRX-84920 or Teller No. 104829"
                   value={inputTransactionRef}
                   onChange={(e) => setInputTransactionRef(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold"
+                  className="w-full min-h-[44px] p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-mono font-bold"
                 />
               </div>
 
@@ -989,24 +1018,24 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                   placeholder="e.g. Verified and approved at school cash office"
                   value={inputAdminNote}
                   onChange={(e) => setInputAdminNote(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal"
+                  className="w-full min-h-[44px] p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-normal"
                 />
               </div>
 
-              <div className="pt-2 flex justify-end gap-3">
+              <div className="pt-2 flex flex-col-reverse sm:flex-row justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setShowDirectModal(false)}
-                  className="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase rounded-xl transition-all"
+                  className="w-full sm:w-auto min-h-[44px] px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase rounded-xl transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-xl transition-all flex items-center gap-2 border-2 border-yellow-400"
+                  className="w-full sm:w-auto min-h-[44px] px-6 py-3.5 bg-blue-900 hover:bg-blue-800 text-yellow-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-xl transition-all flex items-center justify-center gap-2 border-2 border-yellow-400"
                 >
                   <span>✓</span>
-                  <span>Confirm Payment & Issue Official Receipt</span>
+                  <span className="break-words whitespace-normal">Confirm Payment & Issue Official Receipt</span>
                 </button>
               </div>
             </form>
@@ -1016,36 +1045,37 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
 
       {/* MODAL 2: INSPECT & VERIFY AMOUNTS FOR PENDING RECEIPTS */}
       {inspectConfirmPayment && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-blue-950/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
-          <div className="bg-white rounded-[2.5rem] p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-4 border-4 border-emerald-500 my-6 text-left">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <div>
-                <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-black text-[9px] uppercase tracking-wider">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-3 sm:p-4 bg-blue-950/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-4 sm:p-8 max-w-lg w-full shadow-2xl space-y-4 border-4 border-emerald-500 max-h-[92vh] overflow-y-auto text-left">
+            <div className="flex justify-between items-start gap-3 border-b border-slate-100 pb-3">
+              <div className="min-w-0 flex-1">
+                <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-black text-[10px] uppercase tracking-wider inline-block">
                   Bursary Verification
                 </span>
-                <h3 className="font-black text-blue-950 text-lg font-serif mt-1">
+                <h3 className="font-black text-blue-950 text-lg font-serif mt-1 break-words whitespace-normal">
                   Verify & Confirm Payment Receipt
                 </h3>
-                <p className="text-xs text-slate-500 font-bold">
+                <p className="text-xs text-slate-500 font-bold break-words whitespace-normal">
                   {inspectConfirmPayment.studentName} ({inspectConfirmPayment.grade})
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setInspectConfirmPayment(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 font-black flex items-center justify-center"
+                className="min-w-[44px] min-h-[44px] rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 font-black flex items-center justify-center shrink-0"
+                aria-label="Close modal"
               >
                 ✕
               </button>
             </div>
 
             <div className="space-y-4 text-xs font-bold">
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-wrap justify-between items-center gap-2">
                 <span className="text-slate-500">Receipt Ref:</span>
-                <span className="font-mono text-blue-900 font-black">{inspectConfirmPayment.id}</span>
+                <span className="font-mono text-blue-900 font-black break-all">{inspectConfirmPayment.id}</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-emerald-800 uppercase tracking-wider text-[10px] mb-1">
                     Amount Paid (₦) *
@@ -1055,7 +1085,7 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                     min="0"
                     value={reviewPaidInput}
                     onChange={(e) => setReviewPaidInput(Number(e.target.value))}
-                    className="w-full p-2.5 bg-emerald-50 border-2 border-emerald-400 rounded-xl font-mono text-sm font-black text-emerald-950"
+                    className="w-full min-h-[44px] p-2.5 bg-emerald-50 border-2 border-emerald-400 rounded-xl font-mono text-sm font-black text-emerald-950"
                   />
                 </div>
 
@@ -1068,7 +1098,7 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                     min="0"
                     value={reviewRemainingInput}
                     onChange={(e) => setReviewRemainingInput(Number(e.target.value))}
-                    className="w-full p-2.5 bg-amber-50 border-2 border-amber-400 rounded-xl font-mono text-sm font-black text-amber-950"
+                    className="w-full min-h-[44px] p-2.5 bg-amber-50 border-2 border-amber-400 rounded-xl font-mono text-sm font-black text-amber-950"
                   />
                 </div>
               </div>
@@ -1081,25 +1111,25 @@ export const PaymentReviewDashboard: React.FC<PaymentReviewDashboardProps> = ({
                   type="text"
                   value={reviewNoteInput}
                   onChange={(e) => setReviewNoteInput(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                  className="w-full min-h-[44px] p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm"
                 />
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div className="pt-2 flex flex-col-reverse sm:flex-row justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setInspectConfirmPayment(null)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase rounded-xl"
+                  className="w-full sm:w-auto min-h-[44px] px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase rounded-xl"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={handleConfirmInspectSubmit}
-                  className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center gap-1.5"
+                  className="w-full sm:w-auto min-h-[44px] px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center justify-center gap-1.5"
                 >
                   <span>✓</span>
-                  <span>Confirm & Issue Official Receipt</span>
+                  <span className="break-words whitespace-normal">Confirm & Issue Official Receipt</span>
                 </button>
               </div>
             </div>

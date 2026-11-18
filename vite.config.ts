@@ -46,6 +46,7 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        hmr: false,
       },
       plugins: [
         sitemapXmlPlugin(),
@@ -112,7 +113,7 @@ export default defineConfig(({ mode }) => {
             ]
           },
           workbox: {
-            maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+            maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
             globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp}'],
             navigateFallback: 'index.html',
             runtimeCaching: [
@@ -159,7 +160,26 @@ export default defineConfig(({ mode }) => {
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
-        }
+        },
+        dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime']
+      },
+      optimizeDeps: {
+        include: [
+          'react',
+          'react-dom',
+          'react-dom/client',
+          'react/jsx-runtime',
+          'react/jsx-dev-runtime',
+          'qrcode.react',
+          'recharts',
+          'react-paystack',
+          'html5-qrcode',
+          'jspdf',
+          'jspdf-autotable',
+          '@supabase/supabase-js',
+          'xlsx',
+          'workbox-window'
+        ]
       },
       build: {
         outDir: 'dist',
