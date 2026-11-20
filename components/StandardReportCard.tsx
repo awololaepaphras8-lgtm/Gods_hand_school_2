@@ -3,6 +3,7 @@ import { StudentAccount, StudentResult } from '../types';
 import { QRCodeSVG } from 'qrcode.react';
 import { computeClassRankings } from '../utils/ranking';
 import { formatSubjectName } from '../utils/resultFeeService';
+import { OFFICIAL_SCHOOL_DOMAIN } from '../constants';
 
 interface StandardReportCardProps {
   student: StudentAccount;
@@ -29,6 +30,7 @@ export const StandardReportCard: React.FC<StandardReportCardProps> = ({
 }) => {
   const [activeTerm, setActiveTerm] = useState<string>(term === 'all' ? 'First Term' : term);
   const [showDownloadGuidance, setShowDownloadGuidance] = useState<boolean>(false);
+  const [linkCopied, setLinkCopied] = useState<boolean>(false);
 
   // Filter results for active term
   const termResults = results.filter(
@@ -70,7 +72,16 @@ export const StandardReportCard: React.FC<StandardReportCardProps> = ({
     }, 300);
   };
 
-  const qrData = `GHS-OFFICIAL-RESULT|${student.id}|${student.name}|${student.grade}|${activeTerm}|${session}|AVG:${averageScore}%`;
+  const shareableResultUrl = `${OFFICIAL_SCHOOL_DOMAIN}/?view=resultChecker&studentId=${encodeURIComponent(student.id)}&term=${encodeURIComponent(activeTerm)}`;
+  const qrData = shareableResultUrl;
+
+  const handleCopyShareLink = () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(shareableResultUrl);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2500);
+    }
+  };
 
   return (
     <div className="standard-report-wrapper w-full">
@@ -102,6 +113,17 @@ export const StandardReportCard: React.FC<StandardReportCardProps> = ({
               <option value="Second Term">Second Term</option>
               <option value="Third Term">Third Term</option>
             </select>
+
+            {/* Copy Official Shareable Result Link */}
+            <button
+              type="button"
+              onClick={handleCopyShareLink}
+              className="min-h-[44px] px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center gap-2"
+              title="Copy permanent official result verification link"
+            >
+              <span>{linkCopied ? '✓' : '🔗'}</span>
+              <span>{linkCopied ? 'Link Copied' : 'Share Result Link'}</span>
+            </button>
 
             {/* Print & Download PDF Button */}
             <button
@@ -193,7 +215,7 @@ export const StandardReportCard: React.FC<StandardReportCardProps> = ({
                 Oluwatedo Ire-Akari, Orisunmibare Area, Wire & Cable Axis, Apata, Ibadan, Oyo State
               </p>
               <p className="text-[9px] sm:text-[10px] text-slate-500 font-bold">
-                Tel: +234 805 650 7252 • Email: Godshandschool70@gmail.com • Web: www.Godshandmodelschool.sch.ng
+                Tel: +234 805 650 7252 • Email: Godshandschool70@gmail.com • Web: www.godshandmodelschool.com
               </p>
             </div>
 

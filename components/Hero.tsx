@@ -49,8 +49,8 @@ export const Hero: React.FC<HeroProps> = ({
 
   return (
     <div className="relative w-full max-w-full overflow-x-hidden min-h-screen bg-slate-950 pb-16 lg:pb-24 text-white">
-      {/* FIXED BACKGROUND AERIAL VIEW VIDEO COVERING THE ENTIRE HOME PAGE */}
-      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none select-none">
+      {/* HERO BACKGROUND AERIAL VIEW VIDEO (Scoped inside Hero so it never overlaps Footer) */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none">
         <video
           ref={bgVideoRef}
           autoPlay
@@ -60,23 +60,22 @@ export const Hero: React.FC<HeroProps> = ({
           poster="/drone_poster.jpg"
           className={`w-full h-full object-cover transition-all duration-700 ${
             isHighClearMode 
-              ? 'opacity-95 brightness-100 contrast-105' 
-              : 'opacity-80 brightness-95 contrast-110'
+              ? 'opacity-90 brightness-95 contrast-105' 
+              : 'opacity-70 brightness-75 contrast-110'
           }`}
         >
           <source src="/drone_campus.mp4" type="video/mp4" />
           <source src="https://upload.wikimedia.org/wikipedia/commons/2/26/Jornada_de_vuelo_drone_en_campus_UNI_OSM%2BGRD_4.webm" type="video/webm" />
         </video>
 
-        {/* Semi-transparent tint overlay so aerial campus flyover is vividly seen while text is clear */}
+        {/* High-contrast dark gradient scrim so foreground hero text and buttons stay crisp */}
         <div 
           className={`absolute inset-0 transition-opacity duration-700 ${
             isHighClearMode 
-              ? 'bg-gradient-to-b from-blue-950/60 via-blue-950/40 to-slate-950/65' 
-              : 'bg-gradient-to-b from-blue-950/75 via-blue-950/50 to-slate-950/80'
+              ? 'bg-slate-900/70 bg-gradient-to-b from-slate-950/80 via-slate-900/65 to-slate-950/90' 
+              : 'bg-slate-900/75 bg-gradient-to-b from-slate-950/85 via-slate-900/75 to-slate-950/95'
           }`} 
         />
-        <div className="absolute inset-0 bg-radial-gradient from-transparent via-blue-950/30 to-slate-950/80" />
       </div>
 
       {/* MAIN HERO CONTENT */}
@@ -96,9 +95,9 @@ export const Hero: React.FC<HeroProps> = ({
             </span>
           </h1>
 
-          <p className="text-sm sm:text-lg lg:text-xl text-blue-100 mb-7 sm:mb-8 max-w-xl leading-relaxed font-medium drop-shadow-md break-words">
+          <p className="text-sm sm:text-lg lg:text-xl text-slate-100 mb-7 sm:mb-8 max-w-xl leading-relaxed font-medium drop-shadow-md break-words">
             At <strong className="text-white font-black">God's Hand International Model School</strong>, we nurture every pupil and student to{' '}
-            <span className="text-yellow-300 font-bold underline decoration-yellow-400/40">Have Faith In God</span> while attaining world-class academic, moral, and technological excellence in Ibadan.
+            <span className="text-yellow-300 font-bold underline decoration-yellow-400/60">Have Faith In God</span> while attaining world-class academic, moral, and technological excellence in Ibadan.
           </p>
 
           {/* Action Buttons Row */}
@@ -204,7 +203,7 @@ export const Hero: React.FC<HeroProps> = ({
               className="rounded-2xl bg-slate-900 border-2 border-white/20 shadow-inner group cursor-pointer flex flex-col"
               title="Click to view high-resolution photo of school gate"
             >
-              <div className="aspect-video sm:aspect-4/3 w-full rounded-t-xl overflow-hidden">
+              <div className="aspect-video sm:aspect-[4/3] w-full rounded-t-xl overflow-hidden">
                 <img 
                   src="/school_premises.jpg" 
                   alt="God's Hand International Model School Physical Entrance and Gate - Wire & Cable, Apata, Ibadan" 

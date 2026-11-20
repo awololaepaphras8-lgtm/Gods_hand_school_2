@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { StudentAccount, ParentAccount, UserRole } from '../types';
 import { downloadQrCodeImage } from '../utils/exportService';
+import { OFFICIAL_SCHOOL_DOMAIN } from '../constants';
 
 interface QuickQrHubModalProps {
   isOpen: boolean;
@@ -37,7 +38,7 @@ export const QuickQrHubModal: React.FC<QuickQrHubModalProps> = ({
 
   if (!isOpen) return null;
 
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.godshandmodelschool.com';
+  const origin = OFFICIAL_SCHOOL_DOMAIN;
 
   // Parent linked children
   const linkedChildren: StudentAccount[] = currentParent
@@ -72,9 +73,12 @@ export const QuickQrHubModal: React.FC<QuickQrHubModalProps> = ({
     qrIcon = '💳';
     qrColor = 'text-emerald-900';
   } else if (activeTab === 'results') {
+    const studentToUse = currentStudent || activeChild;
     qrTitle = 'Terminal Result Checker QR Pass';
     qrSubtitle = 'Scan to verify Continuous Assessment (CA) scores and official terminal report cards';
-    qrUrl = `${origin}/?view=resultChecker`;
+    qrUrl = studentToUse
+      ? `${origin}/?view=resultChecker&studentId=${encodeURIComponent(studentToUse.id)}`
+      : `${origin}/?view=resultChecker`;
     qrIcon = '📜';
     qrColor = 'text-amber-900';
   } else if (activeTab === 'gate') {

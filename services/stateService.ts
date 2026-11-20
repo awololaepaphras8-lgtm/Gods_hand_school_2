@@ -436,7 +436,7 @@ const DEFAULT_STATE: AppState = {
       scheduledTime: 'Saturday 10:00 AM',
       status: 'active',
       participantsCount: 14,
-      meetingLink: 'https://Godshand.sch.ng/meet/GHS-PTA-2026',
+      meetingLink: 'https://www.godshandmodelschool.com/meet/GHS-PTA-2026',
       createdAt: new Date().toISOString()
     },
     {
@@ -449,7 +449,7 @@ const DEFAULT_STATE: AppState = {
       scheduledTime: 'Friday 4:00 PM',
       status: 'upcoming',
       participantsCount: 8,
-      meetingLink: 'https://Godshand.sch.ng/meet/GHS-PRI4-STUDY',
+      meetingLink: 'https://www.godshandmodelschool.com/meet/GHS-PRI4-STUDY',
       createdAt: new Date().toISOString()
     }
   ],

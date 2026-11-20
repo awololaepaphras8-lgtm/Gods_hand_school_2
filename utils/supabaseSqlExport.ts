@@ -924,7 +924,7 @@ INSERT INTO public.meetings (
   id, title, room_code, host_name, host_role, description, scheduled_time, status, participants_count, meeting_link
 )
 VALUES
-  ('MTG-1', 'Termly General PTA Virtual Assembly & Orientation', 'GHS-PTA-2026', 'Proprietor & Head of School', 'ADMIN', 'Review of academic calendar, terminal results release, and student gate security protocol.', 'Saturday 10:00 AM', 'active', 14, 'https://Godshand.sch.ng/meet/GHS-PTA-2026')
+  ('MTG-1', 'Termly General PTA Virtual Assembly & Orientation', 'GHS-PTA-2026', 'Proprietor & Head of School', 'ADMIN', 'Review of academic calendar, terminal results release, and student gate security protocol.', 'Saturday 10:00 AM', 'active', 14, 'https://www.godshandmodelschool.com/meet/GHS-PTA-2026')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.school_bank_account_config (

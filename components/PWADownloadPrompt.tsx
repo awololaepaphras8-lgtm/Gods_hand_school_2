@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { OFFICIAL_SCHOOL_DOMAIN } from '../constants';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -30,7 +31,7 @@ export const PWADownloadPrompt: React.FC<PWADownloadPromptProps> = ({
 
   // Native Package Download Handlers
   const handleDownloadWindowsLauncher = () => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://Godshand.sch.ng';
+    const origin = OFFICIAL_SCHOOL_DOMAIN;
     const batContent = `@echo off
 title God's Hand International Model School - Desktop Native App
 echo ==============================================================================
@@ -53,7 +54,7 @@ exit
   };
 
   const handleDownloadAndroidApk = () => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://Godshand.sch.ng';
+    const origin = OFFICIAL_SCHOOL_DOMAIN;
     const manifestJson = {
       package: "ng.sch.godshand.portal",
       name: "God's Hand International Model School",
@@ -74,7 +75,7 @@ exit
   };
 
   const handleDownloadIosProfile = () => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://Godshand.sch.ng';
+    const origin = OFFICIAL_SCHOOL_DOMAIN;
     const mobileConfig = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">

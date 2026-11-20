@@ -85,8 +85,7 @@ const checkSecretPath = (keyword: string): boolean => {
 const maskAndCleanSecretUrl = () => {
   if (typeof window === 'undefined' || !window.history?.replaceState) return;
   try {
-    const origin = window.location.origin || '';
-    window.history.replaceState(null, '', origin + '/');
+    window.history.replaceState(null, '', '/');
   } catch (e) {
     // ignore
   }
@@ -150,7 +149,16 @@ const App: React.FC = () => {
       if (checkSecretPath('jumoke')) {
         return 'teacherLogin';
       }
-      // 2. Dedicated installed app mode (goes straight to login/portal)
+      // 2. Explicit ?view= deep-link parameter from permanent domain QR codes / share links
+      if (typeof window !== 'undefined') {
+        const sp = new URLSearchParams(window.location.search);
+        const requestedView = sp.get('view');
+        const allowedParamViews = ['home', 'portal', 'apply', 'studentAuth', 'feeChecker', 'resultChecker', 'about', 'parentAuth', 'parentPortal', 'studentReceipts', 'parentStaffChat', 'communityHub', 'attendanceScanning'];
+        if (requestedView && allowedParamViews.includes(requestedView)) {
+          return requestedView as any;
+        }
+      }
+      // 3. Dedicated installed app mode (goes straight to login/portal)
       const dedicatedMode = getDedicatedAppMode();
       if (dedicatedMode === 'admin') {
         return savedSession?.role === UserRole.ADMIN ? (savedSession?.view || 'admin') : 'admin';
@@ -158,7 +166,7 @@ const App: React.FC = () => {
       if (dedicatedMode === 'staff') {
         return savedSession?.role === UserRole.TEACHER ? (savedSession?.view || 'teacher') : 'teacherLogin';
       }
-      // 3. Saved browser session
+      // 4. Saved browser session
       if (savedSession?.view === 'admin' && savedSession?.role !== UserRole.ADMIN) {
         return 'home';
       }
@@ -205,7 +213,10 @@ const App: React.FC = () => {
   const [loginError, setLoginError] = useState('');
   const [showQRModal, setShowQRModal] = useState(false);
   const [showStudentIDCardModal, setShowStudentIDCardModal] = useState(false);
-  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return new URLSearchParams(window.location.search).get('pwa_install') === 'true';
+  });
   const [showSqlModal, setShowSqlModal] = useState(false);
   const [isAppInstalled, setIsAppInstalled] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
@@ -1876,7 +1887,7 @@ const App: React.FC = () => {
                 </button>
 
                 <a
-                  href="https://wa.me/2348000000000?text=Hello%20God's%20Heritage%20Schools,%20I%20need%20inquiry%20regarding%20closed%20portal%20page"
+                  href="https://wa.me/2347085596586?text=Hello%20God's%20Hand%20International%20Model%20School,%20I%20need%20inquiry%20regarding%20a%20portal%20page"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="min-h-[44px] w-full sm:w-auto px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"

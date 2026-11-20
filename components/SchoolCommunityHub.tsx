@@ -11,6 +11,7 @@ import {
   CallRecording
 } from '../types';
 import { UserOnlineStatusBadge } from './UserOnlineStatusBadge';
+import { OFFICIAL_SCHOOL_DOMAIN } from '../constants';
 
 interface SchoolCommunityHubProps {
   currentUserRole: UserRole;
@@ -801,7 +802,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
       scheduledTime: newMeetingTime.trim() || 'Instant Virtual Assembly (Active Now)',
       status: 'active',
       participantsCount: 1,
-      meetingLink: `https://Godshand.sch.ng/meet/${code}`
+      meetingLink: `${OFFICIAL_SCHOOL_DOMAIN}/meet/${code}`
     };
 
     onCreateMeeting(newMtg);
@@ -1510,8 +1511,7 @@ export const SchoolCommunityHub: React.FC<SchoolCommunityHubProps> = ({
                     type="button"
                     onClick={() => {
                       if (navigator.clipboard) {
-                        navigator.clipboard.writeText(activeMeetingRoom.meetingLink || window.location.href);
-                        alert('Meeting invite link copied to clipboard!');
+                        navigator.clipboard.writeText(activeMeetingRoom.meetingLink || `${OFFICIAL_SCHOOL_DOMAIN}/?view=communityHub`);
                       }
                     }}
                     className="min-h-[44px] px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"

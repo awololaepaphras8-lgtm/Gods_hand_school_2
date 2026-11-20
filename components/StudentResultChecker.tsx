@@ -14,6 +14,7 @@ import {
 } from '../utils/resultFeeService';
 import { PaystackResultFeeModal } from './PaystackResultFeeModal';
 import { PaystackButton } from 'react-paystack';
+import { OFFICIAL_SCHOOL_DOMAIN } from '../constants';
 
 interface StudentResultCheckerProps {
   students: StudentAccount[];
@@ -43,7 +44,16 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
   resultCheckerFees
 }) => {
   // Login form state (if accessed by non-logged-in guest)
-  const [loginInput, setLoginInput] = useState('');
+  const initialQueryParams = (() => {
+    if (typeof window === 'undefined') return { studentId: '', term: '' };
+    const sp = new URLSearchParams(window.location.search);
+    return {
+      studentId: sp.get('studentId') || '',
+      term: sp.get('term') || ''
+    };
+  })();
+
+  const [loginInput, setLoginInput] = useState(initialQueryParams.studentId);
   const [passwordInput, setPasswordInput] = useState('');
   const [loginError, setLoginError] = useState('');
 
@@ -51,10 +61,13 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
   const student = currentStudent;
 
   // Academic term & session selection
-  const [selectedTermFilter, setSelectedTermFilter] = useState<string>(student?.activeTerm || 'First Term');
+  const [selectedTermFilter, setSelectedTermFilter] = useState<string>(
+    initialQueryParams.term || student?.activeTerm || 'First Term'
+  );
   const [resultScoreMode, setResultScoreMode] = useState<'all' | 'test' | 'exam' | 'total'>('all');
   const [isPrinting, setIsPrinting] = useState(false);
   const [showPaystackModal, setShowPaystackModal] = useState(false);
+  const [copiedResultLink, setCopiedResultLink] = useState(false);
 
   // Manual fallback payment receipt upload form state
   const [bankName, setBankName] = useState('First Bank of Nigeria');
@@ -356,7 +369,23 @@ export const StudentResultChecker: React.FC<StudentResultCheckerProps> = ({
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  const shareUrl = `${OFFICIAL_SCHOOL_DOMAIN}/?view=resultChecker&studentId=${encodeURIComponent(student.id)}&term=${encodeURIComponent(activeTerm)}`;
+                  if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                    navigator.clipboard.writeText(shareUrl);
+                    setCopiedResultLink(true);
+                    setTimeout(() => setCopiedResultLink(false), 2500);
+                  }
+                }}
+                className="min-h-[44px] px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-sm"
+                title="Copy official custom domain link for this student's result"
+              >
+                <span>{copiedResultLink ? '✓' : '🔗'}</span>
+                <span>{copiedResultLink ? 'Copied' : 'Share Result Link'}</span>
+              </button>
               {hasAccess && (
                 <button
                   type="button"

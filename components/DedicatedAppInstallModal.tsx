@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { OFFICIAL_SCHOOL_DOMAIN } from '../constants';
 
 interface DedicatedAppInstallModalProps {
   isOpen: boolean;
@@ -79,7 +80,7 @@ export const DedicatedAppInstallModal: React.FC<DedicatedAppInstallModalProps> =
     localStorage.setItem('ghs_dedicated_app_role', role);
     localStorage.setItem('ghs_pwa_target_entry', role);
 
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://godshandschool.sch.ng';
+    const origin = OFFICIAL_SCHOOL_DOMAIN;
     const appName = isAdmin ? "God's Hand Admin App" : "God's Hand Staff App";
     const filename = isAdmin ? "GodsHand_Admin_Portal.html" : "GodsHand_Staff_Portal.html";
 

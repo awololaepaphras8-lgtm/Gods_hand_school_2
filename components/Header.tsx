@@ -122,7 +122,7 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <>
       {/* Top Notification / Contact Bar */}
-      <div className="bg-yellow-400 text-blue-950 py-1.5 px-4 sm:px-6 text-[10px] sm:text-xs font-black uppercase tracking-wider border-b border-yellow-500/30 w-full">
+      <div className="relative z-40 bg-yellow-400 text-blue-950 py-1.5 px-4 sm:px-6 text-[10px] sm:text-xs font-black uppercase tracking-wider border-b border-yellow-500/30 w-full">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-1.5 sm:gap-3 text-center sm:text-left">
           <div className="flex items-center flex-wrap justify-center sm:justify-start gap-2 sm:gap-2.5">
             <span className="flex items-center gap-1 whitespace-nowrap">
@@ -157,10 +157,10 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Main Navigation Bar */}
       <header className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-blue-100 dark:border-slate-800 sticky top-0 z-40 shadow-sm transition-colors duration-200 w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center min-h-[3.75rem] sm:min-h-[4.5rem] md:min-h-[5rem] py-1.5 sm:py-2 gap-2 sm:gap-3">
-            {/* School Brand Identity (Logo + Name) */}
+          <div className="flex justify-between items-center min-h-[4rem] sm:min-h-[4.5rem] md:min-h-[5rem] py-2 gap-3">
+            {/* School Brand Identity (Logo + Full Name + Motto — Never Truncated) */}
             <div 
-              className="flex items-center gap-2 sm:gap-3 cursor-pointer group min-w-0 flex-1" 
+              className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group shrink-0 max-w-[calc(100%-156px)] sm:max-w-none" 
               onClick={() => navigateTo('home')}
             >
               <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 relative group-hover:scale-105 transition-all duration-300 shrink-0">
@@ -186,98 +186,25 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
               </div>
 
-              <div className="flex flex-col justify-center min-w-0 flex-1">
-                <h1 className="font-serif font-black text-blue-950 dark:text-white leading-tight tracking-tight group-hover:text-blue-900 dark:group-hover:text-yellow-300 transition-colors truncate">
-                  <span className="hidden xl:inline text-xl lg:text-2xl">
-                    God's Hand International Model School
-                  </span>
-                  <span className="hidden sm:inline xl:hidden text-sm md:text-base lg:text-lg">
-                    God's Hand Int'l Model School
-                  </span>
-                  <span className="inline sm:hidden text-xs font-black">
-                    God's Hand Model School
-                  </span>
+              <div className="flex flex-col justify-center min-w-0 flex-1 sm:flex-initial sm:shrink-0">
+                <h1 className="font-serif font-black text-blue-950 dark:text-white leading-tight tracking-tight group-hover:text-blue-900 dark:group-hover:text-yellow-300 transition-colors text-[12px] sm:text-base md:text-lg lg:text-xl whitespace-normal sm:whitespace-nowrap">
+                  God's Hand International Model School
                 </h1>
                 
-                <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 min-w-0 overflow-hidden">
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8.5px] sm:text-[10px] font-black uppercase tracking-wider bg-yellow-400 text-blue-950 shadow-sm border border-yellow-500/20 whitespace-nowrap shrink-0">
+                <div className="flex items-center gap-2 mt-0.5 shrink-0">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[8.5px] sm:text-[10px] font-black uppercase tracking-wider bg-yellow-400 text-blue-950 shadow-sm border border-yellow-500/20 whitespace-nowrap shrink-0">
                     Have Faith In God
                   </span>
-                  <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-bold hidden md:inline truncate">
+                  <span className="text-[10px] sm:text-xs text-slate-600 dark:text-slate-300 font-bold hidden lg:inline whitespace-nowrap">
                     • Wire & Cable, Apata, Ibadan
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Navigation & Action Controls */}
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              {/* Theme Toggle Button */}
-              <button
-                type="button"
-                onClick={handleToggleTheme}
-                aria-label={`Switch to ${currentTheme === 'dark' ? 'Light' : 'Dark'} Mode`}
-                className="flex items-center justify-center gap-1 px-2.5 sm:px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-yellow-400 dark:border-slate-700 shadow-sm active:scale-95"
-                title={`Switch to ${currentTheme === 'dark' ? 'Light Mode (Normal)' : 'Dark Mode (Night)'}`}
-              >
-                <span className="text-sm leading-none">{currentTheme === 'dark' ? '☀️' : '🌙'}</span>
-                <span className="hidden lg:inline">{currentTheme === 'dark' ? 'Light' : 'Dark'}</span>
-              </button>
-
-              {/* Download App Shortcut Button (Desktop/Tablet) */}
-              {onOpenDownloadModal && (
-                <button
-                  type="button"
-                  onClick={onOpenDownloadModal}
-                  className="hidden sm:flex items-center justify-center gap-1 px-2.5 sm:px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 bg-yellow-400 hover:bg-yellow-300 text-blue-950 border-yellow-500 shadow-sm active:scale-95 cursor-pointer"
-                  title="Download God's Hand School App (PWA or Native App for Windows, Android, iOS)"
-                >
-                  <span className="text-xs sm:text-sm leading-none">📲</span>
-                  <span className="hidden md:inline">Download App</span>
-                  <span className="md:hidden text-[11px]">App</span>
-                </button>
-              )}
-
-              {/* Instant QR Passes & Scanner Hub Button (Desktop/Tablet; mobile has QR Pass in bottom bar & menu) */}
-              <button
-                type="button"
-                onClick={() => {
-                  setQrHubInitialTab('portal');
-                  setShowQrHubModal(true);
-                }}
-                className="hidden md:flex items-center justify-center gap-1 px-2.5 sm:px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 bg-indigo-50 hover:bg-indigo-100 text-indigo-950 border-indigo-300 dark:bg-slate-800 dark:text-yellow-400 dark:border-slate-700 shadow-sm active:scale-95 cursor-pointer"
-                title="Instant QR Passes: Portal, Fees, Results & Gate Pass"
-              >
-                <span className="text-xs sm:text-sm leading-none">🏁</span>
-                <span className="hidden lg:inline">QR Passes</span>
-                <span className="lg:hidden text-[11px]">QR</span>
-              </button>
-
-              {/* Community Live Hub Shortcut */}
-              {role !== UserRole.GUEST && (
-                <button
-                  type="button"
-                  onClick={() => navigateTo('communityHub')}
-                  className={`hidden sm:flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 ${activeView === 'communityHub' ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md dark:bg-yellow-400 dark:text-blue-950 dark:border-yellow-400' : 'text-blue-900 dark:text-yellow-400 border-yellow-400 bg-yellow-50 dark:bg-slate-800 hover:bg-yellow-100 dark:hover:bg-slate-700 hover:border-yellow-500'}`}
-                  title="School Live Chat, Meetings & Calls Hub"
-                >
-                  <span>💬</span>
-                  <span className="hidden lg:inline">Live Hub</span>
-                  <span className="lg:hidden text-[11px]">Chat</span>
-                </button>
-              )}
-
-              {/* About School Shortcut for Desktop */}
-              <button
-                type="button"
-                onClick={() => navigateTo('about')}
-                className={`hidden xl:flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 ${activeView === 'about' ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md dark:bg-yellow-400 dark:text-blue-950 dark:border-yellow-400' : 'text-blue-900 dark:text-slate-200 border-slate-100 dark:border-slate-800 hover:border-blue-900 dark:hover:border-yellow-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
-              >
-                <span>🏛️</span>
-                <span>About</span>
-              </button>
-
-              {/* Responsive Dropdown Navigation Menu */}
+            {/* Clean Top Bar Actions: Only MENU and PORTAL / LOGOUT */}
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Responsive Dropdown Navigation Menu (Contains Dark, Download App, QR Passes, Live Hub, About, Teacher Desk & All Portals) */}
               <div className="static sm:relative" ref={dropdownRef}>
                 <button 
                   type="button"
@@ -285,28 +212,28 @@ export const Header: React.FC<HeaderProps> = ({
                   aria-expanded={isMenuOpen}
                   aria-haspopup="menu"
                   aria-label="Toggle Navigation Menu"
-                  className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 ${isMenuOpen ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md dark:bg-yellow-400 dark:text-blue-950 dark:border-yellow-400' : 'text-blue-900 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-blue-900 dark:hover:border-yellow-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                  className={`flex items-center gap-1.5 min-h-[42px] px-3 sm:px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 shrink-0 ${isMenuOpen ? 'bg-blue-900 text-yellow-400 border-blue-900 shadow-md dark:bg-yellow-400 dark:text-blue-950 dark:border-yellow-400' : 'text-blue-950 dark:text-white border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-blue-900 dark:hover:border-yellow-400 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                 >
                   <span className="text-sm sm:text-base leading-none">☰</span>
-                  <span className="text-[11px] sm:text-xs">Menu</span>
+                  <span>Menu</span>
                   <svg xmlns="http://www.w3.org/2000/svg" className={`h-3 w-3 sm:h-3.5 sm:w-3.5 transition-transform duration-200 ${isMenuOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
 
-                {/* Anchored Dropdown Panel (Not fixed inside backdrop-blur header) */}
+                {/* Anchored Dropdown Panel */}
                 {isMenuOpen && (
                   <div
                     role="menu"
                     aria-label="School Navigation Dropdown"
                     className="absolute left-0 right-0 mx-auto sm:left-auto sm:right-0 sm:mx-0 top-full mt-2 w-[calc(100%-2rem)] max-w-sm sm:w-80 sm:max-w-none max-h-[78vh] overflow-y-auto overflow-x-hidden bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border-2 border-slate-200/90 dark:border-slate-700 flex flex-col z-50"
                   >
-                    <div className="px-4 py-3 text-[11px] font-black text-slate-500 dark:text-slate-300 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10">
+                    <div className="px-4 py-3 text-[11px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10">
                       <span>School Portals & Menu</span>
                       <button 
                         type="button"
                         onClick={() => setIsMenuOpen(false)}
-                        className="w-7 h-7 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 text-xs font-black flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                        className="w-8 h-8 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 text-xs font-black flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                         aria-label="Close Menu"
                       >
                         ✕
@@ -314,6 +241,102 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
 
                     <div className="py-1.5">
+                      {/* Active Role Portal Shortcuts inside Menu Drawer */}
+                      {role === UserRole.TEACHER && (
+                        <>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => navigateTo('teacher')}
+                            className={`w-full text-left px-4 py-2.5 text-xs sm:text-sm font-black flex items-center justify-between gap-2 transition-all border-b border-slate-100 dark:border-slate-800 ${activeView === 'teacher' ? 'bg-blue-900 text-yellow-400' : 'bg-blue-50/80 dark:bg-blue-950/60 text-blue-950 dark:text-yellow-300 hover:bg-blue-100 dark:hover:bg-blue-900/70'}`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span className="text-base shrink-0">📁</span>
+                              <span className="break-words">Teacher Desk</span>
+                            </div>
+                            <span className="text-[10px] bg-blue-900 text-yellow-400 px-2 py-0.5 rounded font-black uppercase shrink-0">Staff</span>
+                          </button>
+                          {hasActiveDelegation && (
+                            <button
+                              type="button"
+                              role="menuitem"
+                              onClick={() => navigateTo('admin')}
+                              className={`w-full text-left px-4 py-2.5 text-xs sm:text-sm font-black flex items-center justify-between gap-2 transition-all border-b border-amber-200 dark:border-amber-900 ${activeView === 'admin' ? 'bg-amber-500 text-blue-950' : 'bg-amber-50 text-amber-950 hover:bg-amber-100'}`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span className="text-base shrink-0">⏱️</span>
+                                <span className="break-words">Admin Access</span>
+                              </div>
+                              <span className="text-[10px] bg-amber-500 text-blue-950 px-2 py-0.5 rounded font-black uppercase shrink-0">Active</span>
+                            </button>
+                          )}
+                        </>
+                      )}
+
+                      {role === UserRole.ADMIN && (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => navigateTo('admin')}
+                          className={`w-full text-left px-4 py-2.5 text-xs sm:text-sm font-black flex items-center justify-between gap-2 transition-all border-b border-slate-100 dark:border-slate-800 ${activeView === 'admin' ? 'bg-blue-900 text-yellow-400' : 'bg-blue-50/80 dark:bg-blue-950/60 text-blue-950 dark:text-yellow-300 hover:bg-blue-100 dark:hover:bg-blue-900/70'}`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="text-base shrink-0">⚙️</span>
+                            <span className="break-words">Proprietor Admin Panel</span>
+                          </div>
+                          <span className="text-[10px] bg-yellow-400 text-blue-950 px-2 py-0.5 rounded font-black uppercase shrink-0">Admin</span>
+                        </button>
+                      )}
+
+                      {role === UserRole.PARENT && (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => navigateTo('parentPortal')}
+                          className={`w-full text-left px-4 py-2.5 text-xs sm:text-sm font-black flex items-center justify-between gap-2 transition-all border-b border-slate-100 dark:border-slate-800 ${activeView === 'parentPortal' ? 'bg-blue-900 text-yellow-400' : 'bg-blue-50/80 dark:bg-blue-950/60 text-blue-950 dark:text-yellow-300 hover:bg-blue-100 dark:hover:bg-blue-900/70'}`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="text-base shrink-0">👨‍👩‍👧‍👦</span>
+                            <span className="break-words">My Children Dashboard</span>
+                          </div>
+                          <span className="text-[10px] bg-blue-900 text-yellow-400 px-2 py-0.5 rounded font-black uppercase shrink-0">Parent</span>
+                        </button>
+                      )}
+
+                      {role === UserRole.STUDENT && (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => navigateTo('portal')}
+                          className={`w-full text-left px-4 py-2.5 text-xs sm:text-sm font-black flex items-center justify-between gap-2 transition-all border-b border-slate-100 dark:border-slate-800 ${activeView === 'portal' ? 'bg-blue-900 text-yellow-400' : 'bg-blue-50/80 dark:bg-blue-950/60 text-blue-950 dark:text-yellow-300 hover:bg-blue-100 dark:hover:bg-blue-900/70'}`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="text-base shrink-0">💻</span>
+                            <span className="break-words">Student Dashboard</span>
+                          </div>
+                          <span className="text-[10px] bg-blue-900 text-yellow-400 px-2 py-0.5 rounded font-black uppercase shrink-0">Portal</span>
+                        </button>
+                      )}
+
+                      {/* Theme Toggle (Dark / Light Mode) */}
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={handleToggleTheme}
+                        className="w-full text-left px-4 py-2.5 text-xs sm:text-sm font-black flex items-center justify-between gap-2 transition-all bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-yellow-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="text-base shrink-0">{currentTheme === 'dark' ? '☀️' : '🌙'}</span>
+                          <span className="break-words">
+                            {currentTheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                          </span>
+                        </div>
+                        <span className="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-yellow-300 px-2 py-0.5 rounded font-black uppercase shrink-0">
+                          {currentTheme === 'dark' ? 'Light' : 'Dark'}
+                        </span>
+                      </button>
+
+                      {/* Download School App (PWA) */}
                       {!isAppInstalled && onOpenDownloadModal && (
                         <button 
                           type="button"
@@ -326,11 +349,13 @@ export const Header: React.FC<HeaderProps> = ({
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
                             <span className="text-base shrink-0">📲</span>
-                            <span className="break-words">Download School App (PWA)</span>
+                            <span className="break-words">Download App (PWA)</span>
                           </div>
                           <span className="text-[10px] bg-yellow-400 text-blue-950 px-2 py-0.5 rounded font-black uppercase shrink-0">Install</span>
                         </button>
                       )}
+
+                      {/* Instant QR Passes Hub */}
                       <button 
                         type="button"
                         role="menuitem"
@@ -343,10 +368,12 @@ export const Header: React.FC<HeaderProps> = ({
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           <span className="text-base shrink-0">🏁</span>
-                          <span className="break-words">Instant QR Passes & Code Hub</span>
+                          <span className="break-words">QR Passes & Code Hub</span>
                         </div>
                         <span className="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded font-black uppercase shrink-0">View</span>
                       </button>
+
+                      {/* All School Pages */}
                       {menuItems.map(item => {
                         const closed = isViewClosed(item.view);
                         return (
@@ -387,84 +414,29 @@ export const Header: React.FC<HeaderProps> = ({
                 )}
               </div>
 
-              {/* Role-Specific Actions */}
+              {/* Primary Portal / Logout Action */}
               {role === UserRole.GUEST ? (
-                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                  {/* Parent Portal quick button */}
-                  <button 
-                    type="button"
-                    onClick={() => navigateTo('parentAuth')}
-                    className="hidden sm:inline-flex items-center gap-1 px-2.5 sm:px-3 py-2 text-[10px] font-black uppercase tracking-wider text-blue-900 bg-yellow-400 hover:bg-yellow-300 rounded-xl transition-all shadow-sm active:scale-95 shrink-0"
-                    title="Parent Portal & Attendance"
-                  >
-                    <span>👨‍👩‍👧‍👦</span>
-                    <span className="hidden md:inline">Parents</span>
-                  </button>
-
-                  {/* Student/Staff Login Button */}
-                  <button 
-                    type="button"
-                    onClick={() => navigateTo('studentAuth')}
-                    className="px-3 sm:px-4 py-2 text-[11px] sm:text-xs font-black uppercase tracking-wider text-white bg-blue-900 rounded-xl hover:bg-blue-800 transition-all shadow-sm active:scale-95 shrink-0"
-                  >
-                    Login
-                  </button>
-                </div>
+                <button 
+                  type="button"
+                  onClick={() => navigateTo('portal')}
+                  className="min-h-[42px] px-3 sm:px-4 py-2 text-xs font-black uppercase tracking-wider text-white bg-blue-900 rounded-xl hover:bg-blue-800 transition-all shadow-sm active:scale-95 shrink-0"
+                >
+                  Portal
+                </button>
               ) : (
                 <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                  {role === UserRole.PARENT && (
-                    <button
-                      type="button"
-                      onClick={() => navigateTo('parentPortal')}
-                      className={`px-2.5 sm:px-3 py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all border shrink-0 ${activeView === 'parentPortal' ? 'bg-blue-900 text-yellow-400 border-blue-900' : 'text-blue-900 border-blue-200 hover:bg-blue-50'}`}
-                    >
-                      👨‍👩‍👧‍👦 <span className="hidden sm:inline">My Children</span>
-                    </button>
-                  )}
-                  {role === UserRole.TEACHER && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => navigateTo('teacher')}
-                        className={`px-2.5 sm:px-3 py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all border shrink-0 ${activeView === 'teacher' ? 'bg-blue-900 text-yellow-400 border-blue-900' : 'text-blue-900 border-blue-200 hover:bg-blue-50'}`}
-                      >
-                        📁 <span className="hidden sm:inline">Teacher Desk</span>
-                      </button>
-                      {hasActiveDelegation && (
-                        <button
-                          type="button"
-                          onClick={() => navigateTo('admin')}
-                          className={`px-2.5 sm:px-3 py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all border shrink-0 animate-pulse ${activeView === 'admin' ? 'bg-amber-500 text-blue-950 border-amber-600 font-black' : 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'}`}
-                          title="Open Authorized Admin Panel"
-                        >
-                          ⏱️ <span className="hidden sm:inline">Admin Access</span>
-                        </button>
-                      )}
-                    </>
-                  )}
-                  {role === UserRole.ADMIN && (
-                    <button
-                      type="button"
-                      onClick={() => navigateTo('admin')}
-                      className={`px-2.5 sm:px-3 py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all border shrink-0 ${activeView === 'admin' ? 'bg-blue-900 text-yellow-400 border-blue-900' : 'text-blue-900 border-blue-200 hover:bg-blue-50'}`}
-                    >
-                      ⚙️ <span className="hidden sm:inline">Proprietor Panel</span>
-                    </button>
-                  )}
-                  {role === UserRole.STUDENT && (
-                    <button
-                      type="button"
-                      onClick={() => navigateTo('portal')}
-                      className={`px-2.5 sm:px-3 py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all border shrink-0 ${activeView === 'portal' ? 'bg-blue-900 text-yellow-400 border-blue-900' : 'text-blue-900 border-blue-200 hover:bg-blue-50'}`}
-                    >
-                      💻 <span className="hidden sm:inline">Portal</span>
-                    </button>
-                  )}
-
-                  <div className="hidden lg:flex flex-col items-end mr-1 shrink-0">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{role} MODE</span>
-                  </div>
-
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (role === UserRole.PARENT) navigateTo('parentPortal');
+                      else if (role === UserRole.TEACHER) navigateTo('teacher');
+                      else if (role === UserRole.ADMIN) navigateTo('admin');
+                      else navigateTo('portal');
+                    }}
+                    className="hidden sm:inline-flex min-h-[42px] items-center px-3.5 py-2 text-xs font-black uppercase tracking-wider text-white bg-blue-900 rounded-xl hover:bg-blue-800 transition-all shadow-sm active:scale-95 shrink-0"
+                  >
+                    Portal
+                  </button>
                   <button 
                     type="button"
                     onClick={() => { 
@@ -475,7 +447,7 @@ export const Header: React.FC<HeaderProps> = ({
                         navigateTo('home');
                       }
                     }}
-                    className="px-2.5 sm:px-3.5 py-2 text-[10px] sm:text-xs font-black uppercase tracking-wider text-red-600 border border-red-200 rounded-xl hover:bg-red-50 hover:border-red-300 transition-all shrink-0"
+                    className="min-h-[42px] px-3 sm:px-3.5 py-2 text-xs font-black uppercase tracking-wider text-red-700 dark:text-red-400 bg-red-50/70 dark:bg-red-950/30 border border-red-200 dark:border-red-900/60 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/50 transition-all shrink-0"
                   >
                     Logout
                   </button>

@@ -209,3 +209,11 @@ export const DEFAULT_GRADING_CRITERIA: GradingCriterion[] = [
   { id: 'gc-9', gradeLetter: 'F9', minScore: 0, maxScore: 39, remark: 'Fail / Remedial', description: 'Below minimum requirement, remedial mentoring required', color: '#991b1b' },
 ];
 
+export const OFFICIAL_SCHOOL_DOMAIN = 'https://www.godshandmodelschool.com';
+
+export const getOfficialUrl = (path = '/'): string => {
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return `${OFFICIAL_SCHOOL_DOMAIN}${cleanPath}`;
+};
+
+

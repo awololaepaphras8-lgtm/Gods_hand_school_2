@@ -28,7 +28,7 @@ export const WhatsAppChatWidget: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-20 md:bottom-6 right-3 sm:right-6 z-40 font-sans print:hidden">
+    <div className="fixed bottom-20 md:bottom-5 right-5 z-50 font-sans print:hidden">
       {/* Floating Popup Form */}
       {isOpen && (
         <div className="mb-3 w-[calc(100vw-24px)] max-w-[360px] sm:w-[380px] max-h-[75vh] overflow-y-auto bg-white rounded-3xl shadow-2xl border-2 border-emerald-500 animate-in slide-in-from-bottom-5 duration-300">

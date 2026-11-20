@@ -1034,7 +1034,7 @@ export function exportSinglePaymentReceiptPDF(payment: FeePayment, student?: Stu
   doc.setTextColor(226, 232, 240); // slate-200
   doc.setFontSize(7.5);
   doc.text("Oluwatedo Area, Wire & Cable Axis, Apata, Ibadan, Oyo State • Phone: 08056507252 • WhatsApp: 07085596586", pageWidth / 2, 40, { align: 'center' });
-  doc.text("Official Email: Godshandschool70@gmail.com • Web: Godshandmodelschool.edu.ng", pageWidth / 2, 46, { align: 'center' });
+  doc.text("Official Email: Godshandschool70@gmail.com • Web: www.godshandmodelschool.com", pageWidth / 2, 46, { align: 'center' });
 
   // Receipt Document Title
   doc.setTextColor(30, 58, 138);

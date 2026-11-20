@@ -10,7 +10,7 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ isAdmin = false, onCheckFees, onNavigate, onOpenSqlModal }) => {
   return (
-    <footer className="bg-blue-900 text-white py-12 sm:py-16 w-full max-w-full overflow-x-hidden border-t-8 border-t-yellow-400">
+    <footer className="relative z-10 bg-blue-950 text-white pt-12 pb-28 sm:pb-24 md:py-16 md:pb-24 w-full max-w-full overflow-x-hidden border-t-8 border-t-yellow-400 shadow-2xl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Student Fee Verification Callout Bar */}
         <div className="mb-12 p-5 sm:p-8 bg-gradient-to-r from-blue-950 to-indigo-950 border-2 border-yellow-400/40 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl">
@@ -28,7 +28,7 @@ export const Footer: React.FC<FooterProps> = ({ isAdmin = false, onCheckFees, on
               <h3 className="text-lg sm:text-xl font-black text-white font-serif mt-1 break-words">
                 Check Your School Fees & Balance
               </h3>
-              <p className="text-xs text-blue-100/70 font-medium break-words">
+              <p className="text-xs text-blue-100/95 font-medium break-words">
                 Verify term tuition, check outstanding balances, and download official fee receipts.
               </p>
             </div>
@@ -74,13 +74,13 @@ export const Footer: React.FC<FooterProps> = ({ isAdmin = false, onCheckFees, on
                 </div>
               </div>
             </div>
-            <p className="text-blue-100/70 max-w-md mb-6 sm:mb-8 leading-relaxed font-medium text-sm break-words">
+            <p className="text-blue-100/90 max-w-md mb-6 sm:mb-8 leading-relaxed font-medium text-sm break-words">
               We provide a nurturing environment where children grow spiritually and intellectually. 
               Our commitment is to raise a Godly generation of leaders through quality education.
             </p>
             <div className="flex flex-wrap gap-3 sm:gap-4">
               {['FB', 'TW', 'IG', 'YT'].map(p => (
-                <button key={p} className="min-h-[44px] min-w-[44px] w-11 h-11 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center hover:bg-yellow-400 hover:text-blue-900 transition-all font-black text-xs">
+                <button key={p} className="min-h-[44px] min-w-[44px] w-11 h-11 bg-white/10 border border-white/20 text-white rounded-xl flex items-center justify-center hover:bg-yellow-400 hover:text-blue-900 transition-all font-black text-xs">
                   {p}
                 </button>
               ))}
@@ -89,7 +89,7 @@ export const Footer: React.FC<FooterProps> = ({ isAdmin = false, onCheckFees, on
 
           <div className="min-w-0">
             <h4 className="text-lg sm:text-xl font-black mb-6 text-yellow-400 uppercase tracking-widest border-b border-yellow-400/30 pb-2 inline-block">Quick Access</h4>
-            <ul className="space-y-3 text-blue-100/70 font-bold text-sm">
+            <ul className="space-y-3 text-white font-bold text-sm">
               <li>
                 <button 
                   onClick={() => onNavigate?.('parentStaffChat')} 
@@ -191,7 +191,7 @@ export const Footer: React.FC<FooterProps> = ({ isAdmin = false, onCheckFees, on
 
           <div className="min-w-0">
             <h4 className="text-lg sm:text-xl font-black mb-6 text-yellow-400 uppercase tracking-widest border-b border-yellow-400/30 pb-2 inline-block">School & Contact</h4>
-            <ul className="space-y-4 text-blue-100/80 font-bold text-sm">
+            <ul className="space-y-4 text-blue-100 font-bold text-sm">
               <li className="flex items-start group">
                 <span className="p-2 bg-white/5 rounded-lg mr-3 group-hover:bg-yellow-400 group-hover:text-blue-900 transition-all text-base shrink-0">📍</span>
                 <div className="min-w-0">
@@ -241,11 +241,11 @@ export const Footer: React.FC<FooterProps> = ({ isAdmin = false, onCheckFees, on
         </div>
 
         {/* SEO Local Directory & Area Coverage Note */}
-        <div className="p-5 sm:p-6 rounded-2xl bg-white/5 border border-white/10 mb-8 text-left">
+        <div className="p-5 sm:p-6 rounded-2xl bg-white/10 border border-white/15 mb-8 text-left">
           <h5 className="text-xs font-black text-yellow-400 uppercase tracking-widest mb-2 break-words">
             Local Area Coverage • Wire & Cable, Apata, Ibadan
           </h5>
-          <p className="text-xs text-blue-100/70 leading-relaxed break-words">
+          <p className="text-xs text-blue-100/95 leading-relaxed break-words">
             <strong>God's Hand International Model School</strong> is celebrated as the premier institution for good academic results at the <strong>Wire and Cable</strong> corridor, Apata, Ibadan. Proudly educating pupils and students across <strong>Owode, Orisunmibare, Bembo, Kuola, Omi-Adio, Apata Ganga, Dugbe,</strong> and the broader <strong>Ibadan metropolis</strong> in Oyo State.
           </p>
         </div>
@@ -271,7 +271,7 @@ export const Footer: React.FC<FooterProps> = ({ isAdmin = false, onCheckFees, on
           </div>
         )}
         
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-black uppercase tracking-wider text-blue-100/40 text-center md:text-left">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-black uppercase tracking-wider text-blue-100/80 text-center md:text-left">
           <p className="break-words">© {new Date().getFullYear()} God's Hand International Model School. Divine Excellence.</p>
           <div className="flex flex-wrap justify-center gap-4 sm:gap-8">
             <a href="#" className="hover:text-yellow-400 transition-colors py-1">Safety Policy</a>
